@@ -1,0 +1,41 @@
+{
+  "id": "character-creator",
+  "title": "Character Creator",
+  "version": "0.0.1",
+  "compatibility": {
+    "minimum": "12.331",
+    "verified": "12.331",
+    "maximum": "12.999"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "3.3.1",
+          "maximum": "3.3.9",
+          "verified": "3.3.1"
+        }
+      }
+    ]
+  },
+  "description": "A character creator for D&D 5e 3.3.1.",
+  "authors": [
+    {
+      "name": "Tyler",
+      "url": "https://github.com/Sayshal",
+      "flags": {}
+    }
+  ],
+  "url": "https://github.com/Sayshal/character-creator",
+  "esmodules": ["scripts/module.js"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "styles": ["styles/character-creator.css"]
+}
