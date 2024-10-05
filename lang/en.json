@@ -1,0 +1,17 @@
+{
+  "CCreator": {
+    "Creator": {
+      "header-title": "New Charactor for",
+      "actortab-button": {
+        "Name": "CCreator",
+        "Hint": "Launch CCreator"
+      }
+    },
+    "Settings": {
+      "enable": {
+        "Name": "Enable Character Creator?",
+        "Hint": "Default: Enabled."
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+.cc-actortab-button {
+  line-height: normal;
+  height: auto;
+  display: inline-block;
+}
+.cc-actortab-button > i {
+  margin-right: 0;
+}
+.cc-actortab-button:hover, .cc-actortab-button:focus {
+  box-shadow: none;
+  text-shadow: 0 0 2px #ff144f;
+}
