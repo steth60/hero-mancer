@@ -5,7 +5,12 @@
       "actortab-button": {
         "Name": "CCreator",
         "Hint": "Launch CCreator"
-      }
+      },
+      "SelectRace": "Race",
+      "SelectClass": "Class",
+      "SelectBackground": "Background",
+      "Submit": "Submit",
+      "Cancel": "Cancel"
     },
     "Settings": {
       "enable": {

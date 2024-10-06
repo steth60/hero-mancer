@@ -1,23 +1,58 @@
-<form id="creator-form">
-  <select id="race-dropdown">
-    <option value="">Select Race</option>
-    {{#each race}}
-      <option value="{{this.id}}">{{this.name}}</option>
-    {{/each}}
-  </select>
+<div id="creator-form" class="{{abrv}}-form">
+  <!-- Main Race Dropdown -->
+  <div class="dropdown-container">
+    <select id="race-dropdown" class="{{abrv}}-creator-dropdown race">
+      <option value="">{{localize "CCreator.Creator.SelectRace"}}</option>
+      {{#each race}}
+        {{#if hasMultipleItems}}
+          <option value="folder-{{folderName}}">{{folderName}}</option>
+        {{else}}
+          {{#each items}}
+            <option value="{{this.id}}">{{this.name}}</option>
+          {{/each}}
+        {{/if}}
+      {{/each}}
+    </select>
+    <!-- Subcategory Dropdown (Empty by default, dynamically updated) -->
+    <div id="race-subcategory-dropdown-container"></div>
+  </div>
 
-  <select id="class-dropdown">
-    <option value="">Select Class</option>
-    {{#each class}}
-      <option value="{{this.id}}">{{this.name}}</option>
-    {{/each}}
-  </select>
+  <!-- Main Class Dropdown -->
+  <div class="dropdown-container">
+    <select id="class-dropdown" class="{{abrv}}-creator-dropdown class">
+      <option value="">{{localize "CCreator.Creator.SelectClass"}}</option>
+      {{#each class}}
+        {{#if hasMultipleItems}}
+          <option value="folder-{{folderName}}">{{folderName}}</option>
+        {{else}}
+          {{#each items}}
+            <option value="{{this.id}}">{{this.name}}</option>
+          {{/each}}
+        {{/if}}
+      {{/each}}
+    </select>
+    <div id="class-subcategory-dropdown-container"></div>
+  </div>
 
-  <select id="background-dropdown">
-    <option value="">Select Background</option>
-    {{#each background}}
-      <option value="{{this.id}}">{{this.name}}</option>
-    {{/each}}
-  </select>
+  <!-- Main Background Dropdown -->
+  <div class="dropdown-container">
+    <select id="background-dropdown" class="{{abrv}}-creator-dropdown background">
+      <option value="">{{localize "CCreator.Creator.SelectBackground"}}</option>
+      {{#each background}}
+        {{#if hasMultipleItems}}
+          <option value="folder-{{folderName}}">{{folderName}}</option>
+        {{else}}
+          {{#each items}}
+            <option value="{{this.id}}">{{this.name}}</option>
+          {{/each}}
+        {{/if}}
+      {{/each}}
+    </select>
+    <div id="background-subcategory-dropdown-container"></div>
+  </div>
 
-</form>
+  <div class="{{abrv}}-creator-actions">
+    <button type="submit" class="{{abrv}}-creator-submit">{{localize "CCreator.Creator.Submit"}}</button>
+    <button type="cancel" class="{{abrv}}-creator-cancel">{{localize "CCreator.Creator.Cancel"}}</button>
+  </div>
+</div>
