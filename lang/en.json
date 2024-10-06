@@ -6,11 +6,15 @@
         "Name": "CCreator",
         "Hint": "Launch CCreator"
       },
-      "SelectRace": "Race",
-      "SelectClass": "Class",
-      "SelectBackground": "Background",
+      "SelectRace": "Select a Race",
+      "SelectRaceSubcategory": "Select Race Subtype",
+      "SelectedRace": "Selected Race",
+      "SelectClass": "Select a Class",
+      "SelectBackground": "Select a Background",
       "Submit": "Submit",
-      "Cancel": "Cancel"
+      "Cancel": "Cancel",
+      "unknown-pack": "Unknown Pack!",
+      "source-pack": "Source Pack"
     },
     "Settings": {
       "enable": {

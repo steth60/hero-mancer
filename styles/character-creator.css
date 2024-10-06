@@ -39,3 +39,6 @@
 .dropdown-container {
   margin-bottom: 1rem; /* Add space between dropdowns */
 }
+.hidden-dropdown-container {
+  margin-top: 1rem;
+}

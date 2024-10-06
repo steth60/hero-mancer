@@ -4,18 +4,14 @@
     <select id="race-dropdown" class="{{abrv}}-creator-dropdown race">
       <option value="">{{localize "CCreator.Creator.SelectRace"}}</option>
       {{#each race}}
-        {{#if hasMultipleItems}}
-          <option value="folder-{{folderName}}">{{folderName}}</option>
-        {{else}}
-          {{#each items}}
-            <option value="{{this.id}}">{{this.name}}</option>
-          {{/each}}
-        {{/if}}
+        <option value="{{this}}">{{this}}</option> <!-- Display folder name only -->
       {{/each}}
     </select>
-    <!-- Subcategory Dropdown (Empty by default, dynamically updated) -->
-    <div id="race-subcategory-dropdown-container"></div>
+    <!-- Subcategory Dropdown -->
+    <div class="hidden-dropdown-container" id="race-subcategory-dropdown-container"></div>
   </div>
+</form>
+
 
   <!-- Main Class Dropdown -->
   <div class="dropdown-container">

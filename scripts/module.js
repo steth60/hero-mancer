@@ -50,9 +50,8 @@ Hooks.once("changeSidebarTab", () => {
 Hooks.once("ready", async function () {
   try {
     CCreator.race = await CCUtils.getDocuments("race");
-    console.log(`${CCreator.ID} | RACES: ${CCreator.race}`)
-    //CCreator.class = await CCUtils.getDocuments("class");
-    //CCreator.background = await CCUtils.getDocuments("background");
+    CCreator.class = await CCUtils.getDocuments("class");
+    CCreator.background = await CCUtils.getDocuments("background");
   } catch (error) {
     console.error(error.message);
   }
@@ -66,20 +65,14 @@ class CCUtils {
     console.log("Valid document type:", type);
 
     const validPacks = new Set();
-    console.log("Valid Packs:", validPacks);
-    // Filter for packs of type 'Item' (adjust this if you're looking for a different type)
     const packs = game.packs.filter((i) => i.metadata.type === "Item");
-    console.log("Packs:", packs);
+
     for (const pack of packs) {
       try {
-        // Fetch documents of type 'class'
         const documents = await pack.getDocuments({ type: type });
-        console.log("Documents:", documents);
-        // Add each document to the Set to ensure uniqueness
+
         for (const doc of documents) {
-          console.log("Doc:", doc);
           validPacks.add(doc);
-          console.log("ValidPacks.Add:", validPacks);
         }
       } catch (error) {
         console.error(
@@ -89,20 +82,37 @@ class CCUtils {
       }
     }
 
+    const uniqueFolders = new Map();
+
     const sortedPackDocs = [...validPacks].map((doc) => {
       const folder = doc.folder;
-      console.log("Folder", folder);
-      const folderDocs = folder ? folder.contents : [];
-      console.log("Folder Docs:", folderDocs);
-      const folderName = folder && folderDocs.length > 1 ? `${folder.name}:` : "";
-      console.log("Folder Name:", folderName);
-      return { name: folderName + doc.name, doc };
+      const folderName = folder ? folder.name : null;
+
+      // Get the pack name from the game's packs collection
+      const packKey = doc.pack; // This should give you the key (e.g., "some.pack.id")
+      const packMetadata = game.packs.get(packKey);
+      const packName = packMetadata
+        ? packMetadata.metadata.label
+        : `${game.i18n.localize("CCreator.Creator.unknown-pack")}`; // Retrieve the label
+
+      if (folderName) {
+        uniqueFolders.set(folderName, folderName); // Only store unique folder names
+      }
+
+      return {
+        id: doc.id,
+        name: doc.name,
+        folderName, // Include folder name for further reference
+        packName, // Include pack name in the returned structure
+      };
     });
 
-    sortedPackDocs.sort((a, b) => a.name.localeCompare(b.name));
-    console.log("Sorted Pack Docs:", sortedPackDocs);
+    // Sort the folder names alphabetically
+    const uniqueFolderArray = Array.from(uniqueFolders.values()).sort((a, b) =>
+      a.localeCompare(b)
+    );
 
-    return sortedPackDocs.map((entry) => entry.doc);
+    return { documents: sortedPackDocs, uniqueFolders: uniqueFolderArray };
   }
 }
 
@@ -127,9 +137,7 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
     },
   };
   get title() {
-    return `${CCreator.TITLE} | ${game.i18n.localize(
-      "CCreator.Creator.header-title"
-    )}: ${game.user.name}`;
+    return `${CCreator.TITLE} | ${game.user.name}`;
   }
   static PARTS = {
     header: {
@@ -142,86 +150,100 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
       scrollable: [""],
     },
     footer: {
-      template: "templates/generic/form-footer.hbs"
-    }
+      template: "templates/generic/form-footer.hbs",
+    },
     //footer: { template: CCreator.TEMPLATES.CREATORFOOTER, id: `${CCreator.ABRV}-CharacterCreator-footer` },
   };
   _prepareContext(options) {
-    function prepareDataWithFolder(documents) {
-      const folderMap = new Map();
-  
-      documents.forEach((doc) => {
-        const folderName = doc.folder?.name || "Uncategorized"; // No prefix added here
-        if (!folderMap.has(folderName)) {
-          folderMap.set(folderName, []);
-        }
-        folderMap.get(folderName).push(doc);
-      });
-  
-      return Array.from(folderMap.entries()).map(([folderName, items]) => ({
-        folderName, // Keep this clean
-        items,
-        hasMultipleItems: items.length > 1,
-      }));
-    }
-    buttons: [
-      { type: "submit", icon: "fa-solid fa-save", label: "SETTINGS.Save" },
-      { type: "cancel", icon: "fa-solid fa-cancel", label: "SETTINGS.Cancel"}
-  ]
-  
+    const { documents, uniqueFolders } = CCreator.race; // Ensure this is awaited if it's async
+
     return {
-      race: prepareDataWithFolder(CCreator.race),
-      class: prepareDataWithFolder(CCreator.class),
-      background: prepareDataWithFolder(CCreator.background),
+      race: uniqueFolders, // Use unique folder names directly for the dropdown
+      documents, // Full document list for later use
       abrv: CCreator.ABRV,
     };
   }
-  
+
   _onRender(context, options) {
-    // Call the parent class's _onRender if necessary
     super._onRender(context, options);
 
-    // Race dropdown listener
     const raceDropdown = this.element.querySelector("#race-dropdown");
-    console.log("Race Dropdown:", raceDropdown);
     if (raceDropdown) {
       raceDropdown.addEventListener("change", (event) => {
         const selectedValue = event.target.value;
-        console.log("Selected value:", selectedValue); // Log the selected value
-      
-        // Check if a folder was selected (i.e., value starts with 'folder-')
-        if (selectedValue.startsWith("folder-")) {
-          const folderName = selectedValue.split("folder-")[1]; // Extract folder name cleanly
-          console.log("Selected folder:", folderName); // Log the folder name
-          console.log("Available Folders:", CCreator.race.map(f => f.folderName)); // Log all folder names
 
-          // Find the corresponding folder items in the race data
-          const selectedFolder = CCreator.race.find(f => f.folderName === folderName);
-          console.log("Selected Folder:", selectedFolder)
-          if (selectedFolder) {
-            console.log("Folder items:", selectedFolder.items); // Log folder items
-            const subcategoryDropdownContainer = this.element.querySelector("#race-subcategory-dropdown-container");
-            console.log("Subcategory Dropdown Container:", subcategoryDropdownContainer);
-            
-            // Populate the subcategory dropdown
-            subcategoryDropdownContainer.innerHTML = `
-              <select id="race-subcategory-dropdown" class="${CCreator.ABRV}-creator-dropdown race">
-                <option value="">${game.i18n.localize("CCreator.Creator.SelectRaceSubcategory")}</option>
-                ${selectedFolder.items.map(item => `<option value="${item.id}">${item.name}</option>`).join('')}
-              </select>
-            `;
-            //this.render();
+        const selectedFolderDocs = context.documents.filter(
+          (doc) => doc.folderName === selectedValue
+        );
+        const subcategoryDropdownContainer = this.element.querySelector(
+          "#race-subcategory-dropdown-container"
+        );
+        subcategoryDropdownContainer.innerHTML = ""; // Clear previous content
+        const confirmationText = document.createElement("div"); // Create a div for confirmation
+
+        if (selectedFolderDocs.length > 0) {
+          const subcategoryDropdown = document.createElement("select");
+          subcategoryDropdown.id = "race-subcategory-dropdown";
+          subcategoryDropdown.className = `${CCreator.ABRV}-creator-dropdown race`;
+
+          const defaultOption = document.createElement("option");
+          defaultOption.value = "";
+          defaultOption.textContent = game.i18n.localize(
+            "CCreator.Creator.SelectRaceSubcategory"
+          );
+          subcategoryDropdown.appendChild(defaultOption);
+
+          // Sort the documents alphabetically before adding to the dropdown
+          const sortedFolderDocs = selectedFolderDocs.sort((a, b) =>
+            a.name.localeCompare(b.name)
+          );
+
+          // Set the pack name for the tooltip
+          const packName = sortedFolderDocs[0].packName; // Get the pack name from the first document
+          subcategoryDropdown.title = `${game.i18n.localize(
+            "CCreator.Creator.source-pack"
+          )}: ${packName}`; // Set the tooltip
+
+          sortedFolderDocs.forEach((doc) => {
+            const option = document.createElement("option");
+            option.value = doc.id;
+            option.textContent = doc.name; // Use document name
+            subcategoryDropdown.appendChild(option);
+          });
+
+          // Check if there's only one document
+          if (sortedFolderDocs.length === 1) {
+            /*             const singleDocDisplay = document.createElement('div');
+            singleDocDisplay.textContent = `Selected: ${sortedFolderDocs[0].name}`; // Display selected value
+            singleDocDisplay.title = `Source Pack: ${packName}`; // Set tooltip
+            subcategoryDropdownContainer.appendChild(singleDocDisplay); // Add display element */
+
+            // Set confirmation text only once
+            confirmationText.textContent = `${game.i18n.localize(
+              "CCreator.Creator.SelectedRace"
+            )}: ${sortedFolderDocs[0].name}`; // Confirm selection
+            confirmationText.title = `Source Pack: ${packName}`; // Set tooltip for confirmation
+            subcategoryDropdownContainer.appendChild(confirmationText); // Add confirmation text
+          } else {
+            subcategoryDropdownContainer.appendChild(subcategoryDropdown); // Append dropdown normally
+
+            // Add an event listener to the subcategory dropdown
+            subcategoryDropdown.addEventListener("change", (e) => {
+              const selectedDoc = sortedFolderDocs.find(
+                (doc) => doc.id === e.target.value
+              );
+              confirmationText.textContent = `${game.i18n.localize(
+                "CCreator.Creator.SelectedRace"
+              )}: ${selectedDoc.name}`; // Confirm selection
+              confirmationText.title = `${game.i18n.localize(
+                "CCreator.Creator.source-pack"
+              )}: ${packName}`; // Set tooltip for confirmation
+              subcategoryDropdownContainer.appendChild(confirmationText); // Add confirmation text
+            });
           }
-        } else {
-          // If not a folder, clear the subcategory dropdown
-          const subcategoryDropdownContainer = this.element.querySelector("#race-subcategory-dropdown-container");
-          subcategoryDropdownContainer.innerHTML = "";
         }
       });
-      
     }
-
-    // Repeat the same for class-dropdown and background-dropdown if needed
   }
 
   static async formHandler(event, form, formData) {
