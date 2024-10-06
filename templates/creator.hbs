@@ -1,0 +1,23 @@
+<form id="creator-form">
+  <select id="race-dropdown">
+    <option value="">Select Race</option>
+    {{#each race}}
+      <option value="{{this.id}}">{{this.name}}</option>
+    {{/each}}
+  </select>
+
+  <select id="class-dropdown">
+    <option value="">Select Class</option>
+    {{#each class}}
+      <option value="{{this.id}}">{{this.name}}</option>
+    {{/each}}
+  </select>
+
+  <select id="background-dropdown">
+    <option value="">Select Background</option>
+    {{#each background}}
+      <option value="{{this.id}}">{{this.name}}</option>
+    {{/each}}
+  </select>
+
+</form>

@@ -1,9 +1,9 @@
-import { CCreatorSettings } from './settings.js';
+import { registerSettings } from "./settings.js";
 
 export class CCreator {
-  static ID = 'character-creator';
-  static TITLE = 'Character Creator';
-  static ABRV = 'cc';
+  static ID = "character-creator";
+  static TITLE = "Character Creator";
+  static ABRV = "cc";
   static TEMPLATES = {
     SETTINGS: `modules/${this.ID}/templates/settings.hbs`,
     CREATOR: `modules/${this.ID}/templates/creator.hbs`,
@@ -13,16 +13,18 @@ export class CCreator {
   };
   static initialize() {
     this.charactorCreator = new CharacterCreator();
-    CCreatorSettings.registerSettings();
+    console.info(`${CCreator.ID} | Initializing Module`);
+    registerSettings();
+    console.info(`${CCreator.ID} | Registering Settings`);
   }
 }
 
-Hooks.on('init', () => {
+Hooks.on("init", () => {
   CCreator.initialize();
 });
 
-Hooks.once('changeSidebarTab', () => {
-  if (!game.settings.get(CCreator.ID, CCreatorSettings.SETTINGS.ENABLE)) {
+Hooks.once("changeSidebarTab", () => {
+  if (!game.settings.get(CCreator.ID, "enable")) {
     return;
   }
   /* Find the create folder button and inject CCreator button before it */
@@ -34,55 +36,101 @@ Hooks.once('changeSidebarTab', () => {
       `<button
         type='button'
         class='${CCreator.ABRV}-actortab-button'
-        title='${game.i18n.localize('CCreator.Creator.actortab-button.Hint')}'>
+        title='${game.i18n.localize("CCreator.Creator.actortab-button.Hint")}'>
           <i class='fas fa-hammer' style='color: #ff144f'></i> 
-        ${game.i18n.localize('CCreator.Creator.actortab-button.Name')}
+        ${game.i18n.localize("CCreator.Creator.actortab-button.Name")}
       </button>`
     );
 
-  const gameId = game.user.id;
-
-  $(document).on('click', `.${CCreator.ABRV}-actortab-button`, (event) => {
-    CCreator.charactorCreator.render(true, { gameId });
+  $(document).on("click", `.${CCreator.ABRV}-actortab-button`, (event) => {
+    CCreator.charactorCreator.render(true);
   });
 });
 
-const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
+Hooks.once("ready", async function () {
+  try {
+    CCreator.race = await CCUtils.getDocuments("race");
+    CCreator.class = await CCUtils.getDocuments("class");
+    CCreator.background = await CCUtils.getDocuments("background");
+  } catch (error) {
+    console.error(error.message);
+  }
+});
+
+class CCUtils {
+  static async getDocuments(type) {
+    if (typeof type !== "string" || type.trim() === "") {
+      throw new Error("Invalid argument: expected a non-empty string.");
+    }
+    console.log("Valid document type:", type);
+
+    const validPacks = new Set();
+
+    // Filter for packs of type 'Item' (adjust this if you're looking for a different type)
+    const packs = game.packs.filter((i) => i.metadata.type === "Item");
+
+    for (const pack of packs) {
+      try {
+        // Fetch documents of type 'class'
+        const documents = await pack.getDocuments({ type: type });
+
+        // Add each document to the Set to ensure uniqueness
+        for (const doc of documents) {
+          validPacks.add(doc);
+        }
+      } catch (error) {
+        console.error(
+          `Failed to retrieve documents from pack ${pack.metadata.label}:`,
+          error
+        );
+      }
+    }
+
+    const sortedPackDocs = [...validPacks].sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
+
+    return sortedPackDocs;
+  }
+}
+
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
     id: `${CCreator.ID}`,
-    tag: 'form',
+    tag: "form",
     form: {
       handler: CharacterCreator.formHandler,
-      closeOnSubmit: false, // do not close when submitted
-      submitOnChange: true, // submit when any input changes
-      submitOnClose: true, // submit on close
+      closeOnSubmit: true, // do not close when submitted
+      submitOnChange: false, // submit when any input changes
     },
     actions: {},
     position: {
-      height: 'auto',
-      width: 'auto',
+      height: "auto",
+      width: "auto",
     },
     window: {
-      icon: 'fas fa-note-sticky',
+      icon: "fas fa-hammer",
       resizable: false,
     },
-    classes: [`${CCreator.ABRV}`],
   };
   get title() {
-    return `${CCreator.TITLE} | ${game.i18n.localize('CCreator.Creator.header-text')}: (${game.user.name})`;
+    return `${CCreator.TITLE} | ${game.i18n.localize(
+      "CCreator.Creator.header-title"
+    )}: ${game.user.name}`;
   }
   static PARTS = {
-    header: { template: CCreator.TEMPLATES.CREATORHEADER },
-    form: {
-      template: CCreator.TEMPLATES.CREATOR,
-    },
+    header: { template: CCreator.TEMPLATES.CREATORHEADER, id: `${CCreator.ABRV}-CharacterCreator-header` },
+    form: { template: CCreator.TEMPLATES.CREATOR, id: `${CCreator.ABRV}-CharacterCreator-form`, scrollable: [''] },
+    //footer: { template: CCreator.TEMPLATES.CREATORFOOTER, id: `${CCreator.ABRV}-CharacterCreator-footer` },
   };
   _prepareContext(options) {
     // const reminders = ReminderData.getReminders(game.userId);
     // console.log('REMINDER DATA PREPARE CONTEXT: ', ReminderData.getRemindersForUser(game.userId));
     return {
-      //Whatever data you need in handlebars must be here.
+      race: CCreator.race,
+      class: CCreator.class,
+      background: CCreator.background
     };
   }
   static async formHandler(event, form, formData) {
