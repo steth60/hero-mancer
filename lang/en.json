@@ -1,25 +1,37 @@
 {
-  "CCreator": {
-    "Creator": {
+  "cc": {
+    "creator": {
       "header-title": "Character Creation Wizard",
       "actortab-button": {
-        "Name": "CCreator",
-        "Hint": "Launch CCreator"
+        "name": "CCreator",
+        "hint": "Launch CCreator"
       },
-      "SelectRace": "Select a Race",
-      "SelectRaceSubcategory": "Select Race Subtype",
-      "SelectedRace": "Selected Race",
-      "SelectClass": "Select a Class",
-      "SelectBackground": "Select a Background",
-      "Submit": "Submit",
-      "Cancel": "Cancel",
-      "unknown-pack": "Unknown Pack!",
-      "source-pack": "Source Pack"
+      "race": {
+        "select": "Select a Race",
+        "selectsubcategory": "Select Race Subtype",
+        "selected": "Selected Race"
+      },
+      "class": {
+        "select": "Select a Class",
+        "selected": "Selected Class"
+      },
+      "background": {
+        "select": "Select a Background",
+        "selected": "Selected Background"
+      },
+      "actions": {
+        "submit": "Submit",
+        "cancel": "Cancel"
+      },
+      "pack": {
+        "unknown": "Unknown Pack!",
+        "source": "Source Pack"
+      }
     },
-    "Settings": {
+    "settings": {
       "enable": {
-        "Name": "Enable Character Creator?",
-        "Hint": "Default: Enabled."
+        "name": "Enable Character Creator?",
+        "hint": "Default: Enabled."
       }
     }
   }

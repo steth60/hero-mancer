@@ -2,12 +2,12 @@ import { CCreator } from "./module.js";
 
 export function registerSettings() {
   game.settings.register(CCreator.ID, 'enable', {
-    name: `CCreator.Settings.enable.Name`,
+    name: `cc.settings.enable.name`,
     default: true,
     type: Boolean,
     scope: "client",
     config: true,
-    hint: `CCreator.Settings.enable.Hint`,
+    hint: `cc.settings.enable.hint`,
     onChange: () => ui.players.render(),
   });
 }

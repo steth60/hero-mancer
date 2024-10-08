@@ -1,44 +1,92 @@
-.cc-actortab-button {
-  line-height: normal;
-  height: auto;
-  display: inline-block;
+/* Top element of creator.hbs */
+.cc-form {
+  width: 60vw;
+  height: 60vh;
+  max-width: 100%;
+  max-height: 100%;
 }
 
-.cc-actortab-button > i {
-  margin-right: 0;
+/* Referenced in creator_header.hbs */
+.cc-creator-header {
+  margin-bottom: 1rem;
 }
 
-.cc-actortab-button:hover, .cc-actortab-button:focus {
-  box-shadow: none;
-  text-shadow: 0 0 2px #ff144f;
+/* DIV around every dropdown in creator.hbs */
+.cc-dropdown-container {
+  margin-bottom: 1rem;
 }
-
-.cc-CharacterCreator-header {
-
-}
-
-.cc-CharacterCreator-form {
-
-}
-
-.cc-CharacterCreator-footer {
-  
-}
-.cc-creator-dropdown {
-
-}
-.cc-creator-dropdown race{
-  
-}
-.cc-creator-dropdown class{
-  
-}
-.cc-creator-dropdown background{
-  
-}
-.dropdown-container {
-  margin-bottom: 1rem; /* Add space between dropdowns */
-}
-.hidden-dropdown-container {
+/* DIV around every selection confirmation in creator.hbs */
+.cc-select-container {
   margin-top: 1rem;
+}
+/* Select for every item in the dropdown, currently appears to only work when not active */
+.cc-creator-dropdown {
+  width: 100%;
+  padding: 0.5rem;
+  font-family: inherit !important;
+  font-weight: bold !important;
+}
+
+/* Dropdown options styling */
+.cc-creator-dropdown option {
+  white-space: nowrap;
+}
+
+.cc-creator-dropdown option[data-pack]:after {
+  content: attr(data-pack);
+  color: red !important;
+  font-size: 0.85em !important;
+  margin-left: 10px;
+}
+
+/* Hidden dropdown for subcategory handling */
+.cc-hidden-dropdown-container {
+  margin-top: 1rem;
+}
+
+/* Referenced in creator_footer footer class. */
+.cc-creator-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* Referenced in creator_footer div class. */
+.cc-creator-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 30%;
+  gap: 10px;
+}
+
+/* Referenced in creator_footer button class. */
+.cc-creator-submit,
+.cc-creator-cancel {
+  padding: 0.5rem 1rem;
+  font-size: 1rem !important;
+  cursor: pointer;
+}
+
+/* Referenced in creator_footer submit button class. */
+.cc-creator-submit {
+  background-color: #4caf50 !important;
+  border: none;
+  color: white !important;
+}
+
+.cc-creator-submit:hover {
+  background-color: #45a049 !important;
+}
+
+/* Referenced in creator_footer cancel button class. */
+.cc-creator-cancel {
+  background-color: #f44336 !important;
+  border: none;
+  color: white !important;
+}
+
+.cc-creator-cancel:hover {
+  background-color: #d32f2f !important;
 }
