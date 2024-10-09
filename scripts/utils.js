@@ -63,4 +63,66 @@ export class CCUtils {
       };
     }
   }
+  static async handleDropdownChange(type, html) {
+    const dropdown = html.querySelector(`#${type}-dropdown`);
+    const subcatDropdownContainer = html.querySelector(`#${type}-subcat-dropdown-container`);
+
+    if (dropdown) {
+      dropdown.addEventListener('change', (event) => {
+        const selectedVal = event.target.value;
+
+        // Clear any previous confirmation or sub-dropdown
+        subcatDropdownContainer.innerHTML = '';
+
+        // Access race data directly from CCreator
+        const selectedFolder = CCreator[type].uniqueFolders.find((folder) => `folder-${folder.folderName}` === selectedVal);
+
+        if (selectedFolder && selectedFolder.docs.length > 1) {
+          // Create a second dropdown for races inside the selected folder
+          const subcatDropdown = document.createElement('select');
+          subcatDropdown.id = `${type}-subcategory-dropdown`;
+          subcatDropdown.className = `${CCreator.ABRV}-creator-dropdown ${type}`;
+
+          const defaultOption = document.createElement('option');
+          defaultOption.value = '';
+          defaultOption.textContent = game.i18n.localize(`cc.creator.${type}.selectsubcategory`);
+          subcatDropdown.appendChild(defaultOption);
+
+          const sortedDocs = selectedFolder.docs.sort((a, b) => a.name.localeCompare(b.name));
+          sortedDocs.forEach((doc) => {
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = `${doc.name} (${doc.packName})`;
+            subcatDropdown.appendChild(option);
+          });
+
+          subcatDropdownContainer.appendChild(subcatDropdown);
+
+          // Add event listener for subcategory dropdown
+          subcatDropdown.addEventListener('change', (e) => {
+            const selectedDoc = sortedDocs.find((doc) => doc.id === e.target.value);
+            const confirmText = document.createElement('div');
+            confirmText.className = `${CCreator.ABRV}-select-container`;
+            confirmText.textContent = `Selected ${type}: ${selectedDoc.name}`;
+            subcatDropdownContainer.appendChild(confirmText);
+          });
+        } else if (selectedFolder && selectedFolder.docs.length === 1) {
+          // If only one race exists in the folder, display it directly
+          const confirmText = document.createElement('div');
+          confirmText.className = `${CCreator.ABRV}-select-container`;
+          confirmText.textContent = `Selected ${type}: ${selectedFolder.docs[0].name}`;
+          subcatDropdownContainer.appendChild(confirmText);
+        } else {
+          // For class and background, directly show confirmation
+          const selectedDoc = CCreator[type].documents.find((doc) => doc.id === selectedVal);
+          if (selectedDoc) {
+            const confirmText = document.createElement('div');
+            confirmText.className = `${CCreator.ABRV}-select-container`;
+            confirmText.textContent = `Selected ${type}: ${selectedDoc.name}`;
+            subcatDropdownContainer.appendChild(confirmText);
+          }
+        }
+      });
+    }
+  }
 }

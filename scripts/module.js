@@ -5,13 +5,7 @@ export class CCreator {
   static ID = 'character-creator';
   static TITLE = 'Character Creator';
   static ABRV = 'cc';
-  static TEMPLATES = {
-    SETTINGS: `modules/${this.ID}/templates/settings.hbs`,
-    CREATOR: `modules/${this.ID}/templates/creator.hbs`,
-    CREATORHEADER: `modules/${this.ID}/templates/creator_header.hbs`,
-    CREATORFOOTER: `modules/${this.ID}/templates/creator_footer.hbs`,
-    CREATORTABS: `modules/${this.ID}/templates/creator_tabs.hbs`
-  };
+
   static initialize() {
     this.charactorCreator = new CharacterCreator();
     console.info(`${CCreator.ID} | Initializing Module`);
@@ -80,7 +74,7 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     window: {
       icon: 'fa-solid fa-hammer',
-      resizable: true
+      resizable: false
     }
   };
   get title() {
@@ -88,98 +82,143 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
   }
   static PARTS = {
     header: {
-      template: CCreator.TEMPLATES.CREATORHEADER,
+      template: `modules/${CCreator.ID}/templates/creator-header.hbs`,
       id: `${CCreator.ABRV}-creator-header`
     },
-    form: {
-      template: CCreator.TEMPLATES.CREATOR,
-      id: `${CCreator.ABRV}-creator-form`,
-      scrollable: ['']
+    nav: {
+      template: `modules/${CCreator.ID}/templates/creator-nav.hbs`,
+      id: `${CCreator.ABRV}-creator-nav`
     },
-    footer: { template: CCreator.TEMPLATES.CREATORFOOTER, id: `${CCreator.ABRV}-creator-footer` }
+    welcome: {
+      template: `modules/${CCreator.ID}/templates/creator-getting-started.hbs`,
+      id: `${CCreator.ABRV}-creator-getting-started`
+    },
+    class: {
+      template: `modules/${CCreator.ID}/templates/creator-class.hbs`,
+      id: `${CCreator.ABRV}-creator-class`
+    },
+    background: {
+      template: `modules/${CCreator.ID}/templates/creator-background.hbs`,
+      id: `${CCreator.ABRV}-creator-background`
+    },
+    race: {
+      template: `modules/${CCreator.ID}/templates/creator-race.hbs`,
+      id: `${CCreator.ABRV}-creator-race`
+    },
+    abilities: {
+      template: `modules/${CCreator.ID}/templates/creator-abilities.hbs`,
+      id: `${CCreator.ABRV}-creator-abilities`
+    },
+    equipment: {
+      template: `modules/${CCreator.ID}/templates/creator-equipment.hbs`,
+      id: `${CCreator.ABRV}-creator-equipment`
+    },
+    finalize: {
+      template: `modules/${CCreator.ID}/templates/creator-finalize.hbs`,
+      id: `${CCreator.ABRV}-creator-finalize`
+    },
+    footer: {
+      template: `modules/${CCreator.ID}/templates/creator-footer.hbs`,
+      id: `${CCreator.ABRV}-creator-footer`
+    }
   };
-  _prepareContext(options) {
+
+  async _prepareContext(options) {
+    console.log('Preparing context...');
     return {
       race: CCreator.race ? CCreator.race.uniqueFolders : [],
       class: CCreator.class ? CCreator.class.noFolderItems : [],
       background: CCreator.background ? CCreator.background.noFolderItems : [],
       raceDocuments: CCreator.race ? CCreator.race.documents.concat(CCreator.race.noFolderItems) : [],
       classDocuments: CCreator.class ? CCreator.class.documents : [],
-      backgroundDocuments: CCreator.background ? CCreator.background.documents : []
+      backgroundDocuments: CCreator.background ? CCreator.background.documents : [],
+      tabs: this.tabsData
     };
+  }
+
+  async _preparePartContext(partId, context) {
+    //context = await super._preparePartContext(partId, context);
+    context.partId = `${this.id}-${partId}`;
+    return context;
   }
 
   _onRender(context, options) {
-    const handleDropdownChange = (type) => {
-      const dropdown = this.element.querySelector(`#${type}-dropdown`);
-      const subcatDropdownContainer = this.element.querySelector(`#${type}-subcat-dropdown-container`);
-
-      if (dropdown) {
-        dropdown.addEventListener('change', (event) => {
-          const selectedVal = event.target.value;
-
-          // Clear any previous confirmation or sub-dropdown
-          subcatDropdownContainer.innerHTML = '';
-
-          // Access race data directly from CCreator
-          const selectedFolder = CCreator[type].uniqueFolders.find((folder) => `folder-${folder.folderName}` === selectedVal);
-
-          if (selectedFolder && selectedFolder.docs.length > 1) {
-            // Create a second dropdown for races inside the selected folder
-            const subcatDropdown = document.createElement('select');
-            subcatDropdown.id = `${type}-subcategory-dropdown`;
-            subcatDropdown.className = `${CCreator.ABRV}-creator-dropdown ${type}`;
-
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = game.i18n.localize(`cc.creator.${type}.selectsubcategory`);
-            subcatDropdown.appendChild(defaultOption);
-
-            const sortedDocs = selectedFolder.docs.sort((a, b) => a.name.localeCompare(b.name));
-            sortedDocs.forEach((doc) => {
-              const option = document.createElement('option');
-              option.value = doc.id;
-              option.textContent = `${doc.name} (${doc.packName})`;
-              subcatDropdown.appendChild(option);
-            });
-
-            subcatDropdownContainer.appendChild(subcatDropdown);
-
-            // Add event listener for subcategory dropdown
-            subcatDropdown.addEventListener('change', (e) => {
-              const selectedDoc = sortedDocs.find((doc) => doc.id === e.target.value);
-              const confirmText = document.createElement('div');
-              confirmText.className = `${CCreator.ABRV}-select-container`; // Added class
-              confirmText.textContent = `Selected ${type}: ${selectedDoc.name}`;
-              subcatDropdownContainer.appendChild(confirmText); // Append confirmation text
-            });
-          } else if (selectedFolder && selectedFolder.docs.length === 1) {
-            // If only one race exists in the folder, display it directly
-            const confirmText = document.createElement('div');
-            confirmText.className = `${CCreator.ABRV}-select-container`; // Added class
-            confirmText.textContent = `Selected ${type}: ${selectedFolder.docs[0].name}`;
-            subcatDropdownContainer.appendChild(confirmText);
-          } else {
-            // For class and background, directly show confirmation
-            const selectedDoc = CCreator[type].documents.find((doc) => doc.id === selectedVal);
-            if (selectedDoc) {
-              const confirmText = document.createElement('div');
-              confirmText.className = `${CCreator.ABRV}-select-container`; // Added class
-              confirmText.textContent = `Selected ${type}: ${selectedDoc.name}`;
-              subcatDropdownContainer.appendChild(confirmText);
-            }
-          }
-        });
-      }
-    };
-
-    // Call the handler for race, class, and background
-    handleDropdownChange('race');
-    handleDropdownChange('class');
-    handleDropdownChange('background');
+    CCUtils.handleDropdownChange('race', this.element);
+    CCUtils.handleDropdownChange('class', this.element);
+    CCUtils.handleDropdownChange('background', this.element);
   }
 
+  get tabsData() {
+    let tabsData = {
+      welcome: {
+        id: 'welcome',
+        group: 'creator-tabs',
+        icon: 'fa-solid fa-hammer',
+        label: 'Getting Started',
+        active: true,
+        cssClass: 'active'
+      },
+      class: {
+        id: 'class',
+        group: 'creator-tabs',
+        icon: 'fa-solid fa-dice-d20',
+        label: 'Class',
+        active: false,
+        cssClass: ''
+      },
+      background: {
+        id: 'background',
+        group: 'creator-tabs',
+        icon: 'fa-solid fa-globe',
+        label: 'Background',
+        active: false,
+        cssClass: ''
+      },
+      race: {
+        id: 'race',
+        group: 'creator-tabs',
+        icon: 'fa-solid fa-person',
+        label: 'Race',
+        active: false,
+        cssClass: ''
+      },
+      abilities: {
+        id: 'abilities',
+        group: 'creator-tabs',
+        icon: 'fa-solid fa-dice-d6',
+        label: 'Abilities',
+        active: false,
+        cssClass: ''
+      },
+      equipment: {
+        id: 'equipment',
+        group: 'creator-tabs',
+        icon: 'fa-solid fa-shield-halved',
+        label: 'Equipment',
+        active: false,
+        cssClass: ''
+      },
+      finalize: {
+        id: 'finalize',
+        group: 'creator-tabs',
+        icon: 'fa-solid fa-clipboard-list',
+        label: 'Finalize',
+        active: false,
+        cssClass: ''
+      }
+    };
+    console.log(`Tabs Data:`, tabsData);
+    return tabsData;
+  }
+  changeTab(...args) {
+    let autoPos = { ...this.position, height: 'auto' };
+    this.setPosition(autoPos);
+    super.changeTab(...args);
+    let newPos = { ...this.position, height: this.element.scrollHeight };
+    this.setPosition(newPos);
+  }
   static async formHandler(event, form, formData) {
+    console.log('Form handler triggered.');
     // Handling for whatever is done on the form.
   }
 }
