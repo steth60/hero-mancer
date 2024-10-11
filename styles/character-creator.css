@@ -1,19 +1,106 @@
 /* Top element of creator.hbs */
-.cc-form {
-  width: 60vw;
-  height: 60vh;
+.cc-creator {
+  width: 860px;
+  min-height: 25vh !important;
   max-width: 100%;
   max-height: 100%;
 }
-
-/* Referenced in creator_header.hbs */
-.cc-creator-header {
-  margin-bottom: 1rem;
+.cc-creator h2,
+.cc-creator h3 {
+  padding-top: 20px; /* Adjust the top padding as needed */
+  padding-bottom: 5px; /* Adjust the bottom padding as needed */
+}
+/* Paragraph styling for the entire creator popup. */
+.cc-creator p {
+  display: block;
+}
+.cc-creator-fieldset {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  box-sizing: border-box;
+}
+.cc-creator fieldset {
+  --color-fieldset-border: var(--color-border-light-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 4px;
+  border: 1px solid var(--color-fieldset-border);
+  margin: 0;
+  margin-top: 25px;
+}
+.cc-creator fieldset > legend {
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: var(--font-size-14);
+  color: var(--color-text-light-5);
+  padding: 0 6px;
+}
+.cc-creator fieldset > legend > label.checkbox {
+  --checkbox-size: 14px;
+  font-weight: bold;
+  height: 13px;
+}
+.cc-creator fieldset > legend > label.checkbox dnd5e-checkbox {
+  margin-bottom: 1px;
+}
+.cc-creator fieldset > .empty {
+  padding: 6px;
+  font-style: italic;
+  text-align: center;
+  color: var(--color-text-dark-5);
+}
+.cc-creator fieldset.card > legend {
+  background: var(--dnd5e-background-card);
+  position: relative;
+  border-radius: 2px;
+  padding: 2px 6px 0;
+}
+.cc-creator fieldset.card > legend::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--dnd5e-shadow-45);
+  outline: var(--dnd5e-border-gold);
+  z-index: -1;
+}
+.cc-creator fieldset:disabled .form-group label,
+.cc-creator fieldset:disabled .hint {
+  color: var(--color-text-light-6);
+}
+.creator-nav {
+  display: flex; /* Use flexbox for the navigation items */
+  justify-content: space-evenly; /* Distribute items evenly */
+  flex-wrap: nowrap; /* Prevent wrapping of navigation items */
+  width: auto; /* Allow the nav to grow based on content */
 }
 
-/* DIV around every dropdown in creator.hbs */
-.cc-dropdown-container {
-  margin-bottom: 1rem;
+.creator-nav a.item {
+  white-space: nowrap; /* Keep the text on one line */
+  padding: 0 10px; /* Add padding around items for spacing */
+  text-overflow: ellipsis; /* Show ellipsis (…) for overflow text, just in case */
+  flex-grow: 1; /* Allow items to grow */
+  flex-shrink: 0; /* Prevent items from shrinking */
+  display: flex; /* Align the icon and text together properly */
+  align-items: center; /* Vertically center content */
+}
+.cc-creator-div {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+.cc-creator input[type='text'],
+.cc-creator select {
+  width: 300px; /* Sets the width of the input */
+  padding-left: 10px; /* Adds padding on the left */
+  padding-right: 5px; /* Adds padding on the right */
 }
 /* DIV around every selection confirmation in creator.hbs */
 .cc-select-container {
@@ -21,10 +108,9 @@
 }
 /* Select for every item in the dropdown, currently appears to only work when not active */
 .cc-creator-dropdown {
-  width: 100%;
-  padding: 0.5rem;
   font-family: inherit !important;
   font-weight: bold !important;
+  position: relative;
 }
 
 /* Dropdown options styling */
@@ -38,18 +124,27 @@
   font-size: 0.85em !important;
   margin-left: 10px;
 }
-
-/* Hidden dropdown for subcategory handling */
-.cc-hidden-dropdown-container {
-  margin-top: 1rem;
+/* Main dropdown styling */
+.cc-creator-dropdown {
+  font-family: inherit;
+  font-weight: bold;
+  position: relative; /* Make it the parent for positioning the sub-dropdown */
 }
 
+/* Optional: Hide the subcategory dropdown when not in use */
+.cc-creator-dropdown-subcategory.hidden {
+  display: none;
+}
+.cc-creator-header {
+  text-align: center;
+}
 /* Referenced in creator_footer footer class. */
 .cc-creator-footer {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
+  margin-top: auto;
 }
 
 /* Referenced in creator_footer div class. */

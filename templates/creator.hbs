@@ -13,33 +13,6 @@
       {{/each}}
     </select>
     <div class='cc-dropdown-container cc-hidden-dropdown-container' id='race-subcat-dropdown-container'></div>
-  </div>
 
-  <!-- Class Dropdown -->
-  <div class='cc-dropdown-container'>
-    <select id='class-dropdown' class='cc-creator-dropdown class'>
-      <option value=''>{{localize 'cc.creator.class.select'}}</option>
-      {{#each classDocuments}}
-        <option value='{{this.id}}' data-pack='{{this.packName}}'>
-          {{this.name}}
-          ({{this.packName}})
-        </option>
-      {{/each}}
-    </select>
-    <div id='class-subcat-dropdown-container'></div>
-  </div>
-
-  <!-- Background Dropdown -->
-  <div class='cc-dropdown-container'>
-    <select id='background-dropdown' class='cc-creator-dropdown background'>
-      <option value=''>{{localize 'cc.creator.background.select'}}</option>
-      {{#each backgroundDocuments}}
-        <option value='{{this.id}}' data-pack='{{this.packName}}'>
-          {{this.name}}
-          ({{this.packName}})
-        </option>
-      {{/each}}
-    </select>
-    <div id='background-subcat-dropdown-container'></div>
   </div>
 </div>

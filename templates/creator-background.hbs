@@ -1,3 +1,22 @@
-<div class='tab {{tabs.background.cssClass}}' data-tab='background' data-group='creator-tabs' data-tooltip='{{localize "Background"}}'>
-  <p>This is the Background tab!</p>
+<div class='tab cc-creator background {{tabs.background.cssClass}}' data-tab='background' data-group='creator-tabs'>
+  <fieldset>
+    <legend>{{localize 'cc.creator.background.tooltip'}}</legend>
+    <p>
+      {{localize 'cc.creator.background.preamble'}}
+    </p>
+    <hr />
+    <div class='cc-creator-div'>
+      {{localize 'cc.creator.background.select'}}
+      <!-- Background Dropdown -->
+      <select id='background-dropdown' class='cc-creator-dropdown background'>
+        <option value=''>{{localize 'cc.creator.background.select'}}</option>
+        {{#each backgroundDocuments}}
+          <option value='{{this.id}}' data-pack='{{this.packName}}'>
+            {{this.name}}
+            ({{this.packName}})
+          </option>
+        {{/each}}
+      </select>
+    </div>
+  </fieldset>
 </div>

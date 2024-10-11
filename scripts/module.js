@@ -68,6 +68,7 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
       submitOnChange: false // submit when any input changes
     },
     actions: {},
+    classes: ['cc-creator'],
     position: {
       height: 'auto',
       width: 'auto'
@@ -77,6 +78,8 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
       resizable: false
     }
   };
+
+  
   get title() {
     return `${CCreator.TITLE} | ${game.user.name}`;
   }
