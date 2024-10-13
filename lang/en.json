@@ -1,65 +1,65 @@
 {
   "cc": {
     "creator": {
-      "actortab-button": {
-        "name": "CCreator",
-        "hint": "Launch CCreator"
+      "abilities": {
+        "preamble": "",
+        "tooltip": "Abilities"
       },
-      "header-title": "Character Creation Wizard",
+      "actions": {
+        "cancel": "Cancel",
+        "submit": "Submit"
+      },
+      "actortab-button": {
+        "hint": "Launch CCreator",
+        "name": "CCreator"
+      },
+      "background": {
+        "preamble": "",
+        "select": "Select a Background",
+        "selected": "Selected Background",
+        "tooltip": "Background"
+      },
+      "class": {
+        "preamble": "",
+        "select": "Select a Class",
+        "selected": "Selected Class",
+        "tooltip": "Class"
+      },
+      "equipment": {
+        "preamble": "",
+        "tooltip": "Equipment"
+      },
+      "finalize": {
+        "preamble": "",
+        "tooltip": "Finalize"
+      },
       "getting-started": {
-        "tooltip": "Getting Started",
+        "name": "Character Name",
+        "name-placeholder": "Name your character!",
         "preamble": {
           "a": "Welcome to the Character Creator!",
           "b": "Over the next 7 steps you will be guided through the complete experience of creating a brand new character fully within FoundryVTT! Until you hit submit after filling in every field, you can go back and forth between any of the sections without fear of losing your data!"
         },
-        "name": "Character Name",
-        "name-placeholder": "Enter a name for your character!"
+        "tooltip": "Getting Started"
       },
-      "class": {
-        "tooltip": "Class",
-        "select": "Select a Class",
-        "selected": "Selected Class",
-        "preamble": ""
-      },
-      "background": {
-        "tooltip": "Background",
-        "select": "Select a Background",
-        "selected": "Selected Background",
-        "preamble": ""
+      "header-title": "Character Creation Wizard",
+      "pack": {
+        "source": "Source Pack",
+        "unknown": "Unknown Pack!"
       },
       "race": {
-        "tooltip": "Race",
-        "select": "Select a Race",
-        "selectsubcategory": "Select Race Subtype",
-        "selected": "Selected Race",
         "none": "No races found",
-        "preamble": ""
-      },
-      "abilities": {
-        "tooltip": "Abilities",
-        "preamble": ""
-      },
-      "equipment": {
-        "tooltip": "Equipment",
-        "preamble": ""
-      },
-      "finalize": {
-        "tooltip": "Finalize",
-        "preamble": ""
-      },
-      "actions": {
-        "submit": "Submit",
-        "cancel": "Cancel"
-      },
-      "pack": {
-        "unknown": "Unknown Pack!",
-        "source": "Source Pack"
+        "preamble": "",
+        "select": "Select a Race",
+        "selected": "Selected Race",
+        "selectsubcategory": "Select Race Subtype",
+        "tooltip": "Race"
       }
     },
     "settings": {
       "enable": {
-        "name": "Enable Character Creator?",
-        "hint": "Default: Enabled."
+        "hint": "Default: Enabled.",
+        "name": "Enable Character Creator?"
       }
     }
   }

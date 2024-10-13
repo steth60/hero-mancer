@@ -1,28 +1,5 @@
-{{!-- <div class='tab cc-creator class-tab {{tabs.class.cssClass}}' data-tab='class' data-group='creator-tabs'>
+<div class='tab {{tabs.class.cssClass}}' data-tab='class' data-group='creator-tabs'>
   <fieldset>
-    <legend>{{localize 'cc.creator.class.tooltip'}}</legend>
-    <p>
-      {{localize 'cc.creator.class.preamble'}}
-    </p>
-    <hr />
-    <div class='cc-creator-div'>
-      {{localize 'cc.creator.class.select'}}
-      <!-- Class Dropdown -->
-      <select id='class-dropdown' class='cc-creator-dropdown class'>
-        <option value=''>{{localize 'cc.creator.class.select'}}</option>
-        {{#each classDocuments}}
-          <option value='{{this.id}}' data-pack='{{this.packName}}'>
-            {{this.name}}
-            ({{this.packName}})
-          </option>
-        {{/each}}
-      </select>
-    </div>
-  </fieldset>
-</div> --}}
-
-<div class='tab cc-creator class-tab {{tabs.class.cssClass}}' data-tab='class' data-group='creator-tabs'>
-  <fieldset class='cc-creator-fieldset'>
     <legend>{{localize 'cc.creator.class.tooltip'}}</legend>
     <p>{{localize 'cc.creator.class.preamble'}}</p>
     <hr />
@@ -38,6 +15,7 @@
           </option>
         {{/each}}
       </select>
+      
     </div>
   </fieldset>
 </div>

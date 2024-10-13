@@ -86,43 +86,46 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
   static PARTS = {
     header: {
       template: `modules/${CCreator.ID}/templates/creator-header.hbs`,
-      id: `${CCreator.ABRV}-creator-header`
+      id: `header`,
+      classes: ['cc-creator-header']
     },
     nav: {
       template: `modules/${CCreator.ID}/templates/creator-nav.hbs`,
-      id: `${CCreator.ABRV}-creator-nav`
+      id: `nav`,
+      classes: ['cc-creator-nav']
     },
     welcome: {
       template: `modules/${CCreator.ID}/templates/creator-getting-started.hbs`,
-      id: `${CCreator.ABRV}-creator-getting-started`
+      id: `getting-started`
     },
     class: {
       template: `modules/${CCreator.ID}/templates/creator-class.hbs`,
-      id: `${CCreator.ABRV}-creator-class`
+      id: `class`
     },
     background: {
       template: `modules/${CCreator.ID}/templates/creator-background.hbs`,
-      id: `${CCreator.ABRV}-creator-background`
+      id: `background`
     },
     race: {
       template: `modules/${CCreator.ID}/templates/creator-race.hbs`,
-      id: `${CCreator.ABRV}-creator-race`
+      id: `race`
     },
     abilities: {
       template: `modules/${CCreator.ID}/templates/creator-abilities.hbs`,
-      id: `${CCreator.ABRV}-creator-abilities`
+      id: `abilities`
     },
     equipment: {
       template: `modules/${CCreator.ID}/templates/creator-equipment.hbs`,
-      id: `${CCreator.ABRV}-creator-equipment`
+      id: `equipment`
     },
     finalize: {
       template: `modules/${CCreator.ID}/templates/creator-finalize.hbs`,
-      id: `${CCreator.ABRV}-creator-finalize`
+      id: `finalize`
     },
     footer: {
       template: `modules/${CCreator.ID}/templates/creator-footer.hbs`,
-      id: `${CCreator.ABRV}-creator-footer`
+      id: `footer`,
+      classes: ['cc-creator-footer']
     }
   };
 

@@ -111,7 +111,8 @@ export class CCUtils {
                 if (existingDescription) existingDescription.remove();
 
                 // Append the <hr> and description HTML after the dropdown
-                dropdown.insertAdjacentHTML('afterend', `<hr><div class="${CCreator.ABRV}-creator-description">${descriptionHtml}</div>`);
+                //dropdown.insertAdjacentHTML('afterend', `<hr><div class="${CCreator.ABRV}-creator-description">${descriptionHtml}</div>`);
+                dropdown.insertAdjacentHTML('afterend', `<hr />${descriptionHtml}`);
               })
               .catch((error) => {
                 console.error(`${CCreator.ID} handleDropdownChange | Error Fetching Document: `, error);
