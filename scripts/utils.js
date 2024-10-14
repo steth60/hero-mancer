@@ -9,6 +9,7 @@ export class CCUtils {
     const validPacks = new Set();
     const packs = game.packs.filter((i) => i.metadata.type === 'Item');
 
+    // Collect documents from the packs
     for (const pack of packs) {
       try {
         const documents = await pack.getDocuments({ type: type });
@@ -17,7 +18,8 @@ export class CCUtils {
           validPacks.add({
             doc,
             packName: pack.metadata.label, // Human-readable name of the compendium
-            packId: pack.metadata.id // The compendium key like 'dnd5e.classes'
+            packId: pack.metadata.id, // The compendium key like 'dnd5e.classes'
+            description: doc.system.description?.value || 'No description available' // Add the description
           });
         }
       } catch (error) {
@@ -25,11 +27,14 @@ export class CCUtils {
       }
     }
 
+    // Log the total number of documents collected
+    console.info(`${CCreator.ID} | ${type} collection complete: ${validPacks.size} documents collected.`);
+
     // Handle race-specific logic: always handle folders for races
     if (type === 'race') {
       const uniqueFolders = new Map();
 
-      [...validPacks].forEach(({ doc, packName, packId }) => {
+      [...validPacks].forEach(({ doc, packName, packId, description }) => {
         const folder = doc.folder;
         const folderName = folder ? folder.name : null;
 
@@ -40,6 +45,7 @@ export class CCUtils {
           uniqueFolders.get(folderName).docs.push({
             id: doc.id,
             name: doc.name,
+            description, // Include the description
             packName,
             packId // Store the pack ID (compendium key) as well
           });
@@ -49,6 +55,8 @@ export class CCUtils {
       // Sort uniqueFolders alphabetically by folder name
       const sortedUniqueFolders = Array.from(uniqueFolders.values()).sort((a, b) => a.folderName.localeCompare(b.folderName));
 
+      console.info(`${CCreator.ID} | race folder collection complete: ${sortedUniqueFolders.length} folders collected.`);
+
       return {
         uniqueFolders: sortedUniqueFolders, // Sorted folder array
         documents: [] // Empty for race (only folders are handled)
@@ -56,14 +64,17 @@ export class CCUtils {
     } else {
       // Handle class/background logic: no folders
       const sortedPackDocs = [...validPacks]
-        .map(({ doc, packName, packId }) => ({
+        .map(({ doc, packName, packId, description }) => ({
           id: doc.id,
           name: doc.name,
+          description, // Include the description
           folderName: null,
           packName,
           packId // Include pack ID (compendium key)
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
+
+      console.info(`${CCreator.ID} | ${type} collection complete: ${sortedPackDocs.length} documents sorted and collected.`);
 
       return {
         documents: sortedPackDocs, // Sorted class/background docs
@@ -72,6 +83,59 @@ export class CCUtils {
     }
   }
 
+  static async registerRaces() {
+    let raceData = await CCUtils.getDocuments('race');
+
+    if (raceData) {
+      const races = [];
+
+      raceData.uniqueFolders.forEach((folder) => {
+        folder.docs.forEach((doc) => {
+          races.push({
+            id: doc.id,
+            name: `${folder.folderName} ${doc.name}`,
+            folderName: folder.folderName,
+            itemName: doc.name,
+            description: doc.description,
+            packId: doc.packId
+          });
+        });
+      });
+      console.info(`${CCreator.ID} | Race registration complete: ${races.length} documents registered.`);
+      return races;
+    }
+    return [];
+  }
+
+  static async registerClasses() {
+    let classData = await CCUtils.getDocuments('class');
+
+    if (classData) {
+      return classData.documents.map((doc) => ({
+        id: doc.id,
+        name: doc.name,
+        description: doc.description,
+        packId: doc.packId
+      }));
+    }
+    console.info(`${CCreator.ID} | Class registration complete: ${documents.length} documents registered.`);
+    return [];
+  }
+
+  static async registerBackgrounds() {
+    let backgroundData = await CCUtils.getDocuments('background');
+
+    if (backgroundData) {
+      return backgroundData.documents.map((doc) => ({
+        id: doc.id,
+        name: doc.name,
+        description: doc.description,
+        packId: doc.packId
+      }));
+    }
+    console.info(`${CCreator.ID} | Background registration complete: ${documents.length} documents registered.`);
+    return [];
+  }
   static async handleDropdownChange(type, html) {
     const dropdown = html.querySelector(`#${type}-dropdown`);
 

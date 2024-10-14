@@ -13,10 +13,17 @@
         {{#each backgroundDocuments}}
           <option value='{{this.id}}' data-pack='{{this.packName}}'>
             {{this.name}}
-            ({{this.packName}})
           </option>
+        {{else}}
+          <option>{{localize 'cc.creator.background.none'}}</option>
         {{/each}}
       </select>
+    </div>
+
+    <!-- Enriched Description Section for the selected background -->
+    <div id='background-description' class='cc-creator-description'>
+      {{{enrichedDescription}}}
+      <!-- Display the enriched description here -->
     </div>
   </fieldset>
 </div>

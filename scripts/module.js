@@ -32,7 +32,7 @@ Hooks.once('changeSidebarTab', () => {
         type='button'
         class='${CCreator.ABRV}-actortab-button'
         title='${game.i18n.localize(`${CCreator.ABRV}.creator.actortab-button.hint`)}'>
-          <i class='fas fa-hammer' style='color: #ff144f'></i> 
+          <i class='fa-solid fa-egg' style='color: #ff144f'></i> 
         ${game.i18n.localize(`${CCreator.ABRV}.creator.actortab-button.name`)}
       </button>`
     );
@@ -42,7 +42,7 @@ Hooks.once('changeSidebarTab', () => {
   });
 });
 
-Hooks.once('ready', async function () {
+/* Hooks.once('ready', async function () {
   try {
     // Fetch races, classes, and backgrounds and store in CCreator
     CCreator.race = await CCUtils.getDocuments('race');
@@ -55,7 +55,7 @@ Hooks.once('ready', async function () {
   } catch (error) {
     console.error(`${CCreator.ID} | Error fetching documents:`, error);
   }
-});
+}); */
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -79,7 +79,6 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   };
 
-  
   get title() {
     return `${CCreator.TITLE} | ${game.user.name}`;
   }
@@ -98,6 +97,10 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
       template: `modules/${CCreator.ID}/templates/creator-getting-started.hbs`,
       id: `getting-started`
     },
+    race: {
+      template: `modules/${CCreator.ID}/templates/creator-race.hbs`,
+      id: `race`
+    },
     class: {
       template: `modules/${CCreator.ID}/templates/creator-class.hbs`,
       id: `class`
@@ -106,10 +109,7 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
       template: `modules/${CCreator.ID}/templates/creator-background.hbs`,
       id: `background`
     },
-    race: {
-      template: `modules/${CCreator.ID}/templates/creator-race.hbs`,
-      id: `race`
-    },
+
     abilities: {
       template: `modules/${CCreator.ID}/templates/creator-abilities.hbs`,
       id: `abilities`
@@ -130,16 +130,37 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
   };
 
   async _prepareContext(options) {
-    console.log('Preparing context...');
-    return {
-      race: CCreator.race ? CCreator.race.uniqueFolders : [],
-      class: CCreator.class ? CCreator.class.noFolderItems : [],
-      background: CCreator.background ? CCreator.background.noFolderItems : [],
-      raceDocuments: CCreator.race ? CCreator.race.documents.concat(CCreator.race.noFolderItems) : [],
-      classDocuments: CCreator.class ? CCreator.class.documents : [],
-      backgroundDocuments: CCreator.background ? CCreator.background.documents : [],
+    console.info(`${CCreator.ID} | Preparing context...`);
+
+    // Use the new CCUtils methods to register races, classes, and backgrounds
+    const raceDocuments = await CCUtils.registerRaces();
+    const classDocuments = await CCUtils.registerClasses();
+    const backgroundDocuments = await CCUtils.registerBackgrounds();
+
+    const context = {
+      raceDocuments: raceDocuments,
+      classDocuments: classDocuments,
+      backgroundDocuments: backgroundDocuments,
       tabs: this.tabsData
     };
+    //console.log('Context Before Enrichment:', context);
+    const allDocuments = [...context.raceDocuments, ...context.classDocuments, ...context.backgroundDocuments];
+    // Enrich all descriptions
+    for (const doc of allDocuments) {
+      if (doc && doc.description) {
+        try {
+          const enrichedDescription = await TextEditor.enrichHTML(doc.description);
+          doc.enrichedDescription = enrichedDescription; // Add the enriched description
+          console.info(`${CCreator.ID} | Enriched description for ${doc.name}`);
+        } catch (error) {
+          console.error(`Failed to enrich description for document ${doc.name}:`, error);
+        }
+      } else {
+        console.warn(`No description found for document ${doc ? doc.name : 'undefined'}`);
+      }
+    }
+    //console.log('Context After Enrichment:', context);
+    return context;
   }
 
   async _preparePartContext(partId, context) {
@@ -149,9 +170,39 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _onRender(context, options) {
-    CCUtils.handleDropdownChange('race', this.element);
-    CCUtils.handleDropdownChange('class', this.element);
-    CCUtils.handleDropdownChange('background', this.element);
+    //console.log('Context in _onRender:', context); // Log the context to ensure it contains classDocuments
+
+    this._addDescriptionUpdateListeners(context, 'class');
+    this._addDescriptionUpdateListeners(context, 'race');
+    this._addDescriptionUpdateListeners(context, 'background');
+  }
+
+  _addDescriptionUpdateListeners(context, type) {
+    const dropdown = this.element.querySelector(`#${type}-dropdown`);
+
+    if (dropdown) {
+      dropdown.addEventListener('change', async (event) => {
+        const selectedId = event.target.value;
+
+        if (!selectedId) {
+          const descriptionElement = this.element.querySelector(`#${type}-description`);
+          if (descriptionElement) descriptionElement.innerHTML = '';
+          return;
+        }
+
+        // Find the selected document in the context
+        const documentsKey = `${type}Documents`;
+        const selectedDoc = context[documentsKey].find((doc) => doc.id === selectedId);
+
+        if (selectedDoc && selectedDoc.enrichedDescription) {
+          const descriptionElement = this.element.querySelector(`#${type}-description`);
+          descriptionElement.innerHTML = selectedDoc.enrichedDescription;
+        } else {
+          const descriptionElement = this.element.querySelector(`#${type}-description`);
+          if (descriptionElement) descriptionElement.innerHTML = 'No description available';
+        }
+      });
+    }
   }
 
   get tabsData() {
@@ -159,15 +210,23 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
       welcome: {
         id: 'welcome',
         group: 'creator-tabs',
-        icon: 'fa-solid fa-hammer',
+        icon: 'fa-solid fa-play-circle',
         label: 'Getting Started',
         active: true,
         cssClass: 'active'
       },
+      race: {
+        id: 'race',
+        group: 'creator-tabs',
+        icon: 'fa-solid fa-feather-alt',
+        label: 'Race',
+        active: false,
+        cssClass: ''
+      },
       class: {
         id: 'class',
         group: 'creator-tabs',
-        icon: 'fa-solid fa-dice-d20',
+        icon: 'fa-solid fa-chess-rook',
         label: 'Class',
         active: false,
         cssClass: ''
@@ -175,23 +234,15 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
       background: {
         id: 'background',
         group: 'creator-tabs',
-        icon: 'fa-solid fa-globe',
+        icon: 'fa-solid fa-scroll',
         label: 'Background',
-        active: false,
-        cssClass: ''
-      },
-      race: {
-        id: 'race',
-        group: 'creator-tabs',
-        icon: 'fa-solid fa-person',
-        label: 'Race',
         active: false,
         cssClass: ''
       },
       abilities: {
         id: 'abilities',
         group: 'creator-tabs',
-        icon: 'fa-solid fa-dice-d6',
+        icon: 'fa-solid fa-fist-raised',
         label: 'Abilities',
         active: false,
         cssClass: ''
@@ -207,7 +258,7 @@ class CharacterCreator extends HandlebarsApplicationMixin(ApplicationV2) {
       finalize: {
         id: 'finalize',
         group: 'creator-tabs',
-        icon: 'fa-solid fa-clipboard-list',
+        icon: 'fa-solid fa-check-circle',
         label: 'Finalize',
         active: false,
         cssClass: ''

@@ -11,11 +11,17 @@
         {{#each classDocuments}}
           <option value='{{this.id}}' data-pack='{{this.packId}}'>
             {{this.name}}
-            ({{this.packName}})
           </option>
+        {{else}}
+          <option>{{localize 'cc.creator.class.none'}}</option>
         {{/each}}
       </select>
-      
+    </div>
+
+    <!-- Enriched Description Section for the selected class -->
+    <div id='class-description' class='cc-creator-description'>
+      {{{enrichedDescription}}}
+      <!-- Display the enriched description here -->
     </div>
   </fieldset>
 </div>

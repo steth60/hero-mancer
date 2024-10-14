@@ -1,7 +1,7 @@
 .cc-creator {
   width: 1000px;
-  height: fit-content;
-  min-height: fit-content;
+  height: fit-content !important;
+  min-height: 0;
   max-width: 860px;
   max-height: 100%;
 }
@@ -94,6 +94,14 @@
 /* DIV around every selection confirmation in creator.hbs */
 .cc-select-container {
   margin-top: 1rem;
+}
+.cc-creator table {
+  margin-left: 0;
+}
+.cc-creator-div, .cc-creator-description {
+  overflow-y: auto;
+  height: auto;
+  max-height: 50vh;
 }
 /* Select for every item in the dropdown, currently appears to only work when not active */
 .cc-creator-dropdown {

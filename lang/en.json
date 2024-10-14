@@ -20,7 +20,7 @@
         "tooltip": "Background"
       },
       "class": {
-        "preamble": "",
+        "preamble": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus volutpat felis et orci condimentum, ac vehicula libero posuere. Nullam feugiat, lorem at venenatis aliquam, enim purus scelerisque elit, at feugiat libero lacus ac risus. Curabitur sit amet mauris ut elit aliquam fermentum et a urna. Proin tristique libero ut nisl tincidunt, eget consequat massa tincidunt.",
         "select": "Select a Class",
         "selected": "Selected Class",
         "tooltip": "Class"
