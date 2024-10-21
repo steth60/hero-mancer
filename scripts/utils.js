@@ -1,185 +1,280 @@
-import { CCreator } from './module.js';
+import { HM } from './module.js';
 
-export class CCUtils {
+/* Define HMUtils class for various utlities. */
+export class HMUtils {
   static async getDocuments(type) {
+    // Check for invalid argument
     if (typeof type !== 'string' || type.trim() === '') {
       throw new Error('Invalid argument: expected a non-empty string.');
     }
 
-    const validPacks = new Set();
-    const packs = game.packs.filter((i) => i.metadata.type === 'Item');
+    // Capitalize the first letter of the type
+    let typeNice = type.charAt(0).toUpperCase() + type.slice(1);
+
+    // Initialize a set to hold valid document packs
+    let validPacks = new Set();
+
+    // Filter for packs of type 'Item'
+    let packs = game.packs.filter((i) => i.metadata.type === 'Item');
+
+    // Log the start of document fetching
+    HM.log(`Fetching documents for type: ${typeNice}`);
 
     // Collect documents from the packs
     for (const pack of packs) {
       try {
-        const documents = await pack.getDocuments({ type: type });
+        let documents = await pack.getDocuments({ type: type });
 
+        // Log the pack and retrieved documents
+        HM.log(`Retrieved documents from pack: ${pack.metadata.label}`, documents);
+
+        // Iterate through the documents in the pack
         for (const doc of documents) {
-          validPacks.add({
-            doc,
-            packName: pack.metadata.label, // Human-readable name of the compendium
-            packId: pack.metadata.id, // The compendium key like 'dnd5e.classes'
-            description: doc.system.description?.value || 'No description available' // Add the description
-          });
+          if (!doc) {
+            HM.log(`Document is undefined in pack: ${pack.metadata.label}`, 'error');
+          } else {
+            // Process the pack name based on conditions
+            let packName = pack.metadata.label;
+            if (packName.includes('SRD')) {
+              packName = 'SRD'; // Only keep 'SRD'
+            } else if (packName.includes('DDB')) {
+              packName = 'DDB'; // Only keep 'DDB'
+            }
+
+            // Add the document to the validPacks set
+            validPacks.add({
+              doc,
+              packName, // Use the modified packName
+              packId: pack.metadata.id, // Compendium key for lookup
+              description: doc.system.description?.value || `${game.i18n.localize(`${HM.ABRV}.app.no-description`)}`,
+              folderName: doc.folder?.name || null // Extract folder name, set to null if not in a folder
+            });
+          }
         }
       } catch (error) {
-        console.error(`Failed to retrieve documents from pack ${pack.metadata.label}:`, error);
+        HM.log(`Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`, 'error');
       }
     }
 
-    // Log the total number of documents collected
-    console.info(`${CCreator.ID} | ${type} collection complete: ${validPacks.size} documents collected.`);
+    // Log the completion of document collection
+    HM.log(`${typeNice} collection complete: ${validPacks.size} documents collected.`);
 
-    // Handle race-specific logic: always handle folders for races
-    if (type === 'race') {
-      const uniqueFolders = new Map();
+    // Sort the documents by name, and if names match, sort by packName to prioritize 'DDB' over 'SRD'
+    let sortedPackDocs = [...validPacks]
+      .map(({ doc, packName, packId, description, folderName }) => ({
+        id: doc.id,
+        name: doc.name,
+        description,
+        folderName, // Includes the folder name if available
+        packName, // Includes the shorthand 'SRD' or 'DDB' if applicable
+        packId
+      }))
+      .sort((a, b) => {
+        let nameCompare = a.name.localeCompare(b.name);
+        return nameCompare === 0 ? a.packName.localeCompare(b.packName) : nameCompare;
+      });
 
-      [...validPacks].forEach(({ doc, packName, packId, description }) => {
-        const folder = doc.folder;
-        const folderName = folder ? folder.name : null;
+    // Log the sorted document structure for verification
+    HM.log('Sorted Pack Docs:', sortedPackDocs);
+
+    return {
+      documents: sortedPackDocs,
+      uniqueFolders: [] // No folder logic here; that can be handled separately for specific cases like races
+    };
+  }
+
+  /* Register races to ensure proper enrichment and generate the dropdown HTML. */
+  static async registerRaces() {
+    let raceData = await HMUtils.getDocuments('race');
+
+    if (raceData) {
+      let races = [];
+      let uniqueFolders = new Map(); // Handle race-specific folder logic
+
+      /* Process each document within the raceData.documents array */
+      raceData.documents.forEach(({ id, name, packName, packId, description, folderName }) => {
+        // Log the structure of the document for debugging
+        HM.log(`Processing document: ${name}`, { id, name, packName, packId, description, folderName });
 
         if (folderName) {
+          // If the folder doesn't exist in the map, create a new entry
           if (!uniqueFolders.has(folderName)) {
             uniqueFolders.set(folderName, { folderName, docs: [], packName, packId });
           }
+
+          // Add the document to the corresponding folder entry
           uniqueFolders.get(folderName).docs.push({
-            id: doc.id,
-            name: doc.name,
-            description, // Include the description
+            id,
+            name,
+            description,
             packName,
-            packId // Store the pack ID (compendium key) as well
+            packId
+          });
+        } else {
+          // Standalone document, no folder
+          uniqueFolders.set(name, {
+            folderName: null,
+            docs: [
+              {
+                id,
+                name,
+                description,
+                packName,
+                packId
+              }
+            ]
           });
         }
       });
 
-      // Sort uniqueFolders alphabetically by folder name
-      const sortedUniqueFolders = Array.from(uniqueFolders.values()).sort((a, b) => a.folderName.localeCompare(b.folderName));
+      /* Sort folders alphabetically */
+      let sortedUniqueFolders = Array.from(uniqueFolders.values()).sort((a, b) => a.folderName?.localeCompare(b.folderName) || a.docs[0].name.localeCompare(b.docs[0].name));
 
-      console.info(`${CCreator.ID} | race folder collection complete: ${sortedUniqueFolders.length} folders collected.`);
+      /* Handle optgroup creation */
+      let dropdownHtml = '';
 
-      return {
-        uniqueFolders: sortedUniqueFolders, // Sorted folder array
-        documents: [] // Empty for race (only folders are handled)
-      };
-    } else {
-      // Handle class/background logic: no folders
-      const sortedPackDocs = [...validPacks]
-        .map(({ doc, packName, packId, description }) => ({
-          id: doc.id,
-          name: doc.name,
-          description, // Include the description
-          folderName: null,
-          packName,
-          packId // Include pack ID (compendium key)
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      console.info(`${CCreator.ID} | ${type} collection complete: ${sortedPackDocs.length} documents sorted and collected.`);
-
-      return {
-        documents: sortedPackDocs, // Sorted class/background docs
-        uniqueFolders: [] // Empty for class/background
-      };
-    }
-  }
-
-  static async registerRaces() {
-    let raceData = await CCUtils.getDocuments('race');
-
-    if (raceData) {
-      const races = [];
-
-      raceData.uniqueFolders.forEach((folder) => {
-        folder.docs.forEach((doc) => {
-          races.push({
-            id: doc.id,
-            name: `${folder.folderName} ${doc.name}`,
-            folderName: folder.folderName,
-            itemName: doc.name,
-            description: doc.description,
-            packId: doc.packId
+      sortedUniqueFolders.forEach((folder) => {
+        if (folder.docs.length === 1 && !folder.folderName) {
+          dropdownHtml += `<option value="${folder.docs[0].id}">${folder.docs[0].name}</option>`;
+        } else if (folder.docs.length === 1) {
+          dropdownHtml += `<option value="${folder.docs[0].id}">${folder.docs[0].name}</option>`;
+        } else {
+          dropdownHtml += `<optgroup label="${folder.folderName}">`;
+          folder.docs.forEach((doc) => {
+            dropdownHtml += `<option value="${doc.id}">${doc.name}</option>`;
           });
-        });
+          dropdownHtml += `</optgroup>`;
+        }
       });
-      console.info(`${CCreator.ID} | Race registration complete: ${races.length} documents registered.`);
-      return races;
+
+      HM.log(`Race registration complete: ${sortedUniqueFolders.length} documents registered.`);
+
+      // Return both the race documents and the generated dropdown HTML
+      return {
+        races: sortedUniqueFolders, // Return the sorted folders and races
+        dropdownHtml
+      };
     }
-    return [];
+
+    // In case there are no races
+    HM.log('No races available for registration.');
+    return {
+      races: [],
+      dropdownHtml: '<option value="">No races available</option>'
+    };
   }
 
+  /* Register classes to ensure proper enrichment. */
   static async registerClasses() {
-    let classData = await CCUtils.getDocuments('class');
+    let classData = await HMUtils.getDocuments('class');
 
     if (classData) {
-      return classData.documents.map((doc) => ({
-        id: doc.id,
-        name: doc.name,
-        description: doc.description,
-        packId: doc.packId
-      }));
+      let classes = [];
+      let nameCount = new Map(); // Track occurrences of each class name
+
+      // First, count how many times each class name appears
+      classData.documents.forEach(({ name }) => {
+        nameCount.set(name, (nameCount.get(name) || 0) + 1);
+      });
+
+      // Process the documents, appending the compendium name if there are duplicates
+      classData.documents.forEach(({ id, name, packName, description, packId }) => {
+        let displayName = name;
+
+        // If there are multiple entries with the same name, append the packName
+        if (nameCount.get(name) > 1) {
+          displayName = `${name} (${packName})`;
+        }
+
+        // Push the class data to the array
+        classes.push({
+          id,
+          name: displayName, // Use the modified name if there are duplicates
+          description,
+          packName,
+          packId
+        });
+      });
+
+      HM.log(`Class registration complete: ${classes.length} documents registered.`);
+
+      // Return the modified class data
+      return classes;
     }
-    console.info(`${CCreator.ID} | Class registration complete: ${documents.length} documents registered.`);
+
+    // If no class data is available, return an empty array
+    HM.log('No class documents available for registration.');
     return [];
   }
 
+  /* Register backgrounds to ensure proper enrichment. */
   static async registerBackgrounds() {
-    let backgroundData = await CCUtils.getDocuments('background');
+    let backgroundData = await HMUtils.getDocuments('background');
 
     if (backgroundData) {
-      return backgroundData.documents.map((doc) => ({
+      const backgrounds = backgroundData.documents.map((doc) => ({
         id: doc.id,
         name: doc.name,
         description: doc.description,
         packId: doc.packId
       }));
+
+      // Log the number of documents registered
+      HM.log(`Background registration complete: ${backgrounds.length} documents registered.`);
+
+      // Return the mapped background documents
+      return backgrounds;
     }
-    console.info(`${CCreator.ID} | Background registration complete: ${documents.length} documents registered.`);
+
+    // Log if no background data is found
+    HM.log('No background documents available for registration.');
     return [];
   }
+
+  /* Loads the correct data on Dropdown Change. */
   static async handleDropdownChange(type, html) {
-    const dropdown = html.querySelector(`#${type}-dropdown`);
+    let dropdown = html.querySelector(`#${type}-dropdown`);
 
     if (dropdown) {
       dropdown.addEventListener('change', (event) => {
-        const selectedVal = event.target.value;
+        let selectedVal = event.target.value;
 
-        // Access document data from CCreator[type]
-        const selectedDoc = CCreator[type].documents.find((doc) => doc.id === selectedVal);
-        console.log(`${CCreator.ID} selectedDoc | `, selectedDoc);
+        /* Access document data from HM[type]. */
+        let selectedDoc = HM[type].documents.find((doc) => doc.id === selectedVal);
+        HM.log(`Selected Document: `, selectedDoc);
 
         if (selectedDoc) {
           const packId = selectedDoc.packId;
           const docId = selectedDoc.id;
 
-          console.log(`${CCreator.ID} packId | `, packId);
-          console.log(`${CCreator.ID} docId | `, docId);
+          HM.log(`Pack ID: ${packId}`);
+          HM.log(`Document ID: ${docId}`);
 
           const compendium = game.packs.get(packId);
-          console.log(`${CCreator.ID} compendium | `, compendium);
+          HM.log(`Compendium: `, compendium);
 
           if (compendium) {
             compendium
               .getDocument(docId)
               .then((doc) => {
-                console.log(`${CCreator.ID} doc | `, doc);
-                console.log(`${CCreator.ID} doc.system | `, doc.system);
-                console.log(`${CCreator.ID} doc.system.description | `, doc.system.description);
+                HM.log(`Document: `, doc);
+                HM.log(`Document System: `, doc.system);
+                HM.log(`Document Description: `, doc.system.description);
 
-                const descriptionHtml = doc.system.description?.value || 'No description available.';
-                console.log(`${CCreator.ID} descriptionHtml | `, descriptionHtml);
+                let descriptionHtml = doc.system.description?.value || 'No description available.';
+                HM.log(`Description HTML: `, descriptionHtml);
 
-                // Remove any existing description and <hr>
+                /* Remove any existing description and <hr> */
                 const existingHr = html.querySelector(`#${type}-dropdown + hr`);
-                const existingDescription = html.querySelector(`#${type}-dropdown + .${CCreator.ABRV}-creator-description`);
+                const existingDescription = html.querySelector(`#${type}-dropdown + .${HM.ABRV}-creator-description`);
                 if (existingHr) existingHr.remove();
                 if (existingDescription) existingDescription.remove();
 
-                // Append the <hr> and description HTML after the dropdown
-                //dropdown.insertAdjacentHTML('afterend', `<hr><div class="${CCreator.ABRV}-creator-description">${descriptionHtml}</div>`);
+                // Update the description for the dropdown
                 dropdown.insertAdjacentHTML('afterend', `<hr />${descriptionHtml}`);
               })
               .catch((error) => {
-                console.error(`${CCreator.ID} handleDropdownChange | Error Fetching Document: `, error);
+                HM.log(`Error Fetching Document for Dropdown Change: `, error, 'error');
               });
           }
         }

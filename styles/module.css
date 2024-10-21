@@ -1,0 +1,201 @@
+/* .hm-app is the parent structure of the app. */
+.hm-app {
+  width: 1000px;
+  height: fit-content !important;
+  min-height: 0;
+  max-width: 860px;
+  max-height: 100%;
+}
+.hm-app h2,
+.hm-app h3 {
+  padding-bottom: 5px;
+}
+.hm-app p {
+  display: block;
+  line-height: var(--line-height-20);
+}
+.hm-app fieldset {
+  border-radius: 6px;
+  border: 1px solid var(--color-cool-3);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  margin-top: 25px;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  width: 100%;
+}
+.hm-app fieldset > legend {
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: var(--font-size-16);
+  color: var(--color-text-light-primary);
+  padding: 0 6px;
+}
+.hm-app fieldset > .empty {
+  padding: 6px;
+  font-style: italic;
+  text-align: center;
+  color: var(--color-text-dark-5);
+}
+.hm-app fieldset.card > legend {
+  background: var(--dnd5e-background-card);
+  position: relative;
+  border-radius: 2px;
+  padding: 2px 6px 0;
+}
+.hm-app fieldset.card > legend::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--dnd5e-shadow-45);
+  outline: var(--dnd5e-border-gold);
+  z-index: -1;
+}
+.hm-app fieldset:disabled .form-group label,
+.hm-app fieldset:disabled .hint {
+  color: var(--color-text-light-6);
+}
+.hm-app table {
+  margin-left: 0;
+}
+
+/* .hm-app-header contains the content above navigation, currently just the app title Hero Mancer. */
+.hm-app-header {
+  text-align: center;
+}
+/* .hm-app-nav contains the navigation between tabs. */
+.hm-app-nav {
+  margin: 0px 50px 10px 50px !important;
+  gap: 2rem !important;
+  align-self: center;
+  align-items: center;
+  text-align: center;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+}
+.hm-app-nav a.item {
+  white-space: nowrap;
+  padding: 0 10px;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+/* Force icons in hm-app-nav to be a certain size. */
+.fa-2xs {
+  font-size: 1em !important;
+}
+.hm-app input[type='text'],
+.hm-app select {
+  width: 200px !important;
+  max-width: calc(fit-content - 100px);
+  margin-left: 10px;
+  margin-right: 5px;
+}
+
+/* .hm-app-tab-content applies to everything within the handlebars for any tab-*.hbs file. */
+.hm-app-tab-content {
+  overflow-y: auto;
+  height: auto;
+  max-height: 50vh;
+}
+.hm-app-tab-content h1,
+.hm-app-tab-content h2,
+.hm-app-tab-content h3,
+.hm-app-tab-content h4,
+.hm-app-tab-content h5,
+.hm-app-tab-content h6 {
+  font-family: var(--font-h1) !important;
+}
+/* Dropdown options styling */
+.hm-app-tab-content option {
+  white-space: nowrap;
+}
+.hm-app-tab-content option[data-pack]:after {
+  content: attr(data-pack);
+  color: red !important;
+  font-size: 0.85em !important;
+  margin-left: 10px;
+}
+.hm-app-tab-content img {
+  max-width: 200px;
+  height: auto;
+  border: none;
+  float: right;
+  margin-left: 5px;
+}
+
+/* Specific styling for enriched descriptions to look pretty! */
+.hm-app-tab-content .Basic-Text-Frame.stat-block-background {
+  background: none !important; /* Remove background color */
+}
+
+/* .hm-app-footer applies to everything in the footer. */
+.hm-app-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 16px;
+}
+.hm-app-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 30%;
+  gap: 10px;
+}
+/* submit/cancel buttons styling. */
+.hm-app-footer button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem !important;
+}
+.hm-app-footer-submit:hover {
+  background-color: #45a049 !important;
+}
+.hm-app-footer-cancel:hover {
+  background-color: #d32f2f !important;
+}
+.hm-app .ability-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between; /* Ensure items are spaced evenly and touch boundaries */
+  align-items: center; /* Center items vertically */
+  width: 100%; /* Make sure the container spans the full width */
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-bottom: 5px;
+}
+
+.hm-app .ability-block {
+  display: flex;
+  flex-direction: column; /* Stack dropdown and text field vertically */
+  align-items: center; /* Center dropdown and text field */
+  gap: 5px; /* Space between dropdown and text field */
+  width: 85px;
+}
+
+.hm-app .ability-block .ability-dropdown {
+  width: 100% !important; /* Ensure dropdown width matches 3 characters */
+  text-align: center;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.hm-app .ability-block .ability-score {
+  width: 100% !important; /* Fixed width for the text field */
+  text-align: center;
+  font-size: 0.8rem;
+}
+.hm-app .ability-block .ability-score .roll-dice-icon {
+  font-size: 2em !important;
+}

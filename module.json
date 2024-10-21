@@ -1,7 +1,7 @@
 {
-  "id": "character-creator",
-  "title": "Character Creator",
-  "version": "0.0.1",
+  "id": "hero-mancer",
+  "title": "Hero Mancer",
+  "version": "0.0.2",
   "compatibility": {
     "minimum": "12.331",
     "verified": "12.331",
@@ -20,7 +20,7 @@
       }
     ]
   },
-  "description": "A character creator for D&D 5e 3.3.1.",
+  "description": "Hero Mancer: The one stop shop for creating your heroes in D&D 5e.",
   "authors": [
     {
       "name": "Tyler",
@@ -28,7 +28,7 @@
       "flags": {}
     }
   ],
-  "url": "https://github.com/Sayshal/character-creator",
+  "url": "https://github.com/Sayshal/hero-mancer",
   "esmodules": ["scripts/module.js"],
   "languages": [
     {
@@ -37,5 +37,5 @@
       "path": "lang/en.json"
     }
   ],
-  "styles": ["styles/character-creator.css"]
+  "styles": ["styles/module.css"]
 }

@@ -1,65 +1,64 @@
 {
-  "cc": {
-    "creator": {
-      "abilities": {
-        "preamble": "",
-        "tooltip": "Abilities"
-      },
-      "actions": {
-        "cancel": "Cancel",
-        "submit": "Submit"
-      },
-      "actortab-button": {
-        "hint": "Launch CCreator",
-        "name": "CCreator"
-      },
-      "background": {
-        "preamble": "",
-        "select": "Select a Background",
-        "selected": "Selected Background",
-        "tooltip": "Background"
-      },
-      "class": {
-        "preamble": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus volutpat felis et orci condimentum, ac vehicula libero posuere. Nullam feugiat, lorem at venenatis aliquam, enim purus scelerisque elit, at feugiat libero lacus ac risus. Curabitur sit amet mauris ut elit aliquam fermentum et a urna. Proin tristique libero ut nisl tincidunt, eget consequat massa tincidunt.",
-        "select": "Select a Class",
-        "selected": "Selected Class",
-        "tooltip": "Class"
-      },
-      "equipment": {
-        "preamble": "",
-        "tooltip": "Equipment"
-      },
-      "finalize": {
-        "preamble": "",
-        "tooltip": "Finalize"
-      },
-      "getting-started": {
-        "name": "Character Name",
-        "name-placeholder": "Name your character!",
-        "preamble": {
-          "a": "Welcome to the Character Creator!",
-          "b": "Over the next 7 steps you will be guided through the complete experience of creating a brand new character fully within FoundryVTT! Until you hit submit after filling in every field, you can go back and forth between any of the sections without fear of losing your data!"
-        },
-        "tooltip": "Getting Started"
-      },
-      "header-title": "Character Creation Wizard",
-      "pack": {
-        "source": "Source Pack",
-        "unknown": "Unknown Pack!"
-      },
-      "race": {
-        "none": "No races found",
-        "preamble": "",
-        "select": "Select a Race",
-        "selected": "Selected Race",
-        "selectsubcategory": "Select Race Subtype",
-        "tooltip": "Race"
-      }
-    },
+  "hm": {
     "settings": {
       "enable": {
-        "hint": "Default: Enabled.",
-        "name": "Enable Character Creator?"
+        "name": "Enable Hero Mancer Creation Wizard?",
+        "hint": "Adds a button to use Hero Mancer on the Actors tab. (Default: Enabled)"
+      },
+      "logger": {
+        "name": "Enable logging?",
+        "hint": "Enable logging. (Default: Disabled)"
+      }
+    },
+    "actortab-button": {
+      "name": "Hero Mancer",
+      "loading": "Hero Mancer is loading! ... This may take a moment."
+    },
+    "app": {
+      "header-title": "Hero Mancer: Creation Wizard",
+      "tab-names": {
+        "start": "Start!",
+        "background": "Background",
+        "race": "Race",
+        "class": "Class",
+        "abilities": "Abilities",
+        "equipment": "Equipment",
+        "finalize": "Finalize"
+      },
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "start": {
+        "tooltip": "Start!",
+        "preamble": {
+          "a": "Welcome to the Hero Mancer Creation Wizard!",
+          "b": "Over the next 7 steps you will be guided through the complete experience of creating a brand new character fully within FoundryVTT! Until you hit submit, you can go back and forth between any of the sections without fear of losing your data! All fields require some input, so if you want to skip a section please put in a space."
+        },
+        "name": "Name",
+        "name-placeholder": "Name your character!"
+      },
+      "background": {
+        "tooltip": "Choose a Background!",
+        "preamble": "Lorem ipsum, etc. etc.",
+        "select": "Background",
+        "select-placeholder": "Pick your background!",
+        "none": "No backgrounds available."
+      },
+      "race": {
+        "tooltip": "Choose a Race!",
+        "preamble": "Lorem ipsum, etc. etc.",
+        "select": "Race",
+        "select-placeholder": "Pick your race!",
+        "none": "No races available."
+      },
+      "class": {
+        "tooltip": "Choose a Class!",
+        "preamble": "Lorem ipsum, etc. etc.",
+        "select": "Class",
+        "select-placeholder": "Pick your class!",
+        "none": "No classes available."
+      },
+      "abilities": {
+        "select-placeholder": "N/A"
       }
     }
   }

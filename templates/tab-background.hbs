@@ -1,0 +1,29 @@
+<div class='tab {{tabs.background.cssClass}}' data-tab='background' data-group='hero-mancer-tabs'>
+  <fieldset>
+    <legend>{{localize 'hm.app.background.tooltip'}}</legend>
+    <p>
+      {{localize 'hm.app.background.preamble'}}
+    </p>
+    <hr />
+    <div>
+      {{localize 'hm.app.background.select'}}
+      <!-- Background Dropdown -->
+      <select id='background-dropdown' name='background' data-dtype='String' >
+        <option value=''>{{localize 'hm.app.background.select-placeholder'}}</option>
+        {{#each backgroundDocs}}
+          <option value='{{this.id}} ({{this.packId}})' data-pack='{{this.packName}}'>
+            {{this.name}}
+          </option>
+        {{else}}
+          <option>{{localize 'hm.app.background.none'}}</option>
+        {{/each}}
+      </select>
+    </div>
+
+    <!-- Enriched Description Section for the selected background -->
+    <div id='background-description'>
+      {{{enrichedDescription}}}
+      <!-- Display the enriched description here -->
+    </div>
+  </fieldset>
+</div>

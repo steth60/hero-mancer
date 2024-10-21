@@ -1,0 +1,35 @@
+<div class='tab {{tabs.race.cssClass}}' data-tab='race' data-group='hero-mancer-tabs'>
+  <fieldset>
+    <legend>{{localize 'hm.app.race.tooltip'}}</legend>
+    <p>{{localize 'hm.app.race.preamble'}}</p>
+    <hr />
+    <div>
+      {{localize 'hm.app.race.select'}}
+      <!-- Race Dropdown -->
+      <select id='race-dropdown' name='race' data-dtype='String'>
+        <option value=''>{{localize 'hm.app.race.select-placeholder'}}</option>
+        {{#each raceDocs}}
+          {{#if this.folderName}}
+            <!-- Render an optgroup for foldered races -->
+            <optgroup label='{{this.folderName}}'>
+              {{#each this.docs}}
+                <option value='{{this.id}} ({{this.packId}})' data-description='{{this.enrichedDescription}}'>
+                  {{this.name}}
+                </option>
+              {{/each}}
+            </optgroup>
+          {{else}}
+            <!-- Render standalone races -->
+            <option value='{{this.id}}' data-description='{{this.enrichedDescription}}'>
+              {{this.name}}
+            </option>
+          {{/if}}
+        {{/each}}
+      </select>
+    </div>
+    <!-- Enriched Description Section for the selected race -->
+    <div id='race-description'>
+      {{{enrichedDescription}}}
+    </div>
+  </fieldset>
+</div>
