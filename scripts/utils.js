@@ -88,7 +88,8 @@ export class HMUtils {
     let raceData = await HMUtils.getDocuments('race');
 
     if (raceData) {
-      let races = [];
+      // eslint-disable-next-line capitalized-comments
+      // let races = [];
       let uniqueFolders = new Map(); // Handle race-specific folder logic
 
       /* Process each document within the raceData.documents array */
@@ -128,7 +129,11 @@ export class HMUtils {
       });
 
       /* Sort folders alphabetically */
-      let sortedUniqueFolders = Array.from(uniqueFolders.values()).sort((a, b) => a.folderName?.localeCompare(b.folderName) || a.docs[0].name.localeCompare(b.docs[0].name));
+      let sortedUniqueFolders = Array
+        .from(uniqueFolders
+          .values())
+        .sort((a, b) => a.folderName?.localeCompare(b.folderName)
+          || a.docs[0].name.localeCompare(b.docs[0].name));
 
       /* Handle optgroup creation */
       let dropdownHtml = '';
@@ -143,7 +148,7 @@ export class HMUtils {
           folder.docs.forEach((doc) => {
             dropdownHtml += `<option value="${doc.id}">${doc.name}</option>`;
           });
-          dropdownHtml += `</optgroup>`;
+          dropdownHtml += '</optgroup>';
         }
       });
 
@@ -165,6 +170,14 @@ export class HMUtils {
   }
 
   /* Register classes to ensure proper enrichment. */
+  /**
+   * Description placeholder
+   * @author Tyler
+   *
+   * @static
+   * @async
+   * @returns {unknown}
+   */
   static async registerClasses() {
     let classData = await HMUtils.getDocuments('class');
 
@@ -208,6 +221,14 @@ export class HMUtils {
   }
 
   /* Register backgrounds to ensure proper enrichment. */
+  /**
+   * Description placeholder
+   * @author Tyler
+   *
+   * @static
+   * @async
+   * @returns {unknown}
+   */
   static async registerBackgrounds() {
     let backgroundData = await HMUtils.getDocuments('background');
 
@@ -232,6 +253,16 @@ export class HMUtils {
   }
 
   /* Loads the correct data on Dropdown Change. */
+  /**
+   * Description placeholder
+   * @author Tyler
+   *
+   * @static
+   * @async
+   * @param {*} type
+   * @param {*} html
+   * @returns {*}
+   */
   static async handleDropdownChange(type, html) {
     let dropdown = html.querySelector(`#${type}-dropdown`);
 
@@ -241,7 +272,7 @@ export class HMUtils {
 
         /* Access document data from HM[type]. */
         let selectedDoc = HM[type].documents.find((doc) => doc.id === selectedVal);
-        HM.log(`Selected Document: `, selectedDoc);
+        HM.log('Selected Document: ', selectedDoc);
 
         if (selectedDoc) {
           const packId = selectedDoc.packId;
@@ -251,18 +282,18 @@ export class HMUtils {
           HM.log(`Document ID: ${docId}`);
 
           const compendium = game.packs.get(packId);
-          HM.log(`Compendium: `, compendium);
+          HM.log('Compendium: ', compendium);
 
           if (compendium) {
             compendium
               .getDocument(docId)
               .then((doc) => {
-                HM.log(`Document: `, doc);
-                HM.log(`Document System: `, doc.system);
-                HM.log(`Document Description: `, doc.system.description);
+                HM.log('Document: ', doc);
+                HM.log('Document System: ', doc.system);
+                HM.log('Document Description: ', doc.system.description);
 
                 let descriptionHtml = doc.system.description?.value || 'No description available.';
-                HM.log(`Description HTML: `, descriptionHtml);
+                HM.log('Description HTML: ', descriptionHtml);
 
                 /* Remove any existing description and <hr> */
                 const existingHr = html.querySelector(`#${type}-dropdown + hr`);
@@ -274,7 +305,7 @@ export class HMUtils {
                 dropdown.insertAdjacentHTML('afterend', `<hr />${descriptionHtml}`);
               })
               .catch((error) => {
-                HM.log(`Error Fetching Document for Dropdown Change: `, error, 'error');
+                HM.log('Error Fetching Document for Dropdown Change: ', error, 'error');
               });
           }
         }

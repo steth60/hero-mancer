@@ -1,5 +1,9 @@
 import { HM } from './module.js';
 
+/**
+ * Registers module settings for the game, including toggle options and custom settings.
+ * @function registerSettings
+ **/
 export function registerSettings() {
   game.settings.register(HM.ID, 'enable', {
     name: `${HM.ABRV}.settings.enable.name`,
@@ -19,7 +23,7 @@ export function registerSettings() {
     config: true,
     type: Boolean,
     default: false,  // Set to false by default
-    onChange: value => {
+    onChange: (value) => {
       console.log(`${HM.ID} | logging set to ${value}`);
     }
   });
@@ -38,8 +42,8 @@ export function registerSettings() {
     scope: 'world',
     config: false,
     type: Object,
-    default: {},
-  })
+    default: {}
+  });
 
 }
 
@@ -47,7 +51,7 @@ export class CustomCompendiums extends FormApplication {
 
 
   getData() {
-    return game.settings.get(`${HM.ID}`, 'enableCustomCompendiums')
+    return game.settings.get(`${HM.ID}`, 'enableCustomCompendiums');
   }
 
   _updateObject(event, formData) {

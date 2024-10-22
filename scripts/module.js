@@ -4,14 +4,18 @@ import { registerSettings } from './settings.js';
 /* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
 export class HM {
   static ID = 'hero-mancer'; // Used to define folders, classes, file structures, foundry api, etc.
+
   static TITLE = 'Hero Mancer'; // Module title
+
   static ABRV = 'hm'; // Abbreviation for CSS classes and localization
+
   static TMPL = `modules/${HM.ID}/templates`; // Path to templates
+
   static verboseLoggingEnabled = false; // Default setting for logging
 
   /* Initialize the module */
   static initialize() {
-    HM.log(`Initializing Module.`);
+    HM.log('Initializing Module.');
     registerSettings(); // Register the settings for the module
     this.heroMancer = new HeroMancer();
     // Once the settings are registered, we check if verbose logging is enabled
@@ -56,8 +60,11 @@ Hooks.once('ready', () => {
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api; // Define some variables we'll use often, pulling from the foundry API.
 class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static cachedRaceDocs = null; // Used to cache all valid race documents we'll find for mancing.
+
   static cachedClassDocs = null; // Used to cache all valid class documents we'll find for mancing.
+
   static cachedBackgroundDocs = null; // Used to cache all valid background documents we'll find for mancing.
+
   static enrichedCache = false; // Boolean to check if we need to build the cache for the above variables.
 
   static DEFAULT_OPTIONS = {
@@ -102,53 +109,59 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     start: {
       template: `${HM.TMPL}/tab-start.hbs`,
-      id: `start`,
+      id: 'start',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     background: {
       template: `${HM.TMPL}/tab-background.hbs`,
-      id: `background`,
+      id: 'background',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     race: {
       template: `${HM.TMPL}/tab-race.hbs`,
-      id: `race`,
+      id: 'race',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     class: {
       template: `${HM.TMPL}/tab-class.hbs`,
-      id: `class`,
+      id: 'class',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     abilities: {
       template: `${HM.TMPL}/tab-abilities.hbs`,
-      id: `abilities`,
+      id: 'abilities',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     equipment: {
       template: `${HM.TMPL}/tab-equipment.hbs`,
-      id: `equipment`,
+      id: 'equipment',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     finalize: {
       template: `${HM.TMPL}/tab-finalize.hbs`,
-      id: `finalize`,
+      id: 'finalize',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     footer: {
       template: `${HM.TMPL}/app-footer.hbs`,
-      id: `footer`,
+      id: 'footer',
       classes: [`${HM.ABRV}-app-footer`]
     }
   };
 
-  /* AppV2 Prepare Context: This function is executed when the application is opened. It prepares the data sent to the Handlebars template to display the forms, HTML, CSS, etc. */
+  /* AppV2 Prepare Context: This function is executed when the application is opened. */
+  /* It prepares the data sent to the Handlebars template to display the forms, HTML, CSS, etc. */
   async _prepareContext(options) {
-    HM.log(`Preparing context.`);
+    HM.log('Preparing context.');
 
     // Check if cached data is available to avoid re-fetching
-    if (HeroMancer.cachedRaceDocs && HeroMancer.cachedClassDocs && HeroMancer.cachedBackgroundDocs && HeroMancer.enrichedCache) {
-      HM.log(`Documents cached and descriptions enriched!`);
+    if (
+      HeroMancer.cachedRaceDocs
+      && HeroMancer.cachedClassDocs
+      && HeroMancer.cachedBackgroundDocs
+      && HeroMancer.enrichedCache
+    ) {
+      HM.log('Documents cached and descriptions enriched!');
       return {
         raceDocs: HeroMancer.cachedRaceDocs,
         classDocs: HeroMancer.cachedClassDocs,
@@ -174,7 +187,7 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       abbreviation: value.abbreviation.toUpperCase()
     }));
 
-    HM.log(`Abilities extracted:`, abilities);
+    HM.log('Abilities extracted:', abilities);
 
     // Prepare the context for the template
     const context = {
@@ -217,7 +230,7 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HeroMancer.cachedAbilities = abilities;
     HeroMancer.enrichedCache = true;
 
-    HM.log(`Documents registered and enriched, caching results.`);
+    HM.log('Documents registered and enriched, caching results.');
     return context;
   }
 
@@ -231,7 +244,7 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* Dynamic rendering of the application, triggers events and updates. */
   _onRender(context, options) {
-    HM.log(`Rendering application with context and options.`);
+    HM.log('Rendering application with context and options.');
 
     // Add description listeners for class, race, and background dropdowns
     this._addDescriptionUpdateListeners(context, 'class');
@@ -275,21 +288,21 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         if (type === 'race') {
           // Flatten race docs to access documents inside folders
           const raceDocs = context[documentsKey].flatMap((folder) => folder.docs);
-          HM.log(`Flattened Race Docs:`, raceDocs);
+          HM.log('Flattened Race Docs:', raceDocs);
 
           // Find the selected document in the flattened raceDocs array
           selectedDoc = raceDocs.find((doc) => doc.id === selectedId);
-          HM.log(`Selected Race Document:`, selectedDoc);
+          HM.log('Selected Race Document:', selectedDoc);
         } else {
           // Find the selected document for class or background
           selectedDoc = context[documentsKey].find((doc) => doc.id === selectedId);
-          HM.log(`Selected Document:`, selectedDoc);
+          HM.log('Selected Document:', selectedDoc);
         }
 
         // Ensure the selectedDoc exists and has an enriched description
         const descriptionElement = this.element.querySelector(`#${type}-description`);
         if (selectedDoc && selectedDoc.enrichedDescription) {
-          HM.log(`Displaying enriched description:`, selectedDoc.enrichedDescription);
+          HM.log('Displaying enriched description:', selectedDoc.enrichedDescription);
           descriptionElement.innerHTML = selectedDoc.enrichedDescription;
         } else {
           console.warn(`${HM.ID} | No enriched description found, using default.`);
@@ -318,13 +331,13 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         // Handle removal of the previously selected ability
         if (previousValue && selectedAbilities.has(previousValue)) {
           selectedAbilities.delete(previousValue);
-          HM.log(`Removed previousValue from selectedAbilities:`, previousValue);
+          HM.log('Removed previousValue from selectedAbilities:', previousValue);
         }
 
         // Add the new selected ability to the set (unless it's "N/A" or empty)
         if (selectedValue) {
           selectedAbilities.add(selectedValue);
-          HM.log(`Added selectedValue to selectedAbilities:`, selectedValue);
+          HM.log('Added selectedValue to selectedAbilities:', selectedValue);
         }
 
         // Update the dropdown's previous value
@@ -339,10 +352,10 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           dropdown.querySelectorAll('option').forEach((option) => {
             if (selectedAbilities.has(option.value) && option.value !== currentValue) {
               option.disabled = true; // Disable options that are already selected in other dropdowns
-              HM.log(`Disabled option:`, option.value);
+              HM.log('Disabled option:', option.value);
             } else {
               option.disabled = false; // Re-enable options that haven't been selected
-              HM.log(`Enabled option:`, option.value);
+              HM.log('Enabled option:', option.value);
             }
           });
         });
@@ -415,7 +428,7 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* Logic for changing tabs. */
   changeTab(...args) {
-    HM.log(`Changing tabs with args:`, args);
+    HM.log('Changing tabs with args:', args);
 
     // Set position to auto to adapt to the new tab's height
     let autoPos = { ...this.position, height: 'auto' };
@@ -426,26 +439,26 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     let newPos = { ...this.position, height: this.element.scrollHeight };
     this.setPosition(newPos);
 
-    HM.log(`Tab changed. New position set:`, newPos);
+    HM.log('Tab changed. New position set:', newPos);
   }
 
   /* Logic for rolling stats and updating input fields. */
   static async rollStat(event, form) {
-    HM.log(`Rolling stats for 4d6kh3.`);
+    HM.log('Rolling stats for 4d6kh3.');
 
     try {
       // Roll formula: 4d6kh3 (roll 4d6 and keep highest 3)
       const roll = new Roll('4d6kh3');
       await roll.evaluate({ async: true });
 
-      HM.log(`Roll result:`, roll.total);
+      HM.log('Roll result:', roll.total);
 
       // Get the clicked dice icon from the form
       const diceIcon = form;
 
       // Get the data-index from the clicked dice icon
       const index = diceIcon.getAttribute('data-index');
-      HM.log(`Dice icon clicked for index:`, index);
+      HM.log('Dice icon clicked for index:', index);
 
       // Use the index to find the correct ability block by ID
       const abilityBlock = document.getElementById(`ability-block-${index}`);
@@ -466,23 +479,23 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         HM.log(`No ability-block found for index ${index}.`, 'error');
       }
     } catch (error) {
-      HM.log(`Error while rolling stat:`, error, 'error');
+      HM.log('Error while rolling stat:', error, 'error');
     }
   }
 
   /* Function for handling form data collection and logging the results. */
   static async formHandler(event, form, formData) {
-    HM.log(`Processing form data...`);
+    HM.log('Processing form data...');
 
     // Log the full formData object
-    HM.log(`FORMDATA:`, [formData.object]);
+    HM.log('FORMDATA:', [formData.object]);
 
     // Log individual form values
-    HM.log(`NAME:`, formData.object.name);
-    HM.log(`BACKGROUND:`, formData.object.background);
-    HM.log(`RACE:`, formData.object.race);
-    HM.log(`CLASS:`, formData.object.class);
-    HM.log(`EQUIPMENT:`, formData.object.equipment);
+    HM.log('NAME:', formData.object.name);
+    HM.log('BACKGROUND:', formData.object.background);
+    HM.log('RACE:', formData.object.race);
+    HM.log('CLASS:', formData.object.class);
+    HM.log('EQUIPMENT:', formData.object.equipment);
 
     // Initialize an object to store abilities
     let abilities = {};
@@ -502,7 +515,7 @@ class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     // Log the simplified abilities object with scores
-    HM.log(`EXTRACTED ABILITIES:`, abilities);
+    HM.log('EXTRACTED ABILITIES:', abilities);
 
     // Further processing or validation of abilities (if necessary)
     for (const abilityKey in abilities) {
