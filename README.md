@@ -61,35 +61,42 @@ The beginning of your hero’s journey! This tab gives an overview of the steps 
 ![Starting Tab](tour-assets/start.png)  
 _The starting tab showing an overview of the character creation steps._
 
-### 2. Race Selection Dropdown
-
-Organized dropdowns make it easy to browse races based on custom or default compendiums.
-
-![Race Dropdown](tour-assets/race.png)  
-_The race selection dropdown showing folder and race options._
-
-### 3. Class Selection Dropdown
-
-Quickly select your class from organized compendiums. Hero Mancer handles the heavy lifting for you!
-
-![Class Dropdown](tour-assets/class.png)  
-_The class selection dropdown with classes grouped by pack._
-
-### 4. Abilities Tab and Stat Rolling
-
-No need to roll dice manually—Hero Mancer’s built-in stat roller handles it for you, keeping things fast and efficient.
-
-![Abilities Tab](tour-assets/abilities.png)  
-_The abilities tab with stat fields and roll icons._
-
-### 5. Background Selection
+### 2. Background Selection
 
 Choose your character’s background from a dropdown, with enriched descriptions that help immerse you in your role.
 
 ![Background Selection](tour-assets/background.png)  
 _The background selection dropdown with enriched descriptions._
 
-### 6. Finalization Tab
+### 3. Race Selection Dropdown
+
+Organized dropdowns make it easy to browse races based on custom or default compendiums.
+
+![Race Dropdown](tour-assets/race.png)  
+_The race selection dropdown showing folder and race options._
+
+### 4. Class Selection Dropdown
+
+Quickly select your class from organized compendiums. Hero Mancer handles the heavy lifting for you!
+
+![Class Dropdown](tour-assets/class.png)  
+_The class selection dropdown with classes grouped by pack._
+
+### 5. Abilities Tab and Stat Rolling
+
+No need to roll dice manually—Hero Mancer’s built-in stat roller handles it for you, keeping things fast and efficient.
+
+![Abilities Tab](tour-assets/abilities.png)  
+_The abilities tab with stat fields and roll icons._
+
+### 6. Equipment Tab
+
+Outfit your character with all the necessary gear using the Equipment tab. Choose items from detailed dropdowns.
+
+![Equipment Tab](tour-assets/equipment.png)  
+_The equipment tab for selecting and managing your character’s gear._
+
+### 7. Finalization Tab
 
 Review your selections and lock in your hero, ready for the adventure that lies ahead.
 
