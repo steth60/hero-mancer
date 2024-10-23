@@ -44,7 +44,7 @@ rolling to enhance the experience.
 Explore Hero Mancer’s features through the following screenshots, highlighting the streamlined character creation
 process and its key tools.
 
-### 1. Starting Tab
+#### 1. Starting Tab
 
 The initial screen of Hero Mancer, where players begin their character creation journey. This tab gives an overview of
 the available steps and guides users through the process.
@@ -54,7 +54,7 @@ creation steps._
 
 ---
 
-### 2. Race Selection Dropdown
+#### 2. Race Selection Dropdown
 
 Easily browse through races, organized by folders and compendiums. This dropdown automatically populates based on the
 selected race packs and folders.
@@ -64,7 +64,7 @@ race options._
 
 ---
 
-### 3. Class Selection Dropdown
+#### 3. Class Selection Dropdown
 
 Select your character’s class from a dynamically populated dropdown. Like races, classes are sorted by packs and folders
 for easy navigation.
@@ -74,7 +74,7 @@ grouped by pack._
 
 ---
 
-### 4. Abilities Tab and Stat Rolling
+#### 4. Abilities Tab and Stat Rolling
 
 Assign your character’s ability scores and roll stats directly within the interface. Clicking the dice icon
 automatically rolls `4d6kh3` and inputs the result into the corresponding field.
@@ -84,7 +84,7 @@ icons._
 
 ---
 
-### 5. Background Selection
+#### 5. Background Selection
 
 Select your character’s background from a dropdown, with enriched descriptions automatically loaded based on your
 choice. This feature helps you understand the role your character plays in the world.
@@ -94,7 +94,7 @@ enriched descriptions._
 
 ---
 
-### 6. Finalization Tab
+#### 6. Finalization Tab
 
 Complete the character creation process by reviewing your selections and making any final adjustments before your
 character is ready for play.
