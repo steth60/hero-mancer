@@ -1,9 +1,8 @@
 # Hero Mancer
 
-[![Foundry Version](https://img.shields.io/badge/Foundry-v11-informational)](https://foundryvtt.com)
-[![DND5E Version](https://img.shields.io/badge/DND5E-v1.5.7-orange)](https://dnd5e.com)
-[![Downloads](https://img.shields.io/github/downloads/yourusername/hero-mancer/total)](https://github.com/yourusername/hero-mancer)
-[![License](https://img.shields.io/github/license/yourusername/hero-mancer)](LICENSE)
+[![Foundry Version](https://img.shields.io/badge/Foundry-v12-informational)](https://foundryvtt.com/releases/12.331)
+[![DND5E Version](https://img.shields.io/badge/D&D5E-3.3.1-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-3.3.1)
+[![Downloads](https://img.shields.io/github/downloads/Sayshal/hero-mancer/total)](https://github.com/Sayshal/hero-mancer)
 
 ## Introduction
 
@@ -35,7 +34,7 @@ rolling to enhance the experience.
 ### Manual Installation
 
 1. Download the latest release of `Hero Mancer` from the
-   [GitHub Releases page](https://github.com/yourusername/hero-mancer/releases).
+   [GitHub Releases page](https://github.com/Sayshal/hero-mancer/releases).
 2. Extract the contents of the downloaded zip file to your Foundry `Data/modules` directory.
 3. Open **Foundry VTT** and navigate to the **Add-on Modules** tab.
 4. Enable the module in your **Game Settings** before starting character creation.
