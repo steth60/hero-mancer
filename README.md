@@ -2,7 +2,7 @@
 
 [![Foundry Version](https://img.shields.io/badge/Foundry-v12-informational)](https://foundryvtt.com/releases/12.331)  
 [![DND5E Version](https://img.shields.io/badge/D&D5E-3.3.1-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-3.3.1)  
-[![Downloads](https://img.shields.io/github/Downloads/Sayshal/hero-mancer/total)](https://github.com/Sayshal/hero-mancer)
+[![Downloads](https://img.shields.io/github/downloads/Sayshal/hero-mancer/total)](https://github.com/Sayshal/hero-mancer)
 
 ## Supporting The Module
 
@@ -59,42 +59,42 @@ Take a look at how Hero Mancer elevates your character creation process! These s
 The beginning of your hero’s journey! This tab gives an overview of the steps you'll follow to create your character.
 
 ![Starting Tab](tour-assets/start.png)  
-_Description: The starting tab showing an overview of the character creation steps._
+_The starting tab showing an overview of the character creation steps._
 
 ### 2. Race Selection Dropdown
 
 Organized dropdowns make it easy to browse races based on custom or default compendiums.
 
 ![Race Dropdown](tour-assets/race.png)  
-_Description: The race selection dropdown showing folder and race options._
+_The race selection dropdown showing folder and race options._
 
 ### 3. Class Selection Dropdown
 
 Quickly select your class from organized compendiums. Hero Mancer handles the heavy lifting for you!
 
 ![Class Dropdown](tour-assets/class.png)  
-_Description: The class selection dropdown with classes grouped by pack._
+_The class selection dropdown with classes grouped by pack._
 
 ### 4. Abilities Tab and Stat Rolling
 
 No need to roll dice manually—Hero Mancer’s built-in stat roller handles it for you, keeping things fast and efficient.
 
 ![Abilities Tab](tour-assets/abilities.png)  
-_Description: The abilities tab with stat fields and roll icons._
+_The abilities tab with stat fields and roll icons._
 
 ### 5. Background Selection
 
 Choose your character’s background from a dropdown, with enriched descriptions that help immerse you in your role.
 
 ![Background Selection](tour-assets/background.png)  
-_Description: The background selection dropdown with enriched descriptions._
+_The background selection dropdown with enriched descriptions._
 
 ### 6. Finalization Tab
 
 Review your selections and lock in your hero, ready for the adventure that lies ahead.
 
 ![Finalization Tab](tour-assets/finalize.png)  
-_Description: The finalization tab for reviewing and completing the character creation process._
+_The finalization tab for reviewing and completing the character creation process._
 
 ---
 
