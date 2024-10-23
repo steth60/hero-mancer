@@ -14,13 +14,28 @@ export class HMUtils {
     // Initialize a set to hold valid document packs
     let validPacks = new Set();
 
-    // Filter for packs of type 'Item'
-    let packs = game.packs.filter((i) => i.metadata.type === 'Item');
+    // Fetch custom compendiums from settings based on the type
+    let selectedPacks = [];
+    if (type === 'class') {
+      selectedPacks = game.settings.get('hero-mancer', 'classPacks') || [];
+    } else if (type === 'race') {
+      selectedPacks = game.settings.get('hero-mancer', 'racePacks') || [];
+    } else if (type === 'background') {
+      selectedPacks = game.settings.get('hero-mancer', 'backgroundPacks') || [];
+    }
+
+    // If custom packs are selected, filter for those. Otherwise, get all 'Item' type packs
+    let packs;
+    if (selectedPacks.length > 0) {
+      packs = game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id));
+    } else {
+      packs = game.packs.filter((i) => i.metadata.type === 'Item');
+    }
 
     // Log the start of document fetching
     HM.log(`Fetching documents for type: ${typeNice}`);
 
-    // Collect documents from the packs
+    // Collect documents from the selected or default packs
     for (const pack of packs) {
       try {
         let documents = await pack.getDocuments({ type: type });
@@ -36,9 +51,9 @@ export class HMUtils {
             // Process the pack name based on conditions
             let packName = pack.metadata.label;
             if (packName.includes('SRD')) {
-              packName = 'SRD'; // Only keep 'SRD'
+              packName = 'SRD'; // Only keep 'SRD' as a shorthand for the SRD items.
             } else if (packName.includes('DDB')) {
-              packName = 'DDB'; // Only keep 'DDB'
+              packName = 'DDB'; // Only keep 'DDB' added default support for DDB Importer
             }
 
             // Add the document to the validPacks set
@@ -85,11 +100,10 @@ export class HMUtils {
 
   /* Register races to ensure proper enrichment and generate the dropdown HTML. */
   static async registerRaces() {
+    // Fetch race documents from custom packs or all compendiums if none are set
     let raceData = await HMUtils.getDocuments('race');
 
     if (raceData) {
-      // eslint-disable-next-line capitalized-comments
-      // let races = [];
       let uniqueFolders = new Map(); // Handle race-specific folder logic
 
       /* Process each document within the raceData.documents array */
@@ -129,11 +143,9 @@ export class HMUtils {
       });
 
       /* Sort folders alphabetically */
-      let sortedUniqueFolders = Array
-        .from(uniqueFolders
-          .values())
-        .sort((a, b) => a.folderName?.localeCompare(b.folderName)
-          || a.docs[0].name.localeCompare(b.docs[0].name));
+      let sortedUniqueFolders = Array.from(uniqueFolders.values()).sort(
+        (a, b) => a.folderName?.localeCompare(b.folderName) || a.docs[0].name.localeCompare(b.docs[0].name)
+      );
 
       /* Handle optgroup creation */
       let dropdownHtml = '';
@@ -169,100 +181,124 @@ export class HMUtils {
     };
   }
 
-  /* Register classes to ensure proper enrichment. */
-  /**
-   * Description placeholder
-   * @author Tyler
-   *
-   * @static
-   * @async
-   * @returns {unknown}
-   */
   static async registerClasses() {
     let classData = await HMUtils.getDocuments('class');
 
     if (classData) {
-      let classes = [];
-      let nameCount = new Map(); // Track occurrences of each class name
+      const uniquePacks = new Map(); // Map to handle pack-specific grouping
 
-      // First, count how many times each class name appears
-      classData.documents.forEach(({ name }) => {
-        nameCount.set(name, (nameCount.get(name) || 0) + 1);
-      });
-
-      // Process the documents, appending the compendium name if there are duplicates
-      classData.documents.forEach(({ id, name, packName, description, packId }) => {
-        let displayName = name;
-
-        // If there are multiple entries with the same name, append the packName
-        if (nameCount.get(name) > 1) {
-          displayName = `${name} (${packName})`;
+      // Process the documents and group them by packName
+      classData.documents.forEach(({ id, name, description, packName, packId }) => {
+        // Group documents by packName (use the full packName for the optgroup)
+        if (!uniquePacks.has(packName)) {
+          uniquePacks.set(packName, { packName, docs: [] });
         }
 
-        // Push the class data to the array
-        classes.push({
+        // Add the document to the corresponding pack entry
+        uniquePacks.get(packName).docs.push({
           id,
-          name: displayName, // Use the modified name if there are duplicates
+          name, // Use only the document name, no packName appended
           description,
-          packName,
           packId
         });
       });
 
-      HM.log(`Class registration complete: ${classes.length} documents registered.`);
+      // Sort the unique packs alphabetically by pack name
+      let sortedUniquePacks = Array.from(uniquePacks.values()).sort((a, b) => a.packName.localeCompare(b.packName));
 
-      // Return the modified class data
-      return classes;
+      // Handle optgroup creation for the dropdown
+      let dropdownHtml = '';
+      sortedUniquePacks.forEach((pack) => {
+        if (pack.docs.length === 1) {
+          dropdownHtml += `<option value="${pack.docs[0].id}">${pack.docs[0].name}</option>`;
+        } else {
+          dropdownHtml += `<optgroup label="${pack.packName}">`; // Use full packName here
+          pack.docs.forEach((doc) => {
+            dropdownHtml += `<option value="${doc.id}">${doc.name}</option>`; // No packName appended
+          });
+          dropdownHtml += '</optgroup>';
+        }
+      });
+
+      // Log the number of documents registered
+      HM.log(`Class registration complete: ${sortedUniquePacks.length} packs registered.`);
+
+      // Return both the classes and the generated dropdown HTML
+      return {
+        classes: sortedUniquePacks,
+        dropdownHtml
+      };
     }
 
     // If no class data is available, return an empty array
     HM.log('No class documents available for registration.');
-    return [];
+    return {
+      classes: [],
+      dropdownHtml: '<option value="">No classes available</option>'
+    };
   }
 
   /* Register backgrounds to ensure proper enrichment. */
-  /**
-   * Description placeholder
-   * @author Tyler
-   *
-   * @static
-   * @async
-   * @returns {unknown}
-   */
   static async registerBackgrounds() {
     let backgroundData = await HMUtils.getDocuments('background');
 
     if (backgroundData) {
-      const backgrounds = backgroundData.documents.map((doc) => ({
-        id: doc.id,
-        name: doc.name,
-        description: doc.description,
-        packId: doc.packId
-      }));
+      const uniquePacks = new Map(); // Map to handle pack-specific grouping
+
+      // Process each document in the backgroundData.documents array
+      backgroundData.documents.forEach(({ id, name, description, packId, packName }) => {
+        // Use full packName in optgroup and don't append the packName abbreviation to item names
+
+        // If the pack doesn't exist in the map, create a new entry
+        if (!uniquePacks.has(packName)) {
+          uniquePacks.set(packName, { packName, docs: [] }); // Full packName
+        }
+
+        // Add the document to the corresponding pack entry
+        uniquePacks.get(packName).docs.push({
+          id,
+          name, // Use only the document name, no abbreviation appended
+          description,
+          packId
+        });
+      });
+
+      // Sort the unique packs alphabetically by pack name
+      let sortedUniquePacks = Array.from(uniquePacks.values()).sort((a, b) => a.packName.localeCompare(b.packName));
+
+      // Handle optgroup creation for the dropdown
+      let dropdownHtml = '';
+
+      sortedUniquePacks.forEach((pack) => {
+        if (pack.docs.length === 1) {
+          dropdownHtml += `<option value="${pack.docs[0].id}">${pack.docs[0].name}</option>`;
+        } else {
+          dropdownHtml += `<optgroup label="${pack.packName}">`; // Use full packName
+          pack.docs.forEach((doc) => {
+            dropdownHtml += `<option value="${doc.id}">${doc.name}</option>`; // No abbreviation in name
+          });
+          dropdownHtml += '</optgroup>';
+        }
+      });
 
       // Log the number of documents registered
-      HM.log(`Background registration complete: ${backgrounds.length} documents registered.`);
+      HM.log(`Background registration complete: ${sortedUniquePacks.length} packs registered.`);
 
-      // Return the mapped background documents
-      return backgrounds;
+      // Return both the background documents and the generated dropdown HTML
+      return {
+        backgrounds: sortedUniquePacks,
+        dropdownHtml
+      };
     }
 
     // Log if no background data is found
     HM.log('No background documents available for registration.');
-    return [];
+    return {
+      backgrounds: [],
+      dropdownHtml: '<option value="">No backgrounds available</option>'
+    };
   }
 
-  /* Loads the correct data on Dropdown Change. */
-  /**
-   * Description placeholder
-   * @author Tyler
-   *
-   * @static
-   * @async
-   * @param {*} type
-   * @param {*} html
-   * @returns {*}
-   */
   static async handleDropdownChange(type, html) {
     let dropdown = html.querySelector(`#${type}-dropdown`);
 
@@ -311,5 +347,26 @@ export class HMUtils {
         }
       });
     }
+  }
+
+  static registerButton() {
+    // Cache the DOM element in a variable
+    const headerActions = $(
+      'section[class*="actors-sidebar"] header[class*="directory-header"] div[class*="header-actions"]'
+    );
+
+    // Cache the localized button text and hint
+    const buttonHint = game.i18n.localize(`${HM.ABRV}.actortab-button.hint`);
+    const buttonName = game.i18n.localize(`${HM.ABRV}.actortab-button.name`);
+
+    // Define the button HTML
+    const buttonHTML = `
+    <button type='button' class='${HM.ABRV}-actortab-button' title='${buttonHint}'>
+      <i class='fa-solid fa-egg' style='color: #ff144f'></i>
+      ${buttonName}
+    </button>`;
+
+    // Insert the button before the 'create-folder' button
+    headerActions.find('button[class*="create-folder"]').before(buttonHTML);
   }
 }

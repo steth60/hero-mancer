@@ -8,12 +8,18 @@
     <div>
       {{localize 'hm.app.background.select'}}
       <!-- Background Dropdown -->
-      <select id='background-dropdown' name='background' data-dtype='String' >
+      <select id='background-dropdown' name='background' data-dtype='String'>
         <option value=''>{{localize 'hm.app.background.select-placeholder'}}</option>
         {{#each backgroundDocs}}
-          <option value='{{this.id}} ({{this.packId}})' data-pack='{{this.packName}}'>
-            {{this.name}}
-          </option>
+          <optgroup label='{{this.packName}}'>
+            <!-- Use full packName here -->
+            {{#each this.docs}}
+              <option value='{{this.id}} ({{this.packId}})'>
+                {{this.name}}
+                <!-- Do not append the packName abbreviation -->
+              </option>
+            {{/each}}
+          </optgroup>
         {{else}}
           <option>{{localize 'hm.app.background.none'}}</option>
         {{/each}}
@@ -23,7 +29,6 @@
     <!-- Enriched Description Section for the selected background -->
     <div id='background-description'>
       {{{enrichedDescription}}}
-      <!-- Display the enriched description here -->
     </div>
   </fieldset>
 </div>

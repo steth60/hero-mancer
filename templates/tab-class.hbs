@@ -6,20 +6,28 @@
     <div>
       {{localize 'hm.app.class.select'}}
       <!-- Class Dropdown -->
-      <select id='class-dropdown' name='class' data-dtype='String' >
+      <select id='class-dropdown' name='class' data-dtype='String'>
         <option value=''>{{localize 'hm.app.class.select-placeholder'}}</option>
         {{#each classDocs}}
-          <option value='{{this.id}} ({{this.packId}})'>
-            {{this.name}}
-          </option>
+          <optgroup label='{{this.packName}}'>
+            <!-- Group by full packName -->
+            {{#each this.docs}}
+              <option value='{{this.id}} ({{this.packId}})'>
+                {{this.name}}
+                <!-- Display name with packName appended only for duplicates -->
+              </option>
+            {{/each}}
+          </optgroup>
         {{else}}
           <option>{{localize 'hm.app.class.none'}}</option>
         {{/each}}
       </select>
     </div>
+
     <!-- Enriched Description Section for the selected class -->
     <div id='class-description'>
       {{{enrichedDescription}}}
+      <!-- Display the enriched description here -->
     </div>
   </fieldset>
 </div>

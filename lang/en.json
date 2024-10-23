@@ -8,14 +8,31 @@
       "logger": {
         "name": "Enable logging?",
         "hint": "Enable logging. (Default: Disabled)"
+      },
+      "customcompendiums": {
+        "title": "Select your {type} compendiums!",
+        "menu": {
+          "name": "Set Custom Compendiums",
+          "hint": "Open dialog to configure custom compendiums for everything.",
+          "label": ""
+        },
+        "description": "Lorum Ipsum Custom Compendiums description placeholder.",
+        "classes": "Set Class Compendiums:",
+        "manageclasses": "Classes",
+        "races": "Set Race Compendiums:",
+        "manageraces": "Races",
+        "backgrounds": "Set Background Compendiums:",
+        "managebackgrounds": "Backgrounds"
       }
     },
     "actortab-button": {
       "name": "Hero Mancer",
-      "loading": "Hero Mancer is loading! ... This may take a moment."
+      "loading": "Hero Mancer is loading! ... This may take a moment.",
+      "creating": "Hero Mancer is creating your character! ... This may take a moment."
     },
     "app": {
       "header-title": "Hero Mancer: Creation Wizard",
+      "header-context": "Creating {name}",
       "tab-names": {
         "start": "Start!",
         "background": "Background",
@@ -25,8 +42,10 @@
         "equipment": "Equipment",
         "finalize": "Finalize"
       },
+      "no-description": "Unable to load a valid description for this item.",
       "submit": "Submit",
       "cancel": "Cancel",
+      "done": "Done",
       "start": {
         "tooltip": "Start!",
         "preamble": {

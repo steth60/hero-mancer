@@ -199,3 +199,54 @@
 .hm-app .ability-block .ability-score .roll-dice-icon {
   font-size: 2em !important;
 }
+.hm-compendiums-popup-section {
+  display: flex;
+  justify-content: space-between; /* Align text to the left, button to the right */
+  align-items: center; /* Vertically align the button and text */
+  margin: 10px 0; /* Space above and below the section */
+}
+
+.hm-compendiums-popup-section p {
+  flex: 1; /* Allow the paragraph to take up the remaining space */
+  margin: 0; /* Remove default margins from paragraph */
+}
+
+.hm-compendiums-popup-section button {
+  width: auto; /* Let the button width adjust based on the text */
+  margin-left: 10px; /* Space between text and button */
+  white-space: nowrap; /* Prevent text wrapping inside the button */
+}
+.hm-compendiums-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 16px;
+}
+.hm-compendiums-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 50%;
+  gap: 10px;
+}
+
+.hm-compendiums-popup-dialog multi-checkbox {
+  display: block; /* Switch from grid to block layout to display elements in rows */
+}
+
+.hm-compendiums-popup-dialog multi-checkbox label.checkbox {
+  display: flex; /* Use flexbox to align the checkbox and label */
+  justify-content: space-between; /* Align the label text to the left and the checkbox to the right */
+  align-items: center; /* Vertically center the label text and the checkbox */
+  margin-bottom: 10px; /* Add spacing between each row */
+}
+
+.hm-compendiums-popup-dialog multi-checkbox label.checkbox input[type="checkbox"] {
+  order: 1; /* Move the checkbox to the end of the flex container */
+  margin-left: 10px; /* Add some space between the label text and checkbox */
+}
+
+
+
+
+

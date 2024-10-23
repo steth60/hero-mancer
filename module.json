@@ -29,7 +29,7 @@
     }
   ],
   "url": "https://github.com/Sayshal/hero-mancer",
-  "esmodules": ["scripts/module.js"],
+  "esmodules": ["scripts/HeroMancer.js", "scripts/settings.js", "scripts/module.js"],
   "languages": [
     {
       "lang": "en",
