@@ -1,7 +1,5 @@
 # TODO
 
-This file highlights areas that appear incomplete or could be improved based on the screenshots provided.
-
 ## 1. General UI Consistency
 
 - **Text Alignment**: Ensure text and dropdowns are uniformly aligned across all tabs.
