@@ -2,6 +2,7 @@ import { HM } from './module.js';
 import { HMUtils } from './utils.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api; // Define some variables we'll use often, pulling from the foundry API.
+const { AdvancementManager } = dnd5e.applications.advancement;
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static cachedRaceDocs = null; // Used to cache all valid race documents we'll find for mancing.
 
@@ -456,41 +457,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  static async triggerAdvancementHooks(actor, items) {
-    for (const item of items) {
-      // Log the item being processed
-      HM.log(`Triggering advancement for item: ${item.name} on actor: ${actor.name}`);
-
-      // Create a real instance of the AdvancementManager
-      const advancementManager = new game.dnd5e.applications.AdvancementManager({
-        actor: actor, // Target actor
-        clone: actor.clone({ items: [item.toObject()] }), // Cloning with items
-        steps: item.system.advancement || [] // Check for advancement steps in the item
-      });
-
-      // Log advancement manager details
-      HM.log(`Advancement Manager Initialized for ${item.name}:`, advancementManager);
-
-      // Call the preAdvancementManagerRender hook
-      const preAdvancementResult = Hooks.call('dnd5e.preAdvancementManagerRender', advancementManager);
-      HM.log(`Pre Advancement Manager Render Hook result for ${item.name}:`, preAdvancementResult);
-
-      // Trigger the advancement steps if they exist
-      if (advancementManager.steps.length > 0) {
-        await advancementManager.nextStep();
-      }
-
-      // Wait for advancement to complete and log it
-      const advancementCompleteResult = await Hooks.call('dnd5e.advancementManagerComplete', advancementManager);
-      HM.log(`Advancement Complete for ${item.name}:`, advancementCompleteResult);
-    }
-  }
-
-  // Form handler for creating the actor and triggering advancements
+  /* Function for handling form data collection, logging the results, and adding items to the actor. */
   static async formHandler(event, form, formData) {
     HM.log('Processing form data...');
 
-    // Extract individual values
+    // Extract itemId and packId from the formData
     const extractIds = (itemString) => {
       const regex = /^(.+?)\s\((.+)\)$/;
       const match = itemString.match(regex);
@@ -501,7 +472,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const raceData = extractIds(formData.object.race);
     const classData = extractIds(formData.object.class);
 
-    // Create actor
+    HM.log('Extracted Item Data:', { backgroundData, raceData, classData });
+
+    // Extract abilities from formData
     let abilities = {};
     for (const key in formData.object) {
       const abilityMatch = key.match(/^abilities\[(\w+)\]\.score$/);
@@ -511,6 +484,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       }
     }
 
+    HM.log('Abilities extracted:', abilities);
+
+    // Create the new actor
     let actorData = {
       name: formData.object.name,
       type: 'character',
@@ -523,9 +499,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     };
 
     let actor = await Actor.create(actorData);
+    let newActor = game.actors.getName(formData.object.name);
+    console.log(newActor);
     HM.log('Created Actor:', actor);
 
-    // Fetch items from compendiums
+    // Fetch the items from compendiums
     const backgroundItem = await game.packs.get(backgroundData.packId)?.getDocument(backgroundData.itemId);
     const raceItem = await game.packs.get(raceData.packId)?.getDocument(raceData.itemId);
     const classItem = await game.packs.get(classData.packId)?.getDocument(classData.itemId);
@@ -536,19 +514,45 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     // Add the items to the actor
-    await actor.createEmbeddedDocuments('Item', [backgroundItem.toObject(), raceItem.toObject(), classItem.toObject()]);
-    HM.log('Items added to actor:', [backgroundItem, raceItem, classItem]);
+    const items = [backgroundItem.toObject(), raceItem.toObject(), classItem.toObject()];
+    await actor.createEmbeddedDocuments('Item', items);
+    // Await newActor.createEmbeddedDocuments('Item', raceItem.toObject());
+    // await Item.create(items[1], { parent: newActor });
+    HM.log('Items added to actor:', items);
 
     // Ensure the items are fully added and the actor is updated
     await actor.update({});
 
-    // Trigger advancements via hooks
-    await HeroMancer.triggerAdvancementHooks(actor, [classItem, raceItem, backgroundItem]);
+    // Trigger advancements for all added items
+    for (const item of items) {
+      // Log the actor and the current levels
+      HM.log(`Current levels for item ${item.name}:`, item.system.levels);
+      HM.log('Actor details for advancement:', newActor);
 
-    // Delay opening the sheet until the advancements are triggered
+      let manager = dnd5e.applications.advancement.AdvancementManager;
+      const cls = newActor.itemTypes.class.find((c) => c.identifier === item.system.identifier);
+      // Check if the item is a class and handle differently
+      if (item.type === 'class') {
+        if (cls) {
+          manager.forModifyChoices(newActor, cls.id, 1);
+          if (manager.steps.length) {
+            manager.render(true);
+          }
+        }
+      } else {
+        // Use the standard advancement manager for other items
+        manager.forNewItem(newActor, item);
+        HM.log(`Standard Advancement Manager initialized for item: ${item.name}`, manager);
+        if (manager.steps.length) {
+          manager.render(true);
+        }
+      }
+    }
+
+    // Delay opening the sheet until after advancements are triggered
     setTimeout(() => {
       actor.sheet.render(true);
       HM.log('Opened character sheet for:', actor.name);
-    }, 1000);
+    }, 1000); // 1 second delay to ensure everything is processed
   }
 }

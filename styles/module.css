@@ -6,6 +6,9 @@
   max-width: 860px;
   max-height: 100%;
 }
+.hero-mancer-tabs .tabs .hm-app-nav .item {
+  color: var(--color-text-primary);
+}
 .hm-app h2,
 .hm-app h3 {
   padding-bottom: 5px;
@@ -36,14 +39,14 @@
   text-transform: uppercase;
   font-weight: bold;
   font-size: var(--font-size-16);
-  color: var(--color-text-light-primary);
+  color: var(--color-text-primary);
   padding: 0 6px;
 }
 .hm-app fieldset > .empty {
   padding: 6px;
   font-style: italic;
   text-align: center;
-  color: var(--color-text-dark-5);
+  color: var(--color-text-primary);
 }
 .hm-app fieldset.card > legend {
   background: var(--dnd5e-background-card);
@@ -62,7 +65,7 @@
 }
 .hm-app fieldset:disabled .form-group label,
 .hm-app fieldset:disabled .hint {
-  color: var(--color-text-light-6);
+  color: var(--color-text-primary);
 }
 .hm-app table {
   margin-left: 0;
@@ -241,12 +244,7 @@
   margin-bottom: 10px; /* Add spacing between each row */
 }
 
-.hm-compendiums-popup-dialog multi-checkbox label.checkbox input[type="checkbox"] {
+.hm-compendiums-popup-dialog multi-checkbox label.checkbox input[type='checkbox'] {
   order: 1; /* Move the checkbox to the end of the flex container */
   margin-left: 10px; /* Add some space between the label text and checkbox */
 }
-
-
-
-
-

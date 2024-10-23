@@ -54,49 +54,49 @@ if you prefer to do it yourself, we’ve got you covered.
 
 Take a look at how Hero Mancer elevates your character creation process! These screenshots show the module in action.
 
-### 1. Starting Tab
+### 1. Getting Start
 
 The beginning of your hero’s journey! This tab gives an overview of the steps you'll follow to create your character.
 
 ![Getting Started](tour-assets/start.png)  
 _The starting tab showing an overview of the character creation steps._
 
-### 2. Background Selection
+### 2. Choose a Background
 
 Choose your character’s background from a dropdown, with enriched descriptions that help immerse you in your role.
 
 ![Choose a Background](tour-assets/background.png)  
 _The background selection dropdown with enriched descriptions._
 
-### 3. Race Selection Dropdown
+### 3. Choose a Race
 
 Organized dropdowns make it easy to browse races based on custom or default compendiums.
 
 ![Choose a Race](tour-assets/race.png)  
 _The race selection dropdown showing folder and race options._
 
-### 4. Class Selection Dropdown
+### 4. Choose a Class
 
 Quickly select your class from organized compendiums. Hero Mancer handles the heavy lifting for you!
 
 ![Choose a Class](tour-assets/class.png)  
 _The class selection dropdown with classes grouped by pack._
 
-### 5. Abilities Tab and Stat Rolling
+### 5. Choose Abilities
 
 No need to roll dice manually—Hero Mancer’s built-in stat roller handles it for you, keeping things fast and efficient.
 
 ![Choose Abilities](tour-assets/abilities.png)  
 _The abilities tab with stat fields and roll icons._
 
-### 6. Equipment Tab
+### 6. Choose Starting Equipment
 
 Outfit your character with all the necessary gear using the Equipment tab. Choose items from detailed dropdowns.
 
 ![Choose Starting Equipment](tour-assets/equipment.png)  
 _The equipment tab for selecting and managing your character’s gear._
 
-### 7. Finalization Tab
+### 7. Final Check
 
 Review your selections and lock in your hero, ready for the adventure that lies ahead.
 
