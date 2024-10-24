@@ -10,13 +10,24 @@ export function registerButton() {
   const buttonHint = game.i18n.localize(`${HM.ABRV}.actortab-button.hint`);
   const buttonName = game.i18n.localize(`${HM.ABRV}.actortab-button.name`);
 
-  // Define the button HTML
+  // Define the button HTML with improved accessibility
   const buttonHTML = `
-    <button type='button' class='${HM.ABRV}-actortab-button' title='${buttonHint}'>
-      <i class='fa-solid fa-egg' style='color: #ff144f'></i>
-      ${buttonName}
-    </button>`;
+    <button 
+      type="button" 
+      class="${HM.ABRV}-actortab-button" 
+      title="${buttonHint}" 
+      aria-label="${buttonName}" 
+      aria-describedby="${HM.ABRV}-button-hint" 
+      role="button"
+    >
+      <i class="fa-solid fa-egg" style="color: #ff144f"></i> ${buttonName}
+    </button>
+  `;
 
   // Insert the button before the 'create-folder' button
   headerActions.find('button[class*="create-folder"]').before(buttonHTML);
+
+  // Append the hidden span for screen readers after the button
+  const hiddenHintHTML = `<span id="${HM.ABRV}-button-hint" class="sr-only">${buttonHint}</span>`;
+  headerActions.find(`.${HM.ABRV}-actortab-button`).after(hiddenHintHTML);
 }

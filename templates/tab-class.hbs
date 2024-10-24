@@ -3,18 +3,26 @@
     <legend>{{localize 'hm.app.class.tooltip'}}</legend>
     <p>{{localize 'hm.app.class.preamble'}}</p>
     <hr />
+
     <div>
-      {{localize 'hm.app.class.select'}}
+      <!-- Label for the class dropdown -->
+      <label for='class-dropdown'>{{localize 'hm.app.class.select-label'}}</label>
+
       <!-- Class Dropdown -->
-      <select id='class-dropdown' name='class' data-dtype='String'>
+      <select
+        id='class-dropdown'
+        name='class'
+        data-dtype='String'
+        aria-describedby='class-description'
+        aria-label='{{localize "hm.app.class.select-label"}}'
+      >
         <option value=''>{{localize 'hm.app.class.select-placeholder'}}</option>
+
         {{#each classDocs}}
           <optgroup label='{{this.packName}}'>
-            <!-- Group by full packName -->
             {{#each this.docs}}
               <option value='{{this.id}} ({{this.packId}})'>
                 {{this.name}}
-                <!-- Display name with packName appended only for duplicates -->
               </option>
             {{/each}}
           </optgroup>
@@ -25,9 +33,8 @@
     </div>
 
     <!-- Enriched Description Section for the selected class -->
-    <div id='class-description'>
+    <div id='class-description' role='region' aria-live='polite' aria-atomic='true'>
       {{{enrichedDescription}}}
-      <!-- Display the enriched description here -->
     </div>
   </fieldset>
 </div>

@@ -71,7 +71,7 @@ export async function getDocuments(type) {
   }
 
   // Log the completion of document collection
-  HM.log(1, `${typeNice} collection complete: ${validPacks.size} documents collected.`);
+  HM.log(3, `${typeNice} collection complete: ${validPacks.size} documents collected.`);
 
   // Sort the documents by name, and if names match, sort by packName to prioritize 'DDB' over 'SRD'
   let sortedPackDocs = [...validPacks]

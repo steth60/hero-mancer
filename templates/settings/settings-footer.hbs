@@ -1,10 +1,31 @@
 <footer>
-  <div class='hm-compendiums-footer-actions'>
-    <button type='submit' class='hm-app-footer-submit' data-tooltip='{{localize "hm.app.submit"}}'>{{localize
-        'hm.app.submit'
-      }}</button>
-    <button type='cancel' class='hm-app-footer-cancel' data-tooltip='{{localize "hm.app.cancel"}}'>{{localize
-        'hm.app.cancel'
-      }}</button>
+  <div class='hm-app-footer-actions'>
+    <!-- Submit Button with aria-label and described by the tooltip -->
+    <button
+      type='submit'
+      class='hm-app-footer-submit'
+      data-tooltip='{{localize "hm.app.submit"}}'
+      aria-label='{{localize "hm.app.submit"}}'
+      aria-describedby='submit-tooltip'
+      role='button'
+    >
+      {{localize 'hm.app.submit'}}
+    </button>
+    <!-- Tooltip for Submit Button -->
+    <span id='submit-tooltip' class='sr-only'>{{localize 'hm.app.submit.tooltip'}}</span>
+
+    <!-- Cancel Button with aria-label and described by the tooltip -->
+    <button
+      type='button'
+      class='hm-app-footer-cancel'
+      data-tooltip='{{localize "hm.app.cancel"}}'
+      aria-label='{{localize "hm.app.cancel"}}'
+      aria-describedby='cancel-tooltip'
+      role='button'
+    >
+      {{localize 'hm.app.cancel'}}
+    </button>
+    <!-- Tooltip for Cancel Button -->
+    <span id='cancel-tooltip' class='sr-only'>{{localize 'hm.app.cancel.tooltip'}}</span>
   </div>
 </footer>

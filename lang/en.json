@@ -9,30 +9,31 @@
         "name": "Logging Level",
         "hint": "Off: No console output. Errors: Show only errors. Warnings: Show errors and warnings. Verbose: Show everything. (Default: Warnings)"
       },
-      "customcompendiums": {
+      "custom-compendiums": {
         "title": "Select your {type} compendiums!",
         "menu": {
           "name": "Set Custom Compendiums",
-          "hint": "Open dialog to configure custom compendiums for everything.",
-          "label": ""
+          "hint": "Open dialog to configure custom compendiums for all categories."
         },
-        "description": "Lorum Ipsum Custom Compendiums description placeholder.",
-        "classes": "Set Class Compendiums:",
-        "manageclasses": "Classes",
-        "races": "Set Race Compendiums:",
-        "manageraces": "Races",
-        "backgrounds": "Set Background Compendiums:",
-        "managebackgrounds": "Backgrounds"
+        "description": "Configure your custom compendiums for classes, races, and backgrounds.",
+        "classes-label": "Set Class Compendiums:",
+        "manage-classes": "Manage Classes",
+        "races-label": "Set Race Compendiums:",
+        "manage-races": "Manage Races",
+        "backgrounds-label": "Set Background Compendiums:",
+        "manage-backgrounds": "Manage Backgrounds"
       }
     },
     "actortab-button": {
       "name": "Hero Mancer",
+      "hint": "Open Hero Mancer Application",
       "loading": "Hero Mancer is loading! ... This may take a moment.",
       "creating": "Hero Mancer is creating your character! ... This may take a moment."
     },
     "app": {
       "header-title": "Hero Mancer: Creation Wizard",
       "header-context": "Creating {name}",
+      "tabs": "Hero Mancer Navigation Tabs",
       "tab-names": {
         "start": "Start!",
         "background": "Background",
@@ -45,39 +46,57 @@
       "no-description": "Unable to load a valid description for this item.",
       "submit": "Submit",
       "cancel": "Cancel",
+      "submit-description": "Submit your form data.",
+      "cancel-description": "Cancel and return to the previous screen.",
       "done": "Done",
       "start": {
-        "tooltip": "Start!",
+        "tooltip": "Start your character creation",
         "preamble": {
           "a": "Welcome to the Hero Mancer Creation Wizard!",
-          "b": "Over the next 7 steps you will be guided through the complete experience of creating a brand new character fully within FoundryVTT! Until you hit submit, you can go back and forth between any of the sections without fear of losing your data! All fields require some input, so if you want to skip a section please put in a space."
+          "b": "In the next 7 steps, you will create a brand-new character in FoundryVTT. You can move between sections freely, and no data will be lost. All fields require input, so if you want to skip a section, enter a space."
         },
-        "name": "Name",
-        "name-placeholder": "Name your character!"
+        "name-label": "Character Name",
+        "name-placeholder": "Enter your character's name"
       },
       "background": {
-        "tooltip": "Choose a Background!",
-        "preamble": "Lorem ipsum, etc. etc.",
-        "select": "Background",
-        "select-placeholder": "Pick your background!",
+        "tooltip": "Select a background for your character",
+        "preamble": "Choose your character's background from the available options.",
+        "select": "Select a Background:",
+        "select-label": "Background",
+        "select-placeholder": "Choose a background",
         "none": "No backgrounds available."
       },
       "race": {
-        "tooltip": "Choose a Race!",
-        "preamble": "Lorem ipsum, etc. etc.",
-        "select": "Race",
-        "select-placeholder": "Pick your race!",
+        "tooltip": "Select a race for your character",
+        "preamble": "Choose your character's race from the available options.",
+        "select": "Select a Race:",
+        "select-label": "Race",
+        "select-placeholder": "Choose a race",
         "none": "No races available."
       },
       "class": {
-        "tooltip": "Choose a Class!",
-        "preamble": "Lorem ipsum, etc. etc.",
-        "select": "Class",
-        "select-placeholder": "Pick your class!",
+        "tooltip": "Select a class for your character",
+        "preamble": "Choose your character's class from the available options.",
+        "select": "Select a Class:",
+        "select-label": "Class",
+        "select-placeholder": "Choose a class",
         "none": "No classes available."
       },
       "abilities": {
-        "select-placeholder": "N/A"
+        "tooltip": "Select and assign abilities",
+        "select-label": "Select an ability",
+        "select-placeholder": "Choose an ability",
+        "score-label": "Ability score",
+        "score-placeholder": "Enter score",
+        "roll-dice": "Roll dice for ability"
+      },
+      "equipment": {
+        "tooltip": "Manage your character's equipment",
+        "preamble": "This is where you can manage and select your character's equipment."
+      },
+      "finalize": {
+        "tooltip": "Finalize your character creation",
+        "preamble": "This is where you finalize and submit your character's details."
       }
     }
   }

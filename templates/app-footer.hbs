@@ -1,10 +1,31 @@
 <footer>
   <div class='hm-app-footer-actions'>
-    <button type='submit' class='hm-app-footer-submit' data-tooltip='{{localize "hm.app.submit"}}'>{{localize
-        'hm.app.submit'
-      }}</button>
-    <button type='cancel' class='hm-app-footer-cancel' data-tooltip='{{localize "hm.app.cancel"}}'>{{localize
-        'hm.app.cancel'
-      }}</button>
+    <!-- Submit Button with aria-label and described by the description -->
+    <button
+      type='submit'
+      class='hm-app-footer-submit'
+      data-tooltip='{{localize "hm.app.submit"}}'
+      aria-label='{{localize "hm.app.submit"}}'
+      aria-describedby='submit-description'
+      role='button'
+    >
+      {{localize 'hm.app.submit'}}
+    </button>
+    <!-- Screen reader description for Submit Button -->
+    <span id='submit-description' class='sr-only'>{{localize 'hm.app.submit-description'}}</span>
+
+    <!-- Cancel Button with aria-label and described by the description -->
+    <button
+      type='button'
+      class='hm-app-footer-cancel'
+      data-tooltip='{{localize "hm.app.cancel"}}'
+      aria-label='{{localize "hm.app.cancel"}}'
+      aria-describedby='cancel-description'
+      role='button'
+    >
+      {{localize 'hm.app.cancel'}}
+    </button>
+    <!-- Screen reader description for Cancel Button -->
+    <span id='cancel-description' class='sr-only'>{{localize 'hm.app.cancel-description'}}</span>
   </div>
 </footer>

@@ -1,20 +1,42 @@
 <form>
-  <p>{{localize 'hm.settings.customcompendiums.description'}}</p>
+  <p>{{localize 'hm.settings.custom-compendiums.description'}}</p>
 
   <div class='hm-compendiums-popup-section'>
-    <p>{{localize 'hm.settings.customcompendiums.classes'}}</p>
-    <button type='button' data-action='classes'>{{localize 'hm.settings.customcompendiums.manageclasses'}}</button>
+    <p id='class-label'>{{localize 'hm.settings.custom-compendiums.classes-label'}}</p>
+    <button
+      type='button'
+      data-action='classes'
+      aria-labelledby='class-label'
+      aria-label='{{localize "hm.settings.custom-compendiums.manage-classes"}}'
+      role='button'
+    >
+      {{localize 'hm.settings.custom-compendiums.manage-classes'}}
+    </button>
   </div>
 
   <div class='hm-compendiums-popup-section'>
-    <p>{{localize 'hm.settings.customcompendiums.races'}}</p>
-    <button type='button' data-action='races'>{{localize 'hm.settings.customcompendiums.manageraces'}}</button>
+    <p id='race-label'>{{localize 'hm.settings.custom-compendiums.races-label'}}</p>
+    <button
+      type='button'
+      data-action='races'
+      aria-labelledby='race-label'
+      aria-label='{{localize "hm.settings.custom-compendiums.manage-races"}}'
+      role='button'
+    >
+      {{localize 'hm.settings.custom-compendiums.manage-races'}}
+    </button>
   </div>
 
   <div class='hm-compendiums-popup-section'>
-    <p>{{localize 'hm.settings.customcompendiums.backgrounds'}}</p>
-    <button type='button' data-action='backgrounds'>{{localize
-        'hm.settings.customcompendiums.managebackgrounds'
-      }}</button>
+    <p id='background-label'>{{localize 'hm.settings.custom-compendiums.backgrounds-label'}}</p>
+    <button
+      type='button'
+      data-action='backgrounds'
+      aria-labelledby='background-label'
+      aria-label='{{localize "hm.settings.custom-compendiums.manage-backgrounds"}}'
+      role='button'
+    >
+      {{localize 'hm.settings.custom-compendiums.manage-backgrounds'}}
+    </button>
   </div>
 </form>

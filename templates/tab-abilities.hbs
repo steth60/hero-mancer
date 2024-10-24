@@ -1,26 +1,29 @@
-<div class='tab {{tabs.abilities.cssClass}}' data-tab='abilities' data-group='hero-mancer-tabs'>
-    <fieldset>
-    <legend>{{localize 'hm.app.abilties.tooltip'}}</legend>
-  <p>This is the Abilities tab!</p>
+<div class="tab {{tabs.abilities.cssClass}}" data-tab="abilities" data-group="hero-mancer-tabs">
+  <fieldset>
+    <legend>{{localize 'hm.app.abilities.tooltip'}}</legend>
+    <p>This is the Abilities tab!</p>
 
-  <div class="ability-container">
-    {{#each abilities}}
-      <div id="ability-block-{{@index}}" class="ability-block">
-        <!-- Dropdown for selecting the ability (remove name, only use score) -->
-        <select name="abilities[{{this.key}}]" class="ability-dropdown" data-dtype="String">
-          <option value="">{{localize 'hm.app.abilities.select-placeholder'}}</option>
-          {{#each ../abilities}}
-            <option value="{{this.key}}">{{this.abbreviation}}</option>
-          {{/each}}
-        </select>
+    <div class="ability-container">
+      {{#each abilities}}
+        <div id="ability-block-{{@index}}" class="ability-block">
+          
+          <!-- Label for the ability dropdown -->
+          <label for="ability-{{@index}}-dropdown">{{localize 'hm.app.abilities.select-label'}}</label>
+          <select id="ability-{{@index}}-dropdown" name="abilities[{{this.key}}]" class="ability-dropdown" data-dtype="String" aria-label="{{localize 'hm.app.abilities.select-label'}}">
+            <option value="">{{localize 'hm.app.abilities.select-placeholder'}}</option>
+            {{#each ../abilities}}
+              <option value="{{this.key}}">{{this.abbreviation}}</option>
+            {{/each}}
+          </select>
 
-        <!-- Text field for entering the score -->
-        <input type="number" name="abilities[{{this.key}}].score" class="ability-score" data-dtype="Number" placeholder="Enter score" />
-        
-        <!-- Dice icon for rolling the stat -->
-        <i class="fa-solid fa-dice-d6 fa-2xl" data-action="rollStat" data-index="{{@index}}"></i>
-      </div>
-    {{/each}}
-  </div>
+          <!-- Label for the score input -->
+          <label for="ability-{{@index}}-score">{{localize 'hm.app.abilities.score-label'}}</label>
+          <input id="ability-{{@index}}-score" type="number" name="abilities[{{this.key}}].score" class="ability-score" data-dtype="Number" placeholder="{{localize 'hm.app.abilities.score-placeholder'}}" aria-label="{{localize 'hm.app.abilities.score-label'}}" />
+          
+          <!-- Dice icon with button role for rolling the stat -->
+          <i class="fa-solid fa-dice-d6 fa-2xl" data-action="rollStat" data-index="{{@index}}" role="button" aria-label="{{localize 'hm.app.abilities.roll-dice'}}" tabindex="0"></i>
+        </div>
+      {{/each}}
+    </div>
   </fieldset>
 </div>

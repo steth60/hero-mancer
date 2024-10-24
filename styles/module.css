@@ -1,75 +1,55 @@
-/* .hm-app is the parent structure of the app. It sets the overall size and ensures content adjusts to the window. */
+/* Parent structure that controls the overall size and ensures content adjusts to the window */
 .application.hm-app {
   width: 1000px;
-  height: fit-content;
   min-height: 0;
   max-width: 860px;
-  max-height: 100%;
+  max-height: 80vh;
+  height: auto !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
-
-/* Styling for the navigation tabs under .hero-mancer-tabs */
-.hero-mancer-tabs .tabs .hm-app-nav .item {
-  color: var(--color-text-primary);
-}
-
-/* Headings inside .hm-app are padded slightly for spacing */
-.hm-app h2,
-.hm-app h3 {
-  padding-bottom: 5px;
-}
-
-/* Paragraphs inside .hm-app follow a consistent line-height for readability */
-.hm-app p {
-  display: block;
-  line-height: var(--line-height-20);
-}
-
 /* Fieldset styling for forms, ensuring proper layout and scrollability */
-.hm-app fieldset {
+.application.hm-app fieldset {
   border-radius: 6px;
   border: 1px solid var(--color-cool-3);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  height: 100%;
+  flex-grow: 1;
   margin-top: 25px;
   margin: 0;
   min-width: 0;
   min-height: 0;
   max-height: 100%;
-  max-width: 100%;
+  width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  width: 100%;
 }
-
 /* Styling for legends inside fieldsets */
-.hm-app fieldset > legend {
+.application.hm-app fieldset > legend {
   text-transform: uppercase;
   font-weight: bold;
   font-size: var(--font-size-16);
   color: var(--color-text-primary);
   padding: 0 6px;
 }
-
 /* Empty state inside a fieldset, using italic text and centered alignment */
-.hm-app fieldset > .empty {
+.application.hm-app fieldset > .empty {
   padding: 6px;
   font-style: italic;
   text-align: center;
   color: var(--color-text-primary);
 }
-
 /* Card-styled fieldset with shadow and outline */
-.hm-app fieldset.card > legend {
+.application.hm-app fieldset.card > legend {
   background: var(--dnd5e-background-card);
   position: relative;
   border-radius: 2px;
   padding: 2px 6px 0;
 }
-
-.hm-app fieldset.card > legend::before {
+.application.hm-app fieldset.card > legend::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -78,34 +58,60 @@
   outline: var(--dnd5e-border-gold);
   z-index: -1;
 }
-
 /* Disabled fieldset styling for hint and label */
-.hm-app fieldset:disabled .form-group label,
-.hm-app fieldset:disabled .hint {
+.application.hm-app fieldset:disabled .form-group label,
+.application.hm-app fieldset:disabled .hint {
   color: var(--color-text-primary);
 }
+/* Styling for the navigation tabs under .hero-mancer-tabs */
+.application.hm-app .hero-mancer-tabs.tabs.hm-app-nav .item {
+  color: var(--color-text-primary);
+}
+.application.hm-app .hero-mancer-tabs.tabs.hm-app-nav .item.active {
+  text-shadow: 0 0 10px var(--color-shadow-primary);
+}
+/* Dark Mode (default) */
+.application.hm-app hr {
+  background-image: linear-gradient(90deg, transparent 0%, #e7d1b1 50%, transparent 100%);
+  border: none;
+  height: 2px;
+}
 
+/* Light Mode using .theme-light */
+.theme-light .application.hm-app hr {
+  background-image: linear-gradient(90deg, transparent 0%, #8b5e3c 50%, transparent 100%);
+  border: none;
+  height: 2px;
+}
+
+/* Headings inside .hm-app are padded slightly for spacing */
+.hm-app h2,
+.hm-app h3 {
+  padding-bottom: 5px;
+}
+/* Paragraphs inside .hm-app follow a consistent line-height for readability */
+.hm-app p {
+  display: block;
+  line-height: var(--line-height-20);
+}
 /* Basic table styling inside .hm-app */
 .hm-app table {
   margin-left: 0;
 }
-
 /* .hm-app-header contains the content above navigation, currently just the app title Hero Mancer. */
 .hm-app-header {
   text-align: center;
 }
-
 /* .hm-app-nav contains the navigation between tabs. */
 .application.hm-app .hm-app-nav {
   margin: 0 50px 10px 50px;
-  gap: 2rem;
+  gap: 1.5rem;
   align-self: center;
   align-items: center;
   text-align: center;
   flex-wrap: nowrap;
   white-space: nowrap;
 }
-
 /* Navigation item (link) styling */
 .application.hm-app .hm-app-nav a.item {
   white-space: nowrap;
@@ -116,12 +122,10 @@
   display: flex;
   align-items: center;
 }
-
 /* Force icons in hm-app-nav to be a certain size. */
 .application.hm-app .hm-app-nav a.item i {
-  font-size: 1.2em;
+  font-size: var(--font-size-20);
 }
-
 /* Input and select elements inside fieldsets are styled for consistency */
 .hm-app-tab-content fieldset input[type='text'],
 .hm-app-tab-content fieldset select {
@@ -130,24 +134,12 @@
   margin-left: 10px;
   margin-right: 5px;
 }
-
-/* Media query for responsiveness */
-@media (max-width: 768px) {
-  .hm-app-tab-content fieldset input[type='text'],
-  .hm-app-tab-content fieldset select {
-    width: 50%;
-    margin-left: 0;
-    margin-right: 0;
-  }
-}
-
 /* .hm-app-tab-content applies to everything within the handlebars for any tab-*.hbs file. */
 .hm-app-tab-content {
   overflow-y: auto;
   height: auto;
   max-height: 50vh;
 }
-
 /* Styling for headings within .hm-app-tab-content */
 .application.hm-app .hm-app-tab-content h1,
 .application.hm-app .hm-app-tab-content h2,
@@ -157,12 +149,10 @@
 .application.hm-app .hm-app-tab-content h6 {
   font-family: var(--font-h1);
 }
-
 /* Dropdown options styling to prevent text overflow */
 .hm-app-tab-content option {
   white-space: nowrap;
 }
-
 /* Image styling within .hm-app-tab-content */
 .hm-app-tab-content img {
   max-width: 200px;
@@ -171,12 +161,10 @@
   float: right;
   margin-left: 5px;
 }
-
 /* Specific styling for enriched descriptions to look pretty! */
 .application.hm-app .hm-app-tab-content .Basic-Text-Frame.stat-block-background {
   background: none; /* Remove background color */
 }
-
 /* .hm-app-footer applies to everything in the footer. */
 .hm-app-footer {
   display: flex;
@@ -184,7 +172,6 @@
   align-items: center;
   padding-top: 16px;
 }
-
 /* Footer action buttons styling */
 .hm-app-footer-actions {
   display: flex;
@@ -193,23 +180,19 @@
   width: 30%;
   gap: 10px;
 }
-
 /* Styling for submit/cancel buttons */
 .hm-app .hm-app-footer .hm-app-footer-actions button {
   padding: 0.5rem 1rem;
-  font-size: 1rem;
+  font-size: var(--font-size-16);
 }
-
 /* Hover effects for submit button */
 .hm-app .hm-app-footer .hm-app-footer-actions button:hover {
   background-color: #45a049;
 }
-
 /* Hover effects for cancel button */
 .hm-app .hm-app-footer .hm-app-footer-actions button:hover {
   background-color: #d32f2f;
 }
-
 /* Ability container layout within .hm-app */
 .hm-app .ability-container {
   display: flex;
@@ -222,7 +205,6 @@
   padding-right: 5px;
   padding-bottom: 5px;
 }
-
 /* Ability block layout for dropdown and text fields */
 .hm-app .ability-block {
   display: flex;
@@ -232,23 +214,20 @@
   width: 85px;
   line-height: 2.5em;
 }
-
 /* Dropdown inside ability block */
 .hm-app .ability-block .ability-dropdown {
   width: 100%;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: var(--font-size-13);
   margin: 0;
 }
-
 /* Ability score input field styling */
 .hm-app .ability-block .ability-score {
   width: 100%;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: var(--font-size-13);
   margin-bottom: 20px;
 }
-
 /* Popup section styling in compendiums */
 .hm-compendiums-popup-section {
   display: flex;
@@ -256,20 +235,17 @@
   align-items: center;
   margin: 10px 0;
 }
-
 /* Paragraph inside popup section */
 .hm-compendiums-popup-section p {
   flex: 1;
   margin: 0;
 }
-
 /* Button styling inside popup section */
 .hm-compendiums-popup-section button {
   width: auto;
   margin-left: 10px;
   white-space: nowrap;
 }
-
 /* Footer for compendiums */
 .hm-compendiums-footer {
   display: flex;
@@ -277,7 +253,6 @@
   align-items: center;
   padding-top: 16px;
 }
-
 /* Footer actions for compendiums */
 .hm-compendiums-footer-actions {
   display: flex;
@@ -286,12 +261,10 @@
   width: 50%;
   gap: 10px;
 }
-
 /* Multi-checkbox layout in popups */
 .hm-compendiums-popup-dialog multi-checkbox {
   display: block;
 }
-
 /* Checkbox label styling in multi-checkbox */
 .hm-compendiums-popup-dialog multi-checkbox label.checkbox {
   display: flex;
@@ -299,9 +272,87 @@
   align-items: center;
   margin-bottom: 10px;
 }
-
 /* Checkbox input styling */
 .hm-compendiums-popup-dialog multi-checkbox label.checkbox input[type='checkbox'] {
   order: 1;
   margin-left: 10px;
+}
+
+/* Media Queries for Smaller Screens */
+
+/* Screens between 1024px and 700px in height */
+@media (max-width: 1024px) {
+  .application.hm-app {
+    width: 95%;
+    max-width: 95%;
+    max-height: 75vh;
+  }
+  /* Allow nav items to wrap onto new lines on small screens */
+  .application.hm-app .hm-app-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+  /* Ensure nav items are responsive */
+  .application.hm-app .hm-app-nav a.item {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 150px;
+    margin-bottom: 10px;
+  }
+  /* Adjust input fields */
+  .hm-app-tab-content fieldset input[type='text'],
+  .hm-app-tab-content fieldset select {
+    width: 80%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  /* Footer buttons responsiveness */
+  .hm-app-footer-actions {
+    width: 100%;
+    gap: 5px;
+  }
+}
+
+/* For very small screens (below 768px) */
+@media (max-width: 768px) {
+  .application.hm-app {
+    width: 100%;
+    max-height: 70vh;
+  }
+  /* Stack footer buttons vertically */
+  .hm-app-footer-actions {
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+  }
+  /* Adjust nav items */
+  .application.hm-app .hm-app-nav a.item {
+    padding: 0 5px;
+    font-size: var(--font-size-13);
+  }
+  /* Reduce fieldset padding */
+  .hm-app-tab-content fieldset {
+    padding: 5px;
+  }
+  /* Full-width inputs for smaller screens */
+  .hm-app-tab-content fieldset input[type='text'],
+  .hm-app-tab-content fieldset select {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+/* Minimum width requirement for Foundry */
+@media (max-width: 1024px) and (min-width: 700px) {
+  .application.hm-app {
+    width: 100%;
+    height: auto;
+    max-height: 80vh;
+  }
+  /* Resize buttons and inputs */
+  .hm-app-footer-actions button {
+    padding: 0.25rem 0.5rem;
+    font-size: var(--font-size-13);
+  }
 }
