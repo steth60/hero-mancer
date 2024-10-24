@@ -17,15 +17,29 @@ export function registerSettings() {
   });
 
   // New setting for enabling verbose logging
-  game.settings.register(HM.ID, 'enableVerboseLogging', {
+  game.settings.register(HM.ID, 'loggingLevel', {
     name: `${HM.ABRV}.settings.logger.name`,
     hint: `${HM.ABRV}.settings.logger.hint`,
     scope: 'client',
     config: true,
-    type: Boolean,
-    default: false, // Set to false by default
+    type: String,
+    choices: {
+      0: 'Off',
+      1: 'Errors',
+      2: 'Warnings',
+      3: 'Verbose'
+    },
+    default: 2,
     onChange: (value) => {
-      HM.log(`${HM.ID} | logging set to ${value}`);
+      const logMessage = `Logging level set to ${
+        value === '0' ? 'Off'
+        : value === '1' ? 'Errors'
+        : value === '2' ? 'Warnings'
+        : 'Verbose'
+      }`;
+      if (value !== '0') {
+        HM.log(3, logMessage); // Log the current logging level unless it's Off
+      }
     }
   });
 

@@ -53,7 +53,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
         let documents = await pack.getDocuments({ type: type });
 
         if (documents.length > 0) {
-          HM.log(`Retrieved ${documents.length} documents from pack: ${pack.metadata.label}`);
+          HM.log(3, `Retrieved ${documents.length} documents from pack: ${pack.metadata.label}`);
           let packName = pack.metadata.label;
 
           validPacks.add({
@@ -63,7 +63,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
           });
         }
       } catch (error) {
-        HM.log(`Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`, 'error');
+        HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`, 'error');
       }
     }
 
@@ -95,7 +95,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
           callback: async (event, button, dialog) => {
             const selectedValues = button.form.elements.compendiumMultiSelect.value;
             await CustomCompendiums.setSelectedPacksByType(type, selectedValues);
-            HM.log(`Selected ${type} compendiums:`, selectedValues);
+            HM.log(3, `Selected ${type} compendiums:`, selectedValues);
           }
         }
       ],
@@ -103,7 +103,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       modal: false,
       position: { width: 400 },
       submit: (result) => {
-        HM.log('Dialog submitted with result:', result);
+        HM.log(3, 'Dialog submitted with result:', result);
       }
     }).render(true);
   }
@@ -117,13 +117,13 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   }
 
   async _prepareContext(options) {
-    HM.log(options);
-    HM.log('Context prepared!');
+    HM.log(3, options);
+    HM.log(3, 'Context prepared!');
     return context;
   }
 
   _onRender(context, options) {
-    HM.log('Rendering application with context and options.');
+    HM.log(3, 'Rendering application with context and options.');
   }
 
   static async formHandler(event, form, formData) {
@@ -135,6 +135,6 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       await CustomCompendiums.getSelectedPacksByType('background')
     );
     HMUtils.CacheManager.resetCache();
-    HM.log('Form submitted and settings saved');
+    HM.log(3, 'Form submitted and settings saved');
   }
 }

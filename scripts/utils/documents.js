@@ -32,7 +32,7 @@ export async function getDocuments(type) {
   }
 
   // Log the start of document fetching
-  HM.log(`Fetching documents for type: ${typeNice}`);
+  HM.log(3, `Fetching documents for type: ${typeNice}`);
 
   // Collect documents from the selected or default packs
   for (const pack of packs) {
@@ -40,12 +40,12 @@ export async function getDocuments(type) {
       let documents = await pack.getDocuments({ type: type });
 
       // Log the pack and retrieved documents
-      HM.log(`Retrieved documents from pack: ${pack.metadata.label}`, documents);
+      HM.log(3, `Retrieved documents from pack: ${pack.metadata.label}`, documents);
 
       // Iterate through the documents in the pack
       for (const doc of documents) {
         if (!doc) {
-          HM.log(`Document is undefined in pack: ${pack.metadata.label}`, 'error');
+          HM.log(3, `Document is undefined in pack: ${pack.metadata.label}`, 'error');
         } else {
           // Process the pack name based on conditions
           let packName = pack.metadata.label;
@@ -66,12 +66,12 @@ export async function getDocuments(type) {
         }
       }
     } catch (error) {
-      HM.log(`Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`, 'error');
+      HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`, 'error');
     }
   }
 
   // Log the completion of document collection
-  HM.log(`${typeNice} collection complete: ${validPacks.size} documents collected.`);
+  HM.log(1, `${typeNice} collection complete: ${validPacks.size} documents collected.`);
 
   // Sort the documents by name, and if names match, sort by packName to prioritize 'DDB' over 'SRD'
   let sortedPackDocs = [...validPacks]
@@ -89,7 +89,7 @@ export async function getDocuments(type) {
     });
 
   // Log the sorted document structure for verification
-  HM.log('Sorted Pack Docs:', sortedPackDocs);
+  HM.log(3, 'Sorted Pack Docs:', sortedPackDocs);
 
   return {
     documents: sortedPackDocs,

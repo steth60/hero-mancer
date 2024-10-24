@@ -6,8 +6,8 @@
         "hint": "Adds a button to use Hero Mancer on the Actors tab. (Default: Enabled)"
       },
       "logger": {
-        "name": "Enable logging?",
-        "hint": "Enable logging. (Default: Disabled)"
+        "name": "Logging Level",
+        "hint": "Off: No console output. Errors: Show only errors. Warnings: Show errors and warnings. Verbose: Show everything. (Default: Warnings)"
       },
       "customcompendiums": {
         "title": "Select your {type} compendiums!",

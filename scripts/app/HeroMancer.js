@@ -89,11 +89,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /* AppV2 Prepare Context: This function is executed when the application is opened. */
   /* It prepares the data sent to the Handlebars template to display the forms, HTML, CSS, etc. */
   async _prepareContext(options) {
-    HM.log('Preparing context.');
+    HM.log(3, 'Preparing context.');
 
     // Check if cached data is available to avoid re-fetching
     if (HMUtils.CacheManager.isCacheValid()) {
-      HM.log('Documents cached and descriptions enriched!');
+      HM.log(3, 'Documents cached and descriptions enriched!');
       return {
         raceDocs: HMUtils.CacheManager.getCachedRaceDocs(),
         raceDropdownHtml: HMUtils.CacheManager.getCachedRaceDropdownHtml(),
@@ -102,7 +102,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         backgroundDocs: HMUtils.CacheManager.getCachedBackgroundDocs(),
         backgroundDropdownHtml: HMUtils.CacheManager.getCachedBackgroundDropdownHtml(),
         tabs: this.tabsData,
-        abilities: HMUtils.CacheManager.getCachedAbilities(), // Assuming abilities are also cached
         rollStat: this.rollStat
       };
     }
@@ -111,15 +110,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     ui.notifications.info('hm.actortab-button.loading', { localize: true });
 
     // Fetch race, class, and background documents
-    HM.log('Fetching race, class, and background documents...');
+    HM.log(3, 'Fetching race, class, and background documents...');
     const { races: raceDocs, dropdownHtml: raceDropdownHtml } = await HMUtils.registerRaces();
     const { classes: classDocs, dropdownHtml: classDropdownHtml } = await HMUtils.registerClasses();
     const { backgrounds: backgroundDocs, dropdownHtml: backgroundDropdownHtml } = await HMUtils.registerBackgrounds();
 
     // Log fetched documents
-    HM.log('Race Docs:', raceDocs);
-    HM.log('Class Docs:', classDocs);
-    HM.log('Background Docs:', backgroundDocs);
+    HM.log(3, 'Race Docs:', raceDocs);
+    HM.log(3, 'Class Docs:', classDocs);
+    HM.log(3, 'Background Docs:', backgroundDocs);
 
     // Extract abilities from the system configuration and convert to uppercase abbreviations
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
@@ -127,7 +126,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       abbreviation: value.abbreviation.toUpperCase()
     }));
 
-    HM.log('Abilities extracted:', abilities);
+    HM.log(3, 'Abilities extracted:', abilities);
 
     // Prepare the context for the template
     const context = {
@@ -142,7 +141,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       rollStat: this.rollStat // Roll stat handler
     };
 
-    HM.log('Prepared context:', context);
+    HM.log(3, 'Prepared context:', context);
 
     // Flatten race, class, and background documents for enrichment
     const allDocs = [
@@ -151,7 +150,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       ...(context.backgroundDocs?.flatMap((pack) => pack.docs) || []) // Flatten background docs inside packs
     ];
 
-    HM.log('All documents to be enriched:', allDocs);
+    HM.log(3, 'All documents to be enriched:', allDocs);
 
     // Enrich descriptions for each document if available
     for (const doc of allDocs) {
@@ -159,12 +158,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         try {
           const enrichedDescription = await TextEditor.enrichHTML(doc.description);
           doc.enrichedDescription = enrichedDescription; // Attach enriched description
-          HM.log(`Enriched description for ${doc.name}`);
+          HM.log(3, `Enriched description for ${doc.name}`);
         } catch (error) {
-          console.error(`${HM.ID} | Failed to enrich description for document '${doc.name}':`, error);
+          HM.log(1, `${HM.ID} | Failed to enrich description for document '${doc.name}':`, error);
         }
       } else {
-        console.warn(`${HM.ID} | No description found for document ${doc ? doc.name : 'undefined'}`);
+        HM.log(2, `${HM.ID} | No description found for document ${doc ? doc.name : 'undefined'}`);
       }
     }
 
@@ -179,13 +178,13 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       abilities
     });
 
-    HM.log('Documents registered and enriched, caching results.');
+    HM.log(3, 'Documents registered and enriched, caching results.');
     return context;
   }
 
   /* Prepare partial context for specific parts of the application. Reference: https://foundryvtt.wiki/en/development/api/applicationv2 */
   async _preparePartContext(partId, context) {
-    HM.log(`Preparing part context for: ${partId}`);
+    HM.log(3, `Preparing part context for: ${partId}`);
 
     context.partId = `${this.id}-${partId}`;
     return context;
@@ -193,7 +192,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* Dynamic rendering of the application, triggers events and updates. */
   _onRender(context, options) {
-    HM.log('Rendering application with context and options.');
+    HM.log(3, 'Rendering application with context and options.');
 
     // Add description listeners for class, race, and background dropdowns
     this._addDescriptionUpdateListeners(context, 'class');
@@ -205,7 +204,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _addDescriptionUpdateListeners(context, type) {
-    HM.log(`Adding description update listeners for ${type}.`);
+    HM.log(3, `Adding description update listeners for ${type}.`);
 
     const dropdown = this.element.querySelector(`#${type}-dropdown`);
 
@@ -224,10 +223,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
         // Check if the context contains the correct documentsKey
         const documentsKey = `${type}Docs`;
-        HM.log(`Documents Key: ${documentsKey}`, context[documentsKey]);
+        HM.log(3, `Documents Key: ${documentsKey}`, context[documentsKey]);
 
         if (!context[documentsKey] || !Array.isArray(context[documentsKey])) {
-          console.error(`${HM.ID} | No documents found for type: ${type}`);
+          HM.log(1, `${HM.ID} | No documents found for type: ${type}`);
           return;
         }
 
@@ -236,43 +235,43 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         if (type === 'race') {
           // Flatten race docs to access documents inside folders
           const raceDocs = context[documentsKey].flatMap((folder) => folder.docs);
-          HM.log('Flattened Race Docs:', raceDocs);
+          HM.log(3, 'Flattened Race Docs:', raceDocs);
 
           // Find the selected document in the flattened raceDocs array
           selectedDoc = raceDocs.find((doc) => doc.id === selectedId);
-          HM.log('Selected Race Document:', selectedDoc);
+          HM.log(3, 'Selected Race Document:', selectedDoc);
         } else if (type === 'background') {
           // Flatten background docs to handle pack grouping
           const backgroundDocs = context[documentsKey].flatMap((pack) => pack.docs);
-          HM.log('Flattened Background Docs:', backgroundDocs);
+          HM.log(3, 'Flattened Background Docs:', backgroundDocs);
 
           selectedDoc = backgroundDocs.find((doc) => doc.id === selectedId);
-          HM.log('Selected Background Document:', selectedDoc);
+          HM.log(3, 'Selected Background Document:', selectedDoc);
         } else if (type === 'class') {
           // Flatten class docs to handle pack grouping
           const classDocs = context[documentsKey].flatMap((pack) => pack.docs);
-          HM.log('Flattened Class Docs:', classDocs);
+          HM.log(3, 'Flattened Class Docs:', classDocs);
 
           selectedDoc = classDocs.find((doc) => doc.id === selectedId);
-          HM.log('Selected Class Document:', selectedDoc);
+          HM.log(3, 'Selected Class Document:', selectedDoc);
         } else {
           // Find the selected document for other types (if applicable)
           selectedDoc = context[documentsKey].find((doc) => doc.id === selectedId);
-          HM.log('Selected Document for type:', selectedDoc);
+          HM.log(3, 'Selected Document for type:', selectedDoc);
         }
 
         // Ensure the selectedDoc exists and has an enriched description
         const descriptionElement = this.element.querySelector(`#${type}-description`);
         if (selectedDoc && selectedDoc.enrichedDescription) {
-          HM.log('Displaying enriched description:', selectedDoc.enrichedDescription);
+          HM.log(3, 'Displaying enriched description:', selectedDoc.enrichedDescription);
           descriptionElement.innerHTML = selectedDoc.enrichedDescription;
         } else {
-          console.warn(`${HM.ID} | No enriched description found, using default.`);
+          HM.log(2, `${HM.ID} | No enriched description found, using default.`);
           descriptionElement.innerHTML = `${game.i18n.localize(`${HM.ABRV}.app.no-description`)}`;
         }
       });
     } else {
-      HM.log(`No dropdown found for ${type}.`);
+      HM.log(1, `No dropdown found for ${type}.`);
     }
   }
 
@@ -284,40 +283,40 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     abilityDropdowns.forEach((dropdown, index) => {
       let previousValue = dropdown.value; // Store the previously selected value
 
-      HM.log(`Initial previousValue for dropdown ${index}:`, previousValue);
+      HM.log(3, `Initial previousValue for dropdown ${index}:`, previousValue);
 
       dropdown.addEventListener('change', (event) => {
         const selectedValue = event.target.value;
-        HM.log(`New selectedValue for dropdown ${index}:`, selectedValue);
+        HM.log(3, `New selectedValue for dropdown ${index}:`, selectedValue);
 
         // Handle removal of the previously selected ability
         if (previousValue && selectedAbilities.has(previousValue)) {
           selectedAbilities.delete(previousValue);
-          HM.log('Removed previousValue from selectedAbilities:', previousValue);
+          HM.log(3, 'Removed previousValue from selectedAbilities:', previousValue);
         }
 
         // Add the new selected ability to the set (unless it's "N/A" or empty)
         if (selectedValue) {
           selectedAbilities.add(selectedValue);
-          HM.log('Added selectedValue to selectedAbilities:', selectedValue);
+          HM.log(3, 'Added selectedValue to selectedAbilities:', selectedValue);
         }
 
         // Update the dropdown's previous value
         previousValue = selectedValue;
-        HM.log(`Updated previousValue for dropdown ${index}:`, previousValue);
+        HM.log(3, `Updated previousValue for dropdown ${index}:`, previousValue);
 
         // Update all dropdowns to disable or enable options based on selected abilities
         abilityDropdowns.forEach((dropdown, idx) => {
           const currentValue = dropdown.value;
-          HM.log(`Current value for dropdown ${idx}:`, currentValue);
+          HM.log(3, `Current value for dropdown ${idx}:`, currentValue);
 
           dropdown.querySelectorAll('option').forEach((option) => {
             if (selectedAbilities.has(option.value) && option.value !== currentValue) {
               option.disabled = true; // Disable options that are already selected in other dropdowns
-              HM.log('Disabled option:', option.value);
+              HM.log(3, 'Disabled option:', option.value);
             } else {
               option.disabled = false; // Re-enable options that haven't been selected
-              HM.log('Enabled option:', option.value);
+              HM.log(3, 'Enabled option:', option.value);
             }
           });
         });
@@ -390,7 +389,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* Logic for changing tabs. */
   changeTab(...args) {
-    HM.log('Changing tabs with args:', args);
+    HM.log(3, 'Changing tabs with args:', args);
 
     // Set position to auto to adapt to the new tab's height
     let autoPos = { ...this.position, height: 'auto' };
@@ -401,26 +400,26 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     let newPos = { ...this.position, height: this.element.scrollHeight };
     this.setPosition(newPos);
 
-    HM.log('Tab changed. New position set:', newPos);
+    HM.log(3, 'Tab changed. New position set:', newPos);
   }
 
   /* Logic for rolling stats and updating input fields. */
   static async rollStat(event, form) {
-    HM.log('Rolling stats for 4d6kh3.');
+    HM.log(3, 'Rolling stats for 4d6kh3.');
 
     try {
       // Roll formula: 4d6kh3 (roll 4d6 and keep highest 3)
       const roll = new Roll('4d6kh3');
       await roll.evaluate();
 
-      HM.log('Roll result:', roll.total);
+      HM.log(3, 'Roll result:', roll.total);
 
       // Get the clicked dice icon from the form
       const diceIcon = form;
 
       // Get the data-index from the clicked dice icon
       const index = diceIcon.getAttribute('data-index');
-      HM.log('Dice icon clicked for index:', index);
+      HM.log(3, 'Dice icon clicked for index:', index);
 
       // Use the index to find the correct ability block by ID
       const abilityBlock = document.getElementById(`ability-block-${index}`);
@@ -433,21 +432,21 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           // Set the rolled total as the value of the input field
           input.value = roll.total;
           input.focus(); // Optionally focus the input after updating
-          HM.log(`Updated input value for ability index ${index} with roll total:`, roll.total);
+          HM.log(3, `Updated input value for ability index ${index} with roll total:`, roll.total);
         } else {
-          HM.log(`No input field found within ability-block for index ${index}.`, 'error');
+          HM.log(3, `No input field found within ability-block for index ${index}.`, 'error');
         }
       } else {
-        HM.log(`No ability-block found for index ${index}.`, 'error');
+        HM.log(3, `No ability-block found for index ${index}.`, 'error');
       }
     } catch (error) {
-      HM.log('Error while rolling stat:', error, 'error');
+      HM.log(3, 'Error while rolling stat:', error, 'error');
     }
   }
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */
   static async formHandler(event, form, formData) {
-    HM.log('Processing form data...');
+    HM.log(3, 'Processing form data...');
 
     // Extract itemId and packId from the formData
     const extractIds = (itemString) => {
@@ -460,7 +459,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const raceData = extractIds(formData.object.race);
     const classData = extractIds(formData.object.class);
 
-    HM.log('Extracted Item Data:', { backgroundData, raceData, classData });
+    HM.log(3, 'Extracted Item Data:', { backgroundData, raceData, classData });
 
     // Extract abilities from formData
     let abilities = {};
@@ -472,7 +471,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       }
     }
 
-    HM.log('Abilities extracted:', abilities);
+    HM.log(3, 'Abilities extracted:', abilities);
 
     // Create the new actor
     let actorData = {
@@ -488,8 +487,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     let actor = await Actor.create(actorData);
     let newActor = game.actors.getName(formData.object.name);
-    console.log(newActor);
-    HM.log('Created Actor:', actor);
+    HM.log(3, newActor);
+    HM.log(3, 'Created Actor:', actor);
 
     // Fetch the items from compendiums
     const backgroundItem = await game.packs.get(backgroundData.packId)?.getDocument(backgroundData.itemId);
@@ -497,7 +496,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const classItem = await game.packs.get(classData.packId)?.getDocument(classData.itemId);
 
     if (!backgroundItem || !raceItem || !classItem) {
-      HM.log('Error: One or more items could not be fetched.');
+      HM.log(1, 'Error: One or more items could not be fetched.');
       return;
     }
 
@@ -506,7 +505,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     await actor.createEmbeddedDocuments('Item', items);
     // Await newActor.createEmbeddedDocuments('Item', raceItem.toObject());
     // await Item.create(items[1], { parent: newActor });
-    HM.log('Items added to actor:', items);
+    HM.log(3, 'Items added to actor:', items);
 
     // Ensure the items are fully added and the actor is updated
     await actor.update({});
@@ -514,8 +513,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     // Trigger advancements for all added items
     /*     for (const item of items) {
       // Log the actor and the current levels
-      HM.log(`Current levels for item ${item.name}:`, item.system.levels);
-      HM.log('Actor details for advancement:', newActor);
+      HM.log(3,`Current levels for item ${item.name}:`, item.system.levels);
+      HM.log(3,'Actor details for advancement:', newActor);
 
       let manager = dnd5e.applications.advancement.AdvancementManager;
       const cls = newActor.itemTypes.class.find((c) => c.identifier === item.system.identifier);
@@ -530,7 +529,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       } else {
         // Use the standard advancement manager for other items
         manager.forNewItem(newActor, item);
-        HM.log(`Standard Advancement Manager initialized for item: ${item.name}`, manager);
+        HM.log(3,`Standard Advancement Manager initialized for item: ${item.name}`, manager);
         if (manager.steps.length) {
           manager.render(true);
         }
@@ -540,7 +539,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     // Delay opening the sheet until after advancements are triggered
     setTimeout(() => {
       actor.sheet.render(true);
-      HM.log('Opened character sheet for:', actor.name);
+      HM.log(3, 'Opened character sheet for:', actor.name);
     }, 1000); // 1 second delay to ensure everything is processed
   }
 }

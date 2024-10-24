@@ -17,19 +17,39 @@ export class HM {
 
   /* Initialize the module */
   static initialize() {
-    HM.log('Initializing Module.');
-    registerSettings(); // Register the settings for the module
-    // Initialize HeroMancer here
+    console.log('Initializing Module.');
+    registerSettings();
     this.heroMancer = new HeroMancer();
-    // Once the settings are registered, we check if verbose logging is enabled
-    HM.verboseLoggingEnabled = game.settings.get(HM.ID, 'enableVerboseLogging');
-    HM.log(`Verbose logging is ${HM.verboseLoggingEnabled ? 'enabled' : 'disabled'}.`);
+    const currentLogLevel = parseInt(game.settings.get(HM.ID, 'loggingLevel'));
+
+    if (currentLogLevel > 0) {
+      const logMessage = `Logging level set to ${
+        currentLogLevel === 1 ? 'Errors'
+        : currentLogLevel === 2 ? 'Warnings'
+        : 'Verbose'
+      }`;
+      HM.log(3, logMessage); // Log at verbose level
+    }
   }
 
-  /* Utility function for logging based on the verbose setting */
-  static log(...args) {
-    if (HM.verboseLoggingEnabled) {
-      console.log(`${HM.ID} |`, ...args);
+  /* Utility function for logging based on the logging level setting */
+  static log(level, ...args) {
+    const currentLogLevel = parseInt(game.settings.get(HM.ID, 'loggingLevel')); // Ensure numeric comparison
+
+    // Only log if logging level is greater than 0 (Off)
+    if (currentLogLevel > 0 && level <= currentLogLevel) {
+      switch (level) {
+        case 1:
+          console.error(`${HM.ID} |`, ...args);
+          break;
+        case 2:
+          console.warn(`${HM.ID} |`, ...args);
+          break;
+        case 3:
+        default:
+          console.log(`${HM.ID} |`, ...args);
+          break;
+      }
     }
   }
 }
@@ -50,9 +70,9 @@ Hooks.on('ready', () => {
   CustomCompendiums.racePacks = game.settings.get('hero-mancer', 'racePacks');
   CustomCompendiums.backgroundPacks = game.settings.get('hero-mancer', 'backgroundPacks');
 
-  HM.log('Loaded classPacks:', CustomCompendiums.classPacks);
-  HM.log('Loaded racePacks:', CustomCompendiums.racePacks);
-  HM.log('Loaded backgroundPacks:', CustomCompendiums.backgroundPacks);
+  HM.log(3, 'Loaded classPacks:', CustomCompendiums.classPacks);
+  HM.log(3, 'Loaded racePacks:', CustomCompendiums.racePacks);
+  HM.log(3, 'Loaded backgroundPacks:', CustomCompendiums.backgroundPacks);
   // Button click event to render HeroMancer, scoped to actors-sidebar section
   $('section[class*="actors-sidebar"]').on('click', `.${HM.ABRV}-actortab-button`, (event) => {
     HM.heroMancer.render(true);

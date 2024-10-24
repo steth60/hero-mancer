@@ -13,7 +13,7 @@ export async function registerRaces() {
     /* Process each document within the raceData.documents array */
     raceData.documents.forEach(({ id, name, packName, packId, description, folderName }) => {
       // Log the structure of the document for debugging
-      HM.log(`Processing document: ${name}`, { id, name, packName, packId, description, folderName });
+      HM.log(3, `Processing document: ${name}`, { id, name, packName, packId, description, folderName });
 
       if (folderName) {
         // If the folder doesn't exist in the map, create a new entry
@@ -68,7 +68,7 @@ export async function registerRaces() {
       }
     });
 
-    HM.log(`Race registration complete: ${sortedUniqueFolders.length} documents registered.`);
+    HM.log(3, `Race registration complete: ${sortedUniqueFolders.length} documents registered.`);
 
     // Return both the race documents and the generated dropdown HTML
     return {
@@ -78,7 +78,7 @@ export async function registerRaces() {
   }
 
   // In case there are no races
-  HM.log('No races available for registration.');
+  HM.log(2, 'No races available for registration.');
   return {
     races: [],
     dropdownHtml: '<option value="">No races available</option>'
@@ -125,7 +125,7 @@ export async function registerClasses() {
     });
 
     // Log the number of documents registered
-    HM.log(`Class registration complete: ${sortedUniquePacks.length} packs registered.`);
+    HM.log(3, `Class registration complete: ${sortedUniquePacks.length} packs registered.`);
 
     // Return both the classes and the generated dropdown HTML
     return {
@@ -135,7 +135,7 @@ export async function registerClasses() {
   }
 
   // If no class data is available, return an empty array
-  HM.log('No class documents available for registration.');
+  HM.log(2, 'No class documents available for registration.');
   return {
     classes: [],
     dropdownHtml: '<option value="">No classes available</option>'
@@ -185,7 +185,7 @@ export async function registerBackgrounds() {
     });
 
     // Log the number of documents registered
-    HM.log(`Background registration complete: ${sortedUniquePacks.length} packs registered.`);
+    HM.log(3, `Background registration complete: ${sortedUniquePacks.length} packs registered.`);
 
     // Return both the background documents and the generated dropdown HTML
     return {
@@ -195,7 +195,7 @@ export async function registerBackgrounds() {
   }
 
   // Log if no background data is found
-  HM.log('No background documents available for registration.');
+  HM.log(2, 'No background documents available for registration.');
   return {
     backgrounds: [],
     dropdownHtml: '<option value="">No backgrounds available</option>'

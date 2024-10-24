@@ -9,28 +9,28 @@ export async function handleDropdownChange(type, html) {
 
       /* Access document data from HM[type]. */
       let selectedDoc = HM[type].documents.find((doc) => doc.id === selectedVal);
-      HM.log('Selected Document: ', selectedDoc);
+      HM.log(3, 'Selected Document: ', selectedDoc);
 
       if (selectedDoc) {
         const packId = selectedDoc.packId;
         const docId = selectedDoc.id;
 
-        HM.log(`Pack ID: ${packId}`);
-        HM.log(`Document ID: ${docId}`);
+        HM.log(3, `Pack ID: ${packId}`);
+        HM.log(3, `Document ID: ${docId}`);
 
         const compendium = game.packs.get(packId);
-        HM.log('Compendium: ', compendium);
+        HM.log(3, 'Compendium: ', compendium);
 
         if (compendium) {
           compendium
             .getDocument(docId)
             .then((doc) => {
-              HM.log('Document: ', doc);
-              HM.log('Document System: ', doc.system);
-              HM.log('Document Description: ', doc.system.description);
+              HM.log(3, 'Document: ', doc);
+              HM.log(3, 'Document System: ', doc.system);
+              HM.log(3, 'Document Description: ', doc.system.description);
 
               let descriptionHtml = doc.system.description?.value || 'No description available.';
-              HM.log('Description HTML: ', descriptionHtml);
+              HM.log(3, 'Description HTML: ', descriptionHtml);
 
               /* Remove any existing description and <hr> */
               const existingHr = html.querySelector(`#${type}-dropdown + hr`);
@@ -42,7 +42,7 @@ export async function handleDropdownChange(type, html) {
               dropdown.insertAdjacentHTML('afterend', `<hr />${descriptionHtml}`);
             })
             .catch((error) => {
-              HM.log('Error Fetching Document for Dropdown Change: ', error, 'error');
+              HM.log(1, 'Error Fetching Document for Dropdown Change: ', error, 'error');
             });
         }
       }
