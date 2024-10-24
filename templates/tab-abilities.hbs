@@ -1,4 +1,6 @@
-<div class='tab {{tabs.abilities.cssClass}}' data-tab='abilities' data-group='hero-mancer-tabs' data-tooltip='{{localize 'hm.app.abilities.tooltip'}}'>
+<div class='tab {{tabs.abilities.cssClass}}' data-tab='abilities' data-group='hero-mancer-tabs'>
+    <fieldset>
+    <legend>{{localize 'hm.app.abilties.tooltip'}}</legend>
   <p>This is the Abilities tab!</p>
 
   <div class="ability-container">
@@ -16,8 +18,9 @@
         <input type="number" name="abilities[{{this.key}}].score" class="ability-score" data-dtype="Number" placeholder="Enter score" />
         
         <!-- Dice icon for rolling the stat -->
-        <i class="fa-solid fa-dice-d6 roll-dice-icon" data-action="rollStat" data-index="{{@index}}"></i>
+        <i class="fa-solid fa-dice-d6 fa-2xl" data-action="rollStat" data-index="{{@index}}"></i>
       </div>
     {{/each}}
   </div>
+  </fieldset>
 </div>

@@ -1,22 +1,30 @@
-/* .hm-app is the parent structure of the app. */
-.hm-app {
+/* .hm-app is the parent structure of the app. It sets the overall size and ensures content adjusts to the window. */
+.application.hm-app {
   width: 1000px;
-  height: fit-content !important;
+  height: fit-content;
   min-height: 0;
   max-width: 860px;
   max-height: 100%;
 }
+
+/* Styling for the navigation tabs under .hero-mancer-tabs */
 .hero-mancer-tabs .tabs .hm-app-nav .item {
   color: var(--color-text-primary);
 }
+
+/* Headings inside .hm-app are padded slightly for spacing */
 .hm-app h2,
 .hm-app h3 {
   padding-bottom: 5px;
 }
+
+/* Paragraphs inside .hm-app follow a consistent line-height for readability */
 .hm-app p {
   display: block;
   line-height: var(--line-height-20);
 }
+
+/* Fieldset styling for forms, ensuring proper layout and scrollability */
 .hm-app fieldset {
   border-radius: 6px;
   border: 1px solid var(--color-cool-3);
@@ -35,6 +43,8 @@
   overflow-y: auto;
   width: 100%;
 }
+
+/* Styling for legends inside fieldsets */
 .hm-app fieldset > legend {
   text-transform: uppercase;
   font-weight: bold;
@@ -42,18 +52,23 @@
   color: var(--color-text-primary);
   padding: 0 6px;
 }
+
+/* Empty state inside a fieldset, using italic text and centered alignment */
 .hm-app fieldset > .empty {
   padding: 6px;
   font-style: italic;
   text-align: center;
   color: var(--color-text-primary);
 }
+
+/* Card-styled fieldset with shadow and outline */
 .hm-app fieldset.card > legend {
   background: var(--dnd5e-background-card);
   position: relative;
   border-radius: 2px;
   padding: 2px 6px 0;
 }
+
 .hm-app fieldset.card > legend::before {
   content: '';
   position: absolute;
@@ -63,10 +78,14 @@
   outline: var(--dnd5e-border-gold);
   z-index: -1;
 }
+
+/* Disabled fieldset styling for hint and label */
 .hm-app fieldset:disabled .form-group label,
 .hm-app fieldset:disabled .hint {
   color: var(--color-text-primary);
 }
+
+/* Basic table styling inside .hm-app */
 .hm-app table {
   margin-left: 0;
 }
@@ -75,17 +94,20 @@
 .hm-app-header {
   text-align: center;
 }
+
 /* .hm-app-nav contains the navigation between tabs. */
-.hm-app-nav {
-  margin: 0px 50px 10px 50px !important;
-  gap: 2rem !important;
+.application.hm-app .hm-app-nav {
+  margin: 0 50px 10px 50px;
+  gap: 2rem;
   align-self: center;
   align-items: center;
   text-align: center;
-  flex-wrap: nowrap !important;
-  white-space: nowrap !important;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
-.hm-app-nav a.item {
+
+/* Navigation item (link) styling */
+.application.hm-app .hm-app-nav a.item {
   white-space: nowrap;
   padding: 0 10px;
   text-overflow: ellipsis;
@@ -94,16 +116,29 @@
   display: flex;
   align-items: center;
 }
+
 /* Force icons in hm-app-nav to be a certain size. */
-.fa-2xs {
-  font-size: 1em !important;
+.application.hm-app .hm-app-nav a.item i {
+  font-size: 1.2em;
 }
-.hm-app input[type='text'],
-.hm-app select {
-  width: 200px !important;
-  max-width: calc(fit-content - 100px);
+
+/* Input and select elements inside fieldsets are styled for consistency */
+.hm-app-tab-content fieldset input[type='text'],
+.hm-app-tab-content fieldset select {
+  width: 200px;
+  max-width: 100%;
   margin-left: 10px;
   margin-right: 5px;
+}
+
+/* Media query for responsiveness */
+@media (max-width: 768px) {
+  .hm-app-tab-content fieldset input[type='text'],
+  .hm-app-tab-content fieldset select {
+    width: 50%;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 /* .hm-app-tab-content applies to everything within the handlebars for any tab-*.hbs file. */
@@ -112,24 +147,23 @@
   height: auto;
   max-height: 50vh;
 }
-.hm-app-tab-content h1,
-.hm-app-tab-content h2,
-.hm-app-tab-content h3,
-.hm-app-tab-content h4,
-.hm-app-tab-content h5,
-.hm-app-tab-content h6 {
-  font-family: var(--font-h1) !important;
+
+/* Styling for headings within .hm-app-tab-content */
+.application.hm-app .hm-app-tab-content h1,
+.application.hm-app .hm-app-tab-content h2,
+.application.hm-app .hm-app-tab-content h3,
+.application.hm-app .hm-app-tab-content h4,
+.application.hm-app .hm-app-tab-content h5,
+.application.hm-app .hm-app-tab-content h6 {
+  font-family: var(--font-h1);
 }
-/* Dropdown options styling */
+
+/* Dropdown options styling to prevent text overflow */
 .hm-app-tab-content option {
   white-space: nowrap;
 }
-.hm-app-tab-content option[data-pack]:after {
-  content: attr(data-pack);
-  color: red !important;
-  font-size: 0.85em !important;
-  margin-left: 10px;
-}
+
+/* Image styling within .hm-app-tab-content */
 .hm-app-tab-content img {
   max-width: 200px;
   height: auto;
@@ -139,8 +173,8 @@
 }
 
 /* Specific styling for enriched descriptions to look pretty! */
-.hm-app-tab-content .Basic-Text-Frame.stat-block-background {
-  background: none !important; /* Remove background color */
+.application.hm-app .hm-app-tab-content .Basic-Text-Frame.stat-block-background {
+  background: none; /* Remove background color */
 }
 
 /* .hm-app-footer applies to everything in the footer. */
@@ -150,6 +184,8 @@
   align-items: center;
   padding-top: 16px;
 }
+
+/* Footer action buttons styling */
 .hm-app-footer-actions {
   display: flex;
   justify-content: space-between;
@@ -157,74 +193,92 @@
   width: 30%;
   gap: 10px;
 }
-/* submit/cancel buttons styling. */
-.hm-app-footer button {
+
+/* Styling for submit/cancel buttons */
+.hm-app .hm-app-footer .hm-app-footer-actions button {
   padding: 0.5rem 1rem;
-  font-size: 1rem !important;
+  font-size: 1rem;
 }
-.hm-app-footer-submit:hover {
-  background-color: #45a049 !important;
+
+/* Hover effects for submit button */
+.hm-app .hm-app-footer .hm-app-footer-actions button:hover {
+  background-color: #45a049;
 }
-.hm-app-footer-cancel:hover {
-  background-color: #d32f2f !important;
+
+/* Hover effects for cancel button */
+.hm-app .hm-app-footer .hm-app-footer-actions button:hover {
+  background-color: #d32f2f;
 }
+
+/* Ability container layout within .hm-app */
 .hm-app .ability-container {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between; /* Ensure items are spaced evenly and touch boundaries */
-  align-items: center; /* Center items vertically */
-  width: 100%; /* Make sure the container spans the full width */
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 150px;
   padding-left: 5px;
   padding-right: 5px;
   padding-bottom: 5px;
 }
 
+/* Ability block layout for dropdown and text fields */
 .hm-app .ability-block {
   display: flex;
-  flex-direction: column; /* Stack dropdown and text field vertically */
-  align-items: center; /* Center dropdown and text field */
-  gap: 5px; /* Space between dropdown and text field */
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
   width: 85px;
+  line-height: 2.5em;
 }
 
+/* Dropdown inside ability block */
 .hm-app .ability-block .ability-dropdown {
-  width: 100% !important; /* Ensure dropdown width matches 3 characters */
+  width: 100%;
   text-align: center;
   font-size: 0.8rem;
   margin: 0;
 }
 
+/* Ability score input field styling */
 .hm-app .ability-block .ability-score {
-  width: 100% !important; /* Fixed width for the text field */
+  width: 100%;
   text-align: center;
   font-size: 0.8rem;
+  margin-bottom: 20px;
 }
-.hm-app .ability-block .ability-score .roll-dice-icon {
-  font-size: 2em !important;
-}
+
+/* Popup section styling in compendiums */
 .hm-compendiums-popup-section {
   display: flex;
-  justify-content: space-between; /* Align text to the left, button to the right */
-  align-items: center; /* Vertically align the button and text */
-  margin: 10px 0; /* Space above and below the section */
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
 }
 
+/* Paragraph inside popup section */
 .hm-compendiums-popup-section p {
-  flex: 1; /* Allow the paragraph to take up the remaining space */
-  margin: 0; /* Remove default margins from paragraph */
+  flex: 1;
+  margin: 0;
 }
 
+/* Button styling inside popup section */
 .hm-compendiums-popup-section button {
-  width: auto; /* Let the button width adjust based on the text */
-  margin-left: 10px; /* Space between text and button */
-  white-space: nowrap; /* Prevent text wrapping inside the button */
+  width: auto;
+  margin-left: 10px;
+  white-space: nowrap;
 }
+
+/* Footer for compendiums */
 .hm-compendiums-footer {
   display: flex;
   justify-content: center;
   align-items: center;
   padding-top: 16px;
 }
+
+/* Footer actions for compendiums */
 .hm-compendiums-footer-actions {
   display: flex;
   justify-content: space-between;
@@ -233,18 +287,21 @@
   gap: 10px;
 }
 
+/* Multi-checkbox layout in popups */
 .hm-compendiums-popup-dialog multi-checkbox {
-  display: block; /* Switch from grid to block layout to display elements in rows */
+  display: block;
 }
 
+/* Checkbox label styling in multi-checkbox */
 .hm-compendiums-popup-dialog multi-checkbox label.checkbox {
-  display: flex; /* Use flexbox to align the checkbox and label */
-  justify-content: space-between; /* Align the label text to the left and the checkbox to the right */
-  align-items: center; /* Vertically center the label text and the checkbox */
-  margin-bottom: 10px; /* Add spacing between each row */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
+/* Checkbox input styling */
 .hm-compendiums-popup-dialog multi-checkbox label.checkbox input[type='checkbox'] {
-  order: 1; /* Move the checkbox to the end of the flex container */
-  margin-left: 10px; /* Add some space between the label text and checkbox */
+  order: 1;
+  margin-left: 10px;
 }

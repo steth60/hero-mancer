@@ -1,17 +1,9 @@
-import { HM } from './module.js';
-import { HMUtils } from './utils.js';
+import { HM } from '../module.js';
+import * as HMUtils from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api; // Define some variables we'll use often, pulling from the foundry API.
 const { AdvancementManager } = dnd5e.applications.advancement;
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
-  static cachedRaceDocs = null; // Used to cache all valid race documents we'll find for mancing.
-
-  static cachedClassDocs = null; // Used to cache all valid class documents we'll find for mancing.
-
-  static cachedBackgroundDocs = null; // Used to cache all valid background documents we'll find for mancing.
-
-  static enrichedCache = false; // Boolean to check if we need to build the cache for the above variables.
-
   static DEFAULT_OPTIONS = {
     id: `${HM.ID}-app`,
     tag: 'form',
@@ -100,23 +92,18 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.log('Preparing context.');
 
     // Check if cached data is available to avoid re-fetching
-    if (
-      HeroMancer.cachedRaceDocs &&
-      HeroMancer.cachedClassDocs &&
-      HeroMancer.cachedBackgroundDocs &&
-      HeroMancer.enrichedCache
-    ) {
+    if (HMUtils.CacheManager.isCacheValid()) {
       HM.log('Documents cached and descriptions enriched!');
       return {
-        raceDocs: HeroMancer.cachedRaceDocs,
-        raceDropdownHtml: HeroMancer.cachedRaceDropdownHtml, // Cached dropdown HTML
-        classDocs: HeroMancer.cachedClassDocs,
-        classDropdownHtml: HeroMancer.cachedClassDropdownHtml, // Cached dropdown HTML for classes
-        backgroundDocs: HeroMancer.cachedBackgroundDocs,
-        backgroundDropdownHtml: HeroMancer.cachedBackgroundDropdownHtml, // Cached dropdown HTML for backgrounds
+        raceDocs: HMUtils.CacheManager.getCachedRaceDocs(),
+        raceDropdownHtml: HMUtils.CacheManager.getCachedRaceDropdownHtml(),
+        classDocs: HMUtils.CacheManager.getCachedClassDocs(),
+        classDropdownHtml: HMUtils.CacheManager.getCachedClassDropdownHtml(),
+        backgroundDocs: HMUtils.CacheManager.getCachedBackgroundDocs(),
+        backgroundDropdownHtml: HMUtils.CacheManager.getCachedBackgroundDropdownHtml(),
         tabs: this.tabsData,
-        abilities: HeroMancer.cachedAbilities, // Cached abilities data
-        rollStat: this.rollStat // Roll stat handler
+        abilities: HMUtils.CacheManager.getCachedAbilities(), // Assuming abilities are also cached
+        rollStat: this.rollStat
       };
     }
 
@@ -182,14 +169,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     // Cache the documents and enriched descriptions for future use
-    HeroMancer.cachedRaceDocs = raceDocs;
-    HeroMancer.cachedRaceDropdownHtml = raceDropdownHtml;
-    HeroMancer.cachedClassDocs = classDocs;
-    HeroMancer.cachedClassDropdownHtml = classDropdownHtml;
-    HeroMancer.cachedBackgroundDocs = backgroundDocs;
-    HeroMancer.cachedBackgroundDropdownHtml = backgroundDropdownHtml;
-    HeroMancer.cachedAbilities = abilities;
-    HeroMancer.enrichedCache = true;
+    HMUtils.CacheManager.cacheDocuments({
+      raceDocs,
+      raceDropdownHtml,
+      classDocs,
+      classDropdownHtml,
+      backgroundDocs,
+      backgroundDropdownHtml,
+      abilities
+    });
 
     HM.log('Documents registered and enriched, caching results.');
     return context;
@@ -343,7 +331,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       start: {
         id: 'start',
         group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-play-circle fa-2xs',
+        icon: 'fa-solid fa-play-circle',
         label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.start`)}`,
         active: true,
         cssClass: 'active'
@@ -351,7 +339,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       background: {
         id: 'background',
         group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-scroll fa-2xs',
+        icon: 'fa-solid fa-scroll',
         label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.background`)}`,
         active: false,
         cssClass: ''
@@ -359,7 +347,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       race: {
         id: 'race',
         group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-feather-alt fa-2xs',
+        icon: 'fa-solid fa-feather-alt',
         label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.race`)}`,
         active: false,
         cssClass: ''
@@ -367,7 +355,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       class: {
         id: 'class',
         group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-chess-rook fa-2xs',
+        icon: 'fa-solid fa-chess-rook',
         label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.class`)}`,
         active: false,
         cssClass: ''
@@ -375,7 +363,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       abilities: {
         id: 'abilities',
         group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-fist-raised fa-2xs',
+        icon: 'fa-solid fa-fist-raised',
         label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.abilities`)}`,
         active: false,
         cssClass: ''
@@ -383,7 +371,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       equipment: {
         id: 'equipment',
         group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-shield-halved fa-2xs',
+        icon: 'fa-solid fa-shield-halved',
         label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.equipment`)}`,
         active: false,
         cssClass: ''
@@ -391,7 +379,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       finalize: {
         id: 'finalize',
         group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-check-circle fa-2xs',
+        icon: 'fa-solid fa-check-circle',
         label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.finalize`)}`,
         active: false,
         cssClass: ''
@@ -524,7 +512,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     await actor.update({});
 
     // Trigger advancements for all added items
-    for (const item of items) {
+    /*     for (const item of items) {
       // Log the actor and the current levels
       HM.log(`Current levels for item ${item.name}:`, item.system.levels);
       HM.log('Actor details for advancement:', newActor);
@@ -547,7 +535,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           manager.render(true);
         }
       }
-    }
+    } */
 
     // Delay opening the sheet until after advancements are triggered
     setTimeout(() => {

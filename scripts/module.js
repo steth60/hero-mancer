@@ -1,6 +1,7 @@
-import { HMUtils } from './utils.js';
-import { registerSettings, CustomCompendiums } from './settings.js';
-import { HeroMancer } from './HeroMancer.js';
+import * as HMUtils from './utils/index.js';
+import { registerSettings } from './settings.js';
+import { CustomCompendiums } from './app/CustomCompendiums.js';
+import { HeroMancer } from './app/HeroMancer.js';
 
 /* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
 export class HM {
