@@ -8,19 +8,15 @@ import { HM } from '../hero-mancer.js';
  * @throws Will throw an error if the type is invalid or if document retrieval fails.
  * @throws Will display a UI error notification if a compendium pack retrieval fails.
  */
-export async function getDocuments(type) {
+export async function fetchDocuments(type) {
   // Check for invalid argument
   if (typeof type !== 'string' || type.trim() === '') {
     throw new Error('Invalid argument: expected a non-empty string.');
   }
 
-  // Capitalize the first letter of the type
   let typeNice = type.charAt(0).toUpperCase() + type.slice(1);
-
-  // Initialize a set to hold valid document packs
   let validPacks = new Set();
 
-  // Fetch custom compendiums from settings based on the type
   let selectedPacks = [];
   if (type === 'class') {
     selectedPacks = game.settings.get('hero-mancer', 'classPacks') || [];
@@ -30,67 +26,51 @@ export async function getDocuments(type) {
     selectedPacks = game.settings.get('hero-mancer', 'backgroundPacks') || [];
   }
 
-  // If custom packs are selected, filter for those. Otherwise, get all 'Item' type packs
-  let packs;
-  if (selectedPacks.length > 0) {
-    packs = game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id));
-  } else {
-    packs = game.packs.filter((i) => i.metadata.type === 'Item');
-  }
+  let packs =
+    selectedPacks.length > 0 ?
+      game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id))
+    : game.packs.filter((i) => i.metadata.type === 'Item');
 
-  // Log the start of document fetching
   HM.log(3, `Fetching documents for type: ${typeNice}`);
 
-  // Collect documents from the selected or default packs
   for (const pack of packs) {
     try {
       let documents = await pack.getDocuments({ type: type });
 
-      // Log the pack and retrieved documents
       HM.log(3, `Retrieved documents from pack: ${pack.metadata.label}`, documents);
 
-      // Iterate through the documents in the pack
       for (const doc of documents) {
         if (!doc) {
           HM.log(3, `Document is undefined in pack: ${pack.metadata.label}`, 'error');
         } else {
-          // Process the pack name based on conditions
           let packName = pack.metadata.label;
-          if (packName.includes('SRD')) {
-            packName = 'SRD'; // Only keep 'SRD' as a shorthand for the SRD items.
-          } else if (packName.includes('DDB')) {
-            packName = 'DDB'; // Only keep 'DDB' added default support for DDB Importer
-          }
+          if (packName.includes('SRD')) packName = 'SRD';
+          if (packName.includes('DDB')) packName = 'DDB';
 
-          // Add the document to the validPacks set
           validPacks.add({
             doc,
-            packName, // Use the modified packName
-            packId: pack.metadata.id, // Compendium key for lookup
+            packName,
+            packId: pack.metadata.id,
             description: doc.system.description?.value || `${game.i18n.localize(`${HM.ABRV}.app.no-description`)}`,
-            folderName: doc.folder?.name || null // Extract folder name, set to null if not in a folder
+            folderName: doc.folder?.name || null
           });
         }
       }
     } catch (error) {
       HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`, 'error');
-      ui.notifications.error(
-        `Failed to retrieve documents from compendium pack: ${pack.metadata.label}. Please check if the pack is valid.`
-      );
+      ui.notifications.error(`Failed to retrieve documents from compendium pack: ${pack.metadata.label}.`);
     }
   }
 
-  // Log the completion of document collection
   HM.log(3, `${typeNice} collection complete: ${validPacks.size} documents collected.`);
 
-  // Sort the documents by name, and if names match, sort by packName to prioritize 'DDB' over 'SRD'
   let sortedPackDocs = [...validPacks]
     .map(({ doc, packName, packId, description, folderName }) => ({
       id: doc.id,
       name: doc.name,
       description,
-      folderName, // Includes the folder name if available
-      packName, // Includes the shorthand 'SRD' or 'DDB' if applicable
+      folderName,
+      packName,
       packId
     }))
     .sort((a, b) => {
@@ -98,36 +78,56 @@ export async function getDocuments(type) {
       return nameCompare === 0 ? a.packName.localeCompare(b.packName) : nameCompare;
     });
 
-  // Log the sorted document structure for verification
   HM.log(3, 'Sorted Pack Docs:', sortedPackDocs);
 
-  return {
-    documents: sortedPackDocs,
-    uniqueFolders: [] // No folder logic here; that can be handled separately for specific cases like races
-  };
+  return { documents: sortedPackDocs, uniqueFolders: [] };
 }
+
 /**
- * Finds the selected document from the dropdown based on its type (race, class, background).
- * @param {Array} documents The array of documents (flattened or grouped).
- * @param {string} selectedId The ID of the selected document.
- * @param {string} type The type of the document (race, class, background).
- * @returns {object|null} The selected document or null if not found.
+ * Fetches and prepares documents based on the specified type for dropdown use.
+ * @param {string} type The type of document to register (e.g., 'race', 'class', 'background').
+ * @returns {Promise<object>} - Object containing processed documents and HTML for the dropdown.
  */
-export function findSelectedDocument(documents, selectedId, type) {
-  let selectedDoc = null;
+export async function prepareDocuments(type) {
+  try {
+    let data = await fetchDocuments(type);
+    if (!data) throw new Error(`no-${type}-data`);
 
-  switch (type) {
-    case 'race':
-      selectedDoc = documents.flatMap((folder) => folder.docs).find((doc) => doc.id === selectedId);
-      break;
-    case 'background':
-    case 'class':
-      selectedDoc = documents.flatMap((pack) => pack.docs).find((doc) => doc.id === selectedId);
-      break;
-    default:
-      selectedDoc = documents.find((doc) => doc.id === selectedId);
-      break;
+    const groupingField = type === 'race' ? 'folderName' : 'packName';
+    const sortedUniqueFolders = groupAndSortDocuments(data.documents, groupingField);
+
+    const dropdownHtml = HMUtils.generateDropdownHTML(sortedUniqueFolders, groupingField);
+
+    return { types: sortedUniqueFolders, dropdownHtml };
+  } catch (error) {
+    HM.log(1, `Error: Failed to register ${type} documents. No ${type} data available.`);
+    return {
+      types: [],
+      dropdownHtml: `<option value="">${game.i18n.localize(`hm.no-${type}-available`)}</option>`
+    };
   }
+}
 
-  return selectedDoc || null;
+/**
+ * Groups and sorts documents by a given key.
+ * @param {Array} documents Array of documents to process.
+ * @param {string} key The key to use for grouping and sorting.
+ * @returns {Array} Sorted array of grouped documents.
+ */
+function groupAndSortDocuments(documents, key) {
+  const uniqueMap = new Map();
+
+  documents.forEach(({ id, name, description, packName, packId, folderName }) => {
+    const groupKey = folderName || name;
+
+    if (!uniqueMap.has(groupKey)) {
+      uniqueMap.set(groupKey, { folderName: folderName || null, docs: [], packName, packId });
+    }
+
+    uniqueMap.get(groupKey).docs.push({ id, name, description, packName, packId });
+  });
+
+  return Array.from(uniqueMap.values()).sort(
+    (a, b) => a[key]?.localeCompare(b[key]) || a.docs[0].name.localeCompare(b.docs[0].name)
+  );
 }

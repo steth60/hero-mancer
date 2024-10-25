@@ -111,9 +111,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Fetch race, class, and background documents
     HM.log(3, 'Fetching race, class, and background documents...');
-    const { races: raceDocs, dropdownHtml: raceDropdownHtml } = await HMUtils.registerRaces();
-    const { classes: classDocs, dropdownHtml: classDropdownHtml } = await HMUtils.registerClasses();
-    const { backgrounds: backgroundDocs, dropdownHtml: backgroundDropdownHtml } = await HMUtils.registerBackgrounds();
+    const { types: raceDocs, dropdownHtml: raceDropdownHtml } = await HMUtils.prepareDocuments('race');
+    const { types: classDocs, dropdownHtml: classDropdownHtml } = await HMUtils.prepareDocuments('class');
+    const { types: backgroundDocs, dropdownHtml: backgroundDropdownHtml } =
+      await HMUtils.prepareDocuments('background');
 
     // Log fetched documents
     HM.log(3, 'Race Docs:', raceDocs);

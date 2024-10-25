@@ -24,3 +24,7 @@
 - Add comments to index.js.
 - Refactor registrations.js to reuse code, better error handling.
 - Added missing JSDoc to all files as a practice for external APIs usage.
+
+## Code Review: Phase 2.1
+
+- Tweak documents.js/registrations.js to simplify the document retrieval and building process.
