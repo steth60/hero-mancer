@@ -63,3 +63,9 @@
 - **Localization Support**: Review localization to ensure that any hard-coded text is translatable.
 - **Tooltips**: Consider adding tooltips for key buttons (e.g., "Submit" and "Cancel" buttons) to give users more
   context about what actions each button performs.
+
+  ## 10. Misc
+
+  - Integrations with DDBI and other modules that want to integrate, for now this is just to simplify the compendium
+    name as we do in getDocuments() in documents.js
+  - Fix abilities tab text is too big from CSS refactor!

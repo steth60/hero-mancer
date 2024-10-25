@@ -1,8 +1,8 @@
-import { HM } from '../module.js';
+import { HM } from '../hero-mancer.js';
 import * as HMUtils from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api; // Define some variables we'll use often, pulling from the foundry API.
-const { AdvancementManager } = dnd5e.applications.advancement;
+// const { AdvancementManager } = dnd5e.applications.advancement;
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
     id: `${HM.ID}-app`,
@@ -182,146 +182,18 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     return context;
   }
 
-  /* Prepare partial context for specific parts of the application. Reference: https://foundryvtt.wiki/en/development/api/applicationv2 */
-  async _preparePartContext(partId, context) {
-    HM.log(3, `Preparing part context for: ${partId}`);
-
-    context.partId = `${this.id}-${partId}`;
-    return context;
-  }
-
   /* Dynamic rendering of the application, triggers events and updates. */
   _onRender(context, options) {
     HM.log(3, 'Rendering application with context and options.');
+    const html = this.element;
 
-    // Add description listeners for class, race, and background dropdowns
-    this._addDescriptionUpdateListeners(context, 'class');
-    this._addDescriptionUpdateListeners(context, 'race');
-    this._addDescriptionUpdateListeners(context, 'background');
+    // Initialize each dropdown with the refactored function
+    HMUtils.initializeDropdown({ type: 'class', html, context });
+    HMUtils.initializeDropdown({ type: 'race', html, context });
+    HMUtils.initializeDropdown({ type: 'background', html, context });
 
-    // Add ability selection listeners for the ability dropdowns
-    this._addAbilitySelectionListeners();
-  }
-
-  _addDescriptionUpdateListeners(context, type) {
-    HM.log(3, `Adding description update listeners for ${type}.`);
-
-    const dropdown = this.element.querySelector(`#${type}-dropdown`);
-
-    if (dropdown) {
-      dropdown.addEventListener('change', async (event) => {
-        const selectedValue = event.target.value;
-
-        // Strip parentheses and content inside them (used for pack names)
-        const selectedId = selectedValue.replace(/\s?\(.*?\)/, '');
-
-        if (!selectedId) {
-          const descriptionElement = this.element.querySelector(`#${type}-description`);
-          if (descriptionElement) descriptionElement.innerHTML = '';
-          return;
-        }
-
-        // Check if the context contains the correct documentsKey
-        const documentsKey = `${type}Docs`;
-        HM.log(3, `Documents Key: ${documentsKey}`, context[documentsKey]);
-
-        if (!context[documentsKey] || !Array.isArray(context[documentsKey])) {
-          HM.log(1, `${HM.ID} | No documents found for type: ${type}`);
-          return;
-        }
-
-        let selectedDoc;
-
-        if (type === 'race') {
-          // Flatten race docs to access documents inside folders
-          const raceDocs = context[documentsKey].flatMap((folder) => folder.docs);
-          HM.log(3, 'Flattened Race Docs:', raceDocs);
-
-          // Find the selected document in the flattened raceDocs array
-          selectedDoc = raceDocs.find((doc) => doc.id === selectedId);
-          HM.log(3, 'Selected Race Document:', selectedDoc);
-        } else if (type === 'background') {
-          // Flatten background docs to handle pack grouping
-          const backgroundDocs = context[documentsKey].flatMap((pack) => pack.docs);
-          HM.log(3, 'Flattened Background Docs:', backgroundDocs);
-
-          selectedDoc = backgroundDocs.find((doc) => doc.id === selectedId);
-          HM.log(3, 'Selected Background Document:', selectedDoc);
-        } else if (type === 'class') {
-          // Flatten class docs to handle pack grouping
-          const classDocs = context[documentsKey].flatMap((pack) => pack.docs);
-          HM.log(3, 'Flattened Class Docs:', classDocs);
-
-          selectedDoc = classDocs.find((doc) => doc.id === selectedId);
-          HM.log(3, 'Selected Class Document:', selectedDoc);
-        } else {
-          // Find the selected document for other types (if applicable)
-          selectedDoc = context[documentsKey].find((doc) => doc.id === selectedId);
-          HM.log(3, 'Selected Document for type:', selectedDoc);
-        }
-
-        // Ensure the selectedDoc exists and has an enriched description
-        const descriptionElement = this.element.querySelector(`#${type}-description`);
-        if (selectedDoc && selectedDoc.enrichedDescription) {
-          HM.log(3, 'Displaying enriched description:', selectedDoc.enrichedDescription);
-          descriptionElement.innerHTML = selectedDoc.enrichedDescription;
-        } else {
-          HM.log(2, `${HM.ID} | No enriched description found, using default.`);
-          descriptionElement.innerHTML = `${game.i18n.localize(`${HM.ABRV}.app.no-description`)}`;
-        }
-      });
-    } else {
-      HM.log(1, `No dropdown found for ${type}.`);
-    }
-  }
-
-  _addAbilitySelectionListeners() {
-    const abilityDropdowns = this.element.querySelectorAll('.ability-dropdown');
-    const selectedAbilities = new Set();
-
-    // Iterate over each dropdown and attach change listeners
-    abilityDropdowns.forEach((dropdown, index) => {
-      let previousValue = dropdown.value; // Store the previously selected value
-
-      HM.log(3, `Initial previousValue for dropdown ${index}:`, previousValue);
-
-      dropdown.addEventListener('change', (event) => {
-        const selectedValue = event.target.value;
-        HM.log(3, `New selectedValue for dropdown ${index}:`, selectedValue);
-
-        // Handle removal of the previously selected ability
-        if (previousValue && selectedAbilities.has(previousValue)) {
-          selectedAbilities.delete(previousValue);
-          HM.log(3, 'Removed previousValue from selectedAbilities:', previousValue);
-        }
-
-        // Add the new selected ability to the set (unless it's "N/A" or empty)
-        if (selectedValue) {
-          selectedAbilities.add(selectedValue);
-          HM.log(3, 'Added selectedValue to selectedAbilities:', selectedValue);
-        }
-
-        // Update the dropdown's previous value
-        previousValue = selectedValue;
-        HM.log(3, `Updated previousValue for dropdown ${index}:`, previousValue);
-
-        // Update all dropdowns to disable or enable options based on selected abilities
-        abilityDropdowns.forEach((dropdown, idx) => {
-          const currentValue = dropdown.value;
-          HM.log(3, `Current value for dropdown ${idx}:`, currentValue);
-
-          dropdown.querySelectorAll('option').forEach((option) => {
-            if (selectedAbilities.has(option.value) && option.value !== currentValue) {
-              option.disabled = true; // Disable options that are already selected in other dropdowns
-              HM.log(3, 'Disabled option:', option.value);
-            } else {
-              option.disabled = false; // Re-enable options that haven't been selected
-              HM.log(3, 'Enabled option:', option.value);
-            }
-          });
-        });
-      });
-    });
+    // Set up ability selection listeners
+    HMUtils.addAbilitySelectionListeners(html);
   }
 
   /* Getter to setup tabs with builtin foundry functionality. */
@@ -403,45 +275,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.log(3, 'Tab changed. New position set:', newPos);
   }
 
-  /* Logic for rolling stats and updating input fields. */
+  /* Logic for rolling stats and updating input fields */
   static async rollStat(event, form) {
-    HM.log(3, 'Rolling stats for 4d6kh3.');
-
-    try {
-      // Roll formula: 4d6kh3 (roll 4d6 and keep highest 3)
-      const roll = new Roll('4d6kh3');
-      await roll.evaluate();
-
-      HM.log(3, 'Roll result:', roll.total);
-
-      // Get the clicked dice icon from the form
-      const diceIcon = form;
-
-      // Get the data-index from the clicked dice icon
-      const index = diceIcon.getAttribute('data-index');
-      HM.log(3, 'Dice icon clicked for index:', index);
-
-      // Use the index to find the correct ability block by ID
-      const abilityBlock = document.getElementById(`ability-block-${index}`);
-
-      if (abilityBlock) {
-        // Find the input field within the ability block
-        const input = abilityBlock.querySelector('.ability-score');
-
-        if (input) {
-          // Set the rolled total as the value of the input field
-          input.value = roll.total;
-          input.focus(); // Optionally focus the input after updating
-          HM.log(3, `Updated input value for ability index ${index} with roll total:`, roll.total);
-        } else {
-          HM.log(3, `No input field found within ability-block for index ${index}.`, 'error');
-        }
-      } else {
-        HM.log(3, `No ability-block found for index ${index}.`, 'error');
-      }
-    } catch (error) {
-      HM.log(3, 'Error while rolling stat:', error, 'error');
-    }
+    HM.log(3, 'Rolling stats using user-defined formula.');
+    await rollStatAndUpdate(form); // Use the utility function
   }
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */

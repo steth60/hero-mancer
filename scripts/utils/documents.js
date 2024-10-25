@@ -1,6 +1,13 @@
-import { HM } from '../module.js';
+import { HM } from '../hero-mancer.js';
 
-/* Define HMUtils class for various utlities. */
+/**
+ * Fetch and process documents from compendiums based on the provided type.
+ * @async
+ * @param {string} type The type of documents to fetch (e.g., 'race', 'class', 'background').
+ * @returns {Promise<object>} An object containing the sorted documents and additional metadata.
+ * @throws Will throw an error if the type is invalid or if document retrieval fails.
+ * @throws Will display a UI error notification if a compendium pack retrieval fails.
+ */
 export async function getDocuments(type) {
   // Check for invalid argument
   if (typeof type !== 'string' || type.trim() === '') {
@@ -67,6 +74,9 @@ export async function getDocuments(type) {
       }
     } catch (error) {
       HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`, 'error');
+      ui.notifications.error(
+        `Failed to retrieve documents from compendium pack: ${pack.metadata.label}. Please check if the pack is valid.`
+      );
     }
   }
 
@@ -95,4 +105,29 @@ export async function getDocuments(type) {
     documents: sortedPackDocs,
     uniqueFolders: [] // No folder logic here; that can be handled separately for specific cases like races
   };
+}
+/**
+ * Finds the selected document from the dropdown based on its type (race, class, background).
+ * @param {Array} documents The array of documents (flattened or grouped).
+ * @param {string} selectedId The ID of the selected document.
+ * @param {string} type The type of the document (race, class, background).
+ * @returns {object|null} The selected document or null if not found.
+ */
+export function findSelectedDocument(documents, selectedId, type) {
+  let selectedDoc = null;
+
+  switch (type) {
+    case 'race':
+      selectedDoc = documents.flatMap((folder) => folder.docs).find((doc) => doc.id === selectedId);
+      break;
+    case 'background':
+    case 'class':
+      selectedDoc = documents.flatMap((pack) => pack.docs).find((doc) => doc.id === selectedId);
+      break;
+    default:
+      selectedDoc = documents.find((doc) => doc.id === selectedId);
+      break;
+  }
+
+  return selectedDoc || null;
 }
