@@ -1,5 +1,6 @@
 import { HM } from '../hero-mancer.js';
 import * as HMUtils from './index.js';
+
 /**
  * Fetch and process documents from compendiums based on the provided type.
  * @async
@@ -28,8 +29,8 @@ export async function fetchDocuments(type) {
 
   let packs =
     selectedPacks.length > 0 ?
-      game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id))
-    : game.packs.filter((i) => i.metadata.type === 'Item');
+      game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id)) :
+      game.packs.filter((i) => i.metadata.type === 'Item');
 
   HM.log(3, `Fetching documents for type: ${typeNice}`);
 
@@ -85,6 +86,7 @@ export async function fetchDocuments(type) {
 
 /**
  * Fetches and prepares documents based on the specified type for dropdown use.
+ * @async
  * @param {string} type The type of document to register (e.g., 'race', 'class', 'background').
  * @returns {Promise<object>} - Object containing processed documents and HTML for the dropdown.
  */
@@ -127,7 +129,6 @@ export async function prepareDocuments(type) {
 /**
  * Group and sort documents by the specified key.
  * Creates unique groupings for each unique key and nests documents under the group.
- *
  * @param {Array} documents Array of documents to process.
  * @param {string} key The key to group by ('folderName' for races, 'packName' for classes/backgrounds).
  * @returns {Array} Sorted array of grouped documents.

@@ -1,35 +1,21 @@
 {
   "id": "hero-mancer",
   "title": "Hero Mancer",
-  "version": "0.0.2",
-  "compatibility": {
-    "minimum": "12.331",
-    "verified": "12.331",
-    "maximum": "12.999"
-  },
-  "relationships": {
-    "systems": [
-      {
-        "id": "dnd5e",
-        "type": "system",
-        "compatibility": {
-          "minimum": "3.3.1",
-          "maximum": "3.3.9",
-          "verified": "3.3.1"
-        }
-      }
-    ]
-  },
   "description": "Hero Mancer: The one stop shop for creating your heroes in D&D 5e.",
+  "version": "0.0.2",
   "authors": [
     {
+      "flags": {},
       "name": "Tyler",
-      "url": "https://github.com/Sayshal",
-      "flags": {}
+      "url": "https://github.com/Sayshal"
     }
   ],
-  "url": "https://github.com/Sayshal/hero-mancer",
-  "esmodules": ["scripts/app/HeroMancer.js", "scripts/settings.js", "scripts/hero-mancer.js"],
+  "compatibility": {
+    "maximum": "12.999",
+    "minimum": "12.331",
+    "verified": "12.331"
+  },
+  "esmodules": ["scripts/app/HeroMancer.js", "scripts/hero-mancer.js", "scripts/settings.js"],
   "languages": [
     {
       "lang": "en",
@@ -37,5 +23,19 @@
       "path": "lang/en.json"
     }
   ],
-  "styles": ["styles/hero-mancer.css"]
+  "relationships": {
+    "systems": [
+      {
+        "compatibility": {
+          "maximum": "3.3.9",
+          "minimum": "3.3.1",
+          "verified": "3.3.1"
+        },
+        "id": "dnd5e",
+        "type": "system"
+      }
+    ]
+  },
+  "styles": ["styles/hero-mancer.css"],
+  "url": "https://github.com/Sayshal/hero-mancer"
 }

@@ -25,9 +25,9 @@ export class HM {
     // Logging setup
     if (this.logLevel > 0) {
       const logMessage = `Logging level set to ${
-        this.logLevel === 1 ? 'Errors'
-        : this.logLevel === 2 ? 'Warnings'
-        : 'Verbose'
+        this.logLevel === 1 ? 'Errors' :
+          this.logLevel === 2 ? 'Warnings' :
+            'Verbose'
       }`;
       HM.log(3, logMessage); // Log at verbose level
     }
@@ -65,7 +65,11 @@ export class HM {
     });
   }
 
-  /* Utility function for logging based on the logging level setting */
+  /**
+   * Custom logger.
+   * @param {number} level 0-3 to define log level to catch. 0 = disabled.
+   * @param {any} args Strings, variables to log to console.
+   */
   static log(level, ...args) {
     if (this.logLevel > 0 && level <= this.logLevel) {
       switch (level) {

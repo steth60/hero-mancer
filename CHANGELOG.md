@@ -28,3 +28,9 @@
 ## Code Review: Phase 2.1
 
 - Tweak documents.js/registrations.js to simplify the document retrieval and building process.
+
+## Code Review: Phase 2.2
+
+- Organize module.json and en.json alphabetically because I'm a loser.
+- Organize module.css files by set standard for easy organization of declarations.
+- Minor comment/consistency cleanup in hero-mancer.js & documents.js.
