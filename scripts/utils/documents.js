@@ -1,5 +1,5 @@
 import { HM } from '../hero-mancer.js';
-
+import * as HMUtils from './index.js';
 /**
  * Fetch and process documents from compendiums based on the provided type.
  * @async
@@ -90,17 +90,33 @@ export async function fetchDocuments(type) {
  */
 export async function prepareDocuments(type) {
   try {
+    HM.log(3, `Starting prepareDocuments for type: ${type}`);
+
+    // Fetch documents based on type
     let data = await fetchDocuments(type);
-    if (!data) throw new Error(`no-${type}-data`);
+    HM.log(3, `Fetched data for type ${type}:`, data);
 
+    // Check if data was retrieved, if not throw an error
+    if (!data) {
+      throw new Error(`no-${type}-data`);
+    }
+
+    // Determine the grouping field based on the document type
     const groupingField = type === 'race' ? 'folderName' : 'packName';
+    HM.log(3, `Grouping field for type ${type}: ${groupingField}`);
+
+    // Group and sort the documents based on the grouping field
     const sortedUniqueFolders = groupAndSortDocuments(data.documents, groupingField);
+    HM.log(3, `Grouped and sorted documents for type ${type}:`, sortedUniqueFolders);
 
+    // Generate dropdown HTML based on the sorted folders
     const dropdownHtml = HMUtils.generateDropdownHTML(sortedUniqueFolders, groupingField);
+    HM.log(3, `Generated dropdown HTML for type ${type}:`, dropdownHtml);
 
+    HM.log(3, `prepareDocuments complete for type: ${type}`);
     return { types: sortedUniqueFolders, dropdownHtml };
   } catch (error) {
-    HM.log(1, `Error: Failed to register ${type} documents. No ${type} data available.`);
+    HM.log(1, `Error: Failed to register ${type} documents. No ${type} data available.`, error);
     return {
       types: [],
       dropdownHtml: `<option value="">${game.i18n.localize(`hm.no-${type}-available`)}</option>`
@@ -109,25 +125,38 @@ export async function prepareDocuments(type) {
 }
 
 /**
- * Groups and sorts documents by a given key.
+ * Group and sort documents by the specified key.
+ * Creates unique groupings for each unique key and nests documents under the group.
+ *
  * @param {Array} documents Array of documents to process.
- * @param {string} key The key to use for grouping and sorting.
+ * @param {string} key The key to group by ('folderName' for races, 'packName' for classes/backgrounds).
  * @returns {Array} Sorted array of grouped documents.
  */
 function groupAndSortDocuments(documents, key) {
   const uniqueMap = new Map();
 
   documents.forEach(({ id, name, description, packName, packId, folderName }) => {
-    const groupKey = folderName || name;
+    // Determine the groupKey and include folderName when it's valid
+    const groupKey = key === 'folderName' ? folderName || name : packName;
 
     if (!uniqueMap.has(groupKey)) {
-      uniqueMap.set(groupKey, { folderName: folderName || null, docs: [], packName, packId });
+      uniqueMap.set(groupKey, {
+        groupKey,
+        docs: [],
+        packName,
+        packId,
+        ...(folderName && { folderName }) // Only add folderName when it exists
+      });
     }
 
+    // Push document into the appropriate group
     uniqueMap.get(groupKey).docs.push({ id, name, description, packName, packId });
   });
 
-  return Array.from(uniqueMap.values()).sort(
-    (a, b) => a[key]?.localeCompare(b[key]) || a.docs[0].name.localeCompare(b.docs[0].name)
-  );
+  return Array.from(uniqueMap.values())
+    .sort((a, b) => a.groupKey.localeCompare(b.groupKey))
+    .map((group) => ({
+      ...group,
+      docs: group.docs.sort((a, b) => a.name.localeCompare(b.name))
+    }));
 }
