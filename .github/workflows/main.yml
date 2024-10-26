@@ -94,16 +94,26 @@ jobs:
           # Format the release notes to handle newlines correctly
           CLEAN_RELEASE_NOTES=$(echo -e "$RELEASE_NOTES")
           
-          # Create JSON payload with markdown link in the footer
+          # Create JSON payload with fields for version, links, and release notes
           JSON_PAYLOAD=$(jq -n \
-            --arg title "Hero Mancer Release: $VERSION" \
-            --arg description "$CLEAN_RELEASE_NOTES" \
-            --arg footer_text "[Direct Download](<$REPO_URL/releases/tag/$VERSION>)" \
-            '{embeds: [{title: $title, description: $description, footer: {text: $footer_text}}]}')
+            --arg title "Hero Mancer Release" \
+            --arg version "$VERSION" \
+            --arg foundry_url "https://foundryvtt.com/packages/hero-mancer" \
+            --arg release_url "$REPO_URL/releases/tag/$VERSION/module.json" \
+            --arg download_url "$REPO_URL/releases/tag/$VERSION/module.zip" \
+            --arg release_notes "$CLEAN_RELEASE_NOTES" \
+            '{embeds: [{
+              title: $title,
+              fields: [
+                {name: "Version", value: $version, inline: true},
+                {name: "Foundry Package", value: $foundry_url, inline: true},
+                {name: "Release Tag", value: $release_url, inline: true},
+                {name: "Manual Download", value: $download_url, inline: true},
+                {name: "Release Notes", value: $release_notes, inline: false}
+              ]
+            }]}')
 
           # Post to Discord
           curl -H "Content-Type: application/json" \
                -d "$JSON_PAYLOAD" \
                $DISCORD_WEBHOOK
-
-
