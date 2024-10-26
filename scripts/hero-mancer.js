@@ -25,9 +25,9 @@ export class HM {
     // Logging setup
     if (this.logLevel > 0) {
       const logMessage = `Logging level set to ${
-        this.logLevel === 1 ? 'Errors' :
-          this.logLevel === 2 ? 'Warnings' :
-            'Verbose'
+        this.logLevel === 1 ? 'Errors'
+        : this.logLevel === 2 ? 'Warnings'
+        : 'Verbose'
       }`;
       HM.log(3, logMessage); // Log at verbose level
     }
@@ -59,6 +59,10 @@ export class HM {
   static initializeSettings() {
     console.log('Registering Module Settings.');
     registerSettings();
+    // Register a Handlebars helper named 'eq'
+    Handlebars.registerHelper('eq', function (a, b) {
+      return a === b;
+    });
 
     Hooks.once('renderSettingConfig', () => {
       this.customCompendiums = new CustomCompendiums();

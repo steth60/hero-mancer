@@ -9,11 +9,15 @@
     "app": {
       "abilities": {
         "roll-dice": "Roll dice for ability",
-        "score-label": "Ability score",
+        "score-label": "Ability Score",
         "score-placeholder": "Enter score",
-        "select-label": "Select an ability",
-        "select-placeholder": "Choose an ability",
-        "tooltip": "Select and assign abilities"
+        "select-placeholder": "Choose",
+        "tooltip": "Select and assign abilities",
+        "instructions": {
+          "point-buy": "Please allocate your points using the point buy system.",
+          "standard-array": "Please select your abilities using the standard array.",
+          "manual": "Please roll your abilities using the manual rolling method."
+        }
       },
       "background": {
         "none": "No backgrounds available.",
@@ -99,7 +103,7 @@
       "description": "Configure your custom compendiums for classes, races, and backgrounds.",
       "enable": {
         "hint": "Adds a button to use Hero Mancer on the Actors tab. (Default: Enabled)",
-        "name": "Enable Hero Mancer Creation Wizard?"
+        "name": "Enable Hero Mancer?"
       },
       "error": "Failed to retrieve documents from compendium pack: {pack}",
       "form-saved": "Compendium form settings have been saved.",
@@ -121,7 +125,14 @@
       "no-valid-packs": "No valid compendium packs were found.",
       "race": "Race",
       "races-label": "Set Race Compendiums:",
-      "saved": "{type} compendium settings have been saved."
+      "saved": "{type} compendium settings have been saved.",
+      "dice-rolling-method": {
+        "name": "Ability Score Generation",
+        "hint": "Select how you want to generate ability scores. (Default: Standard Array)",
+        "point-buy": "Point Buy",
+        "standard-array": "Standard Array",
+        "manual-formula": "Manual"
+      }
     }
   }
 }

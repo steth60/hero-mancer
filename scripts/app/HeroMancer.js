@@ -90,7 +90,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /* It prepares the data sent to the Handlebars template to display the forms, HTML, CSS, etc. */
   async _prepareContext(options) {
     HM.log(3, 'Preparing context.');
-
+    Handlebars.registerHelper('eq', (a, b) => a == b);
     // Check if cached data is available to avoid re-fetching
     if (HMUtils.CacheManager.isCacheValid()) {
       HM.log(3, 'Documents cached and descriptions enriched!');
@@ -102,7 +102,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         backgroundDocs: HMUtils.CacheManager.getCachedBackgroundDocs(),
         backgroundDropdownHtml: HMUtils.CacheManager.getCachedBackgroundDropdownHtml(),
         tabs: this.tabsData,
-        rollStat: this.rollStat
+        rollStat: this.rollStat,
+        diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod')
       };
     }
 
@@ -139,7 +140,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       backgroundDropdownHtml, // Generated dropdown HTML for backgrounds
       tabs: this.tabsData,
       abilities, // Pass the abilities data
-      rollStat: this.rollStat // Roll stat handler
+      rollStat: this.rollStat, // Roll stat handler
+      diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod')
     };
 
     HM.log(3, 'Prepared context:', context);

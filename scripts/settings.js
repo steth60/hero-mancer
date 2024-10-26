@@ -49,12 +49,45 @@ function registerModuleSettings() {
       }
     }
   });
+
+  // Add a new setting for selecting the Dice Rolling Method
+  game.settings.register(HM.ID, 'diceRollingMethod', {
+    name: `${HM.ABRV}.settings.dice-rolling-method.name`,
+    hint: `${HM.ABRV}.settings.dice-rolling-method.hint`,
+    scope: 'client',
+    config: true,
+    type: String,
+    requiresReload: true,
+    choices: {
+      standardArray: game.i18n.localize(`${HM.ABRV}.settings.dice-rolling-method.standard-array`),
+      pointBuy: game.i18n.localize(`${HM.ABRV}.settings.dice-rolling-method.point-buy`),
+      manualFormula: game.i18n.localize(`${HM.ABRV}.settings.dice-rolling-method.manual-formula`)
+    },
+    default: 'standardArray'
+  });
+
+  // Add the custom roll formula setting restricted to GM
+  game.settings.register(HM.ID, 'customRollFormula', {
+    name: `${HM.ABRV}.settings.custom-roll-formula.name`,
+    hint: `${HM.ABRV}.settings.custom-roll-formula.hint`,
+    scope: 'client',
+    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'manualFormula',
+    type: String,
+    restricted: true,
+    default: '4d6kh3',
+    onChange: (value) => {
+      if (!value || value.trim() === '') {
+        game.settings.set(HM.ID, 'customRollFormula', '4d6kh3'); // Reset to default if empty
+        HM.log(3, 'Resetting Custom Roll Formula to default (4d6kh3)');
+      }
+    }
+  });
 }
 
 /**
  * Registers application-specific settings for Hero Mancer.
  * These settings include custom compendium selection,
- * and GM-restricted settings for managing compendiums and custom roll formulas.
+ * and GM-restricted settings for managing compendiums
  * All settings are world-scoped, shared across all players in the world.
  */
 function registerApplicationSettings() {
@@ -93,22 +126,5 @@ function registerApplicationSettings() {
     config: false,
     type: Array,
     default: []
-  });
-
-  // Add the custom roll formula setting restricted to GM
-  game.settings.register(HM.ID, 'customRollFormula', {
-    name: `${HM.ABRV}.settings.custom-roll-formula.name`,
-    hint: `${HM.ABRV}.settings.custom-roll-formula.hint`,
-    scope: 'world', // Restricted to the world (GM control)
-    config: true, // Show this setting in the configuration UI
-    type: String,
-    restricted: true, // GM-only setting
-    default: '4d6kh3', // Default formula
-    onChange: (value) => {
-      if (!value || value.trim() === '') {
-        game.settings.set(HM.ID, 'customRollFormula', '4d6kh3'); // Reset to default if empty
-        console.log(game.i18n.localize(`${HM.ABRV}.settings.custom-roll-formula.reset`));
-      }
-    }
   });
 }
