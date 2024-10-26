@@ -62,26 +62,26 @@ jobs:
           artifacts: './module.zip, ./module.json'
           tag: ${{ steps.get-version.outputs.version }}
 
-      - name: Release Foundry Package
-        run: |
-          REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
-          curl -X POST "https://api.foundryvtt.com/_api/packages/release_version" \
-          -H "Content-Type: application/json" \
-          -H "Authorization: ${{ secrets.FOUNDRY_API_TOKEN }}" \
-          -d '{
-            "id": "'"dont-forget"'",
-            "release": {
-              "version": "'"${{ steps.get-version.outputs.version }}"'",
-              "manifest": "'"${REPO_URL}/releases/latest/download/module.json"'",
-              "download": "'"${REPO_URL}/releases/download/${{ steps.get-version.outputs.version }}/module.zip"'",
-              "notes": "'"${REPO_URL}/releases/tag/${{ steps.get-version.outputs.version }}"'",
-              "compatibility": {
-                "minimum": "'"12.331"'",
-                "verified": "'"12.331"'",
-                "maximum": "'"12.999"'"
-              }
-            }
-          }'
+      # - name: Release Foundry Package
+      #   run: |
+      #     REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
+      #     curl -X POST "https://api.foundryvtt.com/_api/packages/release_version" \
+      #     -H "Content-Type: application/json" \
+      #     -H "Authorization: ${{ secrets.FOUNDRY_API_TOKEN }}" \
+      #     -d '{
+      #       "id": "'"dont-forget"'",
+      #       "release": {
+      #         "version": "'"${{ steps.get-version.outputs.version }}"'",
+      #         "manifest": "'"${REPO_URL}/releases/latest/download/module.json"'",
+      #         "download": "'"${REPO_URL}/releases/download/${{ steps.get-version.outputs.version }}/module.zip"'",
+      #         "notes": "'"${REPO_URL}/releases/tag/${{ steps.get-version.outputs.version }}"'",
+      #         "compatibility": {
+      #           "minimum": "'"12.331"'",
+      #           "verified": "'"12.331"'",
+      #           "maximum": "'"12.999"'"
+      #         }
+      #       }
+      #     }'
 
 
       # - name: Post to Discord
