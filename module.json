@@ -2,12 +2,12 @@
   "id": "hero-mancer",
   "title": "Hero Mancer",
   "description": "Hero Mancer: The one stop shop for creating your heroes in D&D 5e.",
-  "version": "0.0.3",
+  "version": "",
   "authors": [
     {
-      "flags": {},
       "name": "Tyler",
-      "url": "https://github.com/Sayshal"
+      "url": "https://github.com/Sayshal",
+      "flags": {}
     }
   ],
   "compatibility": {
@@ -27,7 +27,7 @@
     "systems": [
       {
         "compatibility": {
-          "maximum": "3.3.9",
+          "maximum": "4.0.9",
           "minimum": "3.3.1",
           "verified": "3.3.1"
         },
@@ -37,5 +37,7 @@
     ]
   },
   "styles": ["styles/hero-mancer.css"],
-  "url": "https://github.com/Sayshal/hero-mancer"
+  "url": "https://github.com/Sayshal/hero-mancer",
+  "manifest": "",
+  "download": ""
 }

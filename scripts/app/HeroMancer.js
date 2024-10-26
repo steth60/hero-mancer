@@ -279,7 +279,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /* Logic for rolling stats and updating input fields */
   static async rollStat(event, form) {
     HM.log(3, 'Rolling stats using user-defined formula.');
-    await rollStatAndUpdate(form); // Use the utility function
+    await HMUtils.statRoller(form); // Use the utility function
   }
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */

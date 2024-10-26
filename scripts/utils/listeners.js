@@ -1,4 +1,5 @@
 import { HM } from '../hero-mancer.js';
+import * as HMUtils from './index.js';
 
 /**
  * Handles ability selection changes.
@@ -32,7 +33,7 @@ export function handleAbilitySelectionChange(event, abilityDropdowns, selectedAb
   HM.log(3, 'Updated previousValue to:', selectedValue);
 
   // Use the `updateAbilityDropdowns` function from dropdowns.js to update the state of the dropdowns
-  updateAbilityDropdowns(abilityDropdowns, selectedAbilities);
+  HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities);
 }
 
 /**

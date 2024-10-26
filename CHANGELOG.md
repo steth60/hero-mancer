@@ -1,6 +1,6 @@
 # Change Log
 
-## Code Review: Phase 1
+## Code Review: Phase 1 (0.0.3)
 
 - Increase modularity in file structure and CSS class definition to improve readability, tracing, etc.
 - Remove all nasty CSS hacks (no more !important here).
@@ -8,7 +8,7 @@
   scaling works as intended.
 - Changed logging setup for flexibility of info, warn, error, verbosity. Default: Warnings & Errors.
 
-## Code Review: Phase 2
+## Code Review: Phase 2 (0.0.3)
 
 - Refactor module.js (renamed to hero-mancer.js).
 - Renamed module.css to hero-mancer.css to comply with FoundryVTT conventions.
@@ -25,12 +25,18 @@
 - Refactor registrations.js to reuse code, better error handling.
 - Added missing JSDoc to all files as a practice for external APIs usage.
 
-## Code Review: Phase 2.1
+## Code Review: Phase 2.1 (0.0.3)
 
 - Tweak documents.js/registrations.js to simplify the document retrieval and building process.
 
-## Code Review: Phase 2.2
+## Code Review: Phase 2.2 (0.0.3)
 
 - Organize module.json and en.json alphabetically because I'm a loser.
 - Organize module.css files by set standard for easy organization of declarations.
 - Minor comment/consistency cleanup in hero-mancer.js & documents.js.
+
+## Minor Bug Fixes (0.0.4)
+
+- Cleanup github workflow so files are in 1 places.
+- Declare 4.0.X support (it worked once it must work forever?)
+- Fix broken HMUtils calls in HeroMancer application and listeners utils.
