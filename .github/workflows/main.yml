@@ -36,7 +36,6 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
           echo "$release_notes" > release_notes.txt
 
-
       - name: Format Release Notes for Discord
         id: format-release-notes-discord
         run: |
@@ -63,37 +62,42 @@ jobs:
           artifacts: './module.zip, ./module.json'
           tag: ${{ steps.get-version.outputs.version }}
 
-      # - name: Release Foundry Package
-      #   run: |
-      #     REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
-      #     curl -X POST "https://api.foundryvtt.com/_api/packages/release_version" \
-      #     -H "Content-Type: application/json" \
-      #     -H "Authorization: ${{ secrets.FOUNDRY_API_TOKEN }}" \
-      #     -d '{
-      #       "id": "'"dont-forget"'",
-      #       "release": {
-      #         "version": "'"${{ steps.get-version.outputs.version }}"'",
-      #         "manifest": "'"${REPO_URL}/releases/latest/download/module.json"'",
-      #         "download": "'"${REPO_URL}/releases/download/${{ steps.get-version.outputs.version }}/module.zip"'",
-      #         "notes": "'"${REPO_URL}/releases/tag/${{ steps.get-version.outputs.version }}"'",
-      #         "compatibility": {
-      #           "minimum": "'"12.331"'",
-      #           "verified": "'"12.331"'",
-      #           "maximum": "'"12.999"'"
-      #         }
-      #       }
-      #     }'
-
+      - name: Release Foundry Package
+        run: |
+          REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
+          curl -X POST "https://api.foundryvtt.com/_api/packages/release_version" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: ${{ secrets.FOUNDRY_API_TOKEN }}" \
+          -d '{
+            "id": "'"dont-forget"'",
+            "release": {
+              "version": "'"${{ steps.get-version.outputs.version }}"'",
+              "manifest": "'"${REPO_URL}/releases/latest/download/module.json"'",
+              "download": "'"${REPO_URL}/releases/download/${{ steps.get-version.outputs.version }}/module.zip"'",
+              "notes": "'"${REPO_URL}/releases/tag/${{ steps.get-version.outputs.version }}"'",
+              "compatibility": {
+                "minimum": "'"12.331"'",
+                "verified": "'"12.331"'",
+                "maximum": "'"12.999"'"
+              }
+            }
+          }'
 
       - name: Post to Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
+          VERSION="${{ steps.get-version.outputs.version }}"
+          RELEASE_NOTES="${{ steps.format-release-notes-discord.outputs.release-notes-discord }}"
+
+          # Create JSON payload
+          JSON_PAYLOAD=$(jq -n \
+            --arg title "Hero Mancer Release: $VERSION" \
+            --arg description "$RELEASE_NOTES\n\nCheck it out through the Foundry package manager or the link below:\n<$REPO_URL/releases/tag/$VERSION>" \
+            '{embeds: [{title: $title, description: $description}]}')
+
+          # Post to Discord
           curl -H "Content-Type: application/json" \
-          -d '{
-          "embeds": [{
-            "title": "Hero Mancer Release: ${{ steps.get-version.outputs.version }}",
-            "description": "${{ steps.format-release-notes-discord.outputs.release-notes-discord }}\n\nCheck it out through the Foundry package manager or the link below:\n<https://github.com/Sayshal/hero-mancer/releases/tag/${{ steps.get-version.outputs.version }}>",
-          }]
-          }' $DISCORD_WEBHOOK
+               -d "$JSON_PAYLOAD" \
+               $DISCORD_WEBHOOK

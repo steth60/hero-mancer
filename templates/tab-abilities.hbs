@@ -1,14 +1,14 @@
 <div class='tab {{tabs.abilities.cssClass}}' data-tab='abilities' data-group='hero-mancer-tabs'>
   <fieldset>
     <legend>{{localize 'hm.app.abilities.tooltip'}}</legend>
-    {{#if (eq diceRollMethod 'pointBuy')}}
+    {{#if (hm-eq diceRollMethod 'pointBuy')}}
       {{! Render point buy interface }}
       <p>{{localize 'hm.app.abilities.instructions.point-buy'}}</p>
       <div class='ability-container'>
         <!-- Point buy-specific elements go here -->
       </div>
 
-    {{else if (eq diceRollMethod 'standardArray')}}
+    {{else if (hm-eq diceRollMethod 'standardArray')}}
       {{! Render standard array interface }}
       <p>{{localize 'hm.app.abilities.instructions.standard-array'}}</p>
       <div class='ability-container'>

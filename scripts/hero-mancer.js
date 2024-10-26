@@ -60,7 +60,7 @@ export class HM {
     console.log('Registering Module Settings.');
     registerSettings();
     // Register a Handlebars helper named 'eq'
-    Handlebars.registerHelper('eq', function (a, b) {
+    Handlebars.registerHelper('hm-eq', function (a, b) {
       return a === b;
     });
 
