@@ -91,13 +91,19 @@ jobs:
           VERSION="${{ steps.get-version.outputs.version }}"
           RELEASE_NOTES="${{ steps.format-release-notes-discord.outputs.release-notes-discord }}"
 
-          # Create JSON payload
+          # Format the release notes to handle newlines correctly
+          CLEAN_RELEASE_NOTES=$(echo -e "$RELEASE_NOTES")
+          
+          # Create JSON payload with markdown link in the footer
           JSON_PAYLOAD=$(jq -n \
             --arg title "Hero Mancer Release: $VERSION" \
-            --arg description "$RELEASE_NOTES\n\nCheck it out through the Foundry package manager or the link below:\n<$REPO_URL/releases/tag/$VERSION>" \
-            '{embeds: [{title: $title, description: $description}]}')
+            --arg description "$CLEAN_RELEASE_NOTES" \
+            --arg footer_text "[Direct Download](<$REPO_URL/releases/tag/$VERSION>)" \
+            '{embeds: [{title: $title, description: $description, footer: {text: $footer_text}}]}')
 
           # Post to Discord
           curl -H "Content-Type: application/json" \
                -d "$JSON_PAYLOAD" \
                $DISCORD_WEBHOOK
+
+
