@@ -1,2 +1,2 @@
-import { readFileSync } from 'fs';
-console.log(JSON.parse(readFileSync('./module.json', 'utf8')).version);
+let fs = require('fs');
+console.log(JSON.parse(fs.readFileSync('./module.json', 'utf8')).version);

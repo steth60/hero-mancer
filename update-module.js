@@ -1,5 +1,5 @@
-import { readFile, writeFile } from 'fs';
-import { join } from 'path';
+const fs = require('fs');
+const path = require('path');
 
 const version = process.argv[2];
 
@@ -8,9 +8,9 @@ if (!version) {
   process.exit(1);
 }
 
-const moduleJsonPath = join(__dirname, 'module.json');
+const moduleJsonPath = path.join(__dirname, 'module.json');
 
-readFile(moduleJsonPath, 'utf8', (err, data) => {
+fs.readFile(moduleJsonPath, 'utf8', (err, data) => {
   if (err) {
     console.error(`Error reading module.json: ${err}`);
     return;
@@ -28,7 +28,7 @@ readFile(moduleJsonPath, 'utf8', (err, data) => {
   moduleJson.manifest = `https://github.com/Sayshal/hero-mancer/releases/latest/download/module.json`;
   moduleJson.download = `https://github.com/Sayshal/hero-mancer/releases/download/${version}/module.zip`;
 
-  writeFile(moduleJsonPath, JSON.stringify(moduleJson, null, 2), 'utf8', (err) => {
+  fs.writeFile(moduleJsonPath, JSON.stringify(moduleJson, null, 2), 'utf8', (err) => {
     if (err) {
       console.error(`Error writing module.json: ${err}`);
       return;
