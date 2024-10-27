@@ -19,7 +19,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     position: {
       height: 'auto',
       width: 'auto',
-      top: '100'
+      top: '150'
     },
     window: {
       icon: 'fa-solid fa-egg',
@@ -90,7 +90,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /* It prepares the data sent to the Handlebars template to display the forms, HTML, CSS, etc. */
   async _prepareContext(options) {
     HM.log(3, 'Preparing context.');
-    Handlebars.registerHelper('eq', (a, b) => a == b);
+    const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
+    const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
+    const standardArray = this.getStandardArray(extraAbilities);
     // Check if cached data is available to avoid re-fetching
     if (HMUtils.CacheManager.isCacheValid()) {
       HM.log(3, 'Documents cached and descriptions enriched!');
@@ -103,7 +105,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         backgroundDropdownHtml: HMUtils.CacheManager.getCachedBackgroundDropdownHtml(),
         tabs: this.tabsData,
         rollStat: this.rollStat,
-        diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod')
+        diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod'),
+        standardArray: standardArray
       };
     }
 
@@ -141,7 +144,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       tabs: this.tabsData,
       abilities, // Pass the abilities data
       rollStat: this.rollStat, // Roll stat handler
-      diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod')
+      diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod'),
+      standardArray: standardArray
     };
 
     HM.log(3, 'Prepared context:', context);
@@ -282,6 +286,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static async rollStat(event, form) {
     HM.log(3, 'Rolling stats using user-defined formula.');
     await HMUtils.statRoller(form); // Use the utility function
+  }
+
+  getStandardArray(extraAbilities) {
+    const baseArray = [15, 14, 13, 12, 10, 8];
+    for (let i = 0; i < extraAbilities; i++) {
+      baseArray.push(11);
+    }
+    return baseArray.sort((a, b) => b - a);
   }
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */

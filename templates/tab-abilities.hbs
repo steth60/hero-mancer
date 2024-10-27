@@ -12,7 +12,28 @@
       {{! Render standard array interface }}
       <p>{{localize 'hm.app.abilities.instructions.standard-array'}}</p>
       <div class='ability-container'>
-        <!-- Standard array-specific elements go here -->
+        {{#each abilities}}
+          <div id='ability-block-{{@index}}' class='ability-block'>
+            <!-- Ability name label -->
+            <span class='ability-label' aria-label='{{localize "hm.app.abilities.label"}}'>
+              {{this.abbreviation}}
+            </span>
+
+            <!-- Dropdown for selecting standard array values -->
+            <select
+              id='ability-{{@index}}-dropdown'
+              name='abilities[{{this.key}}]'
+              class='ability-dropdown'
+              data-dtype='Number'
+              aria-label='{{localize "hm.app.abilities.select-value"}}'
+            >
+              <option value=''>{{localize 'hm.app.abilities.select-placeholder'}}</option>
+              {{#each ../standardArray}}
+                <option value='{{this}}'>{{this}}</option>
+              {{/each}}
+            </select>
+          </div>
+        {{/each}}
       </div>
 
     {{else}}

@@ -42,7 +42,6 @@ export class HM {
 
       // Initialize HeroMancer after everything is ready.
       this.heroMancer = new HeroMancer();
-      HMUtils.registerButton();
 
       // Load the saved compendium selections from the settings
       CustomCompendiums.classPacks = game.settings.get('hero-mancer', 'classPacks');
@@ -95,4 +94,10 @@ export class HM {
 /* Register the initialization hook */
 Hooks.on('init', () => {
   HM.initialize(); // Initialize the module and register settings
+});
+
+/* Add button to ActorDirectory */
+Hooks.on('renderActorDirectory', () => {
+  HMUtils.registerButton();
+  HM.log(3, 'Injecting button into Actor Directory');
 });

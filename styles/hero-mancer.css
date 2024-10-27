@@ -6,7 +6,7 @@
   max-width: 860px;
   height: auto !important;
   min-height: 0;
-  max-height: 80vh;
+  max-height: calc(100vh - 150px);
   overflow: hidden;
 }
 /* Fieldset styling for forms, ensuring proper layout and scrollability */

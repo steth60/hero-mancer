@@ -40,3 +40,9 @@
 - Cleanup github workflow so files are in 1 places.
 - Declare 4.0.X support (it worked once it must work forever?)
 - Fix broken HMUtils calls in HeroMancer application and listeners utils.
+
+## New Feature: Standard Array (0.1.0)
+
+- Add standard array setting and functionality. Scales as per DMG rules for having more than 6 ability scores.
+- Minor cleanup of discord workflow.
+- Max height of application will not center it vertically.

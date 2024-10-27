@@ -105,10 +105,10 @@ jobs:
             '{embeds: [{
               title: $title,
               fields: [
-                {name: "Version", value: $version, inline: true},
-                {name: "Foundry Package", value: $foundry_url, inline: true},
-                {name: "Release Tag", value: $release_url, inline: true},
-                {name: "Manual Download", value: $download_url, inline: true},
+                {name: "Version", value: $version, inline: false},
+                {name: "Foundry Package", value: $foundry_url, inline: false},
+                {name: "Release Tag", value: $release_url, inline: false},
+                {name: "Manual Download", value: $download_url, inline: false},
                 {name: "Release Notes", value: $release_notes, inline: false}
               ]
             }]}')
