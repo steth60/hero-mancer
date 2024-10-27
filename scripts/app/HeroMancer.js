@@ -92,7 +92,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.log(3, 'Preparing context.');
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
-    const standardArray = this.getStandardArray(extraAbilities);
+    const diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
+    const standardArray =
+      diceRollingMethod === 'standardArray' ?
+        game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number)
+      : HMUtils.getStandardArray(extraAbilities);
+
     // Check if cached data is available to avoid re-fetching
     if (HMUtils.CacheManager.isCacheValid()) {
       HM.log(3, 'Documents cached and descriptions enriched!');
@@ -144,7 +149,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       tabs: this.tabsData,
       abilities, // Pass the abilities data
       rollStat: this.rollStat, // Roll stat handler
-      diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod'),
+      diceRollMethod: diceRollingMethod,
       standardArray: standardArray
     };
 
@@ -286,14 +291,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static async rollStat(event, form) {
     HM.log(3, 'Rolling stats using user-defined formula.');
     await HMUtils.statRoller(form); // Use the utility function
-  }
-
-  getStandardArray(extraAbilities) {
-    const baseArray = [15, 14, 13, 12, 10, 8];
-    for (let i = 0; i < extraAbilities; i++) {
-      baseArray.push(11);
-    }
-    return baseArray.sort((a, b) => b - a);
   }
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */

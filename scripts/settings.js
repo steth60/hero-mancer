@@ -1,5 +1,6 @@
 import { CustomCompendiums } from './app/CustomCompendiums.js';
 import { HM } from './hero-mancer.js';
+import * as HMUtils from './utils/index.js';
 
 /**
  * Registers all the settings for the Hero Mancer module.
@@ -126,5 +127,31 @@ function registerApplicationSettings() {
     config: false,
     type: Array,
     default: []
+  });
+
+  // Register the custom standard array setting
+  game.settings.register(HM.ID, 'customStandardArray', {
+    name: `${HM.ABRV}.settings.custom-standard-array.name`,
+    hint: `${HM.ABRV}.settings.custom-standard-array.hint`,
+    scope: 'world',
+    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'standardArray',
+    type: String,
+    restricted: true,
+    default: '', // Temporary default, checked in 'ready' hook
+    onChange: (value) => {
+      if (!value || value.trim() === '') {
+        game.settings.set(HM.ID, 'customStandardArray', HMUtils.getStandardArrayDefault());
+        HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
+      } else {
+        HMUtils.validateAndSetCustomStandardArray(value);
+      }
+    }
+  });
+  Hooks.on('ready', async () => {
+    const customArraySetting = game.settings.get(HM.ID, 'customStandardArray');
+    if (!customArraySetting || customArraySetting.trim() === '') {
+      await game.settings.set(HM.ID, 'customStandardArray', HMUtils.getStandardArrayDefault());
+      HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
+    }
   });
 }

@@ -46,3 +46,8 @@
 - Add standard array setting and functionality. Scales as per DMG rules for having more than 6 ability scores.
 - Minor cleanup of discord workflow.
 - Max height of application will not center it vertically.
+
+## Feature Enhancement: Custom Standard Array (0.1.1)
+
+- Allow GM to input a custom array, error handling to make sure it's as least as many numbers as there are valid ability
+  scores.

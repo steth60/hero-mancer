@@ -12,4 +12,9 @@ export { registerButton } from './htmlManipulations.js';
 export { handleAbilitySelectionChange, addAbilitySelectionListeners } from './listeners.js';
 
 // Miscellaneous
-export { statRoller } from './statRoller.js';
+export {
+  statRoller,
+  getStandardArrayDefault,
+  validateAndSetCustomStandardArray,
+  getStandardArray
+} from './statRoller.js';

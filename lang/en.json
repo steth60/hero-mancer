@@ -100,6 +100,12 @@
         "name": "Custom Roll Formula",
         "reset": "Custom roll formula was empty, resetting to default: 4d6kh3"
       },
+      "custom-standard-array": {
+        "name": "Custom Standard Array",
+        "hint": "Enter your custom array values separated by commas (e.g., 15,14,13,12,10,8). If left blank, defaults will apply based on the number of ability scores.",
+        "invalid-format": "Invalid format: please enter numbers separated by commas only.",
+        "reset-default": "Custom Standard Array was reset to default values due to invalid length."
+      },
       "description": "Configure your custom compendiums for classes, races, and backgrounds.",
       "enable": {
         "hint": "Adds a button to use Hero Mancer on the Actors tab. (Default: Enabled)",
