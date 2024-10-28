@@ -11,6 +11,7 @@ on:
       - 'TODO.md'
       - '.gitattributes'
       - '.gitignore'
+      - '/tour-assets'
 
 jobs:
   build:
@@ -47,7 +48,9 @@ jobs:
 
       - name: Zip Files
         working-directory: ./
-        run: zip -r ./module.zip ./*
+        run: |
+          zip -r ./module.zip ./ -x "README.md" "CHANGELOG.md" "LICENSE" "TODO.md" ".gitattributes" ".gitignore" "tour-assets/*" "release_notes.txt"
+
 
       - name: Create Release
         id: create-release
@@ -69,7 +72,7 @@ jobs:
           -H "Content-Type: application/json" \
           -H "Authorization: ${{ secrets.FOUNDRY_API_TOKEN }}" \
           -d '{
-            "id": "'"dont-forget"'",
+            "id": "'"hero-mancer"'",
             "release": {
               "version": "'"${{ steps.get-version.outputs.version }}"'",
               "manifest": "'"${REPO_URL}/releases/latest/download/module.json"'",
@@ -105,7 +108,8 @@ jobs:
             '{embeds: [{
               title: $title,
               fields: [
-                {name: "Version", value: $version, inline: false},
+                {name: "Version", value: $version, inline: true},
+                {name: "Compatibility", value: "Core: V12.331, System: 3.3.1+", inline: true},
                 {name: "Foundry Package", value: $foundry_url, inline: false},
                 {name: "Release Tag", value: $release_url, inline: false},
                 {name: "Manual Download", value: $download_url, inline: false},

@@ -1,16 +1,18 @@
 <div class='tab {{tabs.abilities.cssClass}}' data-tab='abilities' data-group='hero-mancer-tabs'>
   <fieldset>
     <legend>{{localize 'hm.app.abilities.tooltip'}}</legend>
-    {{#if (hm-eq diceRollMethod 'pointBuy')}}
+    {{#if (eq diceRollMethod 'pointBuy')}}
       {{! Render point buy interface }}
       <p>{{localize 'hm.app.abilities.instructions.point-buy'}}</p>
       <div class='ability-container'>
         <!-- Point buy-specific elements go here -->
       </div>
 
-    {{else if (hm-eq diceRollMethod 'standardArray')}}
+    {{else if (eq diceRollMethod 'standardArray')}}
       {{! Render standard array interface }}
-      <p>{{localize 'hm.app.abilities.instructions.standard-array'}}</p>
+      <h3>{{localize 'hm.app.abilities.instructions.standard-array.title'}}</h3>
+      <p><b>{{localize 'hm.app.abilities.instructions.standard-array.description'}}</b></p>
+      <p>{{localize 'hm.app.abilities.instructions.standard-array.preamble'}}</p>
       <div class='ability-container'>
         {{#each abilities}}
           <div id='ability-block-{{@index}}' class='ability-block'>
@@ -36,9 +38,11 @@
         {{/each}}
       </div>
 
-    {{else}}
+    {{else if (eq diceRollMethod 'manualFormula')}}
       {{! Render manual formula interface (default) }}
-      <p>{{localize 'hm.app.abilities.instructions.manual'}}</p>
+      <h3>{{localize 'hm.app.abilities.instructions.manual.title'}}</h3>
+      <p><b>{{localize 'hm.app.abilities.instructions.manual.description'}}</b></p>
+      <p>{{localize 'hm.app.abilities.instructions.manual.preamble'}}</p>
       <div class='ability-container'>
         <!-- Manual rolling-specific elements go here -->
         {{#each abilities}}
@@ -81,6 +85,8 @@
           </div>
         {{/each}}
       </div>
+    {{else}}
+      <p>{{localize 'hm.app.abilities.instructions.no-roll-method'}}</p>
     {{/if}}
   </fieldset>
 </div>

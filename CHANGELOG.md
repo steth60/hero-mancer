@@ -51,3 +51,11 @@
 
 - Allow GM to input a custom array, error handling to make sure it's as least as many numbers as there are valid ability
   scores.
+
+## Bug Fixes & Clean-up (0.1.2)
+
+- Fix bad reference in github workflow so module.json contains the correct information, and no longer points to previous
+  module name.
+- Fixed localization strings in Compendium picker settings application.
+- Clean up and expanded on instructions on the abilities tab based on which roll method is enabled.
+- Clarified that equipment and finalization tabs are not yet functional, same with point buy.

@@ -16,6 +16,9 @@
     "verified": "12.331"
   },
   "esmodules": ["scripts/app/HeroMancer.js", "scripts/hero-mancer.js", "scripts/settings.js"],
+  "hotReload": {
+    "extensions": ["css", "hbs", "json", "html"]
+  },
   "languages": [
     {
       "lang": "en",

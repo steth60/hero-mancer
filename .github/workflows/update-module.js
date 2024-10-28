@@ -8,7 +8,7 @@ if (!version) {
   process.exit(1);
 }
 
-const moduleJsonPath = path.join(__dirname, 'module.json');
+const moduleJsonPath = path.join(__dirname, '../../module.json');
 
 fs.readFile(moduleJsonPath, 'utf8', (err, data) => {
   if (err) {

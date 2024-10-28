@@ -58,10 +58,6 @@ export class HM {
   static initializeSettings() {
     console.log('Registering Module Settings.');
     registerSettings();
-    // Register a Handlebars helper named 'eq'
-    Handlebars.registerHelper('hm-eq', function (a, b) {
-      return a === b;
-    });
 
     Hooks.once('renderSettingConfig', () => {
       this.customCompendiums = new CustomCompendiums();

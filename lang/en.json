@@ -15,8 +15,18 @@
         "tooltip": "Select and assign abilities",
         "instructions": {
           "point-buy": "Please allocate your points using the point buy system.",
-          "standard-array": "Please select your abilities using the standard array.",
-          "manual": "Please roll your abilities using the manual rolling method."
+          "standard-array": {
+            "title": "Stat Generation Method: Standard Array",
+            "description": "For each ability below, choose a value from the dropdown. Keep in mind your class and character goals when deciding. You can only use a value once.",
+            "preamble": "The Standard Array allows you to assign a set of predefined scores to your character's ability scores, designed to keep characters balanced and simplify character creation. This method is ideal for new players or those wanting a consistent, balanced setup across the party, ensuring each character begins on the same power level. Remember, your racial bonuses will still influence your final ability scores. Consider your class and racial bonuses carefully as you place these scores to optimize your character’s performance in their primary role."
+          },
+          "manual": {
+            "title": "Stat Generation Method: Manual Rolling",
+            "description": "For each ability below, roll the designated formula (default is 4d6 drop the lowest), and enter the result as your ability score. Repeat for each ability.",
+            "preamble": "The Manual Rolling method allows you to create a unique character profile by rolling dice to determine each ability score. By default, this uses the classic 4d6 drop the lowest method, but your DM may specify a custom rolling formula. While the results of this method can range from strong to average or even low scores, it adds an element of unpredictability to character building that can yield distinct strengths and weaknesses. This method is perfect for creating varied characters in short campaigns or one-shots, where surprising stats can inspire creative roleplaying. Embrace the randomness and enjoy the unique outcomes!"
+          },
+
+          "no-roll-method": "Error loading a valid roll method, please report to developer."
         }
       },
       "background": {
@@ -39,11 +49,11 @@
       },
       "done": "Done",
       "equipment": {
-        "preamble": "This is where you can manage and select your character's equipment.",
+        "preamble": "This is where you can manage and select your character's equipment. This feature is not currently implemented.",
         "tooltip": "Manage your character's equipment"
       },
       "finalize": {
-        "preamble": "This is where you finalize and submit your character's details.",
+        "preamble": "This is where you finalize and submit your character's details. This feature is not currently implemented.",
         "tooltip": "Finalize your character creation"
       },
       "header-context": "Creating {name}",
@@ -83,16 +93,27 @@
     "no-classes-available": "No classes available",
     "no-races-available": "No races available",
     "settings": {
-      "background": "Background",
-      "backgrounds-label": "Set Background Compendiums:",
-      "class": "Class",
-      "classes-label": "Set Class Compendiums:",
       "custom-compendiums": {
+        "background": "Background",
+        "backgrounds-label": "Set Background Compendiums:",
+        "class": "Class",
+        "classes-label": "Set Class Compendiums:",
+        "description": "Configure your custom compendiums for classes, races, and backgrounds.",
+        "error": "Failed to retrieve documents from compendium pack: {pack}",
+        "form-saved": "Compendium form settings have been saved.",
+        "invalid-pack": "One or more compendium packs are no longer valid.",
+        "manage-backgrounds": "Manage Backgrounds",
+        "manage-classes": "Manage Classes",
+        "manage-races": "Manage Races",
         "menu": {
           "hint": "Open dialog to configure custom compendiums for all categories.",
           "label": "",
           "name": "Set Custom Compendiums"
         },
+        "no-valid-packs": "No valid compendium packs were found.",
+        "race": "Race",
+        "races-label": "Set Race Compendiums:",
+        "saved": "{type} compendium settings have been saved.",
         "title": "Select your {type} compendiums!"
       },
       "custom-roll-formula": {
@@ -101,19 +122,22 @@
         "reset": "Custom roll formula was empty, resetting to default: 4d6kh3"
       },
       "custom-standard-array": {
-        "name": "Custom Standard Array",
         "hint": "Enter your custom array values separated by commas (e.g., 15,14,13,12,10,8). If left blank, defaults will apply based on the number of ability scores.",
         "invalid-format": "Invalid format: please enter numbers separated by commas only.",
+        "name": "Custom Standard Array",
         "reset-default": "Custom Standard Array was reset to default values due to invalid length."
       },
-      "description": "Configure your custom compendiums for classes, races, and backgrounds.",
+      "dice-rolling-method": {
+        "hint": "REQUIRES RELOAD! Select how you want to generate ability scores. (Default: Standard Array)",
+        "manual-formula": "Manual",
+        "name": "Ability Score Generation",
+        "point-buy": "Point Buy (Not yet implemented)",
+        "standard-array": "Standard Array"
+      },
       "enable": {
         "hint": "Adds a button to use Hero Mancer on the Actors tab. (Default: Enabled)",
         "name": "Enable Hero Mancer?"
       },
-      "error": "Failed to retrieve documents from compendium pack: {pack}",
-      "form-saved": "Compendium form settings have been saved.",
-      "invalid-pack": "One or more compendium packs are no longer valid.",
       "logger": {
         "choices": {
           "errors": "Errors",
@@ -124,21 +148,7 @@
         "hint": "Set the verbosity of logs generated by HeroMancer.",
         "name": "Logging Level"
       },
-      "manage-backgrounds": "Manage Backgrounds",
-      "manage-classes": "Manage Classes",
-      "manage-races": "Manage Races",
-      "no-selection": "No compendiums selected. Please select at least one.",
-      "no-valid-packs": "No valid compendium packs were found.",
-      "race": "Race",
-      "races-label": "Set Race Compendiums:",
-      "saved": "{type} compendium settings have been saved.",
-      "dice-rolling-method": {
-        "name": "Ability Score Generation",
-        "hint": "Select how you want to generate ability scores. (Default: Standard Array)",
-        "point-buy": "Point Buy",
-        "standard-array": "Standard Array",
-        "manual-formula": "Manual"
-      }
+      "no-selection": "No compendiums selected. Please select at least one."
     }
   }
 }
