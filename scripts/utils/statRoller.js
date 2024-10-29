@@ -107,3 +107,46 @@ export function getStandardArray(extraAbilities) {
   }
   return baseArray.sort((a, b) => b - a);
 }
+
+/**
+ * Calculate the total points available for point buy, factoring in any extra abilities.
+ * For each additional ability beyond the sixth, add 3 extra points.
+ * @returns {number} The total points available for point buy.
+ */
+export function getTotalPoints() {
+  const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
+  const basePoints = 27;
+  const extraPoints = abilitiesCount > 6 ? (abilitiesCount - 6) * 3 : 0;
+  return basePoints + extraPoints;
+}
+
+/**
+ * Retrieve the point cost associated with a given ability score.
+ * @param {number} score The ability score to evaluate (8-15).
+ * @returns {number} The point cost associated with the given score.
+ */
+export function getPointCost(score) {
+  const pointCosts = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
+  return pointCosts[score] || 0;
+}
+
+/**
+ * Calculate the total points spent based on the selected ability scores.
+ * @param {number[]} selectedScores An array of ability scores selected by the user.
+ * @returns {number} The total points spent based on selected scores.
+ */
+export function calculatePointsSpent(selectedScores) {
+  return selectedScores.reduce((total, score) => total + getPointCost(score), 0);
+}
+
+/**
+ * Calculate and return remaining points based on the current dropdown selections.
+ * @param {NodeList} abilityDropdowns List of dropdown elements for abilities.
+ * @returns {number} The remaining points after calculating points spent.
+ */
+export function calculateRemainingPoints(abilityDropdowns) {
+  const selectedScores = Array.from(abilityDropdowns).map((dropdown) => parseInt(dropdown.value, 10) || 8);
+  const pointsSpent = HMUtils.calculatePointsSpent(selectedScores);
+  const totalPoints = HMUtils.getTotalPoints();
+  return totalPoints - pointsSpent;
+}

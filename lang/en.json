@@ -14,7 +14,6 @@
         "select-placeholder": "Choose",
         "tooltip": "Select and assign abilities",
         "instructions": {
-          "point-buy": "Please allocate your points using the point buy system.",
           "standard-array": {
             "title": "Stat Generation Method: Standard Array",
             "description": "For each ability below, choose a value from the dropdown. Keep in mind your class and character goals when deciding. You can only use a value once.",
@@ -24,6 +23,12 @@
             "title": "Stat Generation Method: Manual Rolling",
             "description": "For each ability below, roll the designated formula (default is 4d6 drop the lowest), and enter the result as your ability score. Repeat for each ability.",
             "preamble": "The Manual Rolling method allows you to create a unique character profile by rolling dice to determine each ability score. By default, this uses the classic 4d6 drop the lowest method, but your DM may specify a custom rolling formula. While the results of this method can range from strong to average or even low scores, it adds an element of unpredictability to character building that can yield distinct strengths and weaknesses. This method is perfect for creating varied characters in short campaigns or one-shots, where surprising stats can inspire creative roleplaying. Embrace the randomness and enjoy the unique outcomes!"
+          },
+          "point-buy": {
+            "title": "Stat Generation Method: Point Buy",
+            "description": "Assign points to each ability score. You have a base of 27 points to spend, with the maximum score capped at 15.",
+            "preamble": "The Point Buy method provides flexibility by allowing you to assign a set number of points to your abilities. Distribute your points across abilities to create a balanced or specialized character profile. Each score above 8 has a point cost, so plan wisely!",
+            "remaining": "Remaining"
           },
 
           "no-roll-method": "Error loading a valid roll method, please report to developer."
@@ -131,7 +136,7 @@
         "hint": "REQUIRES RELOAD! Select how you want to generate ability scores. (Default: Standard Array)",
         "manual-formula": "Manual",
         "name": "Ability Score Generation",
-        "point-buy": "Point Buy (Not yet implemented)",
+        "point-buy": "Point Buy",
         "standard-array": "Standard Array"
       },
       "enable": {

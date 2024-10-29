@@ -9,12 +9,25 @@ export { initializeDropdown, updateAbilityDropdowns, generateDropdownHTML } from
 
 // UI Manipulations
 export { registerButton } from './htmlManipulations.js';
-export { handleAbilitySelectionChange, addAbilitySelectionListeners } from './listeners.js';
+export {
+  handleAbilitySelectionChange,
+  addAbilitySelectionListeners,
+  updateRemainingPointsDisplay,
+  addPointBuyAbilityListeners,
+  updatePointsColor,
+  adjustScore,
+  updatePlusButtonState,
+  updateMinusButtonState
+} from './listeners.js';
 
 // Miscellaneous
 export {
   statRoller,
   getStandardArrayDefault,
   validateAndSetCustomStandardArray,
-  getStandardArray
+  getStandardArray,
+  getTotalPoints,
+  getPointCost,
+  calculatePointsSpent,
+  calculateRemainingPoints
 } from './statRoller.js';

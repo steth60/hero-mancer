@@ -49,7 +49,7 @@ jobs:
       - name: Zip Files
         working-directory: ./
         run: |
-          zip -r ./module.zip ./ -x "README.md" "CHANGELOG.md" "LICENSE" "TODO.md" ".gitattributes" ".gitignore" "tour-assets/*" "release_notes.txt"
+          zip -r ./module.zip ./ -x "README.md" "CHANGELOG.md" "LICENSE" "TODO.md" ".gitattributes" ".gitignore" "tour-assets/*" "release_notes.txt" ".git/" ".github/"
 
 
       - name: Create Release
@@ -102,14 +102,15 @@ jobs:
             --arg title "Hero Mancer Release" \
             --arg version "$VERSION" \
             --arg foundry_url "https://foundryvtt.com/packages/hero-mancer" \
-            --arg release_url "$REPO_URL/releases/tag/$VERSION/module.json" \
-            --arg download_url "$REPO_URL/releases/tag/$VERSION/module.zip" \
+            --arg release_url "$REPO_URL/releases/download/$VERSION/module.json" \
+            --arg download_url "$REPO_URL/releases/download/$VERSION/module.zip" \
             --arg release_notes "$CLEAN_RELEASE_NOTES" \
             '{embeds: [{
               title: $title,
               fields: [
                 {name: "Version", value: $version, inline: true},
-                {name: "Compatibility", value: "Core: V12.331, System: 3.3.1+", inline: true},
+                {name: "Core Compatibility", value: "V12.331", inline: true},
+                {name: "System Compatibility", value:"3.3.1+", inline: true},
                 {name: "Foundry Package", value: $foundry_url, inline: false},
                 {name: "Release Tag", value: $release_url, inline: false},
                 {name: "Manual Download", value: $download_url, inline: false},

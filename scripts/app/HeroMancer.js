@@ -4,6 +4,8 @@ import * as HMUtils from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api; // Define some variables we'll use often, pulling from the foundry API.
 // const { AdvancementManager } = dnd5e.applications.advancement;
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
+  static selectedAbilities = [];
+
   static DEFAULT_OPTIONS = {
     id: `${HM.ID}-app`,
     tag: 'form',
@@ -13,7 +15,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       submitOnChange: false // Dont submit data to the formHandler until the submit button is pressed.
     },
     actions: {
-      rollStat: HeroMancer.rollStat // Register rollStat action
+      rollStat: HeroMancer.rollStat, // Register rollStat action
+      decreaseScore: HeroMancer.decreaseScore,
+      increaseScore: HeroMancer.increaseScore
     },
     classes: [`${HM.ABRV}-app`], // CSS class that applies to the entire application (ie the root class)
     position: {
@@ -91,12 +95,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   async _prepareContext(options) {
     HM.log(3, 'Preparing context.');
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
+    HeroMancer.selectedAbilities = Array(abilitiesCount).fill(8);
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
     const diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
     const standardArray =
       diceRollingMethod === 'standardArray' ?
         game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number)
       : HMUtils.getStandardArray(extraAbilities);
+    const selectedAbilities = Array(abilitiesCount).fill(8);
+    const totalPoints = HMUtils.getTotalPoints();
+    const remainingPoints = HMUtils.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
 
     // Check if cached data is available to avoid re-fetching
     if (HMUtils.CacheManager.isCacheValid()) {
@@ -111,7 +119,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         tabs: this.tabsData,
         rollStat: this.rollStat,
         diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod'),
-        standardArray: standardArray
+        standardArray: standardArray,
+        selectedAbilities: HeroMancer.selectedAbilities,
+        remainingPoints: remainingPoints,
+        totalPoints: totalPoints
       };
     }
 
@@ -133,7 +144,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     // Extract abilities from the system configuration and convert to uppercase abbreviations
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
       key,
-      abbreviation: value.abbreviation.toUpperCase()
+      abbreviation: value.abbreviation.toUpperCase(),
+      currentScore: 8
     }));
 
     HM.log(3, 'Abilities extracted:', abilities);
@@ -150,7 +162,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       abilities, // Pass the abilities data
       rollStat: this.rollStat, // Roll stat handler
       diceRollMethod: diceRollingMethod,
-      standardArray: standardArray
+      standardArray: standardArray,
+      selectedAbilities: HeroMancer.selectedAbilities,
+      remainingPoints: remainingPoints,
+      totalPoints: totalPoints
     };
 
     HM.log(3, 'Prepared context:', context);
@@ -199,13 +214,26 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.log(3, 'Rendering application with context and options.');
     const html = this.element;
 
-    // Initialize each dropdown with the refactored function
+    // Initialize dropdowns for race, class, and background
     HMUtils.initializeDropdown({ type: 'class', html, context });
     HMUtils.initializeDropdown({ type: 'race', html, context });
     HMUtils.initializeDropdown({ type: 'background', html, context });
 
-    // Set up ability selection listeners
-    HMUtils.addAbilitySelectionListeners(html);
+    const abilityDropdowns = html.querySelectorAll('.ability-dropdown');
+    const selectedAbilities = Array.from(abilityDropdowns).map((dropdown) => parseInt(dropdown.value, 10) || 8);
+    const totalPoints = HMUtils.getTotalPoints();
+
+    abilityDropdowns.forEach((dropdown, index) => {
+      dropdown.addEventListener('change', (event) => {
+        selectedAbilities[index] = parseInt(event.target.value, 10) || 8;
+        HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints);
+      });
+    });
+
+    // Initial update on render
+    HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints);
+    HMUtils.updatePlusButtonState(context.remainingPoints);
+    HMUtils.updateMinusButtonState();
   }
 
   /* Getter to setup tabs with builtin foundry functionality. */
@@ -250,23 +278,23 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.abilities`)}`,
         active: false,
         cssClass: ''
-      },
-      equipment: {
-        id: 'equipment',
-        group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-shield-halved',
-        label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.equipment`)}`,
-        active: false,
-        cssClass: ''
-      },
-      finalize: {
-        id: 'finalize',
-        group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-check-circle',
-        label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.finalize`)}`,
-        active: false,
-        cssClass: ''
       }
+      // equipment: {
+      //   id: 'equipment',
+      //   group: 'hero-mancer-tabs',
+      //   icon: 'fa-solid fa-shield-halved',
+      //   label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.equipment`)}`,
+      //   active: false,
+      //   cssClass: ''
+      // },
+      // finalize: {
+      //   id: 'finalize',
+      //   group: 'hero-mancer-tabs',
+      //   icon: 'fa-solid fa-check-circle',
+      //   label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.finalize`)}`,
+      //   active: false,
+      //   cssClass: ''
+      // }
     };
     return tabsData;
   }
@@ -291,6 +319,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static async rollStat(event, form) {
     HM.log(3, 'Rolling stats using user-defined formula.');
     await HMUtils.statRoller(form); // Use the utility function
+  }
+
+  static increaseScore(event, form) {
+    const index = parseInt(form.getAttribute('data-ability-index'), 10);
+    HMUtils.adjustScore(index, 1);
+  }
+
+  static decreaseScore(event, form) {
+    const index = parseInt(form.getAttribute('data-ability-index'), 10);
+    HMUtils.adjustScore(index, -1);
   }
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */

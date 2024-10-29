@@ -59,3 +59,12 @@
 - Fixed localization strings in Compendium picker settings application.
 - Clean up and expanded on instructions on the abilities tab based on which roll method is enabled.
 - Clarified that equipment and finalization tabs are not yet functional, same with point buy.
+
+## New Feature: Point Buy (0.2.0)
+
+- Added support for point buy, including if there are more than 6 abilities to choose from.
+- Custom CSS to make sure -/+ buttons looks reasonable, please suggest improvements.
+- Added a ton of new functions to allow pointbuy to work... I probably need to clean these up.
+- Temporarily disabled Equipment and Finalization tabs since these are not being used. You can still submit the form and
+  create a character.
+- Updated workflow to point towards the correct module.json/module.zip

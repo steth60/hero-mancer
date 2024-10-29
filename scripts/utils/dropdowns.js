@@ -1,4 +1,5 @@
 import { HM } from '../hero-mancer.js';
+import * as HMUtils from './index.js';
 
 /**
  * Initializes a dropdown with a change event listener and handles description updates.
@@ -43,18 +44,29 @@ export async function initializeDropdown({ type, html, context, customHandler })
 }
 
 /**
- * Updates dropdown options to disable already-selected abilities.
- * @param {NodeList} abilityDropdowns List of all ability dropdowns.
- * @param {Set} selectedAbilities Set of currently selected ability values.
+ * Updates dropdown options to disable selections that would exceed the remaining points.
+ * @param {NodeList} abilityDropdowns List of all ability dropdown elements.
+ * @param {Array<number>} selectedAbilities Array of currently selected ability scores.
+ * @param {number} totalPoints The total points allowed for Point Buy.
  */
-export function updateAbilityDropdowns(abilityDropdowns, selectedAbilities) {
-  abilityDropdowns.forEach((dropdown) => {
-    const currentValue = dropdown.value;
+export function updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints) {
+  const pointsSpent = HMUtils.calculatePointsSpent(selectedAbilities);
+  const remainingPoints = totalPoints - pointsSpent;
+
+  abilityDropdowns.forEach((dropdown, index) => {
+    const currentValue = parseInt(dropdown.value, 10) || 8;
 
     dropdown.querySelectorAll('option').forEach((option) => {
-      option.disabled = selectedAbilities.has(option.value) && option.value !== currentValue;
+      const optionValue = parseInt(option.value, 10);
+      const optionCost = HMUtils.getPointCost(optionValue);
+      const canAffordOption = optionCost <= remainingPoints + HMUtils.getPointCost(currentValue);
+
+      option.disabled = !canAffordOption && optionValue !== currentValue;
     });
   });
+
+  // Update remaining points display
+  HMUtils.updateRemainingPointsDisplay(remainingPoints);
 }
 
 /**
