@@ -44,29 +44,53 @@ export async function initializeDropdown({ type, html, context, customHandler })
 }
 
 /**
- * Updates dropdown options to disable selections that would exceed the remaining points.
+ * Updates dropdown options to disable selections based on the selected mode.
  * @param {NodeList} abilityDropdowns List of all ability dropdown elements.
  * @param {Array<number>} selectedAbilities Array of currently selected ability scores.
  * @param {number} totalPoints The total points allowed for Point Buy.
+ * @param {string} mode The dice rolling method (e.g., 'pointBuy', 'manualFormula').
  */
-export function updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints) {
-  const pointsSpent = HMUtils.calculatePointsSpent(selectedAbilities);
-  const remainingPoints = totalPoints - pointsSpent;
+export function updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints, mode) {
+  // Log incoming parameters for inspection
+  console.log('Mode:', mode);
+  console.log('Selected Abilities:', selectedAbilities);
+  console.log('Total Points:', totalPoints);
 
-  abilityDropdowns.forEach((dropdown, index) => {
-    const currentValue = parseInt(dropdown.value, 10) || 8;
+  if (mode === 'pointBuy') {
+    const pointsSpent = HMUtils.calculatePointsSpent(selectedAbilities);
+    const remainingPoints = totalPoints - pointsSpent;
 
-    dropdown.querySelectorAll('option').forEach((option) => {
-      const optionValue = parseInt(option.value, 10);
-      const optionCost = HMUtils.getPointCost(optionValue);
-      const canAffordOption = optionCost <= remainingPoints + HMUtils.getPointCost(currentValue);
+    console.log('Points Spent:', pointsSpent);
+    console.log('Remaining Points:', remainingPoints);
 
-      option.disabled = !canAffordOption && optionValue !== currentValue;
+    abilityDropdowns.forEach((dropdown, index) => {
+      const currentValue = parseInt(dropdown.value, 10) || 8;
+      console.log(`Dropdown ${index} - Current Value:`, currentValue);
+
+      dropdown.querySelectorAll('option').forEach((option) => {
+        const optionValue = parseInt(option.value, 10);
+        const optionCost = HMUtils.getPointCost(optionValue);
+        const canAffordOption = optionCost <= remainingPoints + HMUtils.getPointCost(currentValue);
+
+        console.log(`Option Value: ${optionValue}, Option Cost: ${optionCost}, Can Afford: ${canAffordOption}`);
+        option.disabled = !canAffordOption && optionValue !== currentValue;
+      });
     });
-  });
 
-  // Update remaining points display
-  HMUtils.updateRemainingPointsDisplay(remainingPoints);
+    // Update remaining points display
+    HMUtils.updateRemainingPointsDisplay(remainingPoints);
+  } else if (mode === 'manualFormula') {
+    const selectedValues = new Set(selectedAbilities); // Use selected ability names/abbreviations
+
+    abilityDropdowns.forEach((dropdown) => {
+      const currentValue = dropdown.value;
+
+      dropdown.querySelectorAll('option').forEach((option) => {
+        const optionValue = option.value;
+        option.disabled = selectedValues.has(optionValue) && optionValue !== currentValue;
+      });
+    });
+  }
 }
 
 /**

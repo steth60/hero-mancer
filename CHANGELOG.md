@@ -76,3 +76,9 @@
   re-opening the application.
 - Fixed console warning when user wasn't on the abilities tab.
 - Miscellaneous tooltip fixes in footer and abilities tab.
+
+## Bug Fixes & Refactor (0.2.2)
+
+- Fixed long-standing bug with manual roll mode dropdowns.
+- Refactors tabs to render content more accurately and fix dropdowns getting sticky. (future refactor may load data when
+  clicking on a tab instead of when clicking on Hero Mancer button for improved streamlining.)

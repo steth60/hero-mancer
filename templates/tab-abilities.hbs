@@ -79,7 +79,7 @@
               aria-label='{{localize "hm.app.abilities.tooltip"}}'
             >
               <option value=''>{{localize 'hm.app.abilities.select-placeholder'}}</option>
-              {{#each abilities}}
+              {{#each ../abilities}}
                 <option value='{{this.key}}'>{{this.abbreviation}}</option>
               {{/each}}
             </select>

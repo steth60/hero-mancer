@@ -1,25 +1,33 @@
 import { HM } from '../hero-mancer.js';
 import * as HMUtils from '../utils/index.js';
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+const { AdvancementManager } = dnd5e.applications.advancement;
 
-const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api; // Define some variables we'll use often, pulling from the foundry API.
-// const { AdvancementManager } = dnd5e.applications.advancement;
+/**
+ * AppV2-based sheet for Hero Mancer application
+ */
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
+  constructor(options = {}) {
+    super(options);
+  }
+
   static selectedAbilities = [];
 
+  /** @override */
   static DEFAULT_OPTIONS = {
     id: `${HM.ID}-app`,
     tag: 'form',
     form: {
       handler: HeroMancer.formHandler,
-      closeOnSubmit: true, // Close application upon hitting the submit button.
-      submitOnChange: false // Dont submit data to the formHandler until the submit button is pressed.
+      closeOnSubmit: true,
+      submitOnChange: false
     },
     actions: {
-      rollStat: HeroMancer.rollStat, // Register rollStat action
+      rollStat: HeroMancer.rollStat,
       decreaseScore: HeroMancer.decreaseScore,
       increaseScore: HeroMancer.increaseScore
     },
-    classes: [`${HM.ABRV}-app`], // CSS class that applies to the entire application (ie the root class)
+    classes: [`${HM.ABRV}-app`],
     position: {
       height: 'auto',
       width: 'auto',
@@ -36,62 +44,51 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     return `${HM.TITLE} | ${game.user.name}`;
   }
 
-  /* Define the PARTS of the application, in our case: header, nav, footer, and each tab */
+  /** @override */
   static PARTS = {
     header: {
       template: `${HM.TMPL}/app-header.hbs`,
-      id: 'header',
       classes: [`${HM.ABRV}-app-header`]
     },
-    nav: {
+    tabs: {
       template: `${HM.TMPL}/app-nav.hbs`,
-      id: 'nav',
       classes: [`${HM.ABRV}-app-nav`]
     },
     start: {
       template: `${HM.TMPL}/tab-start.hbs`,
-      id: 'start',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     background: {
       template: `${HM.TMPL}/tab-background.hbs`,
-      id: 'background',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     race: {
       template: `${HM.TMPL}/tab-race.hbs`,
-      id: 'race',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     class: {
       template: `${HM.TMPL}/tab-class.hbs`,
-      id: 'class',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     abilities: {
       template: `${HM.TMPL}/tab-abilities.hbs`,
-      id: 'abilities',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     equipment: {
       template: `${HM.TMPL}/tab-equipment.hbs`,
-      id: 'equipment',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     finalize: {
       template: `${HM.TMPL}/tab-finalize.hbs`,
-      id: 'finalize',
       classes: [`${HM.ABRV}-app-tab-content`]
     },
     footer: {
       template: `${HM.TMPL}/app-footer.hbs`,
-      id: 'footer',
       classes: [`${HM.ABRV}-app-footer`]
     }
   };
 
-  /* AppV2 Prepare Context: This function is executed when the application is opened. */
-  /* It prepares the data sent to the Handlebars template to display the forms, HTML, CSS, etc. */
+  /** @override */
   async _prepareContext(options) {
     HM.log(3, 'Preparing context.');
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
@@ -102,7 +99,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       diceRollingMethod === 'standardArray' ?
         game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number)
       : HMUtils.getStandardArray(extraAbilities);
-    const selectedAbilities = Array(abilitiesCount).fill(8);
     const totalPoints = HMUtils.getTotalPoints();
     const remainingPoints = HMUtils.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
 
@@ -113,13 +109,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         raceDocs: HMUtils.CacheManager.getCachedRaceDocs(),
         classDocs: HMUtils.CacheManager.getCachedClassDocs(),
         backgroundDocs: HMUtils.CacheManager.getCachedBackgroundDocs()
-        // tabs: this.tabsData,
-        // rollStat: this.rollStat,
-        // diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod'),
-        // standardArray: standardArray,
-        // selectedAbilities: HeroMancer.selectedAbilities,
-        // remainingPoints: remainingPoints,
-        // totalPoints: totalPoints
       };
     }
 
@@ -151,7 +140,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       raceDocs,
       classDocs,
       backgroundDocs,
-      tabs: this.tabsData,
+      tabs: this._getTabs(options.parts),
       abilities, // Pass the abilities data
       rollStat: this.rollStat, // Roll stat handler
       diceRollMethod: diceRollingMethod,
@@ -200,12 +189,116 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     return context;
   }
 
-  async _preparePartContext(partId, context) {
-    context.partId = `${this.id}-${partId}`;
+  /** @override */
+  _preparePartContext(partId, context) {
+    HM.log(3, `Preparing part context for: ${{ partId }}`);
+
+    switch (partId) {
+      case 'start':
+        context.tab = context.tabs[partId];
+        break;
+      case 'background':
+        context.tab = context.tabs[partId];
+        break;
+      case 'race':
+        context.tab = context.tabs[partId];
+        break;
+      case 'class':
+        context.tab = context.tabs[partId];
+        break;
+      case 'abilities':
+        context.tab = context.tabs[partId];
+        const totalPoints = HMUtils.getTotalPoints();
+        const pointsSpent = HMUtils.calculatePointsSpent(HeroMancer.selectedAbilities);
+        const remainingPoints = totalPoints - pointsSpent;
+
+        context.totalPoints = totalPoints;
+        context.remainingPoints = remainingPoints;
+        break;
+      case 'equipment':
+        context.tab = context.tabs[partId];
+        break;
+      case 'finalize':
+        context.tab = context.tabs[partId];
+        break;
+    }
+    // HM.log(3, context);
     return context;
   }
 
-  /* Dynamic rendering of the application, triggers events and updates. */
+  /**
+   * Generate the data for tab navigation using the ApplicationV2 structure.
+   * @param {string[]} parts An array of parts that correspond to tabs
+   * @returns {Record<string, Partial<ApplicationTab>>}
+   * @protected
+   */
+  _getTabs(parts) {
+    const tabGroup = 'hero-mancer-tabs';
+    this.tabGroups[tabGroup] = 'start'; // Default active tab
+
+    return parts.reduce((tabs, partId) => {
+      const tab = {
+        id: '',
+        label: `hm.app.tab-names.${partId}`,
+        group: tabGroup,
+        cssClass: '',
+        icon: ''
+      };
+      switch (partId) {
+        case 'header':
+        case 'tabs':
+          return tabs;
+        case 'start':
+          tab.id = 'start';
+          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.start`)}`;
+          tab.icon = 'fa-solid fa-play-circle';
+          break;
+        case 'background':
+          tab.id = 'background';
+          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.background`)}`;
+          tab.icon = 'fa-solid fa-scroll';
+          break;
+        case 'race':
+          tab.id = 'race';
+          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.race`)}`;
+          tab.icon = 'fa-solid fa-feather-alt';
+          break;
+        case 'class':
+          tab.id = 'class';
+          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.class`)}`;
+          tab.icon = 'fa-solid fa-chess-rook';
+          break;
+        case 'abilities':
+          tab.id = 'abilities';
+          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.abilities`)}`;
+          tab.icon = 'fa-solid fa-fist-raised';
+          break;
+        case 'equipment':
+          tab.id = 'equipment';
+          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.equipment`)}`;
+          tab.icon = 'fa-solid fa-shield-halved';
+          break;
+        case 'finalize':
+          tab.id = 'finalize';
+          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.finalize`)}`;
+          tab.icon = 'fa-solid fa-check-circle';
+          break;
+        case 'footer':
+          return tabs;
+      }
+      if (this.tabGroups[tabGroup] === tab.id) tab.cssClass = 'active';
+      tabs[partId] = tab;
+      return tabs;
+    }, {});
+  }
+
+  /**
+   * Actions performed after any render of the Application.
+   * Post-render steps are not awaited by the render process.
+   * @param {ApplicationRenderContext} context Prepared context data
+   * @param {RenderOptions} options Provided render options
+   * @protected
+   */
   _onRender(context, options) {
     HM.log(3, 'Rendering application with context and options.');
     const html = this.element;
@@ -216,99 +309,32 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HMUtils.initializeDropdown({ type: 'background', html, context });
 
     const abilityDropdowns = html.querySelectorAll('.ability-dropdown');
-    const selectedAbilities = Array.from(abilityDropdowns).map((dropdown) => parseInt(dropdown.value, 10) || 8);
+    const selectedAbilities = Array.from(abilityDropdowns).map(() => ''); // Initialize with empty strings
+
     const totalPoints = HMUtils.getTotalPoints();
 
+    // Set up event listeners and initial dropdown state based on mode
     abilityDropdowns.forEach((dropdown, index) => {
       dropdown.addEventListener('change', (event) => {
-        selectedAbilities[index] = parseInt(event.target.value, 10) || 8;
-        HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints);
+        selectedAbilities[index] = event.target.value || ''; // Store selected ability name/abbreviation
+        HMUtils.updateAbilityDropdowns(
+          abilityDropdowns,
+          selectedAbilities,
+          totalPoints,
+          context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula'
+        );
       });
     });
 
     // Initial update on render
-    HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints);
+    HMUtils.updateAbilityDropdowns(
+      abilityDropdowns,
+      selectedAbilities,
+      totalPoints,
+      context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula'
+    );
     HMUtils.updatePlusButtonState(context.remainingPoints);
     HMUtils.updateMinusButtonState();
-  }
-
-  /* Getter to setup tabs with builtin foundry functionality. */
-  get tabsData() {
-    let tabsData = {
-      start: {
-        id: 'start',
-        group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-play-circle',
-        label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.start`)}`,
-        active: true,
-        cssClass: 'active'
-      },
-      background: {
-        id: 'background',
-        group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-scroll',
-        label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.background`)}`,
-        active: false,
-        cssClass: ''
-      },
-      race: {
-        id: 'race',
-        group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-feather-alt',
-        label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.race`)}`,
-        active: false,
-        cssClass: ''
-      },
-      class: {
-        id: 'class',
-        group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-chess-rook',
-        label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.class`)}`,
-        active: false,
-        cssClass: ''
-      },
-      abilities: {
-        id: 'abilities',
-        group: 'hero-mancer-tabs',
-        icon: 'fa-solid fa-fist-raised',
-        label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.abilities`)}`,
-        active: false,
-        cssClass: ''
-      }
-      // equipment: {
-      //   id: 'equipment',
-      //   group: 'hero-mancer-tabs',
-      //   icon: 'fa-solid fa-shield-halved',
-      //   label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.equipment`)}`,
-      //   active: false,
-      //   cssClass: ''
-      // },
-      // finalize: {
-      //   id: 'finalize',
-      //   group: 'hero-mancer-tabs',
-      //   icon: 'fa-solid fa-check-circle',
-      //   label: `${game.i18n.localize(`${HM.ABRV}.app.tab-names.finalize`)}`,
-      //   active: false,
-      //   cssClass: ''
-      // }
-    };
-    return tabsData;
-  }
-
-  /* Logic for changing tabs. */
-  changeTab(...args) {
-    HM.log(3, 'Changing tabs with args:', args);
-
-    // Set position to auto to adapt to the new tab's height
-    let autoPos = { ...this.position, height: 'auto' };
-    this.setPosition(autoPos);
-    super.changeTab(...args);
-
-    // After tab is changed, recalculate and set the new height
-    let newPos = { ...this.position, height: this.element.scrollHeight };
-    this.setPosition(newPos);
-
-    HM.log(3, 'Tab changed. New position set:', newPos);
   }
 
   /* Logic for rolling stats and updating input fields */
