@@ -30,9 +30,12 @@
             "preamble": "The Point Buy method provides flexibility by allowing you to assign a set number of points to your abilities. Distribute your points across abilities to create a balanced or specialized character profile. Each score above 8 has a point cost, so plan wisely!",
             "remaining": "Remaining"
           },
-
           "no-roll-method": "Error loading a valid roll method, please report to developer."
-        }
+        },
+        "label": "Ability",
+        "decrease": "-1",
+        "increase": "+1",
+        "select-value": "Select a value"
       },
       "background": {
         "none": "No backgrounds available.",
@@ -112,7 +115,6 @@
         "manage-races": "Manage Races",
         "menu": {
           "hint": "Open dialog to configure custom compendiums for all categories.",
-          "label": "",
           "name": "Set Custom Compendiums"
         },
         "no-valid-packs": "No valid compendium packs were found.",

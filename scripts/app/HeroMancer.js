@@ -111,30 +111,26 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       HM.log(3, 'Documents cached and descriptions enriched!');
       return {
         raceDocs: HMUtils.CacheManager.getCachedRaceDocs(),
-        raceDropdownHtml: HMUtils.CacheManager.getCachedRaceDropdownHtml(),
         classDocs: HMUtils.CacheManager.getCachedClassDocs(),
-        classDropdownHtml: HMUtils.CacheManager.getCachedClassDropdownHtml(),
-        backgroundDocs: HMUtils.CacheManager.getCachedBackgroundDocs(),
-        backgroundDropdownHtml: HMUtils.CacheManager.getCachedBackgroundDropdownHtml(),
-        tabs: this.tabsData,
-        rollStat: this.rollStat,
-        diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod'),
-        standardArray: standardArray,
-        selectedAbilities: HeroMancer.selectedAbilities,
-        remainingPoints: remainingPoints,
-        totalPoints: totalPoints
+        backgroundDocs: HMUtils.CacheManager.getCachedBackgroundDocs()
+        // tabs: this.tabsData,
+        // rollStat: this.rollStat,
+        // diceRollMethod: game.settings.get(HM.ID, 'diceRollingMethod'),
+        // standardArray: standardArray,
+        // selectedAbilities: HeroMancer.selectedAbilities,
+        // remainingPoints: remainingPoints,
+        // totalPoints: totalPoints
       };
     }
 
     // Notify the user that loading is in progress
     ui.notifications.info('hm.actortab-button.loading', { localize: true });
 
-    // Fetch race, class, and background documents
+    // Fetch race, class, and background documents without caching dropdown HTML
     HM.log(3, 'Fetching race, class, and background documents...');
-    const { types: raceDocs, dropdownHtml: raceDropdownHtml } = await HMUtils.prepareDocuments('race');
-    const { types: classDocs, dropdownHtml: classDropdownHtml } = await HMUtils.prepareDocuments('class');
-    const { types: backgroundDocs, dropdownHtml: backgroundDropdownHtml } =
-      await HMUtils.prepareDocuments('background');
+    const { types: raceDocs } = await HMUtils.prepareDocuments('race');
+    const { types: classDocs } = await HMUtils.prepareDocuments('class');
+    const { types: backgroundDocs } = await HMUtils.prepareDocuments('background');
 
     // Log fetched documents
     HM.log(3, 'Race Docs:', raceDocs);
@@ -153,11 +149,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     // Prepare the context for the template
     const context = {
       raceDocs,
-      raceDropdownHtml,
       classDocs,
-      classDropdownHtml, // Generated dropdown HTML for classes
       backgroundDocs,
-      backgroundDropdownHtml, // Generated dropdown HTML for backgrounds
       tabs: this.tabsData,
       abilities, // Pass the abilities data
       rollStat: this.rollStat, // Roll stat handler
@@ -194,18 +187,21 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       }
     }
 
-    // Cache the documents and enriched descriptions for future use
+    // Cache the documents and enriched descriptions for future use, but skip dropdown HTML
     HMUtils.CacheManager.cacheDocuments({
       raceDocs,
-      raceDropdownHtml,
       classDocs,
-      classDropdownHtml,
       backgroundDocs,
-      backgroundDropdownHtml,
       abilities
     });
 
     HM.log(3, 'Documents registered and enriched, caching results.');
+    HM.log(3, 'Tabs Data:', this.tabsData);
+    return context;
+  }
+
+  async _preparePartContext(partId, context) {
+    context.partId = `${this.id}-${partId}`;
     return context;
   }
 

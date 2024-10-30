@@ -80,11 +80,16 @@ export function addAbilitySelectionListeners(element) {
  * @param {number} remainingPoints The calculated remaining points after each selection.
  */
 export function updateRemainingPointsDisplay(remainingPoints) {
+  // Check if the Abilities tab is currently active
+  const abilitiesTab = document.querySelector(".tab[data-tab='abilities']");
+  if (!abilitiesTab || !abilitiesTab.classList.contains('active')) return;
+
+  // Get the remaining points element in the DOM
   const remainingPointsElement = document.getElementById('remaining-points');
   const totalPoints = HMUtils.getTotalPoints();
 
   if (remainingPointsElement) {
-    remainingPointsElement.textContent = `${remainingPoints}`;
+    remainingPointsElement.textContent = remainingPoints;
     updatePointsColor(remainingPoints, totalPoints);
   } else {
     console.warn('Remaining points element not found in the DOM.');

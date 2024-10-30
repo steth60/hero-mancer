@@ -68,3 +68,11 @@
 - Temporarily disabled Equipment and Finalization tabs since these are not being used. You can still submit the form and
   create a character.
 - Updated workflow to point towards the correct module.json/module.zip
+
+## Bug Fixes (0.2.1)
+
+- Fixed some bad localization strings.
+- Removed caching for dropdowns and HTML; this is potentially temporary but in the mean time fixes the issue with
+  re-opening the application.
+- Fixed console warning when user wasn't on the abilities tab.
+- Miscellaneous tooltip fixes in footer and abilities tab.
