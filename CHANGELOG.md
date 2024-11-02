@@ -88,3 +88,4 @@
 - First pass of implementing equipment selection, not yet ready for use.
 - Clean up some unused code.
 - Fix cache management.
+- Repost with proper build info.
