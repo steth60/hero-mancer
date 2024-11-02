@@ -1,7 +1,8 @@
 import { HM } from '../hero-mancer.js';
+import { EquipmentParser } from '../utils/equipmentParser.js';
 import * as HMUtils from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
-const { AdvancementManager } = dnd5e.applications.advancement;
+// const { AdvancementManager } = dnd5e.applications.advancement;
 
 /**
  * AppV2-based sheet for Hero Mancer application
@@ -96,9 +97,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
     const diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
     const standardArray =
-      diceRollingMethod === 'standardArray' ?
-        game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number)
-      : HMUtils.getStandardArray(extraAbilities);
+      diceRollingMethod === 'standardArray'
+        ? game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number)
+        : HMUtils.getStandardArray(extraAbilities);
     const totalPoints = HMUtils.getTotalPoints();
     const remainingPoints = HMUtils.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
 
@@ -112,77 +113,62 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       };
     }
 
-    // Notify the user that loading is in progress
     ui.notifications.info('hm.actortab-button.loading', { localize: true });
 
-    // Fetch race, class, and background documents without caching dropdown HTML
-    HM.log(3, 'Fetching race, class, and background documents...');
     const { types: raceDocs } = await HMUtils.prepareDocuments('race');
     const { types: classDocs } = await HMUtils.prepareDocuments('class');
     const { types: backgroundDocs } = await HMUtils.prepareDocuments('background');
 
-    // Log fetched documents
-    HM.log(3, 'Race Docs:', raceDocs);
-    HM.log(3, 'Class Docs:', classDocs);
-    HM.log(3, 'Background Docs:', backgroundDocs);
-
-    // Extract abilities from the system configuration and convert to uppercase abbreviations
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
       key,
       abbreviation: value.abbreviation.toUpperCase(),
       currentScore: 8
     }));
 
-    HM.log(3, 'Abilities extracted:', abilities);
-
-    // Prepare the context for the template
     const context = {
       raceDocs,
       classDocs,
       backgroundDocs,
       tabs: this._getTabs(options.parts),
-      abilities, // Pass the abilities data
-      rollStat: this.rollStat, // Roll stat handler
+      abilities,
+      rollStat: this.rollStat,
       diceRollMethod: diceRollingMethod,
       standardArray: standardArray,
       selectedAbilities: HeroMancer.selectedAbilities,
       remainingPoints: remainingPoints,
       totalPoints: totalPoints
+      // equipmentData: {} // Include parsed equipment data for later use
     };
 
-    HM.log(3, 'Prepared context:', context);
-
-    // Flatten race, class, and background documents for enrichment
     const allDocs = [
-      ...(context.raceDocs?.flatMap((folder) => folder.docs) || []), // Flatten race docs inside folders
-      ...(context.classDocs?.flatMap((pack) => pack.docs) || []), // Flatten class docs inside packs
-      ...(context.backgroundDocs?.flatMap((pack) => pack.docs) || []) // Flatten background docs inside packs
+      ...(context.raceDocs?.flatMap((folder) => folder.docs) || []),
+      ...(context.classDocs?.flatMap((pack) => pack.docs) || []),
+      ...(context.backgroundDocs?.flatMap((pack) => pack.docs) || [])
     ];
-
-    HM.log(3, 'All documents to be enriched:', allDocs);
-
-    // Enrich descriptions for each document if available
     for (const doc of allDocs) {
-      if (doc && doc.description) {
+      if (doc?.description) {
         try {
-          const enrichedDescription = await TextEditor.enrichHTML(doc.description);
-          doc.enrichedDescription = enrichedDescription; // Attach enriched description
-          HM.log(3, `Enriched description for ${doc.name}`);
+          // Enrich description
+          doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
         } catch (error) {
-          HM.log(1, `${HM.ID} | Failed to enrich description for document '${doc.name}':`, error);
+          HM.log(
+            1,
+            `${HM.ID} | Error enriching description or processing starting equipment for '${doc.name}':`,
+            error
+          );
         }
-      } else {
-        HM.log(2, `${HM.ID} | No description found for document ${doc ? doc.name : 'undefined'}`);
       }
     }
 
-    // Cache the documents and enriched descriptions for future use, but skip dropdown HTML
     HMUtils.CacheManager.cacheDocuments({
       raceDocs,
       classDocs,
       backgroundDocs,
       abilities
     });
+    // const equipmentParser = new EquipmentParser();
+    // const equipmentData = equipmentParser.buildEquipmentTabContent();
+    // console.log('Equipment Data:', equipmentData);
 
     HM.log(3, 'Documents registered and enriched, caching results.');
     HM.log(3, 'Tabs Data:', this.tabsData);
@@ -195,14 +181,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     switch (partId) {
       case 'start':
-        context.tab = context.tabs[partId];
-        break;
       case 'background':
-        context.tab = context.tabs[partId];
-        break;
       case 'race':
-        context.tab = context.tabs[partId];
-        break;
       case 'class':
         context.tab = context.tabs[partId];
         break;
@@ -211,18 +191,18 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         const totalPoints = HMUtils.getTotalPoints();
         const pointsSpent = HMUtils.calculatePointsSpent(HeroMancer.selectedAbilities);
         const remainingPoints = totalPoints - pointsSpent;
-
         context.totalPoints = totalPoints;
         context.remainingPoints = remainingPoints;
         break;
       case 'equipment':
+        const equipmentParser = new EquipmentParser();
+        context.parsedData = equipmentParser.buildEquipmentTabContent();
         context.tab = context.tabs[partId];
         break;
       case 'finalize':
         context.tab = context.tabs[partId];
         break;
     }
-    // HM.log(3, context);
     return context;
   }
 
@@ -335,6 +315,18 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     );
     HMUtils.updatePlusButtonState(context.remainingPoints);
     HMUtils.updateMinusButtonState();
+
+    console.log('Rendering equipment tab...');
+    const dropdowns = html.querySelectorAll('#class-dropdown, #race-dropdown, #background-dropdown');
+    dropdowns.forEach((dropdown) => {
+      dropdown.addEventListener('change', (event) => {
+        const selectedValue = event.target.value;
+        const type = event.target.id.replace('-dropdown', '');
+        HMUtils.selectionStorage[type] = { selectedValue, selectedId: selectedValue.split(' ')[0] };
+
+        console.log(`Updated selectionStorage for ${type}:`, HMUtils.selectionStorage[type]);
+      });
+    });
   }
 
   /* Logic for rolling stats and updating input fields */
@@ -356,7 +348,18 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /* Function for handling form data collection, logging the results, and adding items to the actor. */
   static async formHandler(event, form, formData) {
     HM.log(3, 'Processing form data...');
+    try {
+      const validProperties = Object.keys(formData.object);
 
+      for (const property of validProperties) {
+        const value = formData.object[property];
+        if (value === null || value === undefined || value === '') {
+          throw new Error(`Missing required field: ${property}`);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
     // Extract itemId and packId from the formData
     const extractIds = (itemString) => {
       const regex = /^(.+?)\s\((.+)\)$/;
@@ -383,26 +386,52 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.log(3, 'Abilities extracted:', abilities);
 
     // Create the new actor
+    let actorName = formData.object.name || game.user.name; // Handling for blank hero name.
     let actorData = {
-      name: formData.object.name,
+      name: actorName,
       type: 'character',
       system: {
-        abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }])),
-        details: {
-          equipment: formData.object.equipment
-        }
+        abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }]))
       }
     };
 
     let actor = await Actor.create(actorData);
-    let newActor = game.actors.getName(formData.object.name);
+    let newActor = game.actors.getName(actorName);
     HM.log(3, newActor);
     HM.log(3, 'Created Actor:', actor);
 
-    // Fetch the items from compendiums
-    const backgroundItem = await game.packs.get(backgroundData.packId)?.getDocument(backgroundData.itemId);
-    const raceItem = await game.packs.get(raceData.packId)?.getDocument(raceData.itemId);
-    const classItem = await game.packs.get(classData.packId)?.getDocument(classData.itemId);
+    // Declare the items outside the try block
+    let backgroundItem, raceItem, classItem;
+
+    try {
+      // Check if each required item is selected before fetching
+      if (!backgroundData?.packId || !backgroundData?.itemId) {
+        ui.notifications.warn(game.i18n.localize('hm.errors.select-background'));
+        return;
+      }
+      if (!raceData?.packId || !raceData?.itemId) {
+        ui.notifications.warn(game.i18n.localize('hm.errors.select-race'));
+        return;
+      }
+      if (!classData?.packId || !classData?.itemId) {
+        ui.notifications.warn(game.i18n.localize('hm.errors.select-class'));
+        return;
+      }
+
+      // Fetch documents after confirming all selections are valid
+      backgroundItem = await game.packs.get(backgroundData.packId)?.getDocument(backgroundData.itemId);
+      raceItem = await game.packs.get(raceData.packId)?.getDocument(raceData.itemId);
+      classItem = await game.packs.get(classData.packId)?.getDocument(classData.itemId);
+
+      // If any document fetch fails (e.g., item was removed from the compendium)
+      if (!backgroundItem) throw new Error(game.i18n.localize('hm.errors.no-background'));
+      if (!raceItem) throw new Error(game.i18n.localize('hm.errors.no-race'));
+      if (!classItem) throw new Error(game.i18n.localize('hm.errors.no-class'));
+    } catch (error) {
+      // Log error to the console and notify the user
+      console.error(error);
+      ui.notifications.error(game.i18n.localize('hm.errors.fetch-fail'));
+    }
 
     if (!backgroundItem || !raceItem || !classItem) {
       HM.log(1, 'Error: One or more items could not be fetched.');

@@ -5,15 +5,12 @@ export { CacheManager } from './cacheManagement.js';
 export { fetchDocuments, prepareDocuments } from './documents.js';
 
 // Dropdown Handling
-export { initializeDropdown, updateAbilityDropdowns, generateDropdownHTML } from './dropdowns.js';
+export { initializeDropdown, updateAbilityDropdowns, generateDropdownHTML, selectionStorage } from './dropdowns.js';
 
 // UI Manipulations
 export { registerButton } from './htmlManipulations.js';
 export {
-  handleAbilitySelectionChange,
-  addAbilitySelectionListeners,
   updateRemainingPointsDisplay,
-  addPointBuyAbilityListeners,
   updatePointsColor,
   adjustScore,
   updatePlusButtonState,
@@ -28,6 +25,5 @@ export {
   getStandardArray,
   getTotalPoints,
   getPointCost,
-  calculatePointsSpent,
-  calculateRemainingPoints
+  calculatePointsSpent
 } from './statRoller.js';

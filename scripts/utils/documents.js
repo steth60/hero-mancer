@@ -10,7 +10,6 @@ import * as HMUtils from './index.js';
  * @throws Will display a UI error notification if a compendium pack retrieval fails.
  */
 export async function fetchDocuments(type) {
-  // Check for invalid argument
   if (typeof type !== 'string' || type.trim() === '') {
     throw new Error('Invalid argument: expected a non-empty string.');
   }
@@ -28,9 +27,9 @@ export async function fetchDocuments(type) {
   }
 
   let packs =
-    selectedPacks.length > 0 ?
-      game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id)) :
-      game.packs.filter((i) => i.metadata.type === 'Item');
+    selectedPacks.length > 0
+      ? game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id))
+      : game.packs.filter((i) => i.metadata.type === 'Item');
 
   HM.log(3, `Fetching documents for type: ${typeNice}`);
 

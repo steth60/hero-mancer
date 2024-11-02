@@ -82,3 +82,9 @@
 - Fixed long-standing bug with manual roll mode dropdowns.
 - Refactors tabs to render content more accurately and fix dropdowns getting sticky. (future refactor may load data when
   clicking on a tab instead of when clicking on Hero Mancer button for improved streamlining.)
+
+## Started: Equipment Selection! (0.3.0)
+
+- First pass of implementing equipment selection, not yet ready for use.
+- Clean up some unused code.
+- Fix cache management.

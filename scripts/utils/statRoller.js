@@ -138,15 +138,3 @@ export function getPointCost(score) {
 export function calculatePointsSpent(selectedScores) {
   return selectedScores.reduce((total, score) => total + getPointCost(score), 0);
 }
-
-/**
- * Calculate and return remaining points based on the current dropdown selections.
- * @param {NodeList} abilityDropdowns List of dropdown elements for abilities.
- * @returns {number} The remaining points after calculating points spent.
- */
-export function calculateRemainingPoints(abilityDropdowns) {
-  const selectedScores = Array.from(abilityDropdowns).map((dropdown) => parseInt(dropdown.value, 10) || 8);
-  const pointsSpent = HMUtils.calculatePointsSpent(selectedScores);
-  const totalPoints = HMUtils.getTotalPoints();
-  return totalPoints - pointsSpent;
-}

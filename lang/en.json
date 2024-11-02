@@ -58,7 +58,12 @@
       "done": "Done",
       "equipment": {
         "preamble": "This is where you can manage and select your character's equipment. This feature is not currently implemented.",
-        "tooltip": "Manage your character's equipment"
+        "tooltip": "Manage your character's equipment",
+        "class": "{type} Equipment",
+        "race": "{type} Equipment",
+        "background": "{type} Equipment",
+        "choose-one": "Choose one (1) from:",
+        "included-items": "Included items:"
       },
       "finalize": {
         "preamble": "This is where you finalize and submit your character's details. This feature is not currently implemented.",
@@ -156,6 +161,15 @@
         "name": "Logging Level"
       },
       "no-selection": "No compendiums selected. Please select at least one."
+    },
+    "errors": {
+      "select-background": "Please select a background before submitting.",
+      "select-race": "Please select a race before submitting.",
+      "select-class": "Please select a class before submitting.",
+      "no-background": "The selected background could not be found.",
+      "no-race": "The selected race could not be found.",
+      "no-class": "The selected class could not be found.",
+      "fetch-fail": "An error occurred while fetching selected items. Please try again."
     }
   }
 }

@@ -2,5 +2,94 @@
   <fieldset>
     <legend>{{localize 'hm.app.equipment.tooltip'}}</legend>
     <p>{{localize 'hm.app.equipment.preamble'}}</p>
+
+    <div class='equipment-tab'>
+      <!-- Class Equipment Column -->
+      <div class='equipment-column' id='class-equipment'>
+        <h3>{{localize 'hm.app.equipment.class' type=(this.name)}}</h3>
+        {{#each parsedData.class}}
+          {{#if this.OR}}
+            <div class='equipment-group or-group'>
+              <h4>{{localize 'hm.app.equipment.choose-one'}}</h4>
+              {{#each this.OR}}
+                <label>
+                  <input type='radio' name='class-equipment' value='{{this.id}}' />
+                  {{this.name}}
+                </label>
+              {{/each}}
+            </div>
+          {{/if}}
+          {{#if this.AND}}
+            <div class='equipment-group and-group'>
+              <h4>{{localize 'hm.app.equipment.included-items'}}</h4>
+              {{#each this.AND}}
+                <label>
+                  <input type='checkbox' name='class-equipment' value='{{this.id}}' checked />
+                  {{this.name}}
+                </label>
+              {{/each}}
+            </div>
+          {{/if}}
+        {{/each}}
+      </div>
+
+      <!-- Background Equipment Column -->
+      <div class='equipment-column' id='background-equipment'>
+        <h3>{{localize 'hm.app.equipment.background' type=(this.name)}}</h3>
+        {{#each parsedData.background}}
+          {{#if this.OR}}
+            <div class='equipment-group or-group'>
+              <h4>{{localize 'hm.app.equipment.choose-one'}}</h4>
+              {{#each this.OR}}
+                <label>
+                  <input type='radio' name='background-equipment' value='{{this.id}}' />
+                  {{this.name}}
+                </label>
+              {{/each}}
+            </div>
+          {{/if}}
+          {{#if this.AND}}
+            <div class='equipment-group and-group'>
+              <h4>{{localize 'hm.app.equipment.included-items'}}</h4>
+              {{#each this.AND}}
+                <label>
+                  <input type='checkbox' name='background-equipment' value='{{this.id}}' checked />
+                  {{this.name}}
+                </label>
+              {{/each}}
+            </div>
+          {{/if}}
+        {{/each}}
+      </div>
+
+      <!-- Race Equipment Column -->
+      <div class='equipment-column' id='race-equipment'>
+        <h3>{{localize 'hm.app.equipment.race' type=(this.name)}}</h3>
+        {{#each parsedData.race}}
+          {{#if this.OR}}
+            <div class='equipment-group or-group'>
+              <h4>{{localize 'hm.app.equipment.choose-one'}}</h4>
+              {{#each this.OR}}
+                <label>
+                  <input type='radio' name='race-equipment' value='{{this.id}}' />
+                  {{this.name}}
+                </label>
+              {{/each}}
+            </div>
+          {{/if}}
+          {{#if this.AND}}
+            <div class='equipment-group and-group'>
+              <h4>{{localize 'hm.app.equipment.included-items'}}</h4>
+              {{#each this.AND}}
+                <label>
+                  <input type='checkbox' name='race-equipment' value='{{this.id}}' checked />
+                  {{this.name}}
+                </label>
+              {{/each}}
+            </div>
+          {{/if}}
+        {{/each}}
+      </div>
+    </div>
   </fieldset>
 </div>

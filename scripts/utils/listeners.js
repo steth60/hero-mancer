@@ -1,79 +1,5 @@
-import { HM } from '../hero-mancer.js';
 import * as HMUtils from './index.js';
 import { HeroMancer } from '../app/HeroMancer.js';
-
-/**
- * Handles ability selection changes, including Point Buy calculations if enabled.
- *
- * @param {Event} event The change event triggered by the dropdown.
- * @param {NodeList} abilityDropdowns List of all ability dropdowns.
- * @param {Set} selectedAbilities Set of currently selected ability values.
- */
-export function handleAbilitySelectionChange(event, abilityDropdowns, selectedAbilities) {
-  const dropdown = event.target;
-  const selectedValue = dropdown.value;
-  const previousValue = dropdown.getAttribute('data-previous-value'); // Retrieve the previous value
-  const diceRollMethod = game.settings.get(HM.ID, 'diceRollingMethod');
-
-  HM.log(3, 'New selectedValue:', selectedValue);
-  HM.log(3, 'PreviousValue:', previousValue);
-
-  // Handle removal of the previously selected ability
-  if (previousValue && selectedAbilities.has(previousValue)) {
-    selectedAbilities.delete(previousValue);
-    HM.log(3, 'Removed previousValue from selectedAbilities:', previousValue);
-  }
-
-  // Add the new selected ability to the set (unless it's "N/A" or empty)
-  if (selectedValue) {
-    selectedAbilities.add(selectedValue);
-    HM.log(3, 'Added selectedValue to selectedAbilities:', selectedValue);
-  }
-
-  // Update the dropdown's previous value
-  dropdown.setAttribute('data-previous-value', selectedValue);
-  HM.log(3, 'Updated previousValue to:', selectedValue);
-
-  // Update dropdown options to disable already-selected abilities
-  HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities);
-
-  // Point Buy-specific logic
-  if (diceRollMethod === 'pointBuy') {
-    // Get current selections as an array of numeric values
-    const selectedScores = Array.from(selectedAbilities, Number);
-
-    // Calculate points spent and remaining points for Point Buy
-    const pointsSpent = HMUtils.calculatePointsSpent(selectedScores);
-    const totalPoints = HMUtils.getTotalPoints();
-    const remainingPoints = totalPoints - pointsSpent;
-
-    // Update the UI to display remaining points
-    HMUtils.updateRemainingPointsDisplay(remainingPoints);
-  }
-}
-
-/**
- * Registers ability selection change listeners.
- *
- * @param {HTMLElement} element The parent element containing the ability dropdowns.
- */
-export function addAbilitySelectionListeners(element) {
-  const abilityDropdowns = element.querySelectorAll('.ability-dropdown');
-  const selectedAbilities = new Set();
-
-  // Iterate over each dropdown and attach change listeners
-  abilityDropdowns.forEach((dropdown, index) => {
-    const previousValue = dropdown.value;
-    dropdown.setAttribute('data-previous-value', previousValue); // Store the previous value in a data attribute
-
-    HM.log(3, `Initial previousValue for dropdown ${index}:`, previousValue);
-
-    // Attach the event listener and pass the handler
-    dropdown.addEventListener('change', (event) =>
-      handleAbilitySelectionChange(event, abilityDropdowns, selectedAbilities)
-    );
-  });
-}
 
 /**
  * Updates the display of remaining points.
@@ -95,26 +21,14 @@ export function updateRemainingPointsDisplay(remainingPoints) {
     console.warn('Remaining points element not found in the DOM.');
   }
 }
-
 /**
- * Adds event listeners to Point Buy ability dropdowns, updating remaining points dynamically.
+ * Updates the color of the "remaining-points" element based on the percentage
+ * of remaining points compared to total points, applying a gradient color effect.
  *
- * @param {NodeList} abilityDropdowns List of all ability dropdown elements.
- * @param {Array | Set} selectedAbilities The currently selected ability values.
+ * @param {number} remainingPoints The number of points currently remaining.
+ * @param {number} totalPoints The total number of points available.
+ * @returns {void} - Does not return a value; directly modifies the element's color style.
  */
-export function addPointBuyAbilityListeners(abilityDropdowns, selectedAbilities) {
-  abilityDropdowns.forEach((dropdown, index) => {
-    dropdown.addEventListener('change', (event) => {
-      const newValue = parseInt(event.target.value, 10) || 8;
-      selectedAbilities[index] = newValue;
-
-      // Update remaining points based on the current selections
-      const remainingPoints = HMUtils.updateRemainingPointsDisplay(selectedAbilities);
-      HM.log(3, `Remaining points after change: ${remainingPoints}`);
-    });
-  });
-}
-
 export function updatePointsColor(remainingPoints, totalPoints) {
   const element = document.getElementById('remaining-points');
   if (!element) return;
@@ -136,6 +50,14 @@ export function updatePointsColor(remainingPoints, totalPoints) {
   element.style.color = color;
 }
 
+/**
+ * Adjusts the specified ability score by a given change value, ensuring it remains within the range 8–15.
+ * This function also checks that point limits are not exceeded and updates the UI to reflect changes.
+ * @param {number} index The index of the ability score to adjust.
+ * @param {number} change The amount to change the score by (positive to increase, negative to decrease).
+ * @returns {void} No return value; directly updates UI elements for ability score and remaining points.
+ * @throws {Error} Logs a message to the console if there are insufficient points remaining to increase the score.
+ */
 export function adjustScore(index, change) {
   const abilityScoreElement = document.getElementById(`ability-score-${index}`);
   const currentScore = parseInt(abilityScoreElement.textContent, 10);

@@ -1,15 +1,16 @@
 import { HM } from '../hero-mancer.js';
 import * as HMUtils from './index.js';
+export { selectionStorage };
 
+const selectionStorage = {};
 /**
  * Initializes a dropdown with a change event listener and handles description updates.
  * @param {object} config Configuration object for initializing dropdown
  * @param {string} config.type Type of dropdown (e.g., 'class', 'race', 'background')
  * @param {HTMLElement} config.html The HTML element containing the dropdown
  * @param {object} config.context Context object containing document data
- * @param {Function} [config.customHandler] Optional custom handler for specific dropdown logic
  */
-export async function initializeDropdown({ type, html, context, customHandler }) {
+export async function initializeDropdown({ type, html, context }) {
   const dropdown = html.querySelector(`#${type}-dropdown`);
 
   if (!dropdown) {
@@ -21,21 +22,18 @@ export async function initializeDropdown({ type, html, context, customHandler })
     const selectedValue = event.target.value;
     const selectedId = selectedValue.replace(/\s?\(.*?\)/, '');
 
-    if (customHandler) {
-      customHandler(selectedId, html, context);
-      return;
-    }
+    // Store the selected value and ID for the dropdown type
+    selectionStorage[type] = { selectedValue, selectedId };
 
     const documentsKey = `${type}Docs`;
+    const docs = context[documentsKey].flatMap((folder) => folder.docs || folder);
+    const selectedDoc = docs.find((doc) => doc.id === selectedId);
+    const descriptionElement = html.querySelector(`#${type}-description`);
+
     if (!context[documentsKey] || !Array.isArray(context[documentsKey])) {
       HM.log(1, `${HM.ID} | No documents found for type: ${type}`);
       return;
     }
-
-    const docs = context[documentsKey].flatMap((folder) => folder.docs || folder);
-    const selectedDoc = docs.find((doc) => doc.id === selectedId);
-
-    const descriptionElement = html.querySelector(`#${type}-description`);
     if (descriptionElement) {
       descriptionElement.innerHTML =
         selectedDoc?.enrichedDescription || game.i18n.localize(`${HM.ABRV}.app.no-description`);
