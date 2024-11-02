@@ -5,13 +5,8 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'README.md'
-      - 'CHANGELOG.md'
-      - 'LICENSE'
-      - 'TODO.md'
       - '.gitattributes'
       - '.gitignore'
-      - '/tour-assets'
 
 jobs:
   build:
