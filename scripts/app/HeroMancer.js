@@ -313,11 +313,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Assuming dropdown elements have IDs #classDropdown, #raceDropdown, and #backgroundDropdown
     const classId = document.querySelector('#class-dropdown').value;
-    const raceId = document.querySelector('#race-dropdown').value;
     const backgroundId = document.querySelector('#background-dropdown').value;
 
     // Create StartingEquipmentUI instance with the selected dropdown values
-    const startingEquipmentUI = new StartingEquipmentUI(classId, raceId, backgroundId);
+    const startingEquipmentUI = new StartingEquipmentUI(classId, backgroundId);
 
     // Target container where equipment choices will be appended
     const equipmentContainer = document.querySelector('#equipment-container');
@@ -331,7 +330,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     });
 
     // Store dropdown selections and update equipment choices on change
-    const dropdowns = html.querySelectorAll('#class-dropdown, #race-dropdown, #background-dropdown');
+    const dropdowns = html.querySelectorAll('#class-dropdown, #background-dropdown');
     dropdowns.forEach((dropdown) => {
       dropdown.addEventListener('change', async (event) => {
         const selectedValue = event.target.value;
@@ -344,7 +343,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
         // Update StartingEquipmentUI instance with the new selections
         startingEquipmentUI.classId = HMUtils.selectionStorage.class.selectedId;
-        startingEquipmentUI.raceId = HMUtils.selectionStorage.race.selectedId;
         startingEquipmentUI.backgroundId = HMUtils.selectionStorage.background.selectedId;
 
         // Clear previous content and render updated equipment choices

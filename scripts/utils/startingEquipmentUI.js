@@ -5,14 +5,15 @@ export class StartingEquipmentUI {
   constructor() {
     this.equipmentData = null;
     this.classId = HMUtils.selectionStorage.class.selectedId;
-    this.raceId = HMUtils.selectionStorage.race.selectedId;
     this.backgroundId = HMUtils.selectionStorage.background.selectedId;
     HM.log(3, 'StartingEquipmentUI initialized with:', {
       classId: this.classId,
-      raceId: this.raceId,
       backgroundId: this.backgroundId
     });
   }
+
+  static renderedIds = new Set();
+
 
   /**
    * Helper function to retrieve a document by searching across all item-type compendiums.
@@ -34,7 +35,7 @@ export class StartingEquipmentUI {
 
   /**
    * Fetches starting equipment based on the selection stored in HMUtils for the specified type.
-   * @param {string} type The type (class, race, background).
+   * @param {string} type The type (class, background).
    * @returns {Promise<Array>} - The starting equipment array.
    */
   async getStartingEquipment(type) {
@@ -55,19 +56,17 @@ export class StartingEquipmentUI {
   }
 
   /**
-   * Fetches and combines equipment data for class, race, and background.
+   * Fetches and combines equipment data for class, and background.
    */
   async fetchEquipmentData() {
-    HM.log(3, 'Fetching equipment data for class, race, and background.');
+    HM.log(3, 'Fetching equipment data for class, and background.');
 
     const classEquipment = await this.getStartingEquipment('class');
-    const raceEquipment = await this.getStartingEquipment('race');
     const backgroundEquipment = await this.getStartingEquipment('background');
 
     // Organize equipment by type, keeping all three for testing
     this.equipmentData = {
       class: classEquipment || [],
-      race: raceEquipment || [],
       background: backgroundEquipment || []
     };
 
@@ -75,63 +74,46 @@ export class StartingEquipmentUI {
   }
 
 
-  /**
-   * Renders the equipment choices based on the fetched equipment data.
-   * @returns {Promise<HTMLElement>} - Container with equipment choices.
-   */
   async renderEquipmentChoices() {
-    HM.log(3, 'Rendering equipment choices for class, race, and background.');
+    HM.log(3, 'Rendering equipment choices for class, and background.');
+    StartingEquipmentUI.renderedIds.clear();
 
     // Fetch updated equipment data
     await this.fetchEquipmentData();
 
-    // Clear the container and reset rendered IDs
     const container = document.createElement('div');
     container.classList.add('equipment-choices');
     StartingEquipmentUI.renderedIds.clear();
 
-    // Render each type of equipment (class, race, background) in separate sections
-    Object.entries(this.equipmentData).forEach(([type, items]) => {
+    // Render each type of equipment (class, background) in separate sections
+    for (const [type, items] of Object.entries(this.equipmentData)) {
       const sectionContainer = document.createElement('div');
       sectionContainer.classList.add(`${type}-equipment-section`);
 
-      // Add a header for the section
       const header = document.createElement('h3');
       header.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Equipment`;
       sectionContainer.appendChild(header);
 
-      // Create HTML elements for each item
-      items.forEach((item) => {
-        const itemDoc = fromUuidSync(item.key);
+      for (const item of items) {
+        const itemDoc = await fromUuidSync(item.key);
         item.name = itemDoc?.name || 'Unknown Item';
 
         HM.log(3, `Creating HTML element for item in ${type} equipment:`, item);
-        const itemElement = this.createEquipmentElement(item);
+        const itemElement = await this.createEquipmentElement(item);
 
-        // Only append if itemElement is a valid Node
         if (itemElement) {
           sectionContainer.appendChild(itemElement);
         }
-      });
+      }
 
       container.appendChild(sectionContainer);
-    });
+    }
 
     HM.log(3, 'Finished rendering equipment choices.');
     return container;
   }
 
-
-  /**
-   * Creates an HTML element for a single equipment item.
-   * @param {object} item Equipment item data.
-   * @returns {HTMLElement} - HTML element for the item.
-   */
-  // Define a set to track already rendered item IDs
-  static renderedIds = new Set();
-
-  createEquipmentElement(item) {
-    // Skip rendering if item has already been rendered
+  async createEquipmentElement(item) {
     if (StartingEquipmentUI.renderedIds.has(item._id)) {
       HM.log(3, `Skipping duplicate rendering for item: ${item._id}`);
       return null;
@@ -140,69 +122,109 @@ export class StartingEquipmentUI {
 
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
-    HM.log(3, 'Creating element for equipment item:', item);
+    HM.log(3, 'Creating element for equipment item:', { id: item._id, type: item.type, label: item.label });
 
-    // Check if this is the most parent element (no group)
-    if (!item.group) {
-      // Generate a label by combining all children labels
-      const childrenLabels = item.children.map((child) => child.label).filter(Boolean);
-      const combinedLabel = childrenLabels.join(', ');
-
-      const labelElement = document.createElement('span');
+    if (!item.group && item.type === 'OR') {
+      // Handle top-level OR groups with dropdown
+      const labelElement = document.createElement('h4');
       labelElement.classList.add('parent-label');
-      labelElement.textContent = combinedLabel || 'No Items Available';
+      labelElement.textContent = item.label || 'Choose one of the following';
       itemContainer.appendChild(labelElement);
-      HM.log(3, `Added descriptive label for parent item: ${combinedLabel}`);
 
-      // Render children as separate elements within the parent container
-      item.children.forEach((child) => {
-        const childElement = this.createEquipmentElement(child);
-        if (childElement) itemContainer.appendChild(childElement);
+      const select = document.createElement('select');
+      select.id = item._id;
+
+      for (const child of item.children) {
+        if (StartingEquipmentUI.renderedIds.has(child._id)) continue;
+        StartingEquipmentUI.renderedIds.add(child._id);
+
+        if (child.type === 'linked') {
+          const optionElement = document.createElement('option');
+          optionElement.value = child._id;
+          optionElement.textContent = child.label || 'Unknown Linked Option';
+          select.appendChild(optionElement);
+          HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, label: child.label });
+        } else if (child.type === 'weapon') {
+          const weaponOptions = await this.collectLookupItems(child.key);
+          weaponOptions.sort((a, b) => a.name.localeCompare(b.name));
+          weaponOptions.forEach((weapon) => {
+            if (StartingEquipmentUI.renderedIds.has(weapon._id)) return;
+            StartingEquipmentUI.renderedIds.add(weapon._id);
+
+            const weaponOption = document.createElement('option');
+            weaponOption.value = weapon._id;
+            weaponOption.textContent = weapon.name;
+            select.appendChild(weaponOption);
+            HM.log(3, 'Added weapon item to OR dropdown:', { id: weapon._id, name: weapon.name });
+          });
+        }
+      }
+
+      itemContainer.appendChild(select);
+      HM.log(3, 'Added OR type item with dropdown for top-level OR:', {
+        id: item._id,
+        options: item.children.map((opt) => ({ id: opt._id, name: opt.label || 'Unknown Option' }))
       });
 
     } else {
-      // Use a switch statement for handling different item types
       switch (item.type) {
         case 'AND': {
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.id = item._id;
-          checkbox.checked = true;
-          itemContainer.appendChild(checkbox);
+          // Render parent AND as a label, not a checkbox
+          const labelElement = document.createElement('h4');
+          labelElement.classList.add('parent-label');
+          labelElement.textContent = item.label || 'All of the following:';
+          itemContainer.appendChild(labelElement);
+          HM.log(3, 'Added AND group label for parent item:', item.label);
 
-          const label = document.createElement('label');
-          label.htmlFor = item._id;
-          label.textContent = item.label || 'Unknown AND Item';
-          itemContainer.appendChild(label);
-          HM.log(3, 'Added AND type item with checkbox:', { id: item._id, name: item.label });
-
-          // Render children within the same container
-          item.children.forEach((child) => {
-            const childElement = this.createEquipmentElement(child);
+          // Process each child individually within the AND group
+          for (const child of item.children) {
+            const childElement = await this.createEquipmentElement(child);
             if (childElement) itemContainer.appendChild(childElement);
-          });
+          }
           break;
         }
 
         case 'OR': {
+          // Process nested OR groups for dropdowns
+          const labelElement = document.createElement('h4');
+          labelElement.classList.add('parent-label');
+          labelElement.textContent = item.label || 'Choose one of the following';
+          itemContainer.appendChild(labelElement);
+
           const select = document.createElement('select');
           select.id = item._id;
 
-          item.children.forEach((option) => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option._id;
-            optionElement.textContent = option.label || 'Unknown Option';
-            select.appendChild(optionElement);
+          for (const child of item.children) {
+            if (StartingEquipmentUI.renderedIds.has(child._id)) continue;
+            StartingEquipmentUI.renderedIds.add(child._id);
 
-            // Mark child as rendered
-            StartingEquipmentUI.renderedIds.add(option._id);
-          });
+            if (child.type === 'linked') {
+              const optionElement = document.createElement('option');
+              optionElement.value = child._id;
+              optionElement.textContent = child.label || 'Unknown Linked Option';
+              select.appendChild(optionElement);
+              HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, label: child.label });
+            } else if (child.type === 'weapon') {
+              const weaponOptions = await this.collectLookupItems(child.key);
+              weaponOptions.sort((a, b) => a.name.localeCompare(b.name));
+              weaponOptions.forEach((weapon) => {
+                if (StartingEquipmentUI.renderedIds.has(weapon._id)) return;
+                StartingEquipmentUI.renderedIds.add(weapon._id);
 
+                const weaponOption = document.createElement('option');
+                weaponOption.value = weapon._id;
+                weaponOption.textContent = weapon.name;
+                select.appendChild(weaponOption);
+                HM.log(3, 'Added weapon item to OR dropdown:', { id: weapon._id, name: weapon.name });
+              });
+            }
+          }
           itemContainer.appendChild(select);
-          HM.log(3, 'Added OR type item with dropdown:', {
+          HM.log(3, 'Added OR type item with dropdown for top-level OR:', {
             id: item._id,
             options: item.children.map((opt) => ({ id: opt._id, name: opt.label || 'Unknown Option' }))
           });
+
           break;
         }
 
@@ -221,6 +243,33 @@ export class StartingEquipmentUI {
           break;
         }
 
+        case 'focus': {
+          HM.log(3, `Processing focus type item with ID: ${item._id}`);
+
+          // Create a container for the input field
+          const inputContainer = document.createElement('div');
+          inputContainer.classList.add('equipment-item');
+
+          // Add a label for the input field
+          const label = document.createElement('label');
+          label.htmlFor = item._id;
+          label.textContent = item.label || 'Custom Focus';
+          inputContainer.appendChild(label);
+
+          // Create the input text box with a default entry
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = item._id;
+          input.value = `${item.key} ${item.type}`; // Default value as "item.key item.type"
+          inputContainer.appendChild(input);
+
+          HM.log(3, 'Added focus item with input field:', { id: item._id, defaultValue: input.value });
+
+          // Return the container so it can be appended to the main item container
+          return inputContainer;
+        }
+
+
         default:
           HM.log(3, `Unknown item type encountered: ${item.type}`);
       }
@@ -229,5 +278,37 @@ export class StartingEquipmentUI {
     return itemContainer;
   }
 
+
+  async collectLookupItems(lookupKey) {
+    HM.log(3, `Collecting non-magic lookup items for key: ${lookupKey}`);
+    const nonMagicItems = [];
+
+    // Iterate over all compendiums with document type 'Item'
+    for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
+      HM.log(3, `Checking pack ${pack.metadata.label} for items`);
+
+      // Use getDocuments to fetch only items of type 'weapon' or 'armor'
+      const items = await pack.getDocuments({ type__in: ['weapon', 'armor'] });
+
+      items.forEach((item) => {
+        const itemType = item.system?.type?.value;
+        const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
+
+        // Check for 'sim' as either 'simpleM' or 'simpleR' and exclude magic items
+        if (
+          (!isMagic && (
+            (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
+            itemType === lookupKey
+          ))
+        ) {
+          HM.log(3, `Non-magic item found: ${item.name} (ID: ${item._id}) in pack ${pack.metadata.label}`);
+          nonMagicItems.push(item);
+        }
+      });
+    }
+
+    HM.log(3, `All non-magic items found for lookupKey '${lookupKey}':`, nonMagicItems);
+    return nonMagicItems;  // Always returns an array, even if empty
+  }
 
 }
