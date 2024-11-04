@@ -320,7 +320,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const startingEquipmentUI = new StartingEquipmentUI(classId, raceId, backgroundId);
 
     // Target container where equipment choices will be appended
-    const equipmentContainer = document.querySelector('#equipment-container'); // Replace with your target element
+    const equipmentContainer = document.querySelector('#equipment-container');
     equipmentContainer.innerHTML = ''; // Clear previous content
 
     // Initial render of equipment choices
@@ -358,6 +358,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       });
     });
   }
+
 
   /* Logic for rolling stats and updating input fields */
   static async rollStat(event, form) {
