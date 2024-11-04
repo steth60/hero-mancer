@@ -1,6 +1,6 @@
 import { HM } from '../hero-mancer.js';
-import { EquipmentParser } from '../utils/equipmentParser.js';
 import * as HMUtils from '../utils/index.js';
+import { StartingEquipmentUI } from '../utils/StartingEquipmentUI.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 // const { AdvancementManager } = dnd5e.applications.advancement;
 
@@ -166,9 +166,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       backgroundDocs,
       abilities
     });
-    // const equipmentParser = new EquipmentParser();
-    // const equipmentData = equipmentParser.buildEquipmentTabContent();
-    // console.log('Equipment Data:', equipmentData);
 
     HM.log(3, 'Documents registered and enriched, caching results.');
     HM.log(3, 'Tabs Data:', this.tabsData);
@@ -195,8 +192,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         context.remainingPoints = remainingPoints;
         break;
       case 'equipment':
-        const equipmentParser = new EquipmentParser();
-        context.parsedData = equipmentParser.buildEquipmentTabContent();
         context.tab = context.tabs[partId];
         break;
       case 'finalize':
@@ -316,15 +311,50 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HMUtils.updatePlusButtonState(context.remainingPoints);
     HMUtils.updateMinusButtonState();
 
-    console.log('Rendering equipment tab...');
+    // Assuming dropdown elements have IDs #classDropdown, #raceDropdown, and #backgroundDropdown
+    const classId = document.querySelector('#class-dropdown').value;
+    const raceId = document.querySelector('#race-dropdown').value;
+    const backgroundId = document.querySelector('#background-dropdown').value;
+
+    // Create StartingEquipmentUI instance with the selected dropdown values
+    const startingEquipmentUI = new StartingEquipmentUI(classId, raceId, backgroundId);
+
+    // Target container where equipment choices will be appended
+    const equipmentContainer = document.querySelector('#equipment-container'); // Replace with your target element
+    equipmentContainer.innerHTML = ''; // Clear previous content
+
+    // Initial render of equipment choices
+    startingEquipmentUI.renderEquipmentChoices().then((equipmentChoices) => {
+      equipmentContainer.appendChild(equipmentChoices);
+    }).catch((error) => {
+      console.error('Error rendering equipment choices:', error);
+    });
+
+    // Store dropdown selections and update equipment choices on change
     const dropdowns = html.querySelectorAll('#class-dropdown, #race-dropdown, #background-dropdown');
     dropdowns.forEach((dropdown) => {
-      dropdown.addEventListener('change', (event) => {
+      dropdown.addEventListener('change', async (event) => {
         const selectedValue = event.target.value;
         const type = event.target.id.replace('-dropdown', '');
-        HMUtils.selectionStorage[type] = { selectedValue, selectedId: selectedValue.split(' ')[0] };
+        HMUtils.selectionStorage[type] = {
+          selectedValue,
+          selectedId: selectedValue.split(' ')[0] // Extract the item ID
+        };
+        HM.log(3, 'SELECTION STORAGE UPDATED:', HMUtils.selectionStorage);
 
-        console.log(`Updated selectionStorage for ${type}:`, HMUtils.selectionStorage[type]);
+        // Update StartingEquipmentUI instance with the new selections
+        startingEquipmentUI.classId = HMUtils.selectionStorage.class.selectedId;
+        startingEquipmentUI.raceId = HMUtils.selectionStorage.race.selectedId;
+        startingEquipmentUI.backgroundId = HMUtils.selectionStorage.background.selectedId;
+
+        // Clear previous content and render updated equipment choices
+        equipmentContainer.innerHTML = '';
+        try {
+          const updatedChoices = await startingEquipmentUI.renderEquipmentChoices();
+          equipmentContainer.appendChild(updatedChoices);
+        } catch (error) {
+          console.error('Error updating equipment choices:', error);
+        }
       });
     });
   }

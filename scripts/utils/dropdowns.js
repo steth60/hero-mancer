@@ -1,8 +1,15 @@
 import { HM } from '../hero-mancer.js';
 import * as HMUtils from './index.js';
-export { selectionStorage };
 
-const selectionStorage = {};
+export const selectionStorage = {
+  class: { selectedValue: '', selectedId: '' },
+  race: { selectedValue: '', selectedId: '' },
+  background: { selectedValue: '', selectedId: '' }
+};
+
+// Any additional dropdown handling logic here...
+
+
 /**
  * Initializes a dropdown with a change event listener and handles description updates.
  * @param {object} config Configuration object for initializing dropdown
