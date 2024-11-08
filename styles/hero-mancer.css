@@ -193,86 +193,86 @@
 }
 /* Point-buy specific container styling */
 .ability-container.point-buy {
+  gap: 10px;
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 10px; /* Space between each ability block */
+  justify-content: space-between; /* Space between each ability block */
 }
 .hm-app .ability-block.point-buy .current-score {
-  min-width: 2ch; /* Ensures consistent space for single and double-digit numbers */
-  text-align: center;
-  display: inline-block; /* Keeps it inline with buttons */
+  display: inline-block; /* Ensures consistent space for single and double-digit numbers */
+  min-width: 2ch;
+  text-align: center; /* Keeps it inline with buttons */
 }
 /* Point-buy specific block styling */
 .ability-block.point-buy {
+  gap: 0.5em;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 0.5em;
 }
 .minus-button,
 .plus-button {
-  width: 2em; /* Ensure consistent button width */
-  height: 2em;
-  display: flex;
+  display: flex; /* Ensure consistent button width */
   justify-content: center;
   align-items: center;
+  width: 2em;
+  height: 2em;
   font-size: 1em;
 }
 /* Center the ability label (e.g., STR) above the controls */
 .ability-block.point-buy .ability-label {
-  font-weight: bold;
-  margin-bottom: 5px; /* Space between label and controls */
+  margin-bottom: 5px;
+  font-weight: bold; /* Space between label and controls */
 }
 
 /* Flex row for minus, score, and plus buttons */
 .ability-block.point-buy .control-row {
+  gap: 8px;
   display: flex;
-  align-items: center;
-  gap: 8px; /* Space between the buttons and score */
+  align-items: center; /* Space between the buttons and score */
 }
 
 /* Style for the minus and plus buttons */
 .ability-block.point-buy .adjust-button {
-  font-size: 1.2em;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 30px;
   height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   border-radius: 5px;
+  font-size: 1.2em;
+  cursor: pointer;
 }
 
 /* Style for the ability score value */
 .ability-block.point-buy .score-value {
-  font-size: 1.5em;
-  font-weight: bold;
   min-width: 40px;
+  font-weight: bold;
+  font-size: 1.5em;
   text-align: center;
 }
 
 .remaining-points-container {
-  text-align: center;
-  font-size: 1.5em; /* Adjust for desired font size */
-  display: flex;
-  flex-direction: column; /* Stack label and points vertically */
-  align-items: center;
-  justify-content: center;
   gap: 0.5em;
+  display: flex; /* Adjust for desired font size */
+  flex-direction: column;
+  justify-content: center; /* Stack label and points vertically */
+  align-items: center;
+  font-size: 1.5em;
+  text-align: center;
 }
 
 .remaining-label,
 .points-display {
-  font-weight: bold;
-  font-size: 1.2em; /* Adjusted size for the label */
-  margin-bottom: 0.4em; /* Space between label and points */
+  margin-bottom: 0.4em;
+  font-weight: bold; /* Adjusted size for the label */
+  font-size: 1.2em; /* Space between label and points */
 }
 
 #remaining-points {
-  color: var(--text-color-highlight, #4caf50); /* Highlight color */
-  margin-right: 0.2em;
+  margin-right: 0.2em; /* Highlight color */
+  color: var(--text-color-highlight, #4caf50);
 }
 #total-points {
   margin-left: 0.2em;
@@ -428,24 +428,23 @@
 
 /* Flexbox on equipment-choices to create side-by-side columns */
 .equipment-choices {
-  display: flex;
-  gap: 20px; /* Space between columns */
+  gap: 20px;
+  display: flex; /* Space between columns */
 }
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select,
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices input[type='text'] {
   width: fit-content; /* Allows the select to resize based on its content */
   min-width: 140px; /* Optional: Set a minimum width for usability */
   max-width: 100%; /* Prevents it from exceeding its container */
-  margin-left: 0;
   margin-right: 0;
+  margin-left: 0;
 }
-
 
 /* Each section within equipment-choices behaves as a column */
 .class-equipment-section,
 .background-equipment-section {
-  flex: 1;
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: flex-start;
 }
@@ -453,21 +452,21 @@
 /* Style section headers and center them horizontally */
 .class-equipment-section h3,
 .background-equipment-section h3 {
-  margin-bottom: 10px;
-  text-align: center; /* Center the header text */
-  width: 100%; /* Make sure header spans the full width of the container */
+  width: 100%;
+  margin-bottom: 10px; /* Center the header text */
+  text-align: center; /* Make sure header spans the full width of the container */
 }
 .class-equipment-section h4,
 .background-equipment-section h4 {
-  font-size: var(--font-size-20);
   font-style: italic;
+  font-size: var(--font-size-20);
 }
 
 /* Style individual equipment items within sections */
 .equipment-item {
-  margin-bottom: 8px;
   display: flex;
   flex-direction: column;
+  margin-bottom: 8px;
 }
 
 .equipment-item label,
@@ -476,6 +475,54 @@
   margin-top: 4px;
 }
 
+/* Container for each row */
+.hm-app .hm-app-tab-content .form-row,
+.hm-app .hm-app-tab-content .art-selection-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 8px;
+}
 
+/* Set fixed percentage widths for each column */
+.hm-app .hm-app-tab-content .label-15 {
+  flex: 0 0 15%;
+}
+.hm-app .hm-app-tab-content .input-35 {
+  flex: 0 0 35%;
+  max-width: 35%;
+  padding: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.hm-app .hm-app-tab-content .button-7 {
+  flex: 0 0 7%;
+  width: auto; /* Ensures the button remains compact */
+  white-space: nowrap;
+}
+.hm-app .hm-app-tab-content .label-43 {
+  flex: 0 0 43%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
+/* Additional styling for inputs and buttons */
+.hm-app .hm-app-tab-content .art-input,
+.hm-app .hm-app-tab-content #character-name {
+  padding: 5px;
+}
 
+/* Optional styling for consistency */
+.hm-app .hm-app-tab-content .checkbox-label {
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}

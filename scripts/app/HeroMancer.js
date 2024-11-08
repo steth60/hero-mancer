@@ -26,7 +26,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     actions: {
       rollStat: HeroMancer.rollStat,
       decreaseScore: HeroMancer.decreaseScore,
-      increaseScore: HeroMancer.increaseScore
+      increaseScore: HeroMancer.increaseScore,
+      selectCharacterArt: this.selectCharacterArt,
+      selectTokenArt: this.selectTokenArt
     },
     classes: [`${HM.ABRV}-app`],
     position: {
@@ -97,9 +99,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
     const diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
     const standardArray =
-      diceRollingMethod === 'standardArray'
-        ? game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number)
-        : HMUtils.getStandardArray(extraAbilities);
+      diceRollingMethod === 'standardArray' ? game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number) : HMUtils.getStandardArray(extraAbilities);
     const totalPoints = HMUtils.getTotalPoints();
     const remainingPoints = HMUtils.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
 
@@ -151,11 +151,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           // Enrich description
           doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
         } catch (error) {
-          HM.log(
-            1,
-            `${HM.ID} | Error enriching description or processing starting equipment for '${doc.name}':`,
-            error
-          );
+          HM.log(1, `${HM.ID} | Error enriching description or processing starting equipment for '${doc.name}':`, error);
         }
       }
     }
@@ -292,22 +288,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     abilityDropdowns.forEach((dropdown, index) => {
       dropdown.addEventListener('change', (event) => {
         selectedAbilities[index] = event.target.value || ''; // Store selected ability name/abbreviation
-        HMUtils.updateAbilityDropdowns(
-          abilityDropdowns,
-          selectedAbilities,
-          totalPoints,
-          context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula'
-        );
+        HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints, context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
       });
     });
 
     // Initial update on render
-    HMUtils.updateAbilityDropdowns(
-      abilityDropdowns,
-      selectedAbilities,
-      totalPoints,
-      context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula'
-    );
+    HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints, context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
     HMUtils.updatePlusButtonState(context.remainingPoints);
     HMUtils.updateMinusButtonState();
 
@@ -323,11 +309,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     equipmentContainer.innerHTML = ''; // Clear previous content
 
     // Initial render of equipment choices
-    startingEquipmentUI.renderEquipmentChoices().then((equipmentChoices) => {
-      equipmentContainer.appendChild(equipmentChoices);
-    }).catch((error) => {
-      console.error('Error rendering equipment choices:', error);
-    });
+    startingEquipmentUI
+      .renderEquipmentChoices()
+      .then((equipmentChoices) => {
+        equipmentContainer.appendChild(equipmentChoices);
+      })
+      .catch((error) => {
+        console.error('Error rendering equipment choices:', error);
+      });
 
     // Store dropdown selections and update equipment choices on change
     const dropdowns = html.querySelectorAll('#class-dropdown, #background-dropdown');
@@ -355,8 +344,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         }
       });
     });
-  }
 
+    document.getElementById('link-token-art').addEventListener('change', HeroMancer._toggleTokenArtRow);
+  }
 
   /* Logic for rolling stats and updating input fields */
   static async rollStat(event, form) {
@@ -372,6 +362,57 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static decreaseScore(event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
     HMUtils.adjustScore(index, -1);
+  }
+
+  /**
+   * Action to open the FilePicker for selecting character art
+   * @param {PointerEvent} event The originating click event
+   * @param {HTMLElement} target The element that triggered the event
+   */
+  static async selectCharacterArt(event, target) {
+    const inputField = document.getElementById('character-art-path');
+    const currentPath = inputField.value || '/';
+
+    const filepicker = new FilePicker({
+      type: 'image',
+      current: currentPath,
+      callback: (path) => {
+        inputField.value = path;
+        // If the checkbox is checked, update Token Art to match Character Art
+        if (document.getElementById('link-token-art').checked) {
+          document.getElementById('token-art-path').value = path;
+        }
+      }
+    });
+    filepicker.render(true);
+  }
+
+  static async selectTokenArt(event, target) {
+    const inputField = document.getElementById('token-art-path');
+    const currentPath = inputField.value || '/';
+
+    const filepicker = new FilePicker({
+      type: 'image',
+      current: currentPath,
+      callback: (path) => {
+        inputField.value = path;
+      }
+    });
+    filepicker.render(true);
+  }
+
+  /** Method to toggle Token Art row based on checkbox state */
+  static _toggleTokenArtRow() {
+    HM.log(3, 'Starting toggle!');
+    const tokenArtRow = document.getElementById('token-art-row');
+    const isLinked = document.getElementById('link-token-art').checked;
+    tokenArtRow.style.display = isLinked ? 'none' : 'flex';
+    HM.log(3, 'Continuing toggle!');
+    // Clear Token Art path if linking is enabled
+    if (isLinked) {
+      document.getElementById('token-art-path').value = document.getElementById('character-art-path').value;
+      HM.log(3, 'Finishing toggle!');
+    }
   }
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */

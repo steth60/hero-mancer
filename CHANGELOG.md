@@ -88,3 +88,8 @@
 - First pass of implementing equipment selection, not yet ready for use.
 - Clean up some unused code.
 - Fix cache management.
+
+## New Features: Art & Equipment Selection (0.4.0)
+
+- Added token/portrait art selection on the Start tab.
+- Continue to improve handling of equipment selector.
