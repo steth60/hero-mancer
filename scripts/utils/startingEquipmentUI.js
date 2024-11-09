@@ -145,7 +145,6 @@ export class StartingEquipmentUI {
   }
 
   async createEquipmentElement(item) {
-    // Skip if already rendered in this context
     if (StartingEquipmentUI.renderedIds.has(item._id)) {
       HM.log(3, `Skipping duplicate rendering for item: ${item._id}`);
       return null;
@@ -157,7 +156,6 @@ export class StartingEquipmentUI {
     HM.log(3, 'Creating element for equipment item:', { id: item._id, type: item.type, label: item.label });
 
     if (!item.group && item.type === 'OR') {
-      // Handle top-level OR groups with dropdown
       const labelElement = document.createElement('h4');
       labelElement.classList.add('parent-label');
       labelElement.textContent = item.label || 'Choose one of the following';
@@ -166,51 +164,47 @@ export class StartingEquipmentUI {
       const select = document.createElement('select');
       select.id = item._id;
 
-      const uniqueItems = new Set(); // Track unique item names to prevent duplicates
+      const uniqueItems = new Set();
 
+      // Iterate through children to handle different item choices
       for (const child of item.children) {
-        // Skip duplicates
         if (StartingEquipmentUI.renderedIds.has(child._id)) continue;
         StartingEquipmentUI.renderedIds.add(child._id);
 
-        // Check if child is a grouped weapon + ammo (AND type)
+        // Handle AND groups for combined items (e.g., Leather Armor + Longbow + 20 Arrows)
         if (child.type === 'AND') {
           let combinedLabel = '';
-          let hasAmmo = false;
-          let childIds = [];
+          let combinedIds = [];
 
           for (const subChild of child.children) {
             const subChildItem = fromUuidSync(subChild.key);
-            if (!subChildItem) continue;
-
-            const itemType = subChildItem.type || 'unknown';
-            const isAmmo = itemType === 'consumable';
-
-            if (isAmmo) {
-              combinedLabel += ` + ${subChild.count || 1} ${subChildItem.name}`;
-              childIds.push(subChild._id);
-              hasAmmo = true;
-              this.combinedItemIds.add(subChild._id);
-            } else {
-              if (!combinedLabel) {
-                combinedLabel = subChildItem.name;
-                childIds.push(subChild._id);
-                this.combinedItemIds.add(subChild._id);
-              }
+            if (!subChildItem) {
+              HM.log(3, `Failed to retrieve item from UUID: ${subChild.key}`);
+              continue;
             }
+
+            // Append each item in the AND group to combinedLabel
+            if (combinedLabel) {
+              combinedLabel += ' + ';
+            }
+            combinedLabel += `${subChild.count || ''} ${subChildItem.name}`.trim();
+            combinedIds.push(subChild._id);
+
+            this.combinedItemIds.add(subChild._id); // Mark this item as part of a combined selection
           }
 
-          if (hasAmmo && combinedLabel && !uniqueItems.has(combinedLabel)) {
+          if (combinedLabel && !uniqueItems.has(combinedLabel)) {
             uniqueItems.add(combinedLabel);
             const optionElement = document.createElement('option');
-            optionElement.value = childIds.join(',');
+            optionElement.value = combinedIds.join(','); // Join IDs for combined items
             optionElement.textContent = combinedLabel;
             select.appendChild(optionElement);
+            HM.log(3, 'Added combined AND group item to OR dropdown:', { label: combinedLabel, ids: combinedIds });
           }
           continue;
         }
 
-        // Handle individual linked items
+        // Handle individual items or lookups
         const trueName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
         if (child.type === 'linked') {
           if (uniqueItems.has(trueName) || this.combinedItemIds.has(child._id)) continue;
@@ -220,7 +214,6 @@ export class StartingEquipmentUI {
           optionElement.value = child._id;
           optionElement.textContent = trueName;
 
-          // Proficiency check
           if (child.requiresProficiency) {
             const requiredProficiency = `${child.type}:${child.key}`;
             if (!this.proficiencies.has(requiredProficiency)) {
@@ -228,10 +221,9 @@ export class StartingEquipmentUI {
               optionElement.textContent = `${trueName} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
             }
           }
-
           select.appendChild(optionElement);
           HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, name: trueName });
-        } else if (['weapon', 'tool', 'armor', 'shield'].includes(child.type)) {
+        } else if (['weapon', 'armor', 'tool', 'shield'].includes(child.type)) {
           const lookupOptions = await this.collectLookupItems(child.key);
           lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -244,7 +236,6 @@ export class StartingEquipmentUI {
             optionElement.value = option._id;
             optionElement.textContent = option.name;
 
-            // Proficiency check
             if (child.requiresProficiency) {
               const requiredProficiency = `${child.type}:${child.key}`;
               if (!this.proficiencies.has(requiredProficiency)) {
@@ -256,11 +247,6 @@ export class StartingEquipmentUI {
             select.appendChild(optionElement);
             HM.log(3, `Added ${child.type} item to OR dropdown:`, { id: option._id, name: option.name });
           });
-          // Conditionally clear renderedIds if dealing with 'sim' or 'simpleM' keys
-          // if (child.key === 'sim' || child.key === 'simpleM') {
-          //   StartingEquipmentUI.renderedIds.clear();
-          //   HM.log(3, 'Cleared renderedIds after finishing lookup for "sim" or "simpleM".');
-          // }
         }
       }
 
@@ -272,16 +258,13 @@ export class StartingEquipmentUI {
     } else {
       switch (item.type) {
         case 'AND': {
-          const labelElement = document.createElement('h4');
-          labelElement.classList.add('parent-label');
-          labelElement.textContent = item.label || 'All of the following:';
-          itemContainer.appendChild(labelElement);
+          const andLabelElement = document.createElement('h4');
+          andLabelElement.classList.add('parent-label');
+          andLabelElement.textContent = item.label || 'All of the following:';
+          itemContainer.appendChild(andLabelElement);
 
           for (const child of item.children) {
-            if (this.combinedItemIds.has(child._id)) {
-              HM.log(3, `Skipping combined item in AND group: ${child._id}`);
-              continue; // Skip rendering for combined items
-            }
+            if (this.combinedItemIds.has(child._id)) continue;
             const childElement = await this.createEquipmentElement(child);
             if (childElement) itemContainer.appendChild(childElement);
           }
@@ -291,27 +274,27 @@ export class StartingEquipmentUI {
         case 'linked': {
           if (this.combinedItemIds.has(item._id)) {
             HM.log(3, `Skipping combined linked item: ${item._id}`);
-            return null; // Skip rendering if already combined
+            return null;
           }
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.id = item._id;
-          checkbox.checked = true;
-          itemContainer.appendChild(checkbox);
+          const linkedCheckbox = document.createElement('input');
+          linkedCheckbox.type = 'checkbox';
+          linkedCheckbox.id = item._id;
+          linkedCheckbox.checked = true;
+          itemContainer.appendChild(linkedCheckbox);
 
-          const label = document.createElement('label');
-          label.htmlFor = item._id;
-          label.textContent = item.label || 'Unknown Linked Item';
-          itemContainer.appendChild(label);
+          const linkedLabel = document.createElement('label');
+          linkedLabel.htmlFor = item._id;
+          linkedLabel.textContent = item.label || 'Unknown Linked Item';
+          itemContainer.appendChild(linkedLabel);
           HM.log(3, 'Added linked type item with checkbox:', { id: item._id, name: item.label });
           break;
         }
 
         case 'focus': {
-          const label = document.createElement('label');
-          label.htmlFor = item._id;
-          label.textContent = item.label || 'Custom Focus';
-          itemContainer.appendChild(label);
+          const focusLabel = document.createElement('label');
+          focusLabel.htmlFor = item._id;
+          focusLabel.textContent = item.label || 'Custom Focus';
+          itemContainer.appendChild(focusLabel);
 
           const input = document.createElement('input');
           input.type = 'text';
