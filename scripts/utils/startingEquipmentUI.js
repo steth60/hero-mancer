@@ -7,6 +7,8 @@ export class StartingEquipmentUI {
     this.classId = HMUtils.selectionStorage.class.selectedId;
     this.backgroundId = HMUtils.selectionStorage.background.selectedId;
     this.proficiencies = new Set();
+    this.combinedItemIds = new Set();
+
     HM.log(3, 'StartingEquipmentUI initialized with:', {
       classId: this.classId,
       backgroundId: this.backgroundId
@@ -101,6 +103,10 @@ export class StartingEquipmentUI {
 
   async renderEquipmentChoices() {
     HM.log(3, 'Rendering equipment choices for class, and background.');
+    // Reset tracking sets for unique items
+    this.combinedItemIds = new Set(); // For tracking combined weapon + ammo items
+    StartingEquipmentUI.renderedIds = new Set(); // Track rendered items
+
     StartingEquipmentUI.renderedIds.clear();
 
     // Fetch updated equipment data
@@ -139,6 +145,7 @@ export class StartingEquipmentUI {
   }
 
   async createEquipmentElement(item) {
+    // Skip if already rendered in this context
     if (StartingEquipmentUI.renderedIds.has(item._id)) {
       HM.log(3, `Skipping duplicate rendering for item: ${item._id}`);
       return null;
@@ -162,31 +169,68 @@ export class StartingEquipmentUI {
       const uniqueItems = new Set(); // Track unique item names to prevent duplicates
 
       for (const child of item.children) {
+        // Skip duplicates
         if (StartingEquipmentUI.renderedIds.has(child._id)) continue;
         StartingEquipmentUI.renderedIds.add(child._id);
 
-        // Derive the base name by removing bracketed text from child.label
-        const baseName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
+        // Check if child is a grouped weapon + ammo (AND type)
+        if (child.type === 'AND') {
+          let combinedLabel = '';
+          let hasAmmo = false;
+          let childIds = [];
 
+          for (const subChild of child.children) {
+            const subChildItem = fromUuidSync(subChild.key);
+            if (!subChildItem) continue;
+
+            const itemType = subChildItem.type || 'unknown';
+            const isAmmo = itemType === 'consumable';
+
+            if (isAmmo) {
+              combinedLabel += ` + ${subChild.count || 1} ${subChildItem.name}`;
+              childIds.push(subChild._id);
+              hasAmmo = true;
+              this.combinedItemIds.add(subChild._id);
+            } else {
+              if (!combinedLabel) {
+                combinedLabel = subChildItem.name;
+                childIds.push(subChild._id);
+                this.combinedItemIds.add(subChild._id);
+              }
+            }
+          }
+
+          if (hasAmmo && combinedLabel && !uniqueItems.has(combinedLabel)) {
+            uniqueItems.add(combinedLabel);
+            const optionElement = document.createElement('option');
+            optionElement.value = childIds.join(',');
+            optionElement.textContent = combinedLabel;
+            select.appendChild(optionElement);
+          }
+          continue;
+        }
+
+        // Handle individual linked items
+        const trueName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
         if (child.type === 'linked') {
-          if (uniqueItems.has(baseName)) continue; // Skip if item is duplicate
-          uniqueItems.add(baseName);
+          if (uniqueItems.has(trueName) || this.combinedItemIds.has(child._id)) continue;
+          uniqueItems.add(trueName);
 
           const optionElement = document.createElement('option');
           optionElement.value = child._id;
-          optionElement.textContent = baseName;
+          optionElement.textContent = trueName;
 
           // Proficiency check
           if (child.requiresProficiency) {
             const requiredProficiency = `${child.type}:${child.key}`;
             if (!this.proficiencies.has(requiredProficiency)) {
               optionElement.disabled = true;
-              optionElement.textContent = `${baseName} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+              optionElement.textContent = `${trueName} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
             }
           }
 
           select.appendChild(optionElement);
-          HM.log(3, 'Added unique linked item to OR dropdown:', { id: child._id, name: baseName });
+          HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, name: trueName });
         } else if (['weapon', 'tool', 'armor', 'shield'].includes(child.type)) {
           const lookupOptions = await this.collectLookupItems(child.key);
           lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
@@ -200,7 +244,7 @@ export class StartingEquipmentUI {
             optionElement.value = option._id;
             optionElement.textContent = option.name;
 
-            // Proficiency check for collected items
+            // Proficiency check
             if (child.requiresProficiency) {
               const requiredProficiency = `${child.type}:${child.key}`;
               if (!this.proficiencies.has(requiredProficiency)) {
@@ -210,8 +254,13 @@ export class StartingEquipmentUI {
             }
 
             select.appendChild(optionElement);
-            HM.log(3, `Added unique ${child.type} item to OR dropdown:`, { id: option._id, name: option.name });
+            HM.log(3, `Added ${child.type} item to OR dropdown:`, { id: option._id, name: option.name });
           });
+          // Conditionally clear renderedIds if dealing with 'sim' or 'simpleM' keys
+          // if (child.key === 'sim' || child.key === 'simpleM') {
+          //   StartingEquipmentUI.renderedIds.clear();
+          //   HM.log(3, 'Cleared renderedIds after finishing lookup for "sim" or "simpleM".');
+          // }
         }
       }
 
@@ -227,9 +276,12 @@ export class StartingEquipmentUI {
           labelElement.classList.add('parent-label');
           labelElement.textContent = item.label || 'All of the following:';
           itemContainer.appendChild(labelElement);
-          HM.log(3, 'Added AND group label for parent item:', item.label);
 
           for (const child of item.children) {
+            if (this.combinedItemIds.has(child._id)) {
+              HM.log(3, `Skipping combined item in AND group: ${child._id}`);
+              continue; // Skip rendering for combined items
+            }
             const childElement = await this.createEquipmentElement(child);
             if (childElement) itemContainer.appendChild(childElement);
           }
@@ -237,6 +289,10 @@ export class StartingEquipmentUI {
         }
 
         case 'linked': {
+          if (this.combinedItemIds.has(item._id)) {
+            HM.log(3, `Skipping combined linked item: ${item._id}`);
+            return null; // Skip rendering if already combined
+          }
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
           checkbox.id = item._id;
@@ -276,6 +332,17 @@ export class StartingEquipmentUI {
   }
 
   async collectLookupItems(lookupKey) {
+    // Static variable to track the previous lookup key
+    if (!StartingEquipmentUI.previousLookupKey) {
+      StartingEquipmentUI.previousLookupKey = null;
+    }
+
+    // If the previous lookup key was 'sim' and we are now looking up a different key, clear renderedIds
+    if (StartingEquipmentUI.previousLookupKey === 'sim' && lookupKey !== 'sim') {
+      StartingEquipmentUI.renderedIds.clear();
+      HM.log(3, 'Cleared renderedIds because switching from "sim" to another lookup key.');
+    }
+
     HM.log(3, `Collecting non-magic lookup items for key: ${lookupKey}`);
     const nonMagicItems = [];
 
@@ -303,6 +370,9 @@ export class StartingEquipmentUI {
         }
       });
     }
+
+    // Update the previous lookup key for the next call
+    StartingEquipmentUI.previousLookupKey = lookupKey;
 
     HM.log(3, `Non-magic items found for lookupKey '${lookupKey}':`, nonMagicItems);
     return nonMagicItems; // Returns an array, even if empty
