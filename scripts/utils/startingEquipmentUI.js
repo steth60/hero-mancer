@@ -6,6 +6,7 @@ export class StartingEquipmentUI {
     this.equipmentData = null;
     this.classId = HMUtils.selectionStorage.class.selectedId;
     this.backgroundId = HMUtils.selectionStorage.background.selectedId;
+    this.proficiencies = new Set();
     HM.log(3, 'StartingEquipmentUI initialized with:', {
       classId: this.classId,
       backgroundId: this.backgroundId
@@ -34,24 +35,50 @@ export class StartingEquipmentUI {
 
   /**
    * Fetches starting equipment based on the selection stored in HMUtils for the specified type.
+   * Also retrieves and updates proficiencies for the current selection.
    * @param {string} type The type (class, background).
    * @returns {Promise<Array>} - The starting equipment array.
    */
   async getStartingEquipment(type) {
     const { selectedId } = HMUtils.selectionStorage[type] || {};
     HM.log(3, `Fetching starting equipment for type: ${type}, selectedId: ${selectedId}`);
+
     if (!selectedId) {
       HM.log(3, `No selection found for type: ${type}`);
       return [];
     }
 
     const doc = await this.findItemInCompendiums(selectedId);
+
     if (doc) {
       HM.log(3, `Starting equipment found for type ${type}:`, doc.system.startingEquipment);
+      // Retrieve and set proficiencies based on the selected class or background document
+      this.proficiencies = await this.getProficiencies(doc.system.advancement || []);
     } else {
       HM.log(3, `No document found for type ${type} with selectedId ${selectedId}`);
     }
+
     return doc?.system.startingEquipment || [];
+  }
+
+  /**
+   * Retrieves all granted proficiencies based on the provided advancements.
+   * @param {Array} advancements The advancement data containing proficiency grants.
+   * @returns {Promise<Set>} - A set of granted proficiencies.
+   */
+  async getProficiencies(advancements) {
+    const proficiencies = new Set();
+
+    for (const advancement of advancements) {
+      if (advancement.configuration && advancement.configuration.grants) {
+        for (const grant of advancement.configuration.grants) {
+          // Each grant has a structure like "armor:lgt" or "weapon:sim"
+          proficiencies.add(grant);
+        }
+      }
+    }
+    HM.log(3, 'Collected proficiencies:', Array.from(proficiencies));
+    return proficiencies;
   }
 
   /**
@@ -132,28 +159,58 @@ export class StartingEquipmentUI {
       const select = document.createElement('select');
       select.id = item._id;
 
+      const uniqueItems = new Set(); // Track unique item names to prevent duplicates
+
       for (const child of item.children) {
         if (StartingEquipmentUI.renderedIds.has(child._id)) continue;
         StartingEquipmentUI.renderedIds.add(child._id);
 
+        // Derive the base name by removing bracketed text from child.label
+        const baseName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
+
         if (child.type === 'linked') {
+          if (uniqueItems.has(baseName)) continue; // Skip if item is duplicate
+          uniqueItems.add(baseName);
+
           const optionElement = document.createElement('option');
           optionElement.value = child._id;
-          optionElement.textContent = child.label || 'Unknown Linked Option';
+          optionElement.textContent = baseName;
+
+          // Proficiency check
+          if (child.requiresProficiency) {
+            const requiredProficiency = `${child.type}:${child.key}`;
+            if (!this.proficiencies.has(requiredProficiency)) {
+              optionElement.disabled = true;
+              optionElement.textContent = `${baseName} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+            }
+          }
+
           select.appendChild(optionElement);
-          HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, label: child.label });
+          HM.log(3, 'Added unique linked item to OR dropdown:', { id: child._id, name: baseName });
         } else if (['weapon', 'tool', 'armor', 'shield'].includes(child.type)) {
           const lookupOptions = await this.collectLookupItems(child.key);
           lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
+
           lookupOptions.forEach((option) => {
-            if (StartingEquipmentUI.renderedIds.has(option._id)) return;
+            if (uniqueItems.has(option.name) || StartingEquipmentUI.renderedIds.has(option._id)) return;
+            uniqueItems.add(option.name);
             StartingEquipmentUI.renderedIds.add(option._id);
 
             const optionElement = document.createElement('option');
             optionElement.value = option._id;
             optionElement.textContent = option.name;
+
+            // Proficiency check for collected items
+            if (child.requiresProficiency) {
+              const requiredProficiency = `${child.type}:${child.key}`;
+              if (!this.proficiencies.has(requiredProficiency)) {
+                optionElement.disabled = true;
+                optionElement.textContent = `${option.name} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+              }
+            }
+
             select.appendChild(optionElement);
-            HM.log(3, `Added ${child.type} item to OR dropdown:`, { id: option._id, name: option.name });
+            HM.log(3, `Added unique ${child.type} item to OR dropdown:`, { id: option._id, name: option.name });
           });
         }
       }
@@ -161,7 +218,7 @@ export class StartingEquipmentUI {
       itemContainer.appendChild(select);
       HM.log(3, 'Added OR type item with dropdown for top-level OR:', {
         id: item._id,
-        options: item.children.map((opt) => ({ id: opt._id, name: opt.label || 'Unknown Option' }))
+        options: Array.from(uniqueItems)
       });
     } else {
       switch (item.type) {
@@ -222,41 +279,32 @@ export class StartingEquipmentUI {
     HM.log(3, `Collecting non-magic lookup items for key: ${lookupKey}`);
     const nonMagicItems = [];
 
-    // Types of items we want to scan, including shields directly as they have `type.value: 'shield'`.
     const typesToFetch = ['weapon', 'armor', 'tool', 'equipment', 'gear', 'consumable', 'shield'];
 
-    // Iterate over all compendiums with document type 'Item'
     for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
       HM.log(3, `Checking pack ${pack.metadata.label} for items`);
-
-      // Fetch items of relevant types
       const items = await pack.getDocuments({ type__in: typesToFetch });
 
       items.forEach((item) => {
         const itemType = item.system?.type?.value || item.type;
         const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
 
-        // Exclude magic items
-        if (isMagic) return;
+        // Filter out "Unarmed Strike" and magic items
+        if (item.name === 'Unarmed Strike' || isMagic) return;
 
-        // Handle special cases for specific keys
-        if (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) {
-          // Simple weapons (both melee and ranged)
-          nonMagicItems.push(item);
-        } else if (lookupKey === 'simpleM' && itemType === 'simpleM') {
-          // Simple melee weapons
-          nonMagicItems.push(item);
-        } else if (lookupKey === 'shield' && itemType === 'shield') {
-          // Shield items
-          nonMagicItems.push(item);
-        } else if (itemType === lookupKey) {
-          // Direct match on itemType for other items
+        // Add items based on the lookupKey criteria
+        if (
+          (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
+          (lookupKey === 'simpleM' && itemType === 'simpleM') ||
+          (lookupKey === 'shield' && itemType === 'shield') ||
+          itemType === lookupKey
+        ) {
           nonMagicItems.push(item);
         }
       });
     }
 
-    HM.log(3, `All non-magic items found for lookupKey '${lookupKey}':`, nonMagicItems);
-    return nonMagicItems; // Always returns an array, even if empty
+    HM.log(3, `Non-magic items found for lookupKey '${lookupKey}':`, nonMagicItems);
+    return nonMagicItems; // Returns an array, even if empty
   }
 }

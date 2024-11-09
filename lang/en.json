@@ -63,7 +63,8 @@
         "race": "{type} Equipment",
         "background": "{type} Equipment",
         "choose-one": "Choose one (1) from:",
-        "included-items": "Included items:"
+        "included-items": "Included items:",
+        "lacks-proficiency": "not proficient"
       },
       "finalize": {
         "preamble": "This is where you finalize and submit your character's details. This feature is not currently implemented.",
