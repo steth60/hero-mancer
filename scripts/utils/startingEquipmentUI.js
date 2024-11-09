@@ -142,7 +142,7 @@ export class StartingEquipmentUI {
           optionElement.textContent = child.label || 'Unknown Linked Option';
           select.appendChild(optionElement);
           HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, label: child.label });
-        } else if (child.type === 'weapon' || child.type === 'tool') {
+        } else if (['weapon', 'tool', 'armor', 'shield'].includes(child.type)) {
           const lookupOptions = await this.collectLookupItems(child.key);
           lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
           lookupOptions.forEach((option) => {
@@ -166,62 +166,16 @@ export class StartingEquipmentUI {
     } else {
       switch (item.type) {
         case 'AND': {
-          // Render parent AND as a label, not a checkbox
           const labelElement = document.createElement('h4');
           labelElement.classList.add('parent-label');
           labelElement.textContent = item.label || 'All of the following:';
           itemContainer.appendChild(labelElement);
           HM.log(3, 'Added AND group label for parent item:', item.label);
 
-          // Process each child individually within the AND group
           for (const child of item.children) {
             const childElement = await this.createEquipmentElement(child);
             if (childElement) itemContainer.appendChild(childElement);
           }
-          break;
-        }
-
-        case 'OR': {
-          // Process nested OR groups for dropdowns
-          const labelElement = document.createElement('h4');
-          labelElement.classList.add('parent-label');
-          labelElement.textContent = item.label || 'Choose one of the following';
-          itemContainer.appendChild(labelElement);
-
-          const select = document.createElement('select');
-          select.id = item._id;
-
-          for (const child of item.children) {
-            if (StartingEquipmentUI.renderedIds.has(child._id)) continue;
-            StartingEquipmentUI.renderedIds.add(child._id);
-
-            if (child.type === 'linked') {
-              const optionElement = document.createElement('option');
-              optionElement.value = child._id;
-              optionElement.textContent = child.label || 'Unknown Linked Option';
-              select.appendChild(optionElement);
-              HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, label: child.label });
-            } else if (child.type === 'weapon' || child.type === 'tool') {
-              const lookupOptions = await this.collectLookupItems(child.key);
-              lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
-              lookupOptions.forEach((option) => {
-                if (StartingEquipmentUI.renderedIds.has(option._id)) return;
-                StartingEquipmentUI.renderedIds.add(option._id);
-
-                const optionElement = document.createElement('option');
-                optionElement.value = option._id;
-                optionElement.textContent = option.name;
-                select.appendChild(optionElement);
-                HM.log(3, `Added ${child.type} item to OR dropdown:`, { id: option._id, name: option.name });
-              });
-            }
-          }
-          itemContainer.appendChild(select);
-          HM.log(3, 'Added OR type item with dropdown:', {
-            id: item._id,
-            options: item.children.map((opt) => ({ id: opt._id, name: opt.label || 'Unknown Option' }))
-          });
-
           break;
         }
 
@@ -241,28 +195,19 @@ export class StartingEquipmentUI {
         }
 
         case 'focus': {
-          HM.log(3, `Processing focus type item with ID: ${item._id}`);
-
-          // Create a container for the input field
-          const inputContainer = document.createElement('div');
-          inputContainer.classList.add('equipment-item');
-
-          // Add a label for the input field
           const label = document.createElement('label');
           label.htmlFor = item._id;
           label.textContent = item.label || 'Custom Focus';
-          inputContainer.appendChild(label);
+          itemContainer.appendChild(label);
 
-          // Create the input text box with a default entry
           const input = document.createElement('input');
           input.type = 'text';
           input.id = item._id;
-          input.value = `${item.key} ${item.type}`; // Default value as "item.key item.type"
-          inputContainer.appendChild(input);
+          input.value = `${item.key} ${item.type}`;
+          itemContainer.appendChild(input);
 
           HM.log(3, 'Added focus item with input field:', { id: item._id, defaultValue: input.value });
-
-          return inputContainer;
+          break;
         }
 
         default:
@@ -277,25 +222,35 @@ export class StartingEquipmentUI {
     HM.log(3, `Collecting non-magic lookup items for key: ${lookupKey}`);
     const nonMagicItems = [];
 
+    // Types of items we want to scan, including shields directly as they have `type.value: 'shield'`.
+    const typesToFetch = ['weapon', 'armor', 'tool', 'equipment', 'gear', 'consumable', 'shield'];
+
     // Iterate over all compendiums with document type 'Item'
     for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
       HM.log(3, `Checking pack ${pack.metadata.label} for items`);
 
-      // Fetch items of types 'weapon', 'armor', 'tool', and other specific categories like 'music' for instruments
-      const items = await pack.getDocuments({ type__in: ['weapon', 'armor', 'tool', 'music', 'other'] });
+      // Fetch items of relevant types
+      const items = await pack.getDocuments({ type__in: typesToFetch });
 
       items.forEach((item) => {
-        const itemType = item.system?.type?.value;
+        const itemType = item.system?.type?.value || item.type;
         const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
 
-        // Check for 'sim' as either 'simpleM' or 'simpleR', and exclude magic items
-        if (
-          !isMagic &&
-          ((lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
-            itemType === lookupKey ||
-            (lookupKey === 'tool' && (itemType === 'tool' || itemType === 'music'))) // Include additional checks for tools
-        ) {
-          HM.log(3, `Non-magic item found: ${item.name} (ID: ${item._id}) in pack ${pack.metadata.label}`);
+        // Exclude magic items
+        if (isMagic) return;
+
+        // Handle special cases for specific keys
+        if (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) {
+          // Simple weapons (both melee and ranged)
+          nonMagicItems.push(item);
+        } else if (lookupKey === 'simpleM' && itemType === 'simpleM') {
+          // Simple melee weapons
+          nonMagicItems.push(item);
+        } else if (lookupKey === 'shield' && itemType === 'shield') {
+          // Shield items
+          nonMagicItems.push(item);
+        } else if (itemType === lookupKey) {
+          // Direct match on itemType for other items
           nonMagicItems.push(item);
         }
       });
