@@ -165,6 +165,7 @@ export class StartingEquipmentUI {
       select.id = item._id;
 
       const uniqueItems = new Set();
+      let focusInput = null; // Input for custom focus entry
 
       // Iterate through children to handle different item choices
       for (const child of item.children) {
@@ -183,20 +184,17 @@ export class StartingEquipmentUI {
               continue;
             }
 
-            // Append each item in the AND group to combinedLabel
-            if (combinedLabel) {
-              combinedLabel += ' + ';
-            }
+            if (combinedLabel) combinedLabel += ' + ';
             combinedLabel += `${subChild.count || ''} ${subChildItem.name}`.trim();
             combinedIds.push(subChild._id);
 
-            this.combinedItemIds.add(subChild._id); // Mark this item as part of a combined selection
+            this.combinedItemIds.add(subChild._id);
           }
 
           if (combinedLabel && !uniqueItems.has(combinedLabel)) {
             uniqueItems.add(combinedLabel);
             const optionElement = document.createElement('option');
-            optionElement.value = combinedIds.join(','); // Join IDs for combined items
+            optionElement.value = combinedIds.join(',');
             optionElement.textContent = combinedLabel;
             select.appendChild(optionElement);
             HM.log(3, 'Added combined AND group item to OR dropdown:', { label: combinedLabel, ids: combinedIds });
@@ -223,6 +221,21 @@ export class StartingEquipmentUI {
           }
           select.appendChild(optionElement);
           HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, name: trueName });
+        } else if (child.type === 'focus' && child.key === 'arcane') {
+          uniqueItems.add('Any Arcane Focus');
+          const optionElement = document.createElement('option');
+          optionElement.value = 'arcaneFocus';
+          optionElement.textContent = 'Any Arcane Focus';
+          select.appendChild(optionElement);
+
+          // Create input field for custom arcane focus (hidden initially)
+          focusInput = document.createElement('input');
+          focusInput.type = 'text';
+          focusInput.placeholder = 'Enter your arcane focus...';
+          focusInput.classList.add('arcane-focus-input');
+          focusInput.style.display = 'none';
+
+          HM.log(3, 'Added Any Arcane Focus option with input field support');
         } else if (['weapon', 'armor', 'tool', 'shield'].includes(child.type)) {
           const lookupOptions = await this.collectLookupItems(child.key);
           lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
@@ -250,12 +263,28 @@ export class StartingEquipmentUI {
         }
       }
 
+      // Event listener to toggle visibility of custom focus input
+      select.addEventListener('change', (event) => {
+        if (focusInput) {
+          focusInput.style.display = event.target.value === 'arcaneFocus' ? 'block' : 'none';
+          if (event.target.value !== 'arcaneFocus') {
+            focusInput.value = ''; // Clear input if switching back to another option
+          }
+        }
+      });
+
+      // Ensure dropdown is appended first, followed by the input field
       itemContainer.appendChild(select);
+      if (focusInput) {
+        itemContainer.appendChild(focusInput);
+      }
+
       HM.log(3, 'Added OR type item with dropdown for top-level OR:', {
         id: item._id,
         options: Array.from(uniqueItems)
       });
     } else {
+      // Handle AND and linked items not part of an OR dropdown
       switch (item.type) {
         case 'AND': {
           const andLabelElement = document.createElement('h4');
