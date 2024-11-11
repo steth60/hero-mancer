@@ -118,7 +118,6 @@ export class EquipmentParser {
    * @returns {Promise<HTMLElement>} - The rendered HTML container for equipment choices.
    */
   async renderEquipmentChoices() {
-    HM.log(3, EquipmentParser.lookupItems);
     await EquipmentParser.initializeLookupItems();
     HM.log(3, EquipmentParser.lookupItems);
     HM.log(3, 'Rendering equipment choices for class, and background.');
@@ -159,222 +158,311 @@ export class EquipmentParser {
   }
 
   async createEquipmentElement(item) {
-    // Log current contents of renderedIds for debugging
     HM.log(3, 'RENDEREDIDS:', Array.from(EquipmentParser.renderedIds.entries()));
 
-    // Retrieve any existing item in renderedIds with the same ID
     const existingItem = EquipmentParser.renderedIds.get(item._id);
 
-    // Check for duplicates: skip if an item with matching ID, sort, and group already exists
+    // Check if the item has already been rendered as part of a special case
+    if (existingItem && existingItem.isSpecialCase) {
+      HM.log(3, `Skipping special case-rendered item: ${item._id} with sort: ${item.sort} within group: ${item.group}`, item.name);
+      return null;
+    }
+
+    // Check if the item has already been rendered with matching group and sort
     if (existingItem && existingItem.sort === item.sort && existingItem.group === item.group) {
       HM.log(3, `Skipping duplicate rendering for item: ${item._id} with sort: ${item.sort} within group: ${item.group}`, item.name);
       return null;
     }
 
-    // Add the current item to the renderedIds map, recording group, sort, and key
+    // Add the item to the renderedIds map to track its group, sort, and special case status if applicable
     EquipmentParser.renderedIds.set(item._id, { group: item.group, sort: item.sort, key: item.key });
 
-    const itemContainer = document.createElement('div');
-    itemContainer.classList.add('equipment-item');
-    HM.log(3, 'Creating element for equipment item:', { id: item._id, type: item.type, label: item.label });
+    // Helper function to detect if the item meets the special multi-option case criteria
+    const isSpecialMultiOptionCase = (item) => {
+      return (
+        item.type === 'OR' &&
+        item.children.some((child) => child.type === 'AND' && child.children.length > 1) &&
+        item.children.some((entry) => entry.count && entry.count > 1)
+      );
+    };
 
-    if (!item.group && item.type === 'OR') {
+    // Special case handling for items that have multi-option dropdown requirements
+    if (isSpecialMultiOptionCase(item)) {
+      HM.log(3, 'Special MultiOptionCase:', item);
+      const itemContainer = document.createElement('div');
+      itemContainer.classList.add('equipment-item');
+
+      // Unified label for combined dropdown options
       const labelElement = document.createElement('h4');
       labelElement.classList.add('parent-label');
-      labelElement.textContent = item.label || 'Choose one of the following';
+      labelElement.textContent = item.label;
       itemContainer.appendChild(labelElement);
 
-      const select = document.createElement('select');
-      select.id = item._id;
+      // Dropdown 1: Contains options in the AND block with multiple choices (e.g., martial melee + shield)
+      const dropdown1 = document.createElement('select');
+      const andGroup = item.children.find((child) => child.type === 'AND' && child.children.length > 1);
 
-      const uniqueItems = new Set();
-      let focusInput = null; // Input for custom focus entry
-
-      for (const child of item.children) {
-        // Check if the child has already been rendered within the same group and sort
-        const existingChild = EquipmentParser.renderedIds.get(child._id);
-        if (existingChild && existingChild.sort === child.sort && existingChild.group === child.group) {
-          continue;
-        }
-
-        // Add child to renderedIds with its details
-        EquipmentParser.renderedIds.set(child._id, { group: child.group, sort: child.sort, key: child.key });
-
-        // Handle AND groups for combined items (e.g., Leather Armor + Longbow + 20 Arrows)
-        if (child.type === 'AND') {
-          let combinedLabel = '';
-          let combinedIds = [];
-
-          for (const subChild of child.children) {
-            const subChildItem = fromUuidSync(subChild.key);
-            if (!subChildItem) {
-              HM.log(3, `Failed to retrieve item from UUID: ${subChild.key}`);
-              continue;
-            }
-
-            if (combinedLabel) combinedLabel += ' + ';
-            combinedLabel += `${subChild.count || ''} ${subChildItem.name}`.trim();
-            combinedIds.push(subChild._id);
-
-            this.combinedItemIds.add(subChild._id);
-          }
-
-          if (combinedLabel && !uniqueItems.has(combinedLabel)) {
-            uniqueItems.add(combinedLabel);
-            const optionElement = document.createElement('option');
-            optionElement.value = combinedIds.join(',');
-            optionElement.textContent = combinedLabel;
-            select.appendChild(optionElement);
-            HM.log(3, 'Added combined AND group item to OR dropdown:', { label: combinedLabel, ids: combinedIds });
-          }
-          continue;
-        }
-
-        // Handle individual items or lookups
-        const trueName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
-        if (child.type === 'linked') {
-          if (uniqueItems.has(trueName) || this.combinedItemIds.has(child._id)) continue;
-          uniqueItems.add(trueName);
-
-          const optionElement = document.createElement('option');
-          optionElement.value = child._id;
-          optionElement.textContent = trueName;
-
-          if (child.requiresProficiency) {
-            const requiredProficiency = `${child.type}:${child.key}`;
-            if (!this.proficiencies.has(requiredProficiency)) {
-              optionElement.disabled = true;
-              optionElement.textContent = `${trueName} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
-            }
-          }
-          select.appendChild(optionElement);
-          HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, name: trueName });
-        } else if (child.type === 'focus' && child.key === 'arcane') {
-          uniqueItems.add('Any Arcane Focus');
-          const optionElement = document.createElement('option');
-          optionElement.value = 'arcaneFocus';
-          optionElement.textContent = 'Any Arcane Focus';
-          select.appendChild(optionElement);
-
-          // Create input field for custom arcane focus (hidden initially)
-          focusInput = document.createElement('input');
-          focusInput.type = 'text';
-          focusInput.placeholder = 'Enter your arcane focus...';
-          focusInput.classList.add('arcane-focus-input');
-          focusInput.style.display = 'none';
-
-          HM.log(3, 'Added Any Arcane Focus option with input field support');
-        } else if (['weapon', 'armor', 'tool', 'shield'].includes(child.type)) {
-          // Convert the Set to an Array before sorting
-          const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key]);
+      if (andGroup) {
+        for (const andChild of andGroup.children) {
+          const lookupOptions = Array.from(EquipmentParser.lookupItems[andChild.key]);
           lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
           lookupOptions.forEach((option) => {
-            // Check if this option has already been rendered in the same group and sort
-            const existingOption = EquipmentParser.renderedIds.get(option._id);
-            if (existingOption && existingOption.sort === child.sort && existingOption.group === child.group) return;
-
-            // Add the option to uniqueItems and update renderedIds
-            uniqueItems.add(option.name);
-            EquipmentParser.renderedIds.set(option._id, { group: child.group, sort: child.sort, key: child.key });
-
             const optionElement = document.createElement('option');
             optionElement.value = option._id;
             optionElement.textContent = option.name;
+            dropdown1.appendChild(optionElement);
+
+            // Mark each child in the AND group as rendered in a special case
+            EquipmentParser.renderedIds.set(andChild._id, { group: item.group, sort: item.sort, isSpecialCase: true });
+            HM.log(3, 'AND CHILD MARKED SPECIAL CASE:', andChild);
+          });
+        }
+      }
+
+      // Dropdown 2: Contains items from the other entry with `count > 1` (e.g., two martial melee weapons)
+      const dropdown2 = document.createElement('select');
+      const multiCountEntry = item.children.find((entry) => entry.count && entry.count > 1);
+
+      if (multiCountEntry) {
+        const lookupOptions = Array.from(EquipmentParser.lookupItems[multiCountEntry.key]);
+        lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+        lookupOptions.forEach((option) => {
+          const optionElement = document.createElement('option');
+          optionElement.value = option._id;
+          optionElement.textContent = option.name;
+          dropdown2.appendChild(optionElement);
+        });
+
+        // Mark the multi-count entry as rendered in a special case
+        EquipmentParser.renderedIds.set(multiCountEntry._id, { group: item.group, sort: item.sort, isSpecialCase: true });
+        HM.log(3, 'MULTICOUNTRENTRY MARKED SPECIAL CASE:', multiCountEntry);
+      }
+
+      // Append dropdowns in order after the unified label
+      itemContainer.appendChild(dropdown2);
+      itemContainer.appendChild(dropdown1);
+
+      // Return the constructed item container for this special case
+      return itemContainer;
+    } else {
+      /* Existing Logic */
+      const existingItem = EquipmentParser.renderedIds.get(item._id);
+
+      // Check if the item has already been rendered in a special case
+      if (existingItem && existingItem.isSpecialCase) {
+        HM.log(3, `Skipping special case-rendered item: ${item._id}`);
+        return null;
+      }
+      const itemContainer = document.createElement('div');
+      itemContainer.classList.add('equipment-item');
+      HM.log(3, 'Creating element for equipment item:', { id: item._id, type: item.type, label: item.label });
+
+      if (!item.group && item.type === 'OR') {
+        const labelElement = document.createElement('h4');
+        labelElement.classList.add('parent-label');
+        labelElement.textContent = item.label || 'Choose one of the following';
+        itemContainer.appendChild(labelElement);
+
+        const select = document.createElement('select');
+        select.id = item._id;
+
+        const uniqueItems = new Set();
+        let focusInput = null; // Input for custom focus entry
+
+        for (const child of item.children) {
+          // Check if the child has already been rendered within the same group and sort
+          const existingChild = EquipmentParser.renderedIds.get(child._id);
+          if (existingChild && existingChild.sort === child.sort && existingChild.group === child.group) {
+            continue;
+          }
+
+          // Add child to renderedIds with its details
+          EquipmentParser.renderedIds.set(child._id, { group: child.group, sort: child.sort, key: child.key });
+
+          // Handle AND groups for combined items (e.g., Leather Armor + Longbow + 20 Arrows)
+          if (child.type === 'AND') {
+            let combinedLabel = '';
+            let combinedIds = [];
+
+            for (const subChild of child.children) {
+              const subChildItem = fromUuidSync(subChild.key);
+              if (!subChildItem) {
+                HM.log(3, `Failed to retrieve item from UUID: ${subChild.key}`);
+                continue;
+              }
+
+              if (combinedLabel) combinedLabel += ' + ';
+              combinedLabel += `${subChild.count || ''} ${subChildItem.name}`.trim();
+              combinedIds.push(subChild._id);
+
+              this.combinedItemIds.add(subChild._id);
+            }
+
+            if (combinedLabel && !uniqueItems.has(combinedLabel)) {
+              uniqueItems.add(combinedLabel);
+              const optionElement = document.createElement('option');
+              optionElement.value = combinedIds.join(',');
+              optionElement.textContent = combinedLabel;
+              select.appendChild(optionElement);
+              HM.log(3, 'Added combined AND group item to OR dropdown:', { label: combinedLabel, ids: combinedIds });
+            }
+            continue;
+          }
+
+          // Handle individual items or lookups
+          const trueName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
+          if (child.type === 'linked') {
+            if (uniqueItems.has(trueName) || this.combinedItemIds.has(child._id)) continue;
+            uniqueItems.add(trueName);
+
+            const optionElement = document.createElement('option');
+            optionElement.value = child._id;
+            optionElement.textContent = trueName;
 
             if (child.requiresProficiency) {
               const requiredProficiency = `${child.type}:${child.key}`;
               if (!this.proficiencies.has(requiredProficiency)) {
                 optionElement.disabled = true;
-                optionElement.textContent = `${option.name} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+                optionElement.textContent = `${trueName} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
               }
             }
-
             select.appendChild(optionElement);
-            HM.log(3, `Added ${child.type} item to OR dropdown:`, { id: option._id, name: option.name });
-          });
-        }
-      }
+            HM.log(3, 'Added linked item to OR dropdown:', { id: child._id, name: trueName });
+          } else if (child.type === 'focus' && child.key === 'arcane') {
+            uniqueItems.add('Any Arcane Focus');
+            const optionElement = document.createElement('option');
+            optionElement.value = 'arcaneFocus';
+            optionElement.textContent = 'Any Arcane Focus';
+            select.appendChild(optionElement);
 
-      // Event listener to toggle visibility of custom focus input
-      select.addEventListener('change', (event) => {
+            // Create input field for custom arcane focus (hidden initially)
+            focusInput = document.createElement('input');
+            focusInput.type = 'text';
+            focusInput.placeholder = 'Enter your arcane focus...';
+            focusInput.classList.add('arcane-focus-input');
+            focusInput.style.display = 'none';
+
+            HM.log(3, 'Added Any Arcane Focus option with input field support');
+          } else if (['weapon', 'armor', 'tool', 'shield'].includes(child.type)) {
+            // Convert the Set to an Array before sorting
+            const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key]);
+            lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+            lookupOptions.forEach((option) => {
+              // Check if this option has already been rendered in the same group and sort
+              const existingOption = EquipmentParser.renderedIds.get(option._id);
+              if (existingOption && existingOption.sort === child.sort && existingOption.group === child.group) return;
+
+              // Add the option to uniqueItems and update renderedIds
+              uniqueItems.add(option.name);
+              EquipmentParser.renderedIds.set(option._id, { group: child.group, sort: child.sort, key: child.key });
+
+              const optionElement = document.createElement('option');
+              optionElement.value = option._id;
+              optionElement.textContent = option.name;
+
+              if (child.requiresProficiency) {
+                const requiredProficiency = `${child.type}:${child.key}`;
+                if (!this.proficiencies.has(requiredProficiency)) {
+                  optionElement.disabled = true;
+                  optionElement.textContent = `${option.name} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+                }
+              }
+
+              select.appendChild(optionElement);
+              HM.log(3, `Added ${child.type} item to OR dropdown:`, { id: option._id, name: option.name });
+            });
+          }
+        }
+
+        // Event listener to toggle visibility of custom focus input
+        select.addEventListener('change', (event) => {
+          if (focusInput) {
+            focusInput.style.display = event.target.value === 'arcaneFocus' ? 'block' : 'none';
+            if (event.target.value !== 'arcaneFocus') {
+              focusInput.value = ''; // Clear input if switching back to another option
+            }
+          }
+        });
+
+        // Ensure dropdown is appended first, followed by the input field
+        itemContainer.appendChild(select);
         if (focusInput) {
-          focusInput.style.display = event.target.value === 'arcaneFocus' ? 'block' : 'none';
-          if (event.target.value !== 'arcaneFocus') {
-            focusInput.value = ''; // Clear input if switching back to another option
-          }
+          itemContainer.appendChild(focusInput);
         }
-      });
 
-      // Ensure dropdown is appended first, followed by the input field
-      itemContainer.appendChild(select);
-      if (focusInput) {
-        itemContainer.appendChild(focusInput);
+        HM.log(3, 'Added OR type item with dropdown for top-level OR:', {
+          id: item._id,
+          options: Array.from(uniqueItems)
+        });
+      } else {
+        // Handle AND and linked items not part of an OR dropdown
+        switch (item.type) {
+          case 'AND': {
+            // Skip the label if the AND block has a parent (indicating it is part of an OR group)
+            if (item.group) {
+              HM.log(3, `Skipping label for AND group with parent group: ${item.group}`);
+            } else {
+              // Only add the label if there's no parent group
+              const andLabelElement = document.createElement('h4');
+              andLabelElement.classList.add('parent-label');
+              andLabelElement.textContent = item.label || 'All of the following:';
+              itemContainer.appendChild(andLabelElement);
+            }
+
+            // Render each child element within the AND group
+            for (const child of item.children) {
+              const childElement = await this.createEquipmentElement(child);
+              if (childElement) itemContainer.appendChild(childElement);
+            }
+            break;
+          }
+
+          case 'linked': {
+            if (this.combinedItemIds.has(item._id)) {
+              HM.log(3, `Skipping combined linked item: ${item._id}`);
+              return null;
+            }
+            const linkedCheckbox = document.createElement('input');
+            linkedCheckbox.type = 'checkbox';
+            linkedCheckbox.id = item._id;
+            linkedCheckbox.checked = true;
+            itemContainer.appendChild(linkedCheckbox);
+
+            const linkedLabel = document.createElement('label');
+            linkedLabel.htmlFor = item._id;
+            linkedLabel.textContent = item.label || 'Unknown Linked Item';
+            itemContainer.appendChild(linkedLabel);
+            HM.log(3, 'Added linked type item with checkbox:', { id: item._id, name: item.label });
+            break;
+          }
+
+          case 'focus': {
+            const focusLabel = document.createElement('label');
+            focusLabel.htmlFor = item._id;
+            focusLabel.textContent = item.label || 'Custom Focus';
+            itemContainer.appendChild(focusLabel);
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = item._id;
+            input.value = `${item.key} ${item.type}`;
+            itemContainer.appendChild(input);
+
+            HM.log(3, 'Added focus item with input field:', { id: item._id, defaultValue: input.value });
+            break;
+          }
+
+          default:
+            HM.log(3, `Unknown item type encountered: ${item.type}`);
+        }
       }
 
-      HM.log(3, 'Added OR type item with dropdown for top-level OR:', {
-        id: item._id,
-        options: Array.from(uniqueItems)
-      });
-    } else {
-      // Handle AND and linked items not part of an OR dropdown
-      switch (item.type) {
-        case 'AND': {
-          const andLabelElement = document.createElement('h4');
-          andLabelElement.classList.add('parent-label');
-          andLabelElement.textContent = item.label || 'All of the following:';
-          itemContainer.appendChild(andLabelElement);
-
-          for (const child of item.children) {
-            if (this.combinedItemIds.has(child._id)) continue;
-            const childElement = await this.createEquipmentElement(child);
-            if (childElement) itemContainer.appendChild(childElement);
-          }
-          break;
-        }
-
-        case 'linked': {
-          if (this.combinedItemIds.has(item._id)) {
-            HM.log(3, `Skipping combined linked item: ${item._id}`);
-            return null;
-          }
-          const linkedCheckbox = document.createElement('input');
-          linkedCheckbox.type = 'checkbox';
-          linkedCheckbox.id = item._id;
-          linkedCheckbox.checked = true;
-          itemContainer.appendChild(linkedCheckbox);
-
-          const linkedLabel = document.createElement('label');
-          linkedLabel.htmlFor = item._id;
-          linkedLabel.textContent = item.label || 'Unknown Linked Item';
-          itemContainer.appendChild(linkedLabel);
-          HM.log(3, 'Added linked type item with checkbox:', { id: item._id, name: item.label });
-          break;
-        }
-
-        case 'focus': {
-          const focusLabel = document.createElement('label');
-          focusLabel.htmlFor = item._id;
-          focusLabel.textContent = item.label || 'Custom Focus';
-          itemContainer.appendChild(focusLabel);
-
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.id = item._id;
-          input.value = `${item.key} ${item.type}`;
-          itemContainer.appendChild(input);
-
-          HM.log(3, 'Added focus item with input field:', { id: item._id, defaultValue: input.value });
-          break;
-        }
-
-        default:
-          HM.log(3, `Unknown item type encountered: ${item.type}`);
-      }
+      HM.log(3, 'ITEM CONTAINER: ', itemContainer);
+      return itemContainer;
     }
-
-    HM.log(3, 'ITEM CONTAINER: ', itemContainer);
-    return itemContainer;
   }
 
   static async initializeLookupItems() {
