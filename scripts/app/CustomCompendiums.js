@@ -1,5 +1,5 @@
 import { HM } from '../hero-mancer.js';
-import * as HMUtils from '../utils/index.js';
+import { CacheManager } from '../utils/cacheManagement.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
@@ -170,12 +170,8 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   static async formHandler(event, form, formData) {
     await game.settings.set('hero-mancer', 'classPacks', await CustomCompendiums.getSelectedPacksByType('class'));
     await game.settings.set('hero-mancer', 'racePacks', await CustomCompendiums.getSelectedPacksByType('race'));
-    await game.settings.set(
-      'hero-mancer',
-      'backgroundPacks',
-      await CustomCompendiums.getSelectedPacksByType('background')
-    );
-    HMUtils.CacheManager.resetCache();
+    await game.settings.set('hero-mancer', 'backgroundPacks', await CustomCompendiums.getSelectedPacksByType('background'));
+    CacheManager.resetCache();
     ui.notifications.info(game.i18n.localize('hm.settings.custom-compendiums.form-saved'));
     HM.log(3, 'Form submitted and settings saved');
   }

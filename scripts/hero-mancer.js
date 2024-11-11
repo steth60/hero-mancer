@@ -1,4 +1,4 @@
-import * as HMUtils from './utils/index.js';
+import { HtmlManipulator } from './utils/index.js';
 import { registerSettings } from './settings.js';
 import { CustomCompendiums } from './app/CustomCompendiums.js';
 import { HeroMancer } from './app/HeroMancer.js';
@@ -24,11 +24,7 @@ export class HM {
 
     // Logging setup
     if (this.logLevel > 0) {
-      const logMessage = `Logging level set to ${
-        this.logLevel === 1 ? 'Errors'
-        : this.logLevel === 2 ? 'Warnings'
-        : 'Verbose'
-      }`;
+      const logMessage = `Logging level set to ${this.logLevel === 1 ? 'Errors' : this.logLevel === 2 ? 'Warnings' : 'Verbose'}`;
       HM.log(3, logMessage); // Log at verbose level
     }
   }
@@ -102,6 +98,6 @@ Hooks.on('init', () => {
 
 /* Add button to ActorDirectory */
 Hooks.on('renderActorDirectory', () => {
-  HMUtils.registerButton();
+  HtmlManipulator.registerButton();
   HM.log(3, 'Injecting button into Actor Directory');
 });

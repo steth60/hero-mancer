@@ -1,12 +1,8 @@
 import { HM } from '../hero-mancer.js';
-import * as HMUtils from '../utils/index.js';
-import { StartingEquipmentUI } from '../utils/StartingEquipmentUI.js';
+import { CacheManager, DocumentService, DropdownHandler, EquipmentParser, Listeners, StatRoller } from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 // const { AdvancementManager } = dnd5e.applications.advancement;
 
-/**
- * AppV2-based sheet for Hero Mancer application
- */
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(options = {}) {
     super(options);
@@ -99,25 +95,27 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
     const diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
     const standardArray =
-      diceRollingMethod === 'standardArray' ? game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number) : HMUtils.getStandardArray(extraAbilities);
-    const totalPoints = HMUtils.getTotalPoints();
-    const remainingPoints = HMUtils.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
+      diceRollingMethod === 'standardArray'
+        ? game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number)
+        : StatRoller.getStandardArray(extraAbilities);
+    const totalPoints = StatRoller.getTotalPoints();
+    const remainingPoints = Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
 
     // Check if cached data is available to avoid re-fetching
-    if (HMUtils.CacheManager.isCacheValid()) {
+    if (CacheManager.isCacheValid()) {
       HM.log(3, 'Documents cached and descriptions enriched!');
       return {
-        raceDocs: HMUtils.CacheManager.getCachedRaceDocs(),
-        classDocs: HMUtils.CacheManager.getCachedClassDocs(),
-        backgroundDocs: HMUtils.CacheManager.getCachedBackgroundDocs()
+        raceDocs: CacheManager.getCachedRaceDocs(),
+        classDocs: CacheManager.getCachedClassDocs(),
+        backgroundDocs: CacheManager.getCachedBackgroundDocs()
       };
     }
 
     ui.notifications.info('hm.actortab-button.loading', { localize: true });
 
-    const { types: raceDocs } = await HMUtils.prepareDocuments('race');
-    const { types: classDocs } = await HMUtils.prepareDocuments('class');
-    const { types: backgroundDocs } = await HMUtils.prepareDocuments('background');
+    const { types: raceDocs } = await DocumentService.prepDocs('race');
+    const { types: classDocs } = await DocumentService.prepDocs('class');
+    const { types: backgroundDocs } = await DocumentService.prepDocs('background');
 
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
       key,
@@ -156,7 +154,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       }
     }
 
-    HMUtils.CacheManager.cacheDocuments({
+    CacheManager.cacheDocuments({
       raceDocs,
       classDocs,
       backgroundDocs,
@@ -181,8 +179,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         break;
       case 'abilities':
         context.tab = context.tabs[partId];
-        const totalPoints = HMUtils.getTotalPoints();
-        const pointsSpent = HMUtils.calculatePointsSpent(HeroMancer.selectedAbilities);
+        const totalPoints = StatRoller.getTotalPoints();
+        const pointsSpent = StatRoller.calculatePointsSpent(HeroMancer.selectedAbilities);
         const remainingPoints = totalPoints - pointsSpent;
         context.totalPoints = totalPoints;
         context.remainingPoints = remainingPoints;
@@ -275,41 +273,51 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const html = this.element;
 
     // Initialize dropdowns for race, class, and background
-    HMUtils.initializeDropdown({ type: 'class', html, context });
-    HMUtils.initializeDropdown({ type: 'race', html, context });
-    HMUtils.initializeDropdown({ type: 'background', html, context });
+    DropdownHandler.initializeDropdown({ type: 'class', html, context });
+    DropdownHandler.initializeDropdown({ type: 'race', html, context });
+    DropdownHandler.initializeDropdown({ type: 'background', html, context });
 
     const abilityDropdowns = html.querySelectorAll('.ability-dropdown');
     const selectedAbilities = Array.from(abilityDropdowns).map(() => ''); // Initialize with empty strings
 
-    const totalPoints = HMUtils.getTotalPoints();
+    const totalPoints = StatRoller.getTotalPoints();
 
     // Set up event listeners and initial dropdown state based on mode
     abilityDropdowns.forEach((dropdown, index) => {
       dropdown.addEventListener('change', (event) => {
         selectedAbilities[index] = event.target.value || ''; // Store selected ability name/abbreviation
-        HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints, context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
+        DropdownHandler.updateAbilityDropdowns(
+          abilityDropdowns,
+          selectedAbilities,
+          totalPoints,
+          context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula'
+        );
       });
     });
 
     // Initial update on render
-    HMUtils.updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints, context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
-    HMUtils.updatePlusButtonState(context.remainingPoints);
-    HMUtils.updateMinusButtonState();
+    DropdownHandler.updateAbilityDropdowns(
+      abilityDropdowns,
+      selectedAbilities,
+      totalPoints,
+      context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula'
+    );
+    Listeners.updatePlusButtonState(context.remainingPoints);
+    Listeners.updateMinusButtonState();
 
     // Assuming dropdown elements have IDs #classDropdown, #raceDropdown, and #backgroundDropdown
     const classId = document.querySelector('#class-dropdown').value;
     const backgroundId = document.querySelector('#background-dropdown').value;
 
-    // Create StartingEquipmentUI instance with the selected dropdown values
-    const startingEquipmentUI = new StartingEquipmentUI(classId, backgroundId);
+    // Create EquipmentParser instance with the selected dropdown values
+    const equipment = new EquipmentParser(classId, backgroundId);
 
     // Target container where equipment choices will be appended
     const equipmentContainer = document.querySelector('#equipment-container');
     equipmentContainer.innerHTML = ''; // Clear previous content
 
     // Initial render of equipment choices
-    startingEquipmentUI
+    equipment
       .renderEquipmentChoices()
       .then((equipmentChoices) => {
         equipmentContainer.appendChild(equipmentChoices);
@@ -324,20 +332,20 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       dropdown.addEventListener('change', async (event) => {
         const selectedValue = event.target.value;
         const type = event.target.id.replace('-dropdown', '');
-        HMUtils.selectionStorage[type] = {
+        DropdownHandler.selectionStorage[type] = {
           selectedValue,
           selectedId: selectedValue.split(' ')[0] // Extract the item ID
         };
-        HM.log(3, 'SELECTION STORAGE UPDATED:', HMUtils.selectionStorage);
+        HM.log(3, 'SELECTION STORAGE UPDATED:', DropdownHandler.selectionStorage);
 
-        // Update StartingEquipmentUI instance with the new selections
-        startingEquipmentUI.classId = HMUtils.selectionStorage.class.selectedId;
-        startingEquipmentUI.backgroundId = HMUtils.selectionStorage.background.selectedId;
+        // Update equipment instance with the new selections
+        equipment.classId = DropdownHandler.selectionStorage.class.selectedId;
+        equipment.backgroundId = DropdownHandler.selectionStorage.background.selectedId;
 
         // Clear previous content and render updated equipment choices
         equipmentContainer.innerHTML = '';
         try {
-          const updatedChoices = await startingEquipmentUI.renderEquipmentChoices();
+          const updatedChoices = await equipment.renderEquipmentChoices();
           equipmentContainer.appendChild(updatedChoices);
         } catch (error) {
           console.error('Error updating equipment choices:', error);
@@ -351,17 +359,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /* Logic for rolling stats and updating input fields */
   static async rollStat(event, form) {
     HM.log(3, 'Rolling stats using user-defined formula.');
-    await HMUtils.statRoller(form); // Use the utility function
+    await StatRoller.roller(form); // Use the utility function
   }
 
   static increaseScore(event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
-    HMUtils.adjustScore(index, 1);
+    Listeners.adjustScore(index, 1);
   }
 
   static decreaseScore(event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
-    HMUtils.adjustScore(index, -1);
+    Listeners.adjustScore(index, -1);
   }
 
   /**

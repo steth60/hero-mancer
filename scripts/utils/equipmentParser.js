@@ -1,21 +1,21 @@
-import * as HMUtils from './index.js';
+import { DropdownHandler } from './index.js';
 import { HM } from '../hero-mancer.js';
 
-export class StartingEquipmentUI {
+export class EquipmentParser {
+  static renderedIds = new Set();
+
   constructor() {
     this.equipmentData = null;
-    this.classId = HMUtils.selectionStorage.class.selectedId;
-    this.backgroundId = HMUtils.selectionStorage.background.selectedId;
+    this.classId = DropdownHandler.selectionStorage.class.selectedId;
+    this.backgroundId = DropdownHandler.selectionStorage.background.selectedId;
     this.proficiencies = new Set();
     this.combinedItemIds = new Set();
 
-    HM.log(3, 'StartingEquipmentUI initialized with:', {
+    HM.log(3, 'EquipmentParser initialized with:', {
       classId: this.classId,
       backgroundId: this.backgroundId
     });
   }
-
-  static renderedIds = new Set();
 
   /**
    * Helper function to retrieve a document by searching across all item-type compendiums.
@@ -36,13 +36,13 @@ export class StartingEquipmentUI {
   }
 
   /**
-   * Fetches starting equipment based on the selection stored in HMUtils for the specified type.
+   * Fetches starting equipment based on the selection for the specified type.
    * Also retrieves and updates proficiencies for the current selection.
    * @param {string} type The type (class, background).
    * @returns {Promise<Array>} - The starting equipment array.
    */
   async getStartingEquipment(type) {
-    const { selectedId } = HMUtils.selectionStorage[type] || {};
+    const { selectedId } = DropdownHandler.selectionStorage[type] || {};
     HM.log(3, `Fetching starting equipment for type: ${type}, selectedId: ${selectedId}`);
 
     if (!selectedId) {
@@ -54,7 +54,6 @@ export class StartingEquipmentUI {
 
     if (doc) {
       HM.log(3, `Starting equipment found for type ${type}:`, doc.system.startingEquipment);
-      // Retrieve and set proficiencies based on the selected class or background document
       this.proficiencies = await this.getProficiencies(doc.system.advancement || []);
     } else {
       HM.log(3, `No document found for type ${type} with selectedId ${selectedId}`);
@@ -74,7 +73,6 @@ export class StartingEquipmentUI {
     for (const advancement of advancements) {
       if (advancement.configuration && advancement.configuration.grants) {
         for (const grant of advancement.configuration.grants) {
-          // Each grant has a structure like "armor:lgt" or "weapon:sim"
           proficiencies.add(grant);
         }
       }
@@ -84,7 +82,7 @@ export class StartingEquipmentUI {
   }
 
   /**
-   * Fetches and combines equipment data for class, and background.
+   * Fetches and combines equipment data for class and background.
    */
   async fetchEquipmentData() {
     HM.log(3, 'Fetching equipment data for class, and background.');
@@ -92,7 +90,6 @@ export class StartingEquipmentUI {
     const classEquipment = await this.getStartingEquipment('class');
     const backgroundEquipment = await this.getStartingEquipment('background');
 
-    // Organize equipment by type, keeping all three for testing
     this.equipmentData = {
       class: classEquipment || [],
       background: backgroundEquipment || []
@@ -101,22 +98,20 @@ export class StartingEquipmentUI {
     HM.log(3, 'Organized equipment data by type:', this.equipmentData);
   }
 
+  /**
+   * Renders equipment choices for class and background.
+   * @returns {Promise<HTMLElement>} - The rendered HTML container for equipment choices.
+   */
   async renderEquipmentChoices() {
     HM.log(3, 'Rendering equipment choices for class, and background.');
-    // Reset tracking sets for unique items
-    this.combinedItemIds = new Set(); // For tracking combined weapon + ammo items
-    StartingEquipmentUI.renderedIds = new Set(); // Track rendered items
+    this.combinedItemIds.clear();
+    EquipmentParser.renderedIds.clear();
 
-    StartingEquipmentUI.renderedIds.clear();
-
-    // Fetch updated equipment data
     await this.fetchEquipmentData();
 
     const container = document.createElement('div');
     container.classList.add('equipment-choices');
-    StartingEquipmentUI.renderedIds.clear();
 
-    // Render each type of equipment (class, background) in separate sections
     for (const [type, items] of Object.entries(this.equipmentData)) {
       const sectionContainer = document.createElement('div');
       sectionContainer.classList.add(`${type}-equipment-section`);
@@ -141,15 +136,16 @@ export class StartingEquipmentUI {
     }
 
     HM.log(3, 'Finished rendering equipment choices.');
+    HM.log(3, 'CONTAINER: ', container);
     return container;
   }
 
   async createEquipmentElement(item) {
-    if (StartingEquipmentUI.renderedIds.has(item._id)) {
-      HM.log(3, `Skipping duplicate rendering for item: ${item._id}`);
+    if (EquipmentParser.renderedIds.has(item._id)) {
+      HM.log(3, `Skipping duplicate rendering for item: ${item._id}`, item.name);
       return null;
     }
-    StartingEquipmentUI.renderedIds.add(item._id);
+    EquipmentParser.renderedIds.add(item._id);
 
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
@@ -169,8 +165,8 @@ export class StartingEquipmentUI {
 
       // Iterate through children to handle different item choices
       for (const child of item.children) {
-        if (StartingEquipmentUI.renderedIds.has(child._id)) continue;
-        StartingEquipmentUI.renderedIds.add(child._id);
+        if (EquipmentParser.renderedIds.has(child._id)) continue;
+        EquipmentParser.renderedIds.add(child._id);
 
         // Handle AND groups for combined items (e.g., Leather Armor + Longbow + 20 Arrows)
         if (child.type === 'AND') {
@@ -241,9 +237,9 @@ export class StartingEquipmentUI {
           lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
           lookupOptions.forEach((option) => {
-            if (uniqueItems.has(option.name) || StartingEquipmentUI.renderedIds.has(option._id)) return;
+            if (uniqueItems.has(option.name) || EquipmentParser.renderedIds.has(option._id)) return;
             uniqueItems.add(option.name);
-            StartingEquipmentUI.renderedIds.add(option._id);
+            EquipmentParser.renderedIds.add(option._id);
 
             const optionElement = document.createElement('option');
             optionElement.value = option._id;
@@ -340,18 +336,18 @@ export class StartingEquipmentUI {
       }
     }
 
+    HM.log(3, 'ITEM CONTAINER: ', itemContainer);
     return itemContainer;
   }
 
   async collectLookupItems(lookupKey) {
     // Static variable to track the previous lookup key
-    if (!StartingEquipmentUI.previousLookupKey) {
-      StartingEquipmentUI.previousLookupKey = null;
+    if (!EquipmentParser.previousLookupKey) {
+      EquipmentParser.previousLookupKey = null;
     }
 
-    // If the previous lookup key was 'sim' and we are now looking up a different key, clear renderedIds
-    if (StartingEquipmentUI.previousLookupKey === 'sim' && lookupKey !== 'sim') {
-      StartingEquipmentUI.renderedIds.clear();
+    if (EquipmentParser.previousLookupKey === 'sim' && lookupKey !== 'sim') {
+      //EquipmentParser.renderedIds.clear();
       HM.log(3, 'Cleared renderedIds because switching from "sim" to another lookup key.');
     }
 
@@ -368,10 +364,8 @@ export class StartingEquipmentUI {
         const itemType = item.system?.type?.value || item.type;
         const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
 
-        // Filter out "Unarmed Strike" and magic items
         if (item.name === 'Unarmed Strike' || isMagic) return;
 
-        // Add items based on the lookupKey criteria
         if (
           (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
           (lookupKey === 'simpleM' && itemType === 'simpleM') ||
@@ -383,10 +377,9 @@ export class StartingEquipmentUI {
       });
     }
 
-    // Update the previous lookup key for the next call
-    StartingEquipmentUI.previousLookupKey = lookupKey;
+    EquipmentParser.previousLookupKey = lookupKey;
 
     HM.log(3, `Non-magic items found for lookupKey '${lookupKey}':`, nonMagicItems);
-    return nonMagicItems; // Returns an array, even if empty
+    return nonMagicItems;
   }
 }
