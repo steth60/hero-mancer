@@ -466,66 +466,106 @@ export class EquipmentParser {
   }
 
   static async initializeLookupItems() {
-    if (EquipmentParser.lookupItemsInitialized) return; // Skip if already initialized
+    if (EquipmentParser.lookupItemsInitialized) {
+      HM.log(3, 'Lookup items already initialized. Skipping reinitialization.');
+      return;
+    }
     EquipmentParser.lookupItemsInitialized = true;
+    HM.log(3, 'Starting initialization of lookup items...');
 
-    // Populate individual sets
-    EquipmentParser.simpleM = new Set(await EquipmentParser.collectLookupItems('simpleM'));
-    EquipmentParser.simpleR = new Set(await EquipmentParser.collectLookupItems('simpleR'));
-    EquipmentParser.martialM = new Set(await EquipmentParser.collectLookupItems('martialM'));
-    EquipmentParser.martialR = new Set(await EquipmentParser.collectLookupItems('martialR'));
-    EquipmentParser.music = new Set(await EquipmentParser.collectLookupItems('music'));
-    EquipmentParser.shield = new Set(await EquipmentParser.collectLookupItems('shield'));
-    EquipmentParser.armor = new Set(await EquipmentParser.collectLookupItems('armor'));
+    try {
+      // Populate individual sets and log each upon successful initialization
+      EquipmentParser.simpleM = new Set(await EquipmentParser.collectLookupItems('simpleM'));
+      HM.log(3, `simpleM initialized with ${EquipmentParser.simpleM.size} items.`);
 
-    // Now dynamically create lookupItems with combined sets
-    EquipmentParser.lookupItems = {
-      sim: new Set([...EquipmentParser.simpleM, ...EquipmentParser.simpleR]),
-      simpleM: EquipmentParser.simpleM,
-      simpleR: EquipmentParser.simpleR,
-      mar: new Set([...EquipmentParser.martialM, ...EquipmentParser.martialR]),
-      martialM: EquipmentParser.martialM,
-      martialR: EquipmentParser.martialR,
-      music: EquipmentParser.music,
-      shield: EquipmentParser.shield,
-      armor: EquipmentParser.armor
-    };
+      EquipmentParser.simpleR = new Set(await EquipmentParser.collectLookupItems('simpleR'));
+      HM.log(3, `simpleR initialized with ${EquipmentParser.simpleR.size} items.`);
 
-    HM.log(3, 'EquipmentParser lookup items initialized:', EquipmentParser.lookupItems);
+      EquipmentParser.martialM = new Set(await EquipmentParser.collectLookupItems('martialM'));
+      HM.log(3, `martialM initialized with ${EquipmentParser.martialM.size} items.`);
+
+      EquipmentParser.martialR = new Set(await EquipmentParser.collectLookupItems('martialR'));
+      HM.log(3, `martialR initialized with ${EquipmentParser.martialR.size} items.`);
+
+      EquipmentParser.music = new Set(await EquipmentParser.collectLookupItems('music'));
+      HM.log(3, `music initialized with ${EquipmentParser.music.size} items.`);
+
+      EquipmentParser.shield = new Set(await EquipmentParser.collectLookupItems('shield'));
+      HM.log(3, `shield initialized with ${EquipmentParser.shield.size} items.`);
+
+      EquipmentParser.armor = new Set(await EquipmentParser.collectLookupItems('armor'));
+      HM.log(3, `armor initialized with ${EquipmentParser.armor.size} items.`);
+
+      // Dynamically create the lookupItems object with combined sets and log summary
+      EquipmentParser.lookupItems = {
+        sim: new Set([...EquipmentParser.simpleM, ...EquipmentParser.simpleR]),
+        simpleM: EquipmentParser.simpleM,
+        simpleR: EquipmentParser.simpleR,
+        mar: new Set([...EquipmentParser.martialM, ...EquipmentParser.martialR]),
+        martialM: EquipmentParser.martialM,
+        martialR: EquipmentParser.martialR,
+        music: EquipmentParser.music,
+        shield: EquipmentParser.shield,
+        armor: EquipmentParser.armor
+      };
+
+      HM.log(3, `Combined sim set initialized with ${EquipmentParser.lookupItems.sim.size} items.`);
+      HM.log(3, `Combined mar set initialized with ${EquipmentParser.lookupItems.mar.size} items.`);
+    } catch (error) {
+      HM.log(1, 'Error initializing lookup items:', error);
+    }
+
+    HM.log(3, 'EquipmentParser lookup items fully initialized:', EquipmentParser.lookupItems);
   }
 
   static async collectLookupItems(lookupKey) {
-    HM.log(3, `Collecting items for lookupKey: ${lookupKey}`);
+    HM.log(3, `Starting collection of items for lookupKey: ${lookupKey}`);
     const items = [];
     const typesToFetch = ['weapon', 'armor', 'tool', 'equipment', 'gear', 'consumable', 'shield'];
 
-    for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
-      const documents = await pack.getDocuments({ type__in: typesToFetch });
+    try {
+      // Loop through each pack containing Items and filter based on `typesToFetch`
+      for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
+        HM.log(3, `Checking pack: ${pack.metadata.label} for items matching ${lookupKey}`);
 
-      documents.forEach((item) => {
-        const itemType = item.system?.type?.value || item.type;
-        const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
+        // Attempt to retrieve documents of specified types from each pack
+        const documents = await pack.getDocuments({ type__in: typesToFetch });
 
-        if (item.name === 'Unarmed Strike' || isMagic) return;
+        // Filter and process each item
+        documents.forEach((item) => {
+          const itemType = item.system?.type?.value || item.type;
+          const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
 
-        if (
-          (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
-          (lookupKey === 'simpleM' && itemType === 'simpleM') ||
-          (lookupKey === 'simpleR' && itemType === 'simpleR') ||
-          (lookupKey === 'mar' && (itemType === 'martialM' || itemType === 'martialR')) ||
-          (lookupKey === 'martialM' && itemType === 'martialM') ||
-          (lookupKey === 'martialR' && itemType === 'martialR') ||
-          (lookupKey === 'music' && itemType === 'music') ||
-          (lookupKey === 'shield' && itemType === 'shield') ||
-          (lookupKey === 'armor' && itemType === 'armor') ||
-          itemType === lookupKey
-        ) {
-          items.push(item);
-        }
-      });
+          // Skip items that are magical or "Unarmed Strike"
+          if (item.name === 'Unarmed Strike' || isMagic) {
+            HM.log(3, `Skipping item: ${item.name} due to exclusion criteria.`);
+            return;
+          }
+
+          // Conditional filtering based on the `lookupKey`
+          if (
+            (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
+            (lookupKey === 'simpleM' && itemType === 'simpleM') ||
+            (lookupKey === 'simpleR' && itemType === 'simpleR') ||
+            (lookupKey === 'mar' && (itemType === 'martialM' || itemType === 'martialR')) ||
+            (lookupKey === 'martialM' && itemType === 'martialM') ||
+            (lookupKey === 'martialR' && itemType === 'martialR') ||
+            (lookupKey === 'music' && itemType === 'music') ||
+            (lookupKey === 'shield' && itemType === 'shield') ||
+            (lookupKey === 'armor' && itemType === 'armor') ||
+            itemType === lookupKey
+          ) {
+            items.push(item);
+            HM.log(3, `Added item: ${item.name} with ID: ${item._id} to ${lookupKey} collection.`);
+          }
+        });
+      }
+
+      HM.log(3, `Collected ${items.length} items for lookupKey: ${lookupKey}`);
+    } catch (error) {
+      HM.log(1, `Error collecting items for lookupKey: ${lookupKey}`, error);
     }
 
-    HM.log(3, `Collected ${items.length} items for lookupKey '${lookupKey}'`);
     return items;
   }
 }
