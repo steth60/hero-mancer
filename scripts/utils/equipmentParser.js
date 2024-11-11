@@ -2,7 +2,22 @@ import { DropdownHandler } from './index.js';
 import { HM } from '../hero-mancer.js';
 
 export class EquipmentParser {
-  static renderedIds = new Set();
+  static renderedIds = new Map();
+
+  // Static sets for item collections
+  static simpleM = new Set();
+
+  static simpleR = new Set();
+
+  static martialM = new Set();
+
+  static martialR = new Set();
+
+  static music = new Set();
+
+  static shield = new Set();
+
+  static armor = new Set();
 
   constructor() {
     this.equipmentData = null;
@@ -103,6 +118,9 @@ export class EquipmentParser {
    * @returns {Promise<HTMLElement>} - The rendered HTML container for equipment choices.
    */
   async renderEquipmentChoices() {
+    HM.log(3, EquipmentParser.lookupItems);
+    await EquipmentParser.initializeLookupItems();
+    HM.log(3, EquipmentParser.lookupItems);
     HM.log(3, 'Rendering equipment choices for class, and background.');
     this.combinedItemIds.clear();
     EquipmentParser.renderedIds.clear();
@@ -122,7 +140,7 @@ export class EquipmentParser {
 
       for (const item of items) {
         const itemDoc = await fromUuidSync(item.key);
-        item.name = itemDoc?.name || 'Unknown Item';
+        item.name = itemDoc?.name || item.key;
 
         HM.log(3, `Creating HTML element for item in ${type} equipment:`, item);
         const itemElement = await this.createEquipmentElement(item);
@@ -141,11 +159,20 @@ export class EquipmentParser {
   }
 
   async createEquipmentElement(item) {
-    if (EquipmentParser.renderedIds.has(item._id)) {
-      HM.log(3, `Skipping duplicate rendering for item: ${item._id}`, item.name);
+    // Log current contents of renderedIds for debugging
+    HM.log(3, 'RENDEREDIDS:', Array.from(EquipmentParser.renderedIds.entries()));
+
+    // Retrieve any existing item in renderedIds with the same ID
+    const existingItem = EquipmentParser.renderedIds.get(item._id);
+
+    // Check for duplicates: skip if an item with matching ID, sort, and group already exists
+    if (existingItem && existingItem.sort === item.sort && existingItem.group === item.group) {
+      HM.log(3, `Skipping duplicate rendering for item: ${item._id} with sort: ${item.sort} within group: ${item.group}`, item.name);
       return null;
     }
-    EquipmentParser.renderedIds.add(item._id);
+
+    // Add the current item to the renderedIds map, recording group, sort, and key
+    EquipmentParser.renderedIds.set(item._id, { group: item.group, sort: item.sort, key: item.key });
 
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
@@ -163,10 +190,15 @@ export class EquipmentParser {
       const uniqueItems = new Set();
       let focusInput = null; // Input for custom focus entry
 
-      // Iterate through children to handle different item choices
       for (const child of item.children) {
-        if (EquipmentParser.renderedIds.has(child._id)) continue;
-        EquipmentParser.renderedIds.add(child._id);
+        // Check if the child has already been rendered within the same group and sort
+        const existingChild = EquipmentParser.renderedIds.get(child._id);
+        if (existingChild && existingChild.sort === child.sort && existingChild.group === child.group) {
+          continue;
+        }
+
+        // Add child to renderedIds with its details
+        EquipmentParser.renderedIds.set(child._id, { group: child.group, sort: child.sort, key: child.key });
 
         // Handle AND groups for combined items (e.g., Leather Armor + Longbow + 20 Arrows)
         if (child.type === 'AND') {
@@ -233,13 +265,18 @@ export class EquipmentParser {
 
           HM.log(3, 'Added Any Arcane Focus option with input field support');
         } else if (['weapon', 'armor', 'tool', 'shield'].includes(child.type)) {
-          const lookupOptions = await this.collectLookupItems(child.key);
+          // Convert the Set to an Array before sorting
+          const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key]);
           lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
           lookupOptions.forEach((option) => {
-            if (uniqueItems.has(option.name) || EquipmentParser.renderedIds.has(option._id)) return;
+            // Check if this option has already been rendered in the same group and sort
+            const existingOption = EquipmentParser.renderedIds.get(option._id);
+            if (existingOption && existingOption.sort === child.sort && existingOption.group === child.group) return;
+
+            // Add the option to uniqueItems and update renderedIds
             uniqueItems.add(option.name);
-            EquipmentParser.renderedIds.add(option._id);
+            EquipmentParser.renderedIds.set(option._id, { group: child.group, sort: child.sort, key: child.key });
 
             const optionElement = document.createElement('option');
             optionElement.value = option._id;
@@ -340,27 +377,44 @@ export class EquipmentParser {
     return itemContainer;
   }
 
-  async collectLookupItems(lookupKey) {
-    // Static variable to track the previous lookup key
-    if (!EquipmentParser.previousLookupKey) {
-      EquipmentParser.previousLookupKey = null;
-    }
+  static async initializeLookupItems() {
+    if (EquipmentParser.lookupItemsInitialized) return; // Skip if already initialized
+    EquipmentParser.lookupItemsInitialized = true;
 
-    if (EquipmentParser.previousLookupKey === 'sim' && lookupKey !== 'sim') {
-      //EquipmentParser.renderedIds.clear();
-      HM.log(3, 'Cleared renderedIds because switching from "sim" to another lookup key.');
-    }
+    // Populate individual sets
+    EquipmentParser.simpleM = new Set(await EquipmentParser.collectLookupItems('simpleM'));
+    EquipmentParser.simpleR = new Set(await EquipmentParser.collectLookupItems('simpleR'));
+    EquipmentParser.martialM = new Set(await EquipmentParser.collectLookupItems('martialM'));
+    EquipmentParser.martialR = new Set(await EquipmentParser.collectLookupItems('martialR'));
+    EquipmentParser.music = new Set(await EquipmentParser.collectLookupItems('music'));
+    EquipmentParser.shield = new Set(await EquipmentParser.collectLookupItems('shield'));
+    EquipmentParser.armor = new Set(await EquipmentParser.collectLookupItems('armor'));
 
-    HM.log(3, `Collecting non-magic lookup items for key: ${lookupKey}`);
-    const nonMagicItems = [];
+    // Now dynamically create lookupItems with combined sets
+    EquipmentParser.lookupItems = {
+      sim: new Set([...EquipmentParser.simpleM, ...EquipmentParser.simpleR]),
+      simpleM: EquipmentParser.simpleM,
+      simpleR: EquipmentParser.simpleR,
+      mar: new Set([...EquipmentParser.martialM, ...EquipmentParser.martialR]),
+      martialM: EquipmentParser.martialM,
+      martialR: EquipmentParser.martialR,
+      music: EquipmentParser.music,
+      shield: EquipmentParser.shield,
+      armor: EquipmentParser.armor
+    };
 
+    HM.log(3, 'EquipmentParser lookup items initialized:', EquipmentParser.lookupItems);
+  }
+
+  static async collectLookupItems(lookupKey) {
+    HM.log(3, `Collecting items for lookupKey: ${lookupKey}`);
+    const items = [];
     const typesToFetch = ['weapon', 'armor', 'tool', 'equipment', 'gear', 'consumable', 'shield'];
 
     for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
-      HM.log(3, `Checking pack ${pack.metadata.label} for items`);
-      const items = await pack.getDocuments({ type__in: typesToFetch });
+      const documents = await pack.getDocuments({ type__in: typesToFetch });
 
-      items.forEach((item) => {
+      documents.forEach((item) => {
         const itemType = item.system?.type?.value || item.type;
         const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
 
@@ -369,17 +423,21 @@ export class EquipmentParser {
         if (
           (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
           (lookupKey === 'simpleM' && itemType === 'simpleM') ||
+          (lookupKey === 'simpleR' && itemType === 'simpleR') ||
+          (lookupKey === 'mar' && (itemType === 'martialM' || itemType === 'martialR')) ||
+          (lookupKey === 'martialM' && itemType === 'martialM') ||
+          (lookupKey === 'martialR' && itemType === 'martialR') ||
+          (lookupKey === 'music' && itemType === 'music') ||
           (lookupKey === 'shield' && itemType === 'shield') ||
+          (lookupKey === 'armor' && itemType === 'armor') ||
           itemType === lookupKey
         ) {
-          nonMagicItems.push(item);
+          items.push(item);
         }
       });
     }
 
-    EquipmentParser.previousLookupKey = lookupKey;
-
-    HM.log(3, `Non-magic items found for lookupKey '${lookupKey}':`, nonMagicItems);
-    return nonMagicItems;
+    HM.log(3, `Collected ${items.length} items for lookupKey '${lookupKey}'`);
+    return items;
   }
 }
