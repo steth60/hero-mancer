@@ -317,7 +317,7 @@ export class EquipmentParser {
         itemContainer.appendChild(select);
 
         // Track unique items to avoid duplicates
-        const uniqueItems = new Set();
+        const renderedItemNames = new Set();
         let focusInput = null; // Placeholder for custom focus input if needed
 
         // Iterate over children within the OR group
@@ -357,8 +357,8 @@ export class EquipmentParser {
               }
             }
 
-            if (combinedLabel && !uniqueItems.has(combinedLabel)) {
-              uniqueItems.add(combinedLabel);
+            if (combinedLabel && !renderedItemNames.has(combinedLabel)) {
+              renderedItemNames.add(combinedLabel);
 
               // Create option element for combined AND items
               const optionElement = document.createElement('option');
@@ -376,12 +376,12 @@ export class EquipmentParser {
 
           // Handle linked type items
           if (child.type === 'linked') {
-            // Skip if the item name is already in uniqueItems or if it's part of a combined item
-            if (uniqueItems.has(trueName) || this.combinedItemIds.has(child._id)) {
+            // Skip if the item name is already in renderedItemNames or if it's part of a combined item
+            if (renderedItemNames.has(trueName) || this.combinedItemIds.has(child._id)) {
               HM.log(3, `Skipping duplicate or combined linked item: ${trueName} (${child._id})`);
               return;
             }
-            uniqueItems.add(trueName);
+            renderedItemNames.add(trueName);
 
             // Create and configure the option element for linked items
             const optionElement = document.createElement('option');
@@ -402,7 +402,7 @@ export class EquipmentParser {
 
             // Handle 'focus' type items (e.g., 'arcane' focus)
           } else if (child.type === 'focus' && child.key === 'arcane') {
-            uniqueItems.add('Any Arcane Focus');
+            renderedItemNames.add('Any Arcane Focus');
             const optionElement = document.createElement('option');
             optionElement.value = 'arcaneFocus';
             optionElement.textContent = 'Any Arcane Focus';
@@ -424,26 +424,33 @@ export class EquipmentParser {
               lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
               lookupOptions.forEach((option) => {
+                // Skip if this option is already in renderedItemNames to prevent duplicates
+                if (renderedItemNames.has(option.name)) {
+                  HM.log(3, `Skipping duplicate item: ${option.name}`);
+                  return;
+                }
+
                 // Skip if this option is already rendered in the same group and sort
                 if (option.rendered && option.sort === child.sort && option.group === child.group) {
                   HM.log(3, `Skipping already rendered option: ${option.name} (${option._id}) in group: ${child.group}`);
                   return;
                 }
 
+                // Mark the option as rendered and set group/sort details
                 option.rendered = true;
                 option.group = child.group;
                 option.sort = child.sort;
                 option.key = child.key;
 
-                // Add option to uniqueItems set
-                uniqueItems.add(option.name);
+                // Add the option name to renderedItemNames to track its uniqueness
+                renderedItemNames.add(option.name);
 
                 // Create and configure the option element
                 const optionElement = document.createElement('option');
                 optionElement.value = option._id;
                 optionElement.textContent = option.name;
 
-                // Check proficiency requirements
+                // Check proficiency requirements if applicable
                 if (child.requiresProficiency) {
                   const requiredProficiency = `${child.type}:${child.key}`;
                   if (!this.proficiencies.has(requiredProficiency)) {
@@ -452,6 +459,7 @@ export class EquipmentParser {
                   }
                 }
 
+                // Append the option element to the dropdown
                 select.appendChild(optionElement);
                 HM.log(3, `Added ${child.type} item to OR dropdown:`, { id: option._id, name: option.name });
               });
@@ -485,7 +493,7 @@ export class EquipmentParser {
         // Log the final addition of the OR dropdown
         HM.log(3, 'Added OR type item with dropdown for top-level OR group:', {
           id: item._id,
-          options: Array.from(uniqueItems),
+          options: Array.from(renderedItemNames),
           hasFocusInput: !!focusInput
         });
       } else {
