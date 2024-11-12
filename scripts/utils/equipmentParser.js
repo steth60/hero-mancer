@@ -118,6 +118,7 @@ export class EquipmentParser {
         itemSet.forEach((item) => {
           delete item.rendered;
           delete item.isSpecialCase;
+          delete item.specialGrouping; // Maybe?
         });
       });
     }
@@ -301,7 +302,8 @@ export class EquipmentParser {
       const itemContainer = document.createElement('div');
       itemContainer.classList.add('equipment-item');
       HM.log(3, 'Creating element for equipment item:', { id: item._id, type: item.type, label: item.label });
-
+      // Track unique items to avoid duplicates
+      const renderedItemNames = new Set();
       if (item.type === 'OR') {
         HM.log(3, `Processing OR block with ID: ${item._id} and label: ${item.label || 'Choose one of the following'}`);
 
@@ -316,8 +318,6 @@ export class EquipmentParser {
         select.id = item._id;
         itemContainer.appendChild(select);
 
-        // Track unique items to avoid duplicates
-        const renderedItemNames = new Set();
         let focusInput = null; // Placeholder for custom focus input if needed
 
         // Iterate over children within the OR group
@@ -500,7 +500,7 @@ export class EquipmentParser {
         // Handle AND and linked items not part of an OR dropdown
         switch (item.type) {
           case 'AND': {
-            // Render label for standalone AND groups only (no parent group)
+            // Check if this is a standalone AND group (no parent OR group)
             if (item.group) {
               HM.log(3, `Skipping label for AND group with parent group: ${item.group}`);
             } else {
@@ -511,16 +511,64 @@ export class EquipmentParser {
               HM.log(3, 'Added label for standalone AND group:', { label: andLabelElement.textContent, id: item._id });
             }
 
-            // Render each child element within the AND group
+            // Track item types in the group
+            let hasWeapon = false;
+            let hasContainer = false;
+            let hasConsumable = false;
+            const combinedIds = [];
+            let combinedLabel = '';
+
+            // First pass: Check if we have exactly one of each required type
             for (const child of item.children) {
-              try {
-                const childElement = await this.createEquipmentElement(child);
-                if (childElement) {
-                  itemContainer.appendChild(childElement);
-                  HM.log(3, 'Rendered child element in AND group:', { parentId: item._id, childId: child._id });
+              const childDoc = await fromUuidSync(child.key);
+              if (!childDoc) continue;
+
+              if (childDoc.type === 'weapon') hasWeapon = true;
+              else if (childDoc.type === 'container') hasContainer = true;
+              else if (childDoc.type === 'consumable') hasConsumable = true;
+
+              // Add each child to the combined label and ID list for later use
+              if (combinedLabel) combinedLabel += ' + ';
+              combinedLabel += `${child.count || ''} ${childDoc.name}`.trim();
+              combinedIds.push(child._id);
+            }
+
+            // If we have one of each type (weapon, container, consumable), render as a single combined checkbox
+            if (hasWeapon && hasContainer && hasConsumable && combinedIds.length === 3) {
+              if (!renderedItemNames.has(combinedLabel)) {
+                renderedItemNames.add(combinedLabel);
+
+                // Mark each child item in the combined group
+                for (const child of item.children) {
+                  child.specialGrouping = true;
+                  child.rendered = true;
                 }
-              } catch (error) {
-                HM.log(1, 'Error rendering child in AND group:', { parentId: item._id, childId: child._id, error });
+
+                const combinedCheckbox = document.createElement('input');
+                combinedCheckbox.type = 'checkbox';
+                combinedCheckbox.id = combinedIds.join(',');
+                combinedCheckbox.checked = true;
+                itemContainer.appendChild(combinedCheckbox);
+
+                const combinedLabelElement = document.createElement('label');
+                combinedLabelElement.htmlFor = combinedCheckbox.id;
+                combinedLabelElement.textContent = combinedLabel;
+                itemContainer.appendChild(combinedLabelElement);
+
+                HM.log(3, 'Added combined AND group with checkbox:', { groupId: item._id, combinedLabel });
+              }
+            } else {
+              // Otherwise, render each child as an individual checkbox
+              for (const child of item.children) {
+                try {
+                  const childElement = await this.createEquipmentElement(child);
+                  if (childElement) {
+                    itemContainer.appendChild(childElement);
+                    HM.log(3, 'Rendered child element in AND group:', { parentId: item._id, childId: child._id });
+                  }
+                } catch (error) {
+                  HM.log(1, 'Error rendering child in AND group:', { parentId: item._id, childId: child._id, error });
+                }
               }
             }
             break;
@@ -528,7 +576,7 @@ export class EquipmentParser {
 
           case 'linked': {
             // Check for previously rendered combined items
-            if (this.combinedItemIds.has(item._id)) {
+            if (this.combinedItemIds.has(item._id) /*  || item.specialGrouping */) {
               HM.log(3, `Skipping already combined linked item: ${item._id}`);
               return null;
             }
