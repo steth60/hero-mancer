@@ -309,48 +309,69 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const classId = document.querySelector('#class-dropdown').value;
     const backgroundId = document.querySelector('#background-dropdown').value;
 
-    // Create EquipmentParser instance with the selected dropdown values
-    const equipment = new EquipmentParser(classId, backgroundId);
-
     // Target container where equipment choices will be appended
     const equipmentContainer = document.querySelector('#equipment-container');
-    equipmentContainer.innerHTML = ''; // Clear previous content
 
-    // Initial render of equipment choices
+    // Initial render of equipment choices (renders both class and background)
+    const equipment = new EquipmentParser(classId, backgroundId);
     equipment
       .renderEquipmentChoices()
       .then((equipmentChoices) => {
         equipmentContainer.appendChild(equipmentChoices);
       })
       .catch((error) => {
-        console.error('Error rendering equipment choices:', error);
+        console.error('Error rendering initial equipment choices:', error);
       });
 
-    // Store dropdown selections and update equipment choices on change
-    const dropdowns = html.querySelectorAll('#class-dropdown, #background-dropdown');
-    dropdowns.forEach((dropdown) => {
-      dropdown.addEventListener('change', async (event) => {
-        const selectedValue = event.target.value;
-        const type = event.target.id.replace('-dropdown', '');
-        DropdownHandler.selectionStorage[type] = {
-          selectedValue,
-          selectedId: selectedValue.split(' ')[0] // Extract the item ID
-        };
-        HM.log(3, 'SELECTION STORAGE UPDATED:', DropdownHandler.selectionStorage);
+    // Separate event listeners for class and background dropdowns
+    document.querySelector('#class-dropdown').addEventListener('change', async (event) => {
+      const selectedValue = event.target.value;
+      DropdownHandler.selectionStorage.class = {
+        selectedValue,
+        selectedId: selectedValue.split(' ')[0] // Extract the item ID
+      };
+      equipment.classId = DropdownHandler.selectionStorage.class.selectedId;
+      HM.log(3, 'SELECTION STORAGE UPDATED (class):', DropdownHandler.selectionStorage);
 
-        // Update equipment instance with the new selections
-        equipment.classId = DropdownHandler.selectionStorage.class.selectedId;
-        equipment.backgroundId = DropdownHandler.selectionStorage.background.selectedId;
+      // Render only the class equipment section
+      try {
+        const updatedChoices = await equipment.renderEquipmentChoices('class');
+        const classSection = updatedChoices.querySelector('.class-equipment-section');
+        const existingClassSection = equipmentContainer.querySelector('.class-equipment-section');
 
-        // Clear previous content and render updated equipment choices
-        equipmentContainer.innerHTML = '';
-        try {
-          const updatedChoices = await equipment.renderEquipmentChoices();
-          equipmentContainer.appendChild(updatedChoices);
-        } catch (error) {
-          console.error('Error updating equipment choices:', error);
+        if (existingClassSection) {
+          existingClassSection.replaceWith(classSection);
+        } else {
+          equipmentContainer.appendChild(classSection);
         }
-      });
+      } catch (error) {
+        console.error('Error updating class equipment choices:', error);
+      }
+    });
+
+    document.querySelector('#background-dropdown').addEventListener('change', async (event) => {
+      const selectedValue = event.target.value;
+      DropdownHandler.selectionStorage.background = {
+        selectedValue,
+        selectedId: selectedValue.split(' ')[0] // Extract the item ID
+      };
+      equipment.backgroundId = DropdownHandler.selectionStorage.background.selectedId;
+      HM.log(3, 'SELECTION STORAGE UPDATED (background):', DropdownHandler.selectionStorage);
+
+      // Render only the background equipment section
+      try {
+        const updatedChoices = await equipment.renderEquipmentChoices('background');
+        const backgroundSection = updatedChoices.querySelector('.background-equipment-section');
+        const existingBackgroundSection = equipmentContainer.querySelector('.background-equipment-section');
+
+        if (existingBackgroundSection) {
+          existingBackgroundSection.replaceWith(backgroundSection);
+        } else {
+          equipmentContainer.appendChild(backgroundSection);
+        }
+      } catch (error) {
+        console.error('Error updating background equipment choices:', error);
+      }
     });
 
     document.getElementById('link-token-art').addEventListener('change', HeroMancer._toggleTokenArtRow);

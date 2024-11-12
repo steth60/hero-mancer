@@ -111,7 +111,7 @@ export class EquipmentParser {
     HM.log(3, 'Organized equipment data by type:', this.equipmentData);
   }
 
-  async renderEquipmentChoices() {
+  async renderEquipmentChoices(type = null) {
     // Reset rendered flags for all items in lookupItems
     if (EquipmentParser.lookupItems) {
       Object.values(EquipmentParser.lookupItems).forEach((itemSet) => {
@@ -124,39 +124,65 @@ export class EquipmentParser {
 
     await EquipmentParser.initializeLookupItems();
     HM.log(3, EquipmentParser.lookupItems);
-    HM.log(3, 'Rendering equipment choices for class and background.');
+    HM.log(3, `Rendering equipment choices for ${type || 'all types'}.`);
     this.combinedItemIds.clear();
 
     await this.fetchEquipmentData();
 
-    const container = document.createElement('div');
-    container.classList.add('equipment-choices');
+    // Get or create the main equipment-choices container
+    let container = document.querySelector('.equipment-choices');
+    if (!container) {
+      container = document.createElement('div');
+      container.classList.add('equipment-choices');
+    }
 
-    for (const [type, items] of Object.entries(this.equipmentData)) {
-      const sectionContainer = document.createElement('div');
-      sectionContainer.classList.add(`${type}-equipment-section`);
+    // Determine which types to render (either specific type or all)
+    const typesToRender = type ? [type] : Object.keys(this.equipmentData);
 
+    for (const currentType of typesToRender) {
+      const items = this.equipmentData[currentType] || [];
+
+      // Check if the section for this type already exists, otherwise create it
+      let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
+      if (sectionContainer) {
+        HM.log(3, `${currentType}-equipment-section already exists. Clearing and reusing.`);
+        sectionContainer.innerHTML = ''; // Clear existing content if section exists
+      } else {
+        sectionContainer = document.createElement('div');
+        sectionContainer.classList.add(`${currentType}-equipment-section`);
+        container.appendChild(sectionContainer);
+      }
+
+      // Get the localized placeholder text for the current type
+      const placeholderText = game.i18n.localize(`hm.app.${currentType}.select-placeholder`);
+
+      // Get the current text of the selected option for the dropdown (e.g., Wizard, Acolyte)
+      const dropdown = document.querySelector(`#${currentType}-dropdown`);
+      const dropdownText = dropdown.selectedOptions[0].textContent;
+
+      // Determine if the selected text matches the localized placeholder
+      const isPlaceholder = dropdownText === placeholderText;
+
+      // Add a header for the section based on whether it's a placeholder
       const header = document.createElement('h3');
-      header.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Equipment`;
+      header.textContent = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
       sectionContainer.appendChild(header);
 
+      // Render each item within the current section
       for (const item of items) {
         const itemDoc = await fromUuidSync(item.key);
         item.name = itemDoc?.name || item.key;
 
-        HM.log(3, `Creating HTML element for item in ${type} equipment:`, item);
+        HM.log(3, `Creating HTML element for item in ${currentType} equipment:`, item);
         const itemElement = await this.createEquipmentElement(item);
 
         if (itemElement) {
           sectionContainer.appendChild(itemElement);
         }
       }
-
-      container.appendChild(sectionContainer);
     }
 
-    HM.log(3, 'Finished rendering equipment choices.');
-    HM.log(3, 'CONTAINER: ', container);
+    HM.log(3, `Finished rendering equipment choices for ${type || 'all types'}.`);
     return container;
   }
 
