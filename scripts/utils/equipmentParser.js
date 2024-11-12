@@ -2,8 +2,6 @@ import { DropdownHandler } from './index.js';
 import { HM } from '../hero-mancer.js';
 
 export class EquipmentParser {
-  static renderedIds = new Map();
-
   // Static sets for item collections
   static simpleM = new Set();
 
@@ -113,16 +111,21 @@ export class EquipmentParser {
     HM.log(3, 'Organized equipment data by type:', this.equipmentData);
   }
 
-  /**
-   * Renders equipment choices for class and background.
-   * @returns {Promise<HTMLElement>} - The rendered HTML container for equipment choices.
-   */
   async renderEquipmentChoices() {
+    // Reset rendered flags for all items in lookupItems
+    if (EquipmentParser.lookupItems) {
+      Object.values(EquipmentParser.lookupItems).forEach((itemSet) => {
+        itemSet.forEach((item) => {
+          delete item.rendered;
+          delete item.isSpecialCase;
+        });
+      });
+    }
+
     await EquipmentParser.initializeLookupItems();
     HM.log(3, EquipmentParser.lookupItems);
-    HM.log(3, 'Rendering equipment choices for class, and background.');
+    HM.log(3, 'Rendering equipment choices for class and background.');
     this.combinedItemIds.clear();
-    EquipmentParser.renderedIds.clear();
 
     await this.fetchEquipmentData();
 
@@ -158,44 +161,19 @@ export class EquipmentParser {
   }
 
   async createEquipmentElement(item) {
-    try {
-      // Log current contents of renderedIds for easier debugging and tracking of processed items
-      HM.log(3, 'Current renderedIds map:', Array.from(EquipmentParser.renderedIds.entries()));
-
-      const existingItem = EquipmentParser.renderedIds.get(item._id);
-
-      // Check if the item has already been rendered in a special case
-      if (existingItem && existingItem.isSpecialCase) {
-        HM.log(3, `Skipping item already handled as a special case: ${item._id}`, {
-          sort: item.sort,
-          group: item.group,
-          name: item.name
-        });
-        return null;
-      }
-
-      // Check for duplicate render by matching group and sort
-      if (existingItem && existingItem.sort === item.sort && existingItem.group === item.group) {
-        HM.log(3, `Skipping duplicate rendering of item: ${item._id}`, {
-          sort: item.sort,
-          group: item.group,
-          name: item.name
-        });
-        return null;
-      }
-
-      // Log and store the item in renderedIds to prevent re-rendering, tracking group, sort, and key
-      HM.log(3, `Rendering item and adding to renderedIds: ${item._id}`, {
-        group: item.group,
-        sort: item.sort,
-        key: item.key
-      });
-      EquipmentParser.renderedIds.set(item._id, { group: item.group, sort: item.sort, key: item.key });
-    } catch (error) {
-      // Catch and log any issues with item tracking to prevent unhandled exceptions
-      HM.log(1, `Error in renderedIds processing for item: ${item._id}`, error);
+    // Skip rendering if the item is already rendered
+    if (item.rendered) {
+      HM.log(3, `Skipping already rendered item: ${item._id}`);
       return null;
     }
+
+    // Mark as rendered
+    item.rendered = true;
+    HM.log(3, `Rendering item: ${item._id}`, {
+      group: item.group,
+      sort: item.sort,
+      key: item.key
+    });
 
     // Log the special case check for debugging
     HM.log(3, `Checking if item meets special multi-option case criteria: ${item._id}`, item);
@@ -223,13 +201,13 @@ export class EquipmentParser {
       labelElement.textContent = item.label;
       itemContainer.appendChild(labelElement);
 
-      // Helper to log and mark items as rendered in a special case
       const markAsRendered = (entry) => {
-        EquipmentParser.renderedIds.set(entry._id, {
-          group: item.group,
-          sort: item.sort,
-          isSpecialCase: true
-        });
+        // Mark entry as rendered and set any other required properties directly
+        entry.rendered = true;
+        entry.group = item.group;
+        entry.sort = item.sort;
+        entry.isSpecialCase = true;
+
         HM.log(3, 'Marked as special case-rendered:', entry);
       };
 
@@ -288,14 +266,12 @@ export class EquipmentParser {
       HM.log(3, 'Completed special multi-option case rendering for item:', item._id);
       return itemContainer;
     } else {
-      /* Existing Logic */
-      const existingItem = EquipmentParser.renderedIds.get(item._id);
-
       // Check if the item has already been rendered in a special case
-      if (existingItem && existingItem.isSpecialCase) {
+      if (item.rendered && item.isSpecialCase) {
         HM.log(3, `Skipping special case-rendered item: ${item._id}`);
         return null;
       }
+
       const itemContainer = document.createElement('div');
       itemContainer.classList.add('equipment-item');
       HM.log(3, 'Creating element for equipment item:', { id: item._id, type: item.type, label: item.label });
@@ -321,14 +297,17 @@ export class EquipmentParser {
         // Iterate over children within the OR group
         for (const child of item.children) {
           // Skip rendering if the child item has already been rendered with the same group and sort
-          const existingChild = EquipmentParser.renderedIds.get(child._id);
-          if (existingChild && existingChild.sort === child.sort && existingChild.group === child.group) {
+          if (child.rendered && child.sort === item.sort && child.group === item.group) {
             HM.log(3, `Skipping already rendered child: ${child._id} with sort: ${child.sort} and group: ${child.group}`);
             continue;
           }
 
-          // Mark this child as rendered in the renderedIds map
-          EquipmentParser.renderedIds.set(child._id, { group: child.group, sort: child.sort, key: child.key });
+          // Mark this child as rendered and set group, sort, and key properties directly on the child
+          child.rendered = true;
+          child.group = item.group;
+          child.sort = item.sort;
+          child.key = child.key;
+
           HM.log(3, `Rendering new child item for OR block: ${child._id} with group: ${child.group} and sort: ${child.sort}`);
 
           // Process AND groups for combined items (e.g., multiple items in one choice)
@@ -421,15 +400,18 @@ export class EquipmentParser {
 
               lookupOptions.forEach((option) => {
                 // Skip if this option is already rendered in the same group and sort
-                const existingOption = EquipmentParser.renderedIds.get(option._id);
-                if (existingOption && existingOption.sort === child.sort && existingOption.group === child.group) {
+                if (option.rendered && option.sort === child.sort && option.group === child.group) {
                   HM.log(3, `Skipping already rendered option: ${option.name} (${option._id}) in group: ${child.group}`);
                   return;
                 }
 
-                // Add option to uniqueItems and track in renderedIds
+                option.rendered = true;
+                option.group = child.group;
+                option.sort = child.sort;
+                option.key = child.key;
+
+                // Add option to uniqueItems set
                 uniqueItems.add(option.name);
-                EquipmentParser.renderedIds.set(option._id, { group: child.group, sort: child.sort, key: child.key });
 
                 // Create and configure the option element
                 const optionElement = document.createElement('option');
