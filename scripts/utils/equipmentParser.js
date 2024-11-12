@@ -302,7 +302,7 @@ export class EquipmentParser {
       itemContainer.classList.add('equipment-item');
       HM.log(3, 'Creating element for equipment item:', { id: item._id, type: item.type, label: item.label });
 
-      if (!item.group && item.type === 'OR') {
+      if (item.type === 'OR') {
         HM.log(3, `Processing OR block with ID: ${item._id} and label: ${item.label || 'Choose one of the following'}`);
 
         // Create label element for the OR group
@@ -332,7 +332,6 @@ export class EquipmentParser {
           child.rendered = true;
           child.group = item.group;
           child.sort = item.sort;
-          child.key = child.key;
 
           HM.log(3, `Rendering new child item for OR block: ${child._id} with group: ${child.group} and sort: ${child.sort}`);
 
