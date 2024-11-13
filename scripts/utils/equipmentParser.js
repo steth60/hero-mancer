@@ -119,6 +119,11 @@ export class EquipmentParser {
           delete item.rendered;
           delete item.isSpecialCase;
           delete item.specialGrouping; // Maybe?
+          if (item.child) {
+            delete item.child.rendered;
+            delete item.child.isSpecialCase;
+            delete item.child.specialGrouping;
+          }
         });
       });
     }
@@ -190,8 +195,11 @@ export class EquipmentParser {
 
   async createEquipmentElement(item) {
     // Skip rendering if the item is already rendered
-    if (item.rendered) {
+    if (item.key && item.rendered) {
       HM.log(3, `Skipping already rendered item: ${item._id}`);
+      return null;
+    } else if (item.child && item.child.rendered) {
+      HM.log(3, `Skipping already rendered parent item: ${item._id}`);
       return null;
     }
 
@@ -296,7 +304,7 @@ export class EquipmentParser {
     } else {
       // Check if the item has already been rendered in a special case
       if (item.rendered && item.isSpecialCase) {
-        HM.log(3, `Skipping special case-rendered item: ${item._id}`);
+        HM.log(3, `Skipping special case-rendered item: ${item}`);
         return null;
       }
 
@@ -569,7 +577,7 @@ export class EquipmentParser {
                     HM.log(3, 'Rendered child element in AND group:', { parentId: item._id, childId: child._id });
                   }
                 } catch (error) {
-                  HM.log(1, 'Error rendering child in AND group:', { parentId: item._id, childId: child._id, error });
+                  HM.log(1, 'Error rendering child in AND group:', { parent: item, child: child, error });
                 }
               }
             }
@@ -713,7 +721,7 @@ export class EquipmentParser {
             (lookupKey === 'martialR' && itemType === 'martialR') ||
             (lookupKey === 'music' && itemType === 'music') ||
             (lookupKey === 'shield' && itemType === 'shield') ||
-            (lookupKey === 'armor' && itemType === 'armor') ||
+            (lookupKey === 'armor' && (itemType === 'medium' || itemType === 'light' || itemType === 'heavy')) ||
             itemType === lookupKey
           ) {
             items.push(item);
