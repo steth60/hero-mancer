@@ -147,6 +147,7 @@ export class EquipmentParser {
       let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
       if (sectionContainer) {
         HM.log(3, `${currentType}-equipment-section already exists. Clearing and reusing.`);
+        HM.log(3, 'Existing container:', sectionContainer);
         sectionContainer.innerHTML = ''; // Clear existing content if section exists
       } else {
         sectionContainer = document.createElement('div');
@@ -332,6 +333,7 @@ export class EquipmentParser {
           child.rendered = true;
           child.group = item.group;
           child.sort = item.sort;
+          child.key = child.key;
 
           HM.log(3, `Rendering new child item for OR block: ${child._id} with group: ${child.group} and sort: ${child.sort}`);
 
