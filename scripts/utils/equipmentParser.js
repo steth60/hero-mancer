@@ -707,7 +707,6 @@ export class EquipmentParser {
 
           // Skip items that are magical or "Unarmed Strike"
           if (item.name === 'Unarmed Strike' || isMagic) {
-            HM.log(3, `Skipping item: ${item.name} due to exclusion criteria.`);
             return;
           }
 

@@ -28,6 +28,8 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     }
   };
 
+  static #validPacksCache = new Map();
+
   get title() {
     return `${HM.TITLE} | ${game.i18n.localize('hm.settings.custom-compendiums.menu.name')}`;
   }
@@ -46,53 +48,61 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   };
 
   /**
+   * Collects valid packs of a specified type from available compendiums.
+   * @param {string} type The type of documents to collect
+   * @param {boolean} useCache Whether to use cached results
+   * @returns {Promise<Set>} A set of valid pack objects
+   */
+  static async #collectValidPacks(type, useCache = true) {
+    // Check cache first if enabled
+    if (useCache && this.#validPacksCache.has(type)) {
+      return this.#validPacksCache.get(type);
+    }
+
+    const validPacks = new Set();
+    const documentPromises = game.packs.map(async (pack) => {
+      try {
+        const documents = await pack.getDocuments({ type });
+        if (documents.length > 0) {
+          validPacks.add({
+            packName: pack.metadata.label,
+            packId: pack.metadata.id,
+            type: pack.metadata.type
+          });
+          HM.log(3, `Retrieved ${documents.length} documents from pack: ${pack.metadata.label}`);
+        }
+      } catch (error) {
+        HM.log(2, `Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`);
+      }
+    });
+
+    await Promise.all(documentPromises);
+
+    // Cache the results
+    if (useCache) {
+      this.#validPacksCache.set(type, validPacks);
+    }
+
+    return validPacks;
+  }
+
+  /**
    * Manages the compendium selection and handles validation.
    * @param {string} type The type of compendium to manage (class, race, or background)
    */
   static async manageCompendium(type) {
-    let validPacks = new Set();
+    const validPacks = await this.#collectValidPacks(type);
 
-    // Iterate over all compendiums and collect valid packs of the correct type
-    for (const pack of game.packs) {
-      try {
-        let documents = await pack.getDocuments({ type: type });
-
-        if (documents.length > 0) {
-          HM.log(3, `Retrieved ${documents.length} documents from pack: ${pack.metadata.label}`);
-          let packName = pack.metadata.label;
-
-          validPacks.add({
-            packName,
-            packId: pack.metadata.id,
-            type: pack.metadata.type
-          });
-        }
-      } catch (error) {
-        HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`, 'error');
-        ui.notifications.error(game.i18n.format('hm.settings.custom-compendiums.error', { pack: pack.metadata.label }));
-      }
-    }
-    // Check if no valid packs were found and notify the user
     if (validPacks.size === 0) {
       ui.notifications.warn(game.i18n.localize('hm.settings.custom-compendiums.no-valid-packs'));
-      return; // Exit early to prevent rendering an empty dialog
+      return;
     }
-    // Ensure the selected packs are properly awaited
-    let selectedPacks = await CustomCompendiums.getSelectedPacksByType(type);
 
-    // Validate that the selected packs still exist in the validPacks set
-    selectedPacks = selectedPacks.filter((packId) => {
-      const packExists = Array.from(validPacks).some((pack) => pack.packId === packId);
-      if (!packExists) {
-        HM.log(2, `Invalid ${type} compendium pack: ${packId} (no longer exists)`);
+    const selectedPacks = await this.getSelectedPacksByType(type, validPacks);
+    await this.#renderCompendiumDialog(type, validPacks, selectedPacks);
+  }
 
-        // Feedback to the user
-        ui.notifications.error(game.i18n.localize('hm.settings.custom-compendiums.invalid-pack'));
-      }
-      return packExists; // Keep only valid packs
-    });
-
-    // Create the multi-select input field for valid packs
+  static async #renderCompendiumDialog(type, validPacks, selectedPacks) {
     const inputConfig = {
       name: 'compendiumMultiSelect',
       type: 'checkboxes',
@@ -103,49 +113,92 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       }))
     };
 
-    const multiSelectInput = foundry.applications.fields.createMultiSelectInput(inputConfig);
-    const content = `${multiSelectInput.outerHTML}`;
     const callback = async (event, button, dialog) => {
       const selectedValues = button.form.elements.compendiumMultiSelect.value;
-      await CustomCompendiums.setSelectedPacksByType(type, selectedValues);
-      HM.log(3, `Selected ${type} compendiums:`, selectedValues);
+      await this.setSelectedPacksByType(type, selectedValues);
+
       ui.notifications.info(
         game.i18n.format('hm.settings.custom-compendiums.saved', {
           type: game.i18n.localize(`hm.settings.custom-compendiums.${type}`)
         })
       );
+
+      HM.log(3, `Selected ${type} compendiums:`, selectedValues);
     };
-    // Render dialog with validated packs
+
     new DialogV2({
-      window: { title: `${game.i18n.format('hm.settings.custom-compendiums.title', { type: type })}` },
-      content: content,
+      window: { title: game.i18n.format('hm.settings.custom-compendiums.title', { type }) },
+      content: foundry.applications.fields.createMultiSelectInput(inputConfig).outerHTML,
       classes: ['hm-compendiums-popup-dialog'],
       buttons: [
         {
           action: 'ok',
-          label: `${game.i18n.localize('hm.app.done')}`,
+          label: game.i18n.localize('hm.app.done'),
           icon: 'fas fa-check',
           default: 'true',
-          callback: callback
+          callback
         }
       ],
       rejectClose: false,
       modal: false,
-      position: { width: 400 },
-      submit: (result) => {
-        HM.log(3, 'Dialog submitted with result:', result);
-      }
+      position: { width: 400 }
     }).render(true);
   }
 
   /**
-   * Retrieves the selected packs for the given type (class, race, background).
-   * @param {string} type The type of compendium.
-   * @returns {Array} Array of selected pack IDs.
+   * Retrieves and validates the selected compendium packs for the given type, with fallback handling.
+   * If selected packs are invalid or missing, attempts to fall back to SRD packs or all available packs.
+   * @param {string} type The type of compendium ('class', 'race', or 'background').
+   * @param {Set} validPacks Set of valid pack objects containing packId and packName.
+   * @returns {Promise<Array<string>>} A promise that resolves to an array of valid pack IDs.
+   * If no valid packs are found, falls back to SRD packs or all available packs.
+   * @async
+   * @throws {Error} Throws an error if type parameter is invalid.
    */
-  static async getSelectedPacksByType(type) {
-    const selectedPacks = await game.settings.get('hero-mancer', `${type}Packs`);
-    return selectedPacks || []; // Return an empty array if no packs are selected
+  static async getSelectedPacksByType(type, validPacks) {
+    let selectedPacks = await game.settings.get('hero-mancer', `${type}Packs`);
+
+    // If no packs are selected, return empty array
+    if (!selectedPacks) {
+      return [];
+    }
+
+    // Get all available packs that contain valid documents
+    const availablePacks = Array.from(validPacks).map((pack) => pack.packId);
+
+    // Filter out any invalid packs
+    const validSelectedPacks = selectedPacks.filter((packId) => {
+      if (!availablePacks.includes(packId)) {
+        HM.log(2, `Removing invalid ${type} compendium pack: ${packId}`);
+        return false;
+      }
+      return true;
+    });
+
+    // If all selected packs were invalid, fall back to SRD packs
+    if (validSelectedPacks.length === 0) {
+      const srdPacks = Array.from(validPacks)
+        .filter((pack) => pack.packName.includes('SRD'))
+        .map((pack) => pack.packId);
+
+      if (srdPacks.length > 0) {
+        HM.log(2, `Falling back to SRD packs for ${type}`);
+        await this.setSelectedPacksByType(type, srdPacks);
+        return srdPacks;
+      }
+
+      // If no SRD packs, use all available packs
+      HM.log(2, `No SRD packs found for ${type}, using all available packs`);
+      await this.setSelectedPacksByType(type, availablePacks);
+      return availablePacks;
+    }
+
+    // Update settings to remove invalid packs
+    if (validSelectedPacks.length !== selectedPacks.length) {
+      await this.setSelectedPacksByType(type, validSelectedPacks);
+    }
+
+    return validSelectedPacks;
   }
 
   /**
@@ -158,8 +211,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   }
 
   async _prepareContext(options) {
-    HM.log(3, options);
-    HM.log(3, 'Context prepared!');
+    HM.log(3, 'Preparing context with options:', options);
     return context;
   }
 
@@ -168,11 +220,29 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   }
 
   static async formHandler(event, form, formData) {
-    await game.settings.set('hero-mancer', 'classPacks', await CustomCompendiums.getSelectedPacksByType('class'));
-    await game.settings.set('hero-mancer', 'racePacks', await CustomCompendiums.getSelectedPacksByType('race'));
-    await game.settings.set('hero-mancer', 'backgroundPacks', await CustomCompendiums.getSelectedPacksByType('background'));
-    CacheManager.resetCache();
-    ui.notifications.info(game.i18n.localize('hm.settings.custom-compendiums.form-saved'));
-    HM.log(3, 'Form submitted and settings saved');
+    const types = ['class', 'race', 'background'];
+
+    try {
+      // First collect the valid packs
+      const packPromises = types.map((type) => CustomCompendiums.#collectValidPacks(type, false));
+      const validPacks = await Promise.all(packPromises);
+      const validPacksMap = new Map(types.map((type, index) => [type, validPacks[index]]));
+
+      // Then update the settings
+      const settingPromises = types.map((type) => {
+        const packs = validPacksMap.get(type);
+        return CustomCompendiums.getSelectedPacksByType(type, packs).then((selectedPacks) => game.settings.set('hero-mancer', `${type}Packs`, selectedPacks));
+      });
+      await Promise.all(settingPromises);
+
+      CacheManager.resetCache();
+      CustomCompendiums.#validPacksCache.clear();
+
+      ui.notifications.info(game.i18n.localize('hm.settings.custom-compendiums.form-saved'));
+      HM.log(3, 'Form submitted and settings saved');
+    } catch (error) {
+      HM.log(1, 'Error in form submission:', error);
+      ui.notifications.error(game.i18n.localize('hm.settings.custom-compendiums.error-saving'));
+    }
   }
 }

@@ -134,7 +134,8 @@
         "race": "Race",
         "races-label": "Set Race Compendiums:",
         "saved": "{type} compendium settings have been saved.",
-        "title": "Select your {type} compendiums!"
+        "title": "Select your {type} compendiums!",
+        "error-saving": "There was an error saving your compendium settings. Please see console (F12)."
       },
       "custom-roll-formula": {
         "hint": "Specify the roll formula for generating ability scores. Default is '4d6kh3'.",
