@@ -1,6 +1,9 @@
 import { HM } from '../hero-mancer.js';
 
+const { DialogV2 } = foundry.applications.api;
+
 export class StatRoller {
+  static chainRollEnabled = false;
   /**
    * Rolls stats based on a user-customizable formula.
    * Defaults to '4d6kh3' if the formula is invalid or empty.
@@ -8,9 +11,14 @@ export class StatRoller {
    * @param {HTMLElement} form The form where the dice icon was clicked.
    * @returns {Promise<void>}
    */
+
   static async roller(form) {
     try {
       let rollFormula = game.settings.get(HM.ID, 'customRollFormula');
+      const chainedRolls = game.settings.get(HM.ID, 'chainedRolls');
+      const index = form.getAttribute('data-index');
+      const abilityBlock = document.getElementById(`ability-block-${index}`);
+      const input = abilityBlock?.querySelector('.ability-score');
 
       if (!rollFormula || rollFormula.trim() === '') {
         rollFormula = '4d6kh3';
@@ -18,28 +26,125 @@ export class StatRoller {
         HM.log(3, 'Roll formula was empty. Resetting to default:', rollFormula);
       }
 
-      const roll = new Roll(rollFormula);
-      await roll.evaluate();
-      HM.log(3, 'Roll result:', roll.total);
+      // Check if any ability scores already have values
+      const hasExistingValues = Array.from(document.querySelectorAll('.ability-score')).some((input) => input.value && input.value.trim() !== '');
 
-      const index = form.getAttribute('data-index');
-      const abilityBlock = document.getElementById(`ability-block-${index}`);
+      // If there are existing values, show confirmation dialog
+      if (hasExistingValues) {
+        const dialogContent = `
+          <form class="dialog-form">
+            <p>${game.i18n.localize(`${HM.ABRV}.dialogs.reroll.content`)}</p>
+            <div class="form-group">
+              <label class="checkbox">
+                <input type="checkbox" name="chainRoll" ${StatRoller.chainRollEnabled ? 'checked' : ''}>
+                ${game.i18n.localize(`${HM.ABRV}.dialogs.reroll.chain-roll-label`)}
+              </label>
+            </div>
+          </form>
+        `;
 
-      if (abilityBlock) {
-        const input = abilityBlock.querySelector('.ability-score');
-        if (input) {
-          input.value = roll.total;
-          input.focus();
-          HM.log(3, `Updated input value for ability index ${index} with roll total:`, roll.total);
-        } else {
-          HM.log(3, `No input field found within ability-block for index ${index}.`, 'error');
-        }
+        new DialogV2({
+          window: {
+            title: game.i18n.localize(`${HM.ABRV}.dialogs.reroll.title`),
+            icon: 'fas fa-dice-d6'
+          },
+          content: dialogContent,
+          classes: ['hm-reroll-dialog'],
+          buttons: [
+            {
+              action: 'confirm',
+              label: game.i18n.localize(`${HM.ABRV}.dialogs.reroll.confirm`),
+              icon: 'fas fa-check',
+              default: true,
+              async callback(event, button, dialog) {
+                const chainRollCheckbox = button.form.elements.chainRoll;
+                if (!chainRollCheckbox) {
+                  HM.log(2, 'Chain roll checkbox not found in dialog');
+                  StatRoller.chainRollEnabled = false;
+                } else {
+                  StatRoller.chainRollEnabled = chainRollCheckbox.checked;
+                  HM.log(3, `Chain roll ${StatRoller.chainRollEnabled ? 'enabled' : 'disabled'}`);
+                }
+                dialog.close();
+                if (StatRoller.chainRollEnabled && chainedRolls) {
+                  await StatRoller.rollAllStats(rollFormula);
+                } else {
+                  await StatRoller.performSingleRoll(rollFormula, index, input);
+                }
+              }
+            },
+            {
+              action: 'cancel',
+              label: game.i18n.localize(`${HM.ABRV}.dialogs.reroll.cancel`),
+              icon: 'fas fa-times'
+            }
+          ],
+          rejectClose: false,
+          modal: true,
+          position: { width: 400 }
+        }).render(true);
       } else {
-        HM.log(3, `No ability-block found for index ${index}.`, 'error');
+        // First time rolling, check if chained rolls are enabled
+        if (chainedRolls) {
+          await StatRoller.rollAllStats(rollFormula);
+          return;
+        }
+
+        await StatRoller.performSingleRoll(rollFormula, index, input);
       }
     } catch (error) {
       HM.log(3, 'Error while rolling stat:', error, 'error');
+      StatRoller.isRolling = false;
     }
+  }
+
+  static async performSingleRoll(rollFormula, index, input) {
+    const roll = new Roll(rollFormula);
+    await roll.evaluate();
+    HM.log(3, 'Roll result:', roll.total);
+
+    if (input) {
+      input.value = roll.total;
+      input.focus();
+      HM.log(3, `Updated input value for ability index ${index} with roll total:`, roll.total);
+    } else {
+      HM.log(3, `No input field found for ability index ${index}.`, 'error');
+    }
+  }
+
+  static async rollAllStats(rollFormula) {
+    const abilityBlocks = document.querySelectorAll('.ability-block');
+    const delay = game.settings.get(HM.ID, 'rollDelay') || 500;
+    StatRoller.isRolling = true;
+
+    for (let i = 0; i < abilityBlocks.length; i++) {
+      const block = abilityBlocks[i];
+      const roll = new Roll(rollFormula);
+      await roll.evaluate();
+
+      const input = block.querySelector('.ability-score');
+      if (input) {
+        input.value = roll.total;
+        input.focus();
+        HM.log(3, `Updated input value for ability index ${i} with roll total:`, roll.total);
+
+        // Add visual feedback for the current roll
+        const diceIcon = block.querySelector('.fa-dice-d6');
+        if (diceIcon) {
+          diceIcon.classList.add('rolling');
+          setTimeout(() => diceIcon.classList.remove('rolling'), delay - 100);
+        }
+      }
+
+      // Wait for the specified delay before the next roll
+      if (i < abilityBlocks.length - 1) {
+        await new Promise((resolve) => {
+          setTimeout(resolve, delay);
+        });
+      }
+    }
+
+    StatRoller.isRolling = false;
   }
 
   /**
@@ -63,7 +168,7 @@ export class StatRoller {
 
     const isValid = /^(\d+,)*\d+$/.test(value);
     if (!isValid) {
-      ui.notifications.warn(game.i18n.localize(`${HM.ABRV}.settings.custom-standard-array.invalid-format`));
+      ui.notifications.warn(game.i18n.localize('hm.settings.custom-standard-array.invalid-format'));
       return;
     }
 
@@ -71,7 +176,7 @@ export class StatRoller {
 
     if (customArray.length < abilitiesCount) {
       customArray = this.getStandardArrayDefault().split(',').map(Number);
-      ui.notifications.info(game.i18n.localize(`${HM.ABRV}.settings.custom-standard-array.reset-default`));
+      ui.notifications.info(game.i18n.localize('hm.settings.custom-standard-array.reset-default'));
     }
 
     customArray.sort((a, b) => b - a);

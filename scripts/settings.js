@@ -74,6 +74,31 @@ export function registerSettings() {
     }
   });
 
+  // Register chained rolls setting
+  game.settings.register(HM.ID, 'chainedRolls', {
+    name: `${HM.ABRV}.settings.chained-rolls.name`,
+    hint: `${HM.ABRV}.settings.chained-rolls.hint`,
+    scope: 'client',
+    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'manualFormula',
+    type: Boolean,
+    default: false
+  });
+
+  // Register roll delay setting
+  game.settings.register(HM.ID, 'rollDelay', {
+    name: `${HM.ABRV}.settings.roll-delay.name`,
+    hint: `${HM.ABRV}.settings.roll-delay.hint`,
+    scope: 'client',
+    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'manualFormula',
+    type: Number,
+    range: {
+      min: 100,
+      max: 2000,
+      step: 100
+    },
+    default: 500
+  });
+
   // Restricted to GM: Menu for custom compendium chooser
   game.settings.registerMenu(HM.ID, 'customCompendiumMenu', {
     name: `${HM.ABRV}.settings.custom-compendiums.menu.name`,

@@ -341,6 +341,7 @@ export class EquipmentParser {
           child.rendered = true;
           child.group = item.group;
           child.sort = item.sort;
+          // eslint-disable-next-line no-self-assign
           child.key = child.key;
 
           HM.log(3, `Rendering new child item for OR block: ${child._id} with group: ${child.group} and sort: ${child.sort}`);

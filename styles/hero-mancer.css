@@ -526,3 +526,20 @@
   align-items: center;
   font-size: 0.9em;
 }
+
+@keyframes rollDice {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.fa-dice-d6.rolling {
+  animation: rollDice 0.5s ease-in-out;
+  color: #ff6b6b;
+}
