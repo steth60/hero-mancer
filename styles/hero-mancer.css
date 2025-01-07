@@ -543,3 +543,15 @@
   animation: rollDice 0.5s ease-in-out;
   color: #ff6b6b;
 }
+
+/* Equipment Parser: Dual Weapon Style */
+.dual-weapon-selection {
+  margin-top: 8px;
+}
+
+.second-weapon-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--font-size-14);
+  color: var(--color-text-dark-secondary);
+}

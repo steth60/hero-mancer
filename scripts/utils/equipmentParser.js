@@ -199,19 +199,26 @@ export class EquipmentParser {
     item.rendered = true;
     HM.log(3, `Rendering item: ${item._id}`, { group: item.group, sort: item.sort, key: item.key });
 
-    if (this.isSpecialMultiOptionCase(item)) {
-      return this.renderSpecialMultiOptionCase(item);
-    }
-
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
-    HM.log(3, 'Creating element for equipment item:', { id: item._id, type: item.type, label: item.label });
+
+    // First check if this is part of an OR choice
+    if (item.group) {
+      const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
+      if (parentItem?.type === 'OR') {
+        return null; // Skip individual rendering for items that will be in a dropdown
+      }
+    }
 
     switch (item.type) {
       case 'OR':
         return this.renderOrBlock(item, itemContainer);
       case 'AND':
-        return this.renderAndBlock(item, itemContainer);
+        // Only render AND block if it's not part of an OR choice
+        if (!item.group || this.isStandaloneAndBlock(item)) {
+          return this.renderAndBlock(item, itemContainer);
+        }
+        return null;
       case 'linked':
         return this.renderLinkedItem(item, itemContainer);
       case 'focus':
@@ -220,6 +227,13 @@ export class EquipmentParser {
         HM.log(2, `Unknown item type encountered: ${item.type}`, { itemId: item._id });
         return null;
     }
+  }
+
+  isStandaloneAndBlock(item) {
+    return (
+      !this.equipmentData.class.some((p) => p._id === item.group && p.type === 'OR') &&
+      !this.equipmentData.background.some((p) => p._id === item.group && p.type === 'OR')
+    );
   }
 
   isItemRendered(item) {
@@ -305,41 +319,155 @@ export class EquipmentParser {
     select.id = item._id;
     itemContainer.appendChild(select);
 
-    let focusInput = null;
+    // Check for different types of specialized choices
+    const isMultiQuantityChoice = this.isMultiQuantityChoice(item);
+    const weaponTypeChild = this.findWeaponTypeChild(item);
+    const hasFocusOption = item.children.some((child) => child.type === 'focus');
+
+    // Handle weapon quantity choices
+    let secondSelect = null;
+    if (isMultiQuantityChoice && weaponTypeChild) {
+      const dropdownContainer = document.createElement('div');
+      dropdownContainer.classList.add('dual-weapon-selection');
+
+      secondSelect = document.createElement('select');
+      secondSelect.id = `${item._id}-second`;
+      secondSelect.style.display = 'none';
+
+      const secondLabel = document.createElement('label');
+      secondLabel.htmlFor = secondSelect.id;
+      secondLabel.textContent = 'Choose second weapon';
+      secondLabel.style.display = 'none';
+      secondLabel.classList.add('second-weapon-label');
+
+      dropdownContainer.appendChild(secondLabel);
+      dropdownContainer.appendChild(secondSelect);
+      itemContainer.appendChild(dropdownContainer);
+
+      select.addEventListener('change', async (event) => {
+        const isWeaponSelection = event.target.value !== this.findLinkedItemId(item);
+        secondLabel.style.display = isWeaponSelection ? 'block' : 'none';
+        secondSelect.style.display = isWeaponSelection ? 'block' : 'none';
+
+        if (isWeaponSelection) {
+          secondSelect.innerHTML = '<option value="">Select a weapon</option>';
+          const lookupOptions = Array.from(EquipmentParser.lookupItems[weaponTypeChild.key] || []);
+          lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+          lookupOptions.forEach((option) => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option._id;
+            optionElement.textContent = option.name;
+            secondSelect.appendChild(optionElement);
+          });
+        }
+      });
+    }
+
+    // Handle regular items and focus items separately
     const renderedItemNames = new Set();
+    const nonFocusItems = item.children.filter((child) => child.type !== 'focus');
 
-    for (const child of item.children) {
-      if (this.isItemRendered(child)) continue;
-
-      child.rendered = true;
-      child.group = item.group;
-      child.sort = item.sort;
-
+    // Render non-focus items first
+    for (const child of nonFocusItems) {
       if (child.type === 'AND') {
         await this.renderAndGroup(child, select, renderedItemNames);
-      } else {
-        await this.renderIndividualItem(child, select, renderedItemNames, focusInput);
+      } else if (child.type === 'linked' || child.type === 'weapon') {
+        await this.renderIndividualItem(child, select, renderedItemNames);
       }
     }
 
-    select.addEventListener('change', (event) => {
-      if (focusInput) {
-        const isArcaneFocus = event.target.value === 'arcaneFocus';
-        focusInput.style.display = isArcaneFocus ? 'block' : 'none';
-        if (!isArcaneFocus) focusInput.value = '';
-      }
-    });
+    // Handle focus option if present
+    if (hasFocusOption) {
+      const option = document.createElement('option');
+      option.value = 'arcane-focus';
+      option.textContent = 'Any Arcane Focus';
+      select.appendChild(option);
 
-    if (focusInput) itemContainer.appendChild(focusInput);
+      const inputField = document.createElement('input');
+      inputField.type = 'text';
+      inputField.id = `${select.id}-focus-input`;
+      inputField.placeholder = 'Enter your arcane focus...';
+      inputField.style.display = 'none';
+      inputField.classList.add('arcane-focus-input');
+
+      select.insertAdjacentElement('afterend', inputField);
+
+      select.addEventListener('change', (event) => {
+        const focusInput = document.getElementById(`${select.id}-focus-input`);
+        if (focusInput) {
+          focusInput.style.display = event.target.value === 'arcane-focus' ? 'block' : 'none';
+          if (event.target.value !== 'arcane-focus') {
+            focusInput.value = '';
+          }
+        }
+      });
+    }
+
     return itemContainer;
+  }
+
+  shouldRenderAsDropdown(item) {
+    // Check for items that are part of an OR block
+    if (item.group) {
+      const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
+      return parentItem?.type === 'OR';
+    }
+
+    // Check for combined items that should be rendered in a dropdown
+    if (item.type === 'AND' && item.children?.length > 1) {
+      const parent = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
+      if (parent?.type === 'OR') {
+        return true;
+      }
+    }
+
+    // Check if item is already part of a combined selection
+    if (this.combinedItemIds.has(item._id)) {
+      return true;
+    }
+
+    // Top-level OR blocks should be dropdowns
+    return item.type === 'OR';
+  }
+
+  isMultiQuantityChoice(item) {
+    let quantityChoices = 0;
+    for (const child of item.children) {
+      if (child.count && child.count > 1) {
+        quantityChoices++;
+      }
+    }
+    return quantityChoices > 1;
+  }
+
+  findWeaponTypeChild(item) {
+    return item.children.find((child) => child.type === 'weapon' && child.key === 'simpleM');
+  }
+
+  findLinkedItemId(item) {
+    const linkedItem = item.children.find((child) => child.type === 'linked');
+    return linkedItem ? linkedItem._id : null;
   }
 
   async renderAndGroup(child, select, renderedItemNames) {
     let combinedLabel = '';
     const combinedIds = [];
+    const lookupKeys = ['sim', 'mar', 'simpleM', 'simpleR', 'martialM', 'martialR', 'shield'];
 
     for (const subChild of child.children) {
       try {
+        // Check if this is a lookup key
+        if (lookupKeys.includes(subChild.key)) {
+          if (combinedLabel) combinedLabel += ' + ';
+          // Create a descriptive label based on the key
+          const lookupLabel = this.getLookupKeyLabel(subChild.key);
+          combinedLabel += `${subChild.count || ''} ${lookupLabel}`.trim();
+          combinedIds.push(subChild._id);
+          continue;
+        }
+
+        // Handle normal linked items
         const subChildItem = await fromUuidSync(subChild.key);
         if (!subChildItem) throw new Error(`Item not found for UUID: ${subChild.key}`);
 
@@ -363,10 +491,23 @@ export class EquipmentParser {
     }
   }
 
-  async renderIndividualItem(child, select, renderedItemNames, focusInput) {
-    const trueName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
+  // Add this helper method to the class
+  getLookupKeyLabel(key) {
+    const labels = {
+      sim: 'Simple Weapon',
+      mar: 'Martial Weapon',
+      simpleM: 'Simple Melee Weapon',
+      simpleR: 'Simple Ranged Weapon',
+      martialM: 'Martial Melee Weapon',
+      martialR: 'Martial Ranged Weapon',
+      shield: 'Shield'
+    };
+    return labels[key] || key;
+  }
 
+  async renderIndividualItem(child, select, renderedItemNames, focusInput) {
     if (child.type === 'linked') {
+      const trueName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
       if (renderedItemNames.has(trueName) || this.combinedItemIds.has(child._id)) return;
       renderedItemNames.add(trueName);
 
@@ -384,17 +525,29 @@ export class EquipmentParser {
 
       select.appendChild(optionElement);
     } else if (child.type === 'focus' && child.key === 'arcane') {
-      renderedItemNames.add('Any Arcane Focus');
-      const optionElement = document.createElement('option');
-      optionElement.value = 'arcaneFocus';
-      optionElement.textContent = 'Any Arcane Focus';
-      select.appendChild(optionElement);
+      if (!renderedItemNames.has('Any Arcane Focus')) {
+        renderedItemNames.add('Any Arcane Focus');
+        const optionElement = document.createElement('option');
+        optionElement.value = 'arcane-focus';
+        optionElement.textContent = 'Any Arcane Focus';
+        select.appendChild(optionElement);
 
-      focusInput = document.createElement('input');
-      focusInput.type = 'text';
-      focusInput.placeholder = 'Enter your arcane focus...';
-      focusInput.classList.add('arcane-focus-input');
-      focusInput.style.display = 'none';
+        const inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.id = `${select.id}-focus-input`;
+        inputField.placeholder = 'Enter your arcane focus...';
+        inputField.style.display = 'none';
+        inputField.classList.add('arcane-focus-input');
+
+        select.insertAdjacentElement('afterend', inputField);
+
+        select.addEventListener('change', (event) => {
+          inputField.style.display = event.target.value === 'arcane-focus' ? 'block' : 'none';
+          if (event.target.value !== 'arcane-focus') {
+            inputField.value = '';
+          }
+        });
+      }
     } else if (['weapon', 'armor', 'tool', 'shield'].includes(child.type)) {
       await this.renderLookupOptions(child, select, renderedItemNames);
     }
@@ -445,11 +598,25 @@ export class EquipmentParser {
       itemContainer.appendChild(andLabelElement);
     }
 
+    // Separate lookup type items from linked items
+    const lookupItems = item.children.filter(
+      (child) =>
+        child.type === 'weapon' &&
+        (child.key === 'sim' ||
+          child.key === 'mar' ||
+          child.key === 'simpleM' ||
+          child.key === 'simpleR' ||
+          child.key === 'martialM' ||
+          child.key === 'martialR')
+    );
+    const linkedItems = item.children.filter((child) => child.type === 'linked');
+
+    // Process linked items as before
     const renderedItemNames = new Set();
     const combinedIds = [];
     let combinedLabel = '';
 
-    for (const child of item.children) {
+    for (const child of linkedItems) {
       const childDoc = await fromUuidSync(child.key);
       if (!childDoc) continue;
 
@@ -458,10 +625,11 @@ export class EquipmentParser {
       combinedIds.push(child._id);
     }
 
+    // Render linked items checkbox if there are any
     if (combinedLabel && !renderedItemNames.has(combinedLabel)) {
       renderedItemNames.add(combinedLabel);
 
-      for (const child of item.children) {
+      for (const child of linkedItems) {
         child.specialGrouping = true;
         child.rendered = true;
       }
@@ -476,11 +644,14 @@ export class EquipmentParser {
       combinedLabelElement.htmlFor = combinedCheckbox.id;
       combinedLabelElement.textContent = combinedLabel;
       itemContainer.appendChild(combinedLabelElement);
-    } else {
-      for (const child of item.children) {
-        const childElement = await this.createEquipmentElement(child);
-        if (childElement) itemContainer.appendChild(childElement);
-      }
+    }
+
+    // Render lookup items as dropdowns
+    for (const lookupItem of lookupItems) {
+      const select = document.createElement('select');
+      select.id = lookupItem._id;
+      await this.renderLookupOptions(lookupItem, select, new Set());
+      itemContainer.appendChild(select);
     }
 
     return itemContainer;
@@ -488,6 +659,7 @@ export class EquipmentParser {
 
   renderLinkedItem(item, itemContainer) {
     if (this.combinedItemIds.has(item._id)) return null;
+    if (this.shouldRenderAsDropdown(item)) return null; // Skip if this should be in a dropdown
 
     const linkedCheckbox = document.createElement('input');
     linkedCheckbox.type = 'checkbox';
@@ -504,6 +676,8 @@ export class EquipmentParser {
   }
 
   renderFocusItem(item, itemContainer) {
+    if (this.shouldRenderAsDropdown(item)) return null; // Skip if this should be in a dropdown
+
     const focusLabel = document.createElement('label');
     focusLabel.htmlFor = item._id;
     focusLabel.textContent = item.label || 'Custom Focus';
