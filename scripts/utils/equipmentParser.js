@@ -202,6 +202,38 @@ export class EquipmentParser {
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
 
+    if (!item.group) {
+      const labelElement = document.createElement('h4');
+      labelElement.classList.add('parent-label');
+
+      let shouldAddLabel = false;
+
+      // Only try to get item name if the item has a key
+      if (item.key) {
+        try {
+          const itemDoc = await fromUuidSync(item.key);
+          if (itemDoc) {
+            const label = item.count ? `${item.count}x ${itemDoc.name}` : itemDoc.name;
+            labelElement.textContent = label;
+            shouldAddLabel = true;
+          } else {
+            HM.log(2, `No document found for item key: ${item.key}`);
+            labelElement.textContent = item.label || 'Unknown Item';
+            shouldAddLabel = true;
+          }
+        } catch (error) {
+          HM.log(2, `Error getting label for item ${item._id}: ${error.message}`);
+          labelElement.textContent = item.label || 'Unknown Item';
+          shouldAddLabel = true;
+        }
+      }
+
+      // Only append the label if we should
+      if (shouldAddLabel) {
+        itemContainer.appendChild(labelElement);
+      }
+    }
+
     // First check if this is part of an OR choice
     if (item.group) {
       const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
@@ -323,10 +355,83 @@ export class EquipmentParser {
     const isMultiQuantityChoice = this.isMultiQuantityChoice(item);
     const weaponTypeChild = this.findWeaponTypeChild(item);
     const hasFocusOption = item.children.some((child) => child.type === 'focus');
-
-    // Handle weapon quantity choices
+    const isWeaponShieldChoice = this.isWeaponShieldChoice(item);
+    const hasDualWeaponOption = item.children.some((child) => child.type === 'weapon' && child.count === 2);
     let secondSelect = null;
-    if (isMultiQuantityChoice && weaponTypeChild) {
+
+    // Handle weapon-shield choice pattern
+    if (isWeaponShieldChoice && hasDualWeaponOption) {
+      const dropdownContainer = document.createElement('div');
+      dropdownContainer.classList.add('dual-weapon-selection');
+
+      secondSelect = document.createElement('select');
+      secondSelect.id = `${item._id}-second`;
+
+      const secondLabel = document.createElement('label');
+      secondLabel.htmlFor = secondSelect.id;
+      secondLabel.textContent = 'Choose second option';
+      secondLabel.classList.add('second-weapon-label');
+
+      dropdownContainer.appendChild(secondLabel);
+      dropdownContainer.appendChild(secondSelect);
+      itemContainer.appendChild(dropdownContainer);
+
+      // Find the weapon child to determine which lookup key to use
+      const andGroup = item.children.find((child) => child.type === 'AND');
+      const weaponChild = andGroup.children.find((child) => child.type === 'weapon' && ['martialM', 'mar', 'simpleM', 'sim'].includes(child.key));
+      const weaponLookupKey = weaponChild.key;
+
+      // Populate first dropdown with weapons
+      const weaponOptions = Array.from(EquipmentParser.lookupItems[weaponLookupKey] || []);
+      weaponOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Add initial empty option to first dropdown
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = 'Select a weapon';
+      select.appendChild(emptyOption);
+
+      weaponOptions.forEach((weapon) => {
+        const option = document.createElement('option');
+        option.value = weapon._id;
+        option.textContent = weapon.name;
+        select.appendChild(option);
+      });
+
+      // Function to populate second dropdown
+      const populateSecondDropdown = () => {
+        secondSelect.innerHTML = '<option value="">Select second option</option>';
+
+        // Add weapon options
+        weaponOptions.forEach((weapon) => {
+          const option = document.createElement('option');
+          option.value = weapon._id;
+          option.textContent = weapon.name;
+          secondSelect.appendChild(option);
+        });
+
+        // Add shield options
+        const shieldOptions = Array.from(EquipmentParser.lookupItems['shield'] || []);
+        shieldOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+        shieldOptions.forEach((shield) => {
+          const option = document.createElement('option');
+          option.value = `shield-${shield._id}`;
+          option.textContent = shield.name;
+          secondSelect.appendChild(option);
+        });
+      };
+
+      // Populate second dropdown immediately
+      populateSecondDropdown();
+
+      // Handle change event for future changes
+      select.addEventListener('change', populateSecondDropdown);
+
+      return itemContainer;
+    }
+    // Handle regular weapon quantity choices
+    else if (isMultiQuantityChoice && weaponTypeChild) {
       const dropdownContainer = document.createElement('div');
       dropdownContainer.classList.add('dual-weapon-selection');
 
@@ -372,7 +477,8 @@ export class EquipmentParser {
     for (const child of nonFocusItems) {
       if (child.type === 'AND') {
         await this.renderAndGroup(child, select, renderedItemNames);
-      } else if (child.type === 'linked' || child.type === 'weapon') {
+      } else if (['linked', 'weapon', 'tool', 'armor'].includes(child.type)) {
+        // Added 'tool' here
         await this.renderIndividualItem(child, select, renderedItemNames);
       }
     }
@@ -405,6 +511,16 @@ export class EquipmentParser {
     }
 
     return itemContainer;
+  }
+
+  isWeaponShieldChoice(item) {
+    const andGroup = item.children.find((child) => child.type === 'AND');
+    if (!andGroup) return false;
+
+    const hasWeapon = andGroup.children?.some((child) => child.type === 'weapon' && ['martialM', 'mar', 'simpleM', 'sim'].includes(child.key));
+    const hasShield = andGroup.children?.some((child) => child.type === 'armor' && child.key === 'shield');
+
+    return hasWeapon && hasShield;
   }
 
   shouldRenderAsDropdown(item) {
