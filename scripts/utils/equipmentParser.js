@@ -349,6 +349,18 @@ export class EquipmentParser {
 
     const select = document.createElement('select');
     select.id = item._id;
+
+    // Add a hidden field to store the default selection
+    const defaultSelection = document.createElement('input');
+    defaultSelection.type = 'hidden';
+    defaultSelection.id = `${item._id}-default`;
+    itemContainer.appendChild(defaultSelection);
+
+    // Create an event handler to track selections
+    select.addEventListener('change', (event) => {
+      defaultSelection.value = event.target.value;
+    });
+
     itemContainer.appendChild(select);
 
     // Check for different types of specialized choices
@@ -674,6 +686,16 @@ export class EquipmentParser {
       const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key] || []);
       lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
+      // Add a hidden field to store the default selection if it doesn't exist
+      let defaultSelection = select.parentElement.querySelector(`#${select.id}-default`);
+      if (!defaultSelection) {
+        defaultSelection = document.createElement('input');
+        defaultSelection.type = 'hidden';
+        defaultSelection.id = `${select.id}-default`;
+        select.parentElement.appendChild(defaultSelection);
+      }
+
+      let isFirstEnabledOption = true;
       lookupOptions.forEach((option) => {
         if (renderedItemNames.has(option.name)) return;
         if (option.rendered && option.sort === child.sort && option.group === child.group) return;
@@ -689,12 +711,22 @@ export class EquipmentParser {
         optionElement.value = option._id;
         optionElement.textContent = option.name;
 
+        let isEnabled = true;
         if (child.requiresProficiency) {
           const requiredProficiency = `${child.type}:${child.key}`;
           if (!this.proficiencies.has(requiredProficiency)) {
             optionElement.disabled = true;
             optionElement.textContent = `${option.name} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+            isEnabled = false;
           }
+        }
+
+        // If this is the first enabled option, select it and set it as default
+        if (isFirstEnabledOption && isEnabled) {
+          optionElement.selected = true;
+          defaultSelection.value = option._id;
+          select.value = option._id;
+          isFirstEnabledOption = false;
         }
 
         select.appendChild(optionElement);

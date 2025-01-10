@@ -444,12 +444,140 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
+  /**
+   * Collects equipment selections from the form and processes them for actor creation
+   * @param {HTMLElement} form The form element containing equipment selections
+   * @returns {Promise<Array>} Array of equipment items with quantities
+   */
+  static async collectEquipmentSelections(event) {
+    const equipment = [];
+    const equipmentContainer = event.srcElement.querySelector('#equipment-container');
+
+    HM.log(3, 'Equipment container:', equipmentContainer?.innerHTML);
+    HM.log(3, 'Equipment sections:', equipmentContainer?.querySelectorAll('.equipment-choices > div'));
+    if (!equipmentContainer) return equipment;
+
+    // Process each section (class and background) separately
+    const equipmentSections = equipmentContainer.querySelectorAll('.equipment-choices > div');
+
+    for (const section of equipmentSections) {
+      // Process dropdowns within this section
+      const dropdowns = section.querySelectorAll('select');
+      for (const dropdown of dropdowns) {
+        // Get either the selected value or the default value
+        const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
+        HM.log(3, 'Dropdown ID:', dropdown.id);
+        HM.log(3, 'Dropdown value:', dropdown.value);
+        HM.log(3, 'Default value:', document.getElementById(`${dropdown.id}-default`)?.value);
+        if (!value) continue;
+
+        // Handle multi-item selections (comma-separated IDs)
+        if (value.includes(',')) {
+          const itemIds = value.split(',');
+          for (const itemId of itemIds) {
+            if (!itemId) continue;
+            for (const pack of game.packs) {
+              try {
+                const item = await pack.getDocument(itemId);
+                if (item) {
+                  equipment.push({
+                    item: item.toObject(),
+                    quantity: 1 // Default quantity
+                  });
+                  break;
+                }
+              } catch (error) {
+                HM.log(1, `Error fetching item ${itemId}:`, error);
+              }
+            }
+          }
+        } else {
+          // Single item selection
+          for (const pack of game.packs) {
+            try {
+              const item = await pack.getDocument(value);
+              if (item) {
+                equipment.push({
+                  item: item.toObject(),
+                  quantity: 1 // Default quantity
+                });
+                break;
+              }
+            } catch (error) {
+              HM.log(1, `Error fetching item ${value}:`, error);
+            }
+          }
+        }
+      }
+
+      // Process checkboxes
+      const checkboxes = section.querySelectorAll('input[type="checkbox"]');
+      for (const checkbox of checkboxes) {
+        if (!checkbox.checked) continue;
+
+        const itemIds = checkbox.id.split(',');
+        HM.log(3, 'ITEM IDS CHECKBOXES:', itemIds);
+        // Get the label text for quantity extraction
+        const label = checkbox.nextElementSibling?.textContent || '';
+
+        // Process each item in the checkbox group
+        for (const itemId of itemIds) {
+          if (!itemId) continue;
+          HM.log(3, 'STEP 1: itemId', itemId);
+          // Extract quantity from label if present
+          const quantities = {};
+          const matches = label.matchAll(/(\d+)\s+([^+]+?)(?:\s*\+|$)/g);
+          HM.log(3, 'STEP 2: matches', matches);
+          for (const match of matches) {
+            HM.log(3, 'STEP 3: match', match);
+            const quantity = parseInt(match[1]);
+            HM.log(3, 'STEP 3b: quantity', quantity);
+            const itemName = match[2].trim();
+            HM.log(3, 'STEP 3c: itemName', itemName);
+            quantities[itemName.toLowerCase()] = quantity;
+            HM.log(3, 'STEP 3d: quantities', quantities);
+          }
+
+          for (const pack of game.packs) {
+            HM.log(3, 'STEP 4: pack', pack);
+            try {
+              const item = await pack.getDocument(itemId);
+              HM.log(3, 'STEP 5: item', item);
+              if (item) {
+                // Find quantity for this specific item
+                const defaultQuantity = 1;
+                const quantity = quantities[item.name.toLowerCase()] || defaultQuantity;
+                HM.log(3, 'STEP 5c: quantity', quantity);
+                equipment.push({
+                  item: item.toObject(),
+                  quantity
+                });
+                HM.log(3, 'STEP 6: equipment', equipment);
+                break;
+              }
+            } catch (error) {
+              HM.log(1, `Error fetching item ${itemId}:`, error);
+            }
+          }
+        }
+      }
+    }
+    HM.log(3, 'EQUIPMENT READY:', equipment);
+    return equipment;
+  }
+
   /* Function for handling form data collection, logging the results, and adding items to the actor. */
   static async formHandler(event, form, formData) {
     HM.log(3, 'Processing form data...');
+    HM.log(3, formData);
+
+    // Collect equipment selections early to ensure they're ready when needed
+    HM.log(3, 'Calling collectEquipmentSelections...');
+    const equipmentSelections = await HeroMancer.collectEquipmentSelections(event);
+    HM.log(3, 'Equipment selections:', equipmentSelections);
+
     try {
       const validProperties = Object.keys(formData.object);
-
       for (const property of validProperties) {
         const value = formData.object[property];
         if (value === null || value === undefined || value === '') {
@@ -459,6 +587,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     } catch (err) {
       console.error(err);
     }
+
     // Extract itemId and packId from the formData
     const extractIds = (itemString) => {
       const regex = /^(.+?)\s\((.+)\)$/;
@@ -537,40 +666,48 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
 
-    // Add the items to the actor
-    const items = [backgroundItem.toObject(), raceItem.toObject(), classItem.toObject()];
-    await actor.createEmbeddedDocuments('Item', items);
-    // Await newActor.createEmbeddedDocuments('Item', raceItem.toObject());
-    // await Item.create(items[1], { parent: newActor });
-    HM.log(3, 'Items added to actor:', items);
+    // Combine base items with equipment selections
+    const baseItems = [backgroundItem.toObject(), raceItem.toObject(), classItem.toObject()];
+    const equipmentItems = equipmentSelections.map(({ item, quantity }) => ({
+      ...item,
+      system: {
+        ...item.system,
+        quantity: quantity
+      }
+    }));
+
+    // Add all items to the actor
+    const allItems = [...baseItems, ...equipmentItems];
+    await actor.createEmbeddedDocuments('Item', allItems);
+    HM.log(3, 'All items added to actor:', allItems);
 
     // Ensure the items are fully added and the actor is updated
     await actor.update({});
 
     // Trigger advancements for all added items
     /*     for (const item of items) {
-      // Log the actor and the current levels
-      HM.log(3,`Current levels for item ${item.name}:`, item.system.levels);
-      HM.log(3,'Actor details for advancement:', newActor);
+        // Log the actor and the current levels
+        HM.log(3,`Current levels for item ${item.name}:`, item.system.levels);
+        HM.log(3,'Actor details for advancement:', newActor);
 
-      let manager = dnd5e.applications.advancement.AdvancementManager;
-      const cls = newActor.itemTypes.class.find((c) => c.identifier === item.system.identifier);
-      // Check if the item is a class and handle differently
-      if (item.type === 'class') {
-        if (cls) {
-          manager.forModifyChoices(newActor, cls.id, 1);
-          if (manager.steps.length) {
-            manager.render(true);
-          }
+        let manager = dnd5e.applications.advancement.AdvancementManager;
+        const cls = newActor.itemTypes.class.find((c) => c.identifier === item.system.identifier);
+        // Check if the item is a class and handle differently
+        if (item.type === 'class') {
+            if (cls) {
+                manager.forModifyChoices(newActor, cls.id, 1);
+                if (manager.steps.length) {
+                    manager.render(true);
+                }
+            }
+        } else {
+            // Use the standard advancement manager for other items
+            manager.forNewItem(newActor, item);
+            HM.log(3,`Standard Advancement Manager initialized for item: ${item.name}`, manager);
+            if (manager.steps.length) {
+                manager.render(true);
+            }
         }
-      } else {
-        // Use the standard advancement manager for other items
-        manager.forNewItem(newActor, item);
-        HM.log(3,`Standard Advancement Manager initialized for item: ${item.name}`, manager);
-        if (manager.steps.length) {
-          manager.render(true);
-        }
-      }
     } */
 
     // Delay opening the sheet until after advancements are triggered
