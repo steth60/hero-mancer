@@ -2,7 +2,6 @@ import { DropdownHandler } from './index.js';
 import { HM } from '../hero-mancer.js';
 
 export class EquipmentParser {
-  // Static sets for item collections
   static simpleM = new Set();
 
   static simpleR = new Set();
@@ -197,7 +196,7 @@ export class EquipmentParser {
     if (this.isItemRendered(item)) return null;
 
     item.rendered = true;
-    HM.log(3, `Rendering item: ${item._id}`, { group: item.group, sort: item.sort, key: item.key });
+    HM.log(3, `Rendering item: ${item._source.key}`, { group: item.group, sort: item.sort, key: item.key });
 
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
@@ -222,7 +221,7 @@ export class EquipmentParser {
             shouldAddLabel = true;
           }
         } catch (error) {
-          HM.log(2, `Error getting label for item ${item._id}: ${error.message}`);
+          HM.log(2, `Error getting label for item ${item._source.key}: ${error.message}`);
           labelElement.textContent = item.label || 'Unknown Item';
           shouldAddLabel = true;
         }
@@ -348,12 +347,12 @@ export class EquipmentParser {
     itemContainer.appendChild(labelElement);
 
     const select = document.createElement('select');
-    select.id = item._id;
+    select.id = item._source.key;
 
     // Add a hidden field to store the default selection
     const defaultSelection = document.createElement('input');
     defaultSelection.type = 'hidden';
-    defaultSelection.id = `${item._id}-default`;
+    defaultSelection.id = `${item._source.key}-default`;
     itemContainer.appendChild(defaultSelection);
 
     // Create an event handler to track selections
@@ -377,7 +376,8 @@ export class EquipmentParser {
       dropdownContainer.classList.add('dual-weapon-selection');
 
       secondSelect = document.createElement('select');
-      secondSelect.id = `${item._id}-second`;
+
+      secondSelect.id = `${item._source.key}-second`;
 
       const secondLabel = document.createElement('label');
       secondLabel.htmlFor = secondSelect.id;
@@ -405,7 +405,8 @@ export class EquipmentParser {
 
       weaponOptions.forEach((weapon) => {
         const option = document.createElement('option');
-        option.value = weapon._id;
+
+        option.value = weapon._source.key;
         option.textContent = weapon.name;
         select.appendChild(option);
       });
@@ -417,7 +418,8 @@ export class EquipmentParser {
         // Add weapon options
         weaponOptions.forEach((weapon) => {
           const option = document.createElement('option');
-          option.value = weapon._id;
+
+          option.value = weapon._source.key;
           option.textContent = weapon.name;
           secondSelect.appendChild(option);
         });
@@ -428,16 +430,13 @@ export class EquipmentParser {
 
         shieldOptions.forEach((shield) => {
           const option = document.createElement('option');
-          option.value = `shield-${shield._id}`;
+          option.value = shield._source.key;
           option.textContent = shield.name;
           secondSelect.appendChild(option);
         });
       };
 
-      // Populate second dropdown immediately
       populateSecondDropdown();
-
-      // Handle change event for future changes
       select.addEventListener('change', populateSecondDropdown);
 
       return itemContainer;
@@ -447,8 +446,8 @@ export class EquipmentParser {
       const dropdownContainer = document.createElement('div');
       dropdownContainer.classList.add('dual-weapon-selection');
 
-      secondSelect = document.createElement('select');
-      secondSelect.id = `${item._id}-second`;
+      const secondSelect = document.createElement('select');
+      secondSelect.id = `${item._source.key}-second`;
       secondSelect.style.display = 'none';
 
       const secondLabel = document.createElement('label');
@@ -473,7 +472,8 @@ export class EquipmentParser {
 
           lookupOptions.forEach((option) => {
             const optionElement = document.createElement('option');
-            optionElement.value = option._id;
+
+            optionElement.value = option._source.key;
             optionElement.textContent = option.name;
             secondSelect.appendChild(optionElement);
           });
@@ -490,7 +490,6 @@ export class EquipmentParser {
       if (child.type === 'AND') {
         await this.renderAndGroup(child, select, renderedItemNames);
       } else if (['linked', 'weapon', 'tool', 'armor'].includes(child.type)) {
-        // Added 'tool' here
         await this.renderIndividualItem(child, select, renderedItemNames);
       }
     }
@@ -538,20 +537,22 @@ export class EquipmentParser {
   shouldRenderAsDropdown(item) {
     // Check for items that are part of an OR block
     if (item.group) {
-      const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
+      const parentItem =
+        this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
       return parentItem?.type === 'OR';
     }
 
     // Check for combined items that should be rendered in a dropdown
     if (item.type === 'AND' && item.children?.length > 1) {
-      const parent = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
+      const parent =
+        this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
       if (parent?.type === 'OR') {
         return true;
       }
     }
 
     // Check if item is already part of a combined selection
-    if (this.combinedItemIds.has(item._id)) {
+    if (this.combinedItemIds.has(item._source.key)) {
       return true;
     }
 
@@ -575,7 +576,7 @@ export class EquipmentParser {
 
   findLinkedItemId(item) {
     const linkedItem = item.children.find((child) => child.type === 'linked');
-    return linkedItem ? linkedItem._id : null;
+    return linkedItem ? linkedItem._source.key : null;
   }
 
   async renderAndGroup(child, select, renderedItemNames) {
@@ -619,7 +620,6 @@ export class EquipmentParser {
     }
   }
 
-  // Add this helper method to the class
   getLookupKeyLabel(key) {
     const labels = {
       sim: 'Simple Weapon',
@@ -636,11 +636,11 @@ export class EquipmentParser {
   async renderIndividualItem(child, select, renderedItemNames, focusInput) {
     if (child.type === 'linked') {
       const trueName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
-      if (renderedItemNames.has(trueName) || this.combinedItemIds.has(child._id)) return;
+      if (renderedItemNames.has(trueName) || this.combinedItemIds.has(child._source.key)) return;
       renderedItemNames.add(trueName);
 
       const optionElement = document.createElement('option');
-      optionElement.value = child._id;
+      optionElement.value = child._source.key;
       optionElement.textContent = trueName;
 
       if (child.requiresProficiency) {
@@ -708,7 +708,8 @@ export class EquipmentParser {
         renderedItemNames.add(option.name);
 
         const optionElement = document.createElement('option');
-        optionElement.value = option._id;
+
+        optionElement.value = option._source.key;
         optionElement.textContent = option.name;
 
         let isEnabled = true;
@@ -724,8 +725,8 @@ export class EquipmentParser {
         // If this is the first enabled option, select it and set it as default
         if (isFirstEnabledOption && isEnabled) {
           optionElement.selected = true;
-          defaultSelection.value = option._id;
-          select.value = option._id;
+          defaultSelection.value = option._source.key;
+          select.value = option._source.key;
           isFirstEnabledOption = false;
         }
 
@@ -746,7 +747,6 @@ export class EquipmentParser {
       itemContainer.appendChild(andLabelElement);
     }
 
-    // Separate lookup type items from linked items
     const lookupItems = item.children.filter(
       (child) =>
         child.type === 'weapon' &&
@@ -759,18 +759,18 @@ export class EquipmentParser {
     );
     const linkedItems = item.children.filter((child) => child.type === 'linked');
 
-    // Process linked items as before
     const renderedItemNames = new Set();
     const combinedIds = [];
     let combinedLabel = '';
 
     for (const child of linkedItems) {
-      const childDoc = await fromUuidSync(child.key);
-      if (!childDoc) continue;
+      if (!child._source?.key) continue;
+
+      const count = child._source.count || 1;
+      combinedIds.push(child._source.key);
 
       if (combinedLabel) combinedLabel += ' + ';
-      combinedLabel += `${child.count || ''} ${childDoc.name}`.trim();
-      combinedIds.push(child._id);
+      combinedLabel += `${count || ''} ${child.name}`.trim();
     }
 
     // Render linked items checkbox if there are any
@@ -797,7 +797,7 @@ export class EquipmentParser {
     // Render lookup items as dropdowns
     for (const lookupItem of lookupItems) {
       const select = document.createElement('select');
-      select.id = lookupItem._id;
+      select.id = lookupItem._source.key;
       await this.renderLookupOptions(lookupItem, select, new Set());
       itemContainer.appendChild(select);
     }
@@ -806,18 +806,20 @@ export class EquipmentParser {
   }
 
   renderLinkedItem(item, itemContainer) {
-    if (this.combinedItemIds.has(item._id)) return null;
-    if (this.shouldRenderAsDropdown(item)) return null; // Skip if this should be in a dropdown
+    if (this.combinedItemIds.has(item._source.key)) return null;
+    if (this.shouldRenderAsDropdown(item)) return null;
 
     const linkedCheckbox = document.createElement('input');
     linkedCheckbox.type = 'checkbox';
-    linkedCheckbox.id = item._id;
+    linkedCheckbox.id = item._source.key;
     linkedCheckbox.checked = true;
     itemContainer.appendChild(linkedCheckbox);
 
     const linkedLabel = document.createElement('label');
-    linkedLabel.htmlFor = item._id;
-    linkedLabel.textContent = item.label || 'Unknown Linked Item';
+    linkedLabel.htmlFor = item._source.key;
+    // Consider using item.count from _source if available
+    const count = item._source.count ? `${item._source.count} ` : '';
+    linkedLabel.textContent = `${count}${item.label || 'Unknown Linked Item'}`;
     itemContainer.appendChild(linkedLabel);
 
     return itemContainer;

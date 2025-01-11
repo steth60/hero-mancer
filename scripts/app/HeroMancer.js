@@ -444,125 +444,93 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  /**
-   * Collects equipment selections from the form and processes them for actor creation
-   * @param {HTMLElement} form The form element containing equipment selections
-   * @returns {Promise<Array>} Array of equipment items with quantities
-   */
   static async collectEquipmentSelections(event) {
     const equipment = [];
     const equipmentContainer = event.srcElement.querySelector('#equipment-container');
-
-    HM.log(3, 'Equipment container:', equipmentContainer?.innerHTML);
-    HM.log(3, 'Equipment sections:', equipmentContainer?.querySelectorAll('.equipment-choices > div'));
     if (!equipmentContainer) return equipment;
 
-    // Process each section (class and background) separately
+    // Helper function to find item in packs
+    async function findItemInPacks(itemId) {
+      HM.log(3, `Searching for item ID: ${itemId}`);
+      const item = fromUuidSync(itemId);
+      if (item) {
+        HM.log(3, `Found item ${itemId}`);
+        return item;
+      }
+      HM.log(3, `Could not find item ${itemId} in any pack`);
+      return null;
+    }
+
     const equipmentSections = equipmentContainer.querySelectorAll('.equipment-choices > div');
 
     for (const section of equipmentSections) {
-      // Process dropdowns within this section
-      const dropdowns = section.querySelectorAll('select');
-      for (const dropdown of dropdowns) {
-        // Get either the selected value or the default value
-        const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
-        HM.log(3, 'Dropdown ID:', dropdown.id);
-        HM.log(3, 'Dropdown value:', dropdown.value);
-        HM.log(3, 'Default value:', document.getElementById(`${dropdown.id}-default`)?.value);
-        if (!value) continue;
+      HM.log(3, 'Processing new section');
 
-        // Handle multi-item selections (comma-separated IDs)
-        if (value.includes(',')) {
-          const itemIds = value.split(',');
-          for (const itemId of itemIds) {
-            if (!itemId) continue;
-            for (const pack of game.packs) {
-              try {
-                const item = await pack.getDocument(itemId);
-                if (item) {
-                  equipment.push({
-                    item: item.toObject(),
-                    quantity: 1 // Default quantity
-                  });
-                  break;
-                }
-              } catch (error) {
-                HM.log(1, `Error fetching item ${itemId}:`, error);
-              }
-            }
-          }
-        } else {
-          // Single item selection
-          for (const pack of game.packs) {
-            try {
-              const item = await pack.getDocument(value);
-              if (item) {
-                equipment.push({
-                  item: item.toObject(),
-                  quantity: 1 // Default quantity
-                });
-                break;
-              }
-            } catch (error) {
-              HM.log(1, `Error fetching item ${value}:`, error);
-            }
-          }
+      // Process dropdowns
+      const dropdowns = section.querySelectorAll('select');
+      HM.log(3, `Found ${dropdowns.length} dropdowns in section`);
+
+      for (const dropdown of dropdowns) {
+        const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
+        HM.log(3, `Processing dropdown ${dropdown.id} with value: ${value}`);
+
+        if (!value) {
+          HM.log(3, `No value for dropdown ${dropdown.id}, skipping`);
+          continue;
+        }
+
+        const item = await findItemInPacks(value);
+        if (item) {
+          equipment.push({
+            item: item /* .toObject() */,
+            quantity: 1,
+            equipped: true
+          });
+          HM.log(3, `Successfully added dropdown item to equipment: ${item.name}`);
         }
       }
 
       // Process checkboxes
       const checkboxes = section.querySelectorAll('input[type="checkbox"]');
+      HM.log(3, `Found ${checkboxes.length} checkboxes in section`);
+
       for (const checkbox of checkboxes) {
-        if (!checkbox.checked) continue;
+        if (!checkbox.checked) {
+          HM.log(3, `Checkbox ${checkbox.id} not checked, skipping`);
+          continue;
+        }
 
+        HM.log(3, `Processing checked checkbox ${checkbox.id}`);
         const itemIds = checkbox.id.split(',');
-        HM.log(3, 'ITEM IDS CHECKBOXES:', itemIds);
-        // Get the label text for quantity extraction
         const label = checkbox.nextElementSibling?.textContent || '';
+        HM.log(3, `Checkbox items to process: ${itemIds.length}`, itemIds);
+        HM.log(3, `Checkbox label: "${label}"`);
 
-        // Process each item in the checkbox group
         for (const itemId of itemIds) {
           if (!itemId) continue;
-          HM.log(3, 'STEP 1: itemId', itemId);
-          // Extract quantity from label if present
-          const quantities = {};
-          const matches = label.matchAll(/(\d+)\s+([^+]+?)(?:\s*\+|$)/g);
-          HM.log(3, 'STEP 2: matches', matches);
-          for (const match of matches) {
-            HM.log(3, 'STEP 3: match', match);
-            const quantity = parseInt(match[1]);
-            HM.log(3, 'STEP 3b: quantity', quantity);
-            const itemName = match[2].trim();
-            HM.log(3, 'STEP 3c: itemName', itemName);
-            quantities[itemName.toLowerCase()] = quantity;
-            HM.log(3, 'STEP 3d: quantities', quantities);
-          }
 
-          for (const pack of game.packs) {
-            HM.log(3, 'STEP 4: pack', pack);
-            try {
-              const item = await pack.getDocument(itemId);
-              HM.log(3, 'STEP 5: item', item);
-              if (item) {
-                // Find quantity for this specific item
-                const defaultQuantity = 1;
-                const quantity = quantities[item.name.toLowerCase()] || defaultQuantity;
-                HM.log(3, 'STEP 5c: quantity', quantity);
-                equipment.push({
-                  item: item.toObject(),
-                  quantity
-                });
-                HM.log(3, 'STEP 6: equipment', equipment);
-                break;
-              }
-            } catch (error) {
-              HM.log(1, `Error fetching item ${itemId}:`, error);
-            }
+          const item = await findItemInPacks(itemId);
+          if (item) {
+            const itemName = item.name.toLowerCase();
+            const quantityMatch = label.match(new RegExp(`(\\d+)\\s+${itemName}`, 'i'));
+            const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
+
+            equipment.push({
+              item: item /* .toObject() */,
+              quantity,
+              equipped: true
+            });
+            HM.log(3, `Successfully added checkbox item to equipment: ${item.name} (x${quantity})`);
           }
         }
       }
     }
-    HM.log(3, 'EQUIPMENT READY:', equipment);
+
+    HM.log(
+      3,
+      'Final equipment collection:',
+      equipment.map((e) => `${e.item.name} (x${e.quantity})`)
+    );
     return equipment;
   }
 
