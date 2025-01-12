@@ -513,8 +513,18 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           // Get the selected option to check for quantity
           const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
           const optionText = selectedOption?.textContent || '';
-          const quantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
-          const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
+
+          // Try different quantity patterns
+          const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i); // "2 Handaxe"
+          const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i); // "Javelin (4)"
+          const midQuantityMatch = optionText.match(/(.+?)\s+x(\d+)/i); // "Javelin x4"
+
+          let quantity = 1;
+          if (startQuantityMatch) quantity = parseInt(startQuantityMatch[1]);
+          else if (endQuantityMatch) quantity = parseInt(endQuantityMatch[2]);
+          else if (midQuantityMatch) quantity = parseInt(midQuantityMatch[2]);
+
+          HM.log(3, `Detected quantity ${quantity} from option text: "${optionText}"`);
 
           // Add the container item itself
           equipment.push({
@@ -555,22 +565,34 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           const item = await findItemInPacks(itemId);
           if (item) {
             const itemName = item.name.toLowerCase();
-            const quantityMatch = label.match(/^(\d+)\s+(.+)$/i) || label.match(new RegExp(`(\\d+)\\s+${itemName}`, 'i'));
-            const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
 
-            // Add the container item itself
-            equipment.push({
-              item: item,
-              quantity,
-              equipped: true
+            // Split label into individual item entries
+            const entries = label.split('+').map((entry) => entry.trim());
+
+            // Find the entry that matches this item
+            const matchingEntry = entries.find((entry) => {
+              const itemPattern = new RegExp(`\\d*\\s*${itemName}`, 'i');
+              return itemPattern.test(entry);
             });
-            HM.log(3, `Successfully added checkbox item to equipment: ${item.name} (x${quantity})`);
 
-            // Process any contents
-            if (item?.system?.contents) {
-              const contents = await processContainerContents(item);
-              equipment.push(...contents);
-              HM.log(3, `Added ${contents.length} items from container ${item.name}`);
+            if (matchingEntry) {
+              // Extract quantity for this specific item
+              const quantityMatch = matchingEntry.match(/^(\d+)\s+/);
+              const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
+
+              equipment.push({
+                item: item,
+                quantity,
+                equipped: true
+              });
+              HM.log(3, `Successfully added checkbox item to equipment: ${item.name} (x${quantity})`);
+
+              // Process any contents
+              if (item?.system?.contents) {
+                const contents = await processContainerContents(item);
+                equipment.push(...contents);
+                HM.log(3, `Added ${contents.length} items from container ${item.name}`);
+              }
             }
           }
         }
