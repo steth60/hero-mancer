@@ -529,7 +529,7 @@ export class EquipmentParser {
     if (!andGroup) return false;
 
     const hasWeapon = andGroup.children?.some((child) => child.type === 'weapon' && ['martialM', 'mar', 'simpleM', 'sim'].includes(child.key));
-    const hasShield = andGroup.children?.some((child) => child.type === 'armor' && child.key === 'shield');
+    const hasShield = andGroup.children?.some((child) => child.type === 'armor' && child._source?.key?.includes('shield'));
 
     return hasWeapon && hasShield;
   }
@@ -766,11 +766,15 @@ export class EquipmentParser {
     for (const child of linkedItems) {
       if (!child._source?.key) continue;
 
+      // Get the actual item using fromUuidSync to get its name
+      const linkedItem = await fromUuidSync(child._source.key);
+      if (!linkedItem) continue;
+
       const count = child._source.count || 1;
       combinedIds.push(child._source.key);
 
       if (combinedLabel) combinedLabel += ' + ';
-      combinedLabel += `${count || ''} ${child.name}`.trim();
+      combinedLabel += `${count || ''} ${linkedItem.name}`.trim();
     }
 
     // Render linked items checkbox if there are any
@@ -826,16 +830,16 @@ export class EquipmentParser {
   }
 
   renderFocusItem(item, itemContainer) {
-    if (this.shouldRenderAsDropdown(item)) return null; // Skip if this should be in a dropdown
+    if (this.shouldRenderAsDropdown(item)) return null;
 
     const focusLabel = document.createElement('label');
-    focusLabel.htmlFor = item._id;
+    focusLabel.htmlFor = item._source.key;
     focusLabel.textContent = item.label || 'Custom Focus';
     itemContainer.appendChild(focusLabel);
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.id = item._id;
+    input.id = item._source.key;
     input.value = `${item.key} ${item.type}`;
     itemContainer.appendChild(input);
 
@@ -901,24 +905,15 @@ export class EquipmentParser {
     const typesToFetch = ['weapon', 'armor', 'tool', 'equipment', 'gear', 'consumable', 'shield'];
 
     try {
-      // Loop through each pack containing Items and filter based on `typesToFetch`
       for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
-        HM.log(3, `Checking pack: ${pack.metadata.label} for items matching ${lookupKey}`);
-
-        // Attempt to retrieve documents of specified types from each pack
         const documents = await pack.getDocuments({ type__in: typesToFetch });
 
-        // Filter and process each item
         documents.forEach((item) => {
           const itemType = item.system?.type?.value || item.type;
           const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
 
-          // Skip items that are magical or "Unarmed Strike"
-          if (item.name === 'Unarmed Strike' || isMagic) {
-            return;
-          }
+          if (item.name === 'Unarmed Strike' || isMagic) return;
 
-          // Conditional filtering based on the `lookupKey`
           if (
             (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
             (lookupKey === 'simpleM' && itemType === 'simpleM') ||
@@ -936,8 +931,6 @@ export class EquipmentParser {
           }
         });
       }
-
-      HM.log(3, `Collected ${items.length} items for lookupKey: ${lookupKey}`);
     } catch (error) {
       HM.log(1, `Error collecting items for lookupKey: ${lookupKey}`, error);
     }
