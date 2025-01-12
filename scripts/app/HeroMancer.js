@@ -461,32 +461,47 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       return null;
     }
 
-    // Helper function to process container contents
     async function processContainerContents(containerItem) {
       const contents = [];
-      if (containerItem?.system?.contents) {
-        HM.log(3, `Processing contents of container: ${containerItem.name}`, containerItem.system.contents);
+      HM.log(3, '=== CONTAINER PROCESSING START ===');
+      HM.log(3, `Processing container: ${containerItem.name}`, containerItem);
 
-        for (const [contentId, contentData] of Object.entries(containerItem.system.contents)) {
-          const foundItem = await fromUuidSync(contentData.id || contentId);
-          if (foundItem) {
+      try {
+        // Get the pack and document for the container
+        const pack = game.packs.get(containerItem._stats?.compendiumSource?.split('.').slice(0, 2).join('.'));
+        if (pack) {
+          HM.log(3, 'Getting contents from compendium pack:', pack.collection);
+          // Get documents that are contained within this item
+          const containedItems = await pack.getDocuments({ system: { container: containerItem._id } });
+
+          for (const containedItem of containedItems) {
             const contentEntry = {
-              item: foundItem,
-              quantity: contentData.quantity || 1,
+              item: containedItem,
+              quantity: containedItem.system.quantity || 1,
               equipped: false
             };
 
             // Recursively process nested containers
-            if (foundItem?.system?.contents) {
-              const nestedContents = await processContainerContents(foundItem);
+            if (containedItem.system?.type?.value === 'container') {
+              HM.log(3, `Found nested container: ${containedItem.name}`);
+              const nestedContents = await processContainerContents(containedItem);
               contents.push(...nestedContents);
             }
 
             contents.push(contentEntry);
-            HM.log(3, `Added container content: ${foundItem.name} (x${contentEntry.quantity})`);
+            HM.log(3, `Added content item: ${containedItem.name} (x${contentEntry.quantity})`);
           }
         }
+      } catch (error) {
+        HM.log(1, `Error processing container contents for ${containerItem.name}:`, error);
       }
+
+      HM.log(3, `=== CONTAINER PROCESSING END (${containerItem.name}) ===`);
+      HM.log(
+        3,
+        `Total contents found: ${contents.length} items:`,
+        contents.map((c) => `${c.item.name} (x${c.quantity})`)
+      );
       return contents;
     }
 
@@ -534,11 +549,30 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           });
           HM.log(3, `Successfully added dropdown item to equipment: ${item.name} (x${quantity})`);
 
-          // Process any contents
-          if (item?.system?.contents) {
-            const contents = await processContainerContents(item);
-            equipment.push(...contents);
-            HM.log(3, `Added ${contents.length} items from container ${item.name}`);
+          HM.log(3, 'DROPDOWN ITEM ', item);
+          if (item?.type === 'container') {
+            HM.log(3, '>>> STARTING CONTENTS PROCESSING <<<');
+            HM.log(3, 'Parent item:', item.name);
+            HM.log(3, 'Compendium source:', item.pack);
+            const pack = game.packs.get(item.pack);
+            HM.log(3, 'PACK:', pack);
+            HM.log(3, 'ITEM', item._id);
+            const itemIds = pack.index.filter((i) => i.system?.container === item._id).map((i) => i._id);
+            HM.log(3, 'ITEM IDS:', itemIds);
+            const contents = await pack.getDocuments({ _id__in: itemIds });
+            HM.log(3, 'CONTENTS:', contents);
+            if (contents.length > 0) {
+              for (const content of contents) {
+                equipment.push({
+                  item: content,
+                  quantity: content.system.quantity || 1,
+                  container: content.system.container
+                });
+              }
+
+              HM.log(3, `Added ${contents.length} items from container ${item.name}`);
+            }
+            // This code above must also push system.contents a collection of contents entries so the items match.
           }
         }
       }
@@ -587,11 +621,29 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
               });
               HM.log(3, `Successfully added checkbox item to equipment: ${item.name} (x${quantity})`);
 
-              // Process any contents
-              if (item?.system?.contents) {
-                const contents = await processContainerContents(item);
-                equipment.push(...contents);
-                HM.log(3, `Added ${contents.length} items from container ${item.name}`);
+              HM.log(3, 'CHECKBOX ITEM ', item);
+              if (item?.type === 'container') {
+                HM.log(3, '>>> STARTING CONTENTS PROCESSING <<<');
+                HM.log(3, 'Parent item:', item.name);
+                HM.log(3, 'Compendium source:', item.pack);
+                const pack = game.packs.get(item.pack);
+                HM.log(3, 'PACK:', pack);
+                HM.log(3, 'ITEM', item._id);
+                const itemIds = pack.index.filter((i) => i.system?.container === item._id).map((i) => i._id);
+                HM.log(3, 'ITEM IDS:', itemIds);
+                const contents = await pack.getDocuments({ _id__in: itemIds });
+                HM.log(3, 'CONTENTS:', contents);
+                if (contents.length > 0) {
+                  for (const content of contents) {
+                    equipment.push({
+                      item: content,
+                      quantity: content.system.quantity || 1,
+                      container: content.system.container
+                    });
+                  }
+
+                  HM.log(3, `Added ${contents.length} items from container ${item.name}`);
+                }
               }
             }
           }
@@ -599,11 +651,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       }
     }
 
-    HM.log(
-      3,
-      'Final equipment collection:',
-      equipment.map((e) => `${e.item.name} (x${e.quantity})`)
-    );
+    HM.log(3, 'Final equipment collection:', equipment);
     return equipment;
   }
 
@@ -712,7 +760,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const equipmentItems = equipmentSelections.map(({ item, quantity }) => ({
       ...item,
       system: {
-        ...item.system,
+        ...(item.system || {}),
         quantity: quantity
       }
     }));

@@ -16,12 +16,24 @@ export class EquipmentParser {
 
   static armor = new Set();
 
+  static contentCache = new Map();
+
+  static async initializeContentCache() {
+    HM.log(3, 'Initializing content cache...');
+    const packs = game.packs.filter((p) => p.documentName === 'Item');
+    await Promise.all(packs.map((p) => p.getIndex({ fields: ['system.contents'] })));
+    HM.log(3, `Content cache initialized with ${this.contentCache.size} entries`);
+  }
+
   constructor() {
     this.equipmentData = null;
     this.classId = DropdownHandler.selectionStorage.class.selectedId;
     this.backgroundId = DropdownHandler.selectionStorage.background.selectedId;
     this.proficiencies = new Set();
     this.combinedItemIds = new Set();
+
+    // Initialize content cache if not already done
+    EquipmentParser.initializeContentCache();
 
     HM.log(3, 'EquipmentParser initialized with:', {
       classId: this.classId,
