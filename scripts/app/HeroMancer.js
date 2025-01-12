@@ -461,6 +461,35 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       return null;
     }
 
+    // Helper function to process container contents
+    async function processContainerContents(containerItem) {
+      const contents = [];
+      if (containerItem?.system?.contents) {
+        HM.log(3, `Processing contents of container: ${containerItem.name}`, containerItem.system.contents);
+
+        for (const [contentId, contentData] of Object.entries(containerItem.system.contents)) {
+          const foundItem = await fromUuidSync(contentData.id || contentId);
+          if (foundItem) {
+            const contentEntry = {
+              item: foundItem,
+              quantity: contentData.quantity || 1,
+              equipped: false
+            };
+
+            // Recursively process nested containers
+            if (foundItem?.system?.contents) {
+              const nestedContents = await processContainerContents(foundItem);
+              contents.push(...nestedContents);
+            }
+
+            contents.push(contentEntry);
+            HM.log(3, `Added container content: ${foundItem.name} (x${contentEntry.quantity})`);
+          }
+        }
+      }
+      return contents;
+    }
+
     const equipmentSections = equipmentContainer.querySelectorAll('.equipment-choices > div');
 
     for (const section of equipmentSections) {
@@ -481,12 +510,26 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
         const item = await findItemInPacks(value);
         if (item) {
+          // Get the selected option to check for quantity
+          const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
+          const optionText = selectedOption?.textContent || '';
+          const quantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
+          const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
+
+          // Add the container item itself
           equipment.push({
-            item: item /* .toObject() */,
-            quantity: 1,
+            item: item,
+            quantity: quantity,
             equipped: true
           });
-          HM.log(3, `Successfully added dropdown item to equipment: ${item.name}`);
+          HM.log(3, `Successfully added dropdown item to equipment: ${item.name} (x${quantity})`);
+
+          // Process any contents
+          if (item?.system?.contents) {
+            const contents = await processContainerContents(item);
+            equipment.push(...contents);
+            HM.log(3, `Added ${contents.length} items from container ${item.name}`);
+          }
         }
       }
 
@@ -512,15 +555,23 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           const item = await findItemInPacks(itemId);
           if (item) {
             const itemName = item.name.toLowerCase();
-            const quantityMatch = label.match(new RegExp(`(\\d+)\\s+${itemName}`, 'i'));
+            const quantityMatch = label.match(/^(\d+)\s+(.+)$/i) || label.match(new RegExp(`(\\d+)\\s+${itemName}`, 'i'));
             const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
 
+            // Add the container item itself
             equipment.push({
-              item: item /* .toObject() */,
+              item: item,
               quantity,
               equipped: true
             });
             HM.log(3, `Successfully added checkbox item to equipment: ${item.name} (x${quantity})`);
+
+            // Process any contents
+            if (item?.system?.contents) {
+              const contents = await processContainerContents(item);
+              equipment.push(...contents);
+              HM.log(3, `Added ${contents.length} items from container ${item.name}`);
+            }
           }
         }
       }

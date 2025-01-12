@@ -472,7 +472,14 @@ export class EquipmentParser {
 
           lookupOptions.forEach((option) => {
             const optionElement = document.createElement('option');
-
+            const itemQuantityMatch = child.label?.match(/^(\d+)\s+(.+)$/i);
+            if (itemQuantityMatch) {
+              optionElement.dataset.quantity = itemQuantityMatch[1];
+              optionElement.textContent = child.label;
+            } else {
+              optionElement.dataset.quantity = child.count || 1;
+              optionElement.textContent = child.count > 1 ? `${child.count} ${option.name}` : option.name;
+            }
             optionElement.value = option._source.key;
             optionElement.textContent = option.name;
             secondSelect.appendChild(optionElement);
