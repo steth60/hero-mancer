@@ -449,60 +449,53 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const equipmentContainer = event.srcElement.querySelector('#equipment-container');
     if (!equipmentContainer) return equipment;
 
-    // Helper function to find item in packs
     async function findItemInPacks(itemId) {
       HM.log(3, `Searching for item ID: ${itemId}`);
-      const item = fromUuidSync(itemId);
-      if (item) {
-        HM.log(3, `Found item ${itemId}`);
-        return item;
+      const indexItem = fromUuidSync(itemId);
+      if (indexItem) {
+        const packId = indexItem.pack;
+        const pack = game.packs.get(packId);
+        if (pack) {
+          const fullItem = await pack.getDocument(indexItem._id);
+          HM.log(3, `Found full item ${itemId}`);
+          return fullItem;
+        }
       }
       HM.log(3, `Could not find item ${itemId} in any pack`);
       return null;
     }
 
-    async function processContainerContents(containerItem) {
-      const contents = [];
-      HM.log(3, '=== CONTAINER PROCESSING START ===');
-      HM.log(3, `Processing container: ${containerItem.name}`, containerItem);
+    async function processContainerItem(containerItem, quantity) {
+      const packId = containerItem.pack;
+      const pack = game.packs.get(packId);
 
-      try {
-        // Get the pack and document for the container
-        const pack = game.packs.get(containerItem._stats?.compendiumSource?.split('.').slice(0, 2).join('.'));
-        if (pack) {
-          HM.log(3, 'Getting contents from compendium pack:', pack.collection);
-          // Get documents that are contained within this item
-          const containedItems = await pack.getDocuments({ system: { container: containerItem._id } });
+      if (pack) {
+        const fullContainer = await pack.getDocument(containerItem._id);
+        if (fullContainer) {
+          /* Somewhere here, we should be setting fullContainer.system.contents to containerData */
+          /* so that when the container is in the sheet it has contents === to the objects of the contents inside. */
+          try {
+            const containerData = await CONFIG.Item.documentClass.createWithContents([fullContainer], {
+              keepId: true,
+              transformAll: async (doc) => {
+                const transformed = doc.toObject();
+                if (doc.id === fullContainer.id) {
+                  transformed.system = transformed.system || {};
+                  transformed.system.quantity = quantity;
+                }
+                return transformed;
+              }
+            });
 
-          for (const containedItem of containedItems) {
-            const contentEntry = {
-              item: containedItem,
-              quantity: containedItem.system.quantity || 1,
-              equipped: false
-            };
-
-            // Recursively process nested containers
-            if (containedItem.system?.type?.value === 'container') {
-              HM.log(3, `Found nested container: ${containedItem.name}`);
-              const nestedContents = await processContainerContents(containedItem);
-              contents.push(...nestedContents);
+            if (containerData?.length) {
+              equipment.push(...containerData);
+              HM.log(3, `Added container ${fullContainer.name} and its contents to equipment`);
             }
-
-            contents.push(contentEntry);
-            HM.log(3, `Added content item: ${containedItem.name} (x${contentEntry.quantity})`);
+          } catch (error) {
+            HM.log(1, `Error processing container ${fullContainer.name}:`, error);
           }
         }
-      } catch (error) {
-        HM.log(1, `Error processing container contents for ${containerItem.name}:`, error);
       }
-
-      HM.log(3, `=== CONTAINER PROCESSING END (${containerItem.name}) ===`);
-      HM.log(
-        3,
-        `Total contents found: ${contents.length} items:`,
-        contents.map((c) => `${c.item.name} (x${c.quantity})`)
-      );
-      return contents;
     }
 
     const equipmentSections = equipmentContainer.querySelectorAll('.equipment-choices > div');
@@ -525,14 +518,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
         const item = await findItemInPacks(value);
         if (item) {
-          // Get the selected option to check for quantity
           const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
           const optionText = selectedOption?.textContent || '';
 
-          // Try different quantity patterns
-          const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i); // "2 Handaxe"
-          const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i); // "Javelin (4)"
-          const midQuantityMatch = optionText.match(/(.+?)\s+x(\d+)/i); // "Javelin x4"
+          const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
+          const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i);
+          const midQuantityMatch = optionText.match(/(.+?)\s+x(\d+)/i);
 
           let quantity = 1;
           if (startQuantityMatch) quantity = parseInt(startQuantityMatch[1]);
@@ -541,122 +532,65 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
           HM.log(3, `Detected quantity ${quantity} from option text: "${optionText}"`);
 
-          // Add the container item itself
-          equipment.push({
-            item: item,
-            quantity: quantity,
-            equipped: true
-          });
-          HM.log(3, `Successfully added dropdown item to equipment: ${item.name} (x${quantity})`);
-
-          HM.log(3, 'DROPDOWN ITEM ', item);
-          if (item?.type === 'container') {
-            HM.log(3, '>>> STARTING CONTENTS PROCESSING <<<');
-            HM.log(3, 'Parent item:', item.name);
-            HM.log(3, 'Compendium source:', item.pack);
-            const pack = game.packs.get(item.pack);
-            HM.log(3, 'PACK:', pack);
-            HM.log(3, 'ITEM', item._id);
-            const itemIds = pack.index.filter((i) => i.system?.container === item._id).map((i) => i._id);
-            HM.log(3, 'ITEM IDS:', itemIds);
-            const contents = await pack.getDocuments({ _id__in: itemIds });
-            HM.log(3, 'CONTENTS:', contents);
-            if (contents.length > 0) {
-              for (const content of contents) {
-                equipment.push({
-                  item: content,
-                  quantity: content.system.quantity || 1,
-                  container: content.system.container
-                });
+          const itemData = item.toObject();
+          if (itemData.type === 'container') {
+            await processContainerItem(item, quantity);
+          } else {
+            equipment.push({
+              ...itemData,
+              system: {
+                ...itemData.system,
+                quantity: quantity,
+                equipped: true
               }
-
-              HM.log(3, `Added ${contents.length} items from container ${item.name}`);
-            }
-            // This code above must also push system.contents a collection of contents entries so the items match.
+            });
           }
         }
       }
 
       // Process checkboxes
       const checkboxes = section.querySelectorAll('input[type="checkbox"]');
-      HM.log(3, `Found ${checkboxes.length} checkboxes in section`);
-
       for (const checkbox of checkboxes) {
-        if (!checkbox.checked) {
-          HM.log(3, `Checkbox ${checkbox.id} not checked, skipping`);
-          continue;
-        }
+        if (!checkbox.checked) continue;
 
-        HM.log(3, `Processing checked checkbox ${checkbox.id}`);
         const itemIds = checkbox.id.split(',');
         const label = checkbox.nextElementSibling?.textContent || '';
-        HM.log(3, `Checkbox items to process: ${itemIds.length}`, itemIds);
-        HM.log(3, `Checkbox label: "${label}"`);
+        const entries = label.split('+').map((entry) => entry.trim());
 
         for (const itemId of itemIds) {
           if (!itemId) continue;
 
           const item = await findItemInPacks(itemId);
-          if (item) {
-            const itemName = item.name.toLowerCase();
+          if (!item) continue;
 
-            // Split label into individual item entries
-            const entries = label.split('+').map((entry) => entry.trim());
+          const itemName = item.name.toLowerCase();
+          const matchingEntry = entries.find((entry) => {
+            const itemPattern = new RegExp(`\\d*\\s*${itemName}`, 'i');
+            return itemPattern.test(entry);
+          });
 
-            // Find the entry that matches this item
-            const matchingEntry = entries.find((entry) => {
-              const itemPattern = new RegExp(`\\d*\\s*${itemName}`, 'i');
-              return itemPattern.test(entry);
-            });
+          if (matchingEntry) {
+            const quantityMatch = matchingEntry.match(/^(\d+)\s+/);
+            const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
 
-            if (matchingEntry) {
-              // Extract quantity for this specific item
-              const quantityMatch = matchingEntry.match(/^(\d+)\s+/);
-              const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
-
+            const itemData = item.toObject();
+            if (itemData.type === 'container') {
+              await processContainerItem(item, quantity);
+            } else {
               equipment.push({
-                item: item,
-                quantity,
-                equipped: true
-              });
-              HM.log(3, `Successfully added checkbox item to equipment: ${item.name} (x${quantity})`);
-
-              HM.log(3, 'CHECKBOX ITEM ', item);
-              if (item?.type === 'container') {
-                HM.log(3, '>>> STARTING CONTENTS PROCESSING <<<');
-                HM.log(3, 'Parent item:', item.name);
-                HM.log(3, 'Compendium source:', item.pack);
-                const pack = game.packs.get(item.pack);
-                HM.log(3, 'PACK:', pack);
-                HM.log(3, 'ITEM', item._id);
-                const itemIds = pack.index.filter((i) => i.system?.container === item._id).map((i) => i._id);
-                HM.log(3, 'ITEM IDS:', itemIds);
-                const contents = await pack.getDocuments({ _id__in: itemIds });
-                HM.log(3, 'CONTENTS:', contents);
-
-                if (contents.length > 0) {
-                  item.system.contents = contents.map((content) => ({
-                    item: content._id
-                  }));
-
-                  for (const content of contents) {
-                    equipment.push({
-                      item: content,
-                      quantity: content.system.quantity || 1,
-                      container: content.system.container
-                    });
-                  }
-
-                  HM.log(3, `Added ${contents.length} items from container ${item.name}`);
+                ...itemData,
+                system: {
+                  ...itemData.system,
+                  quantity: quantity,
+                  equipped: true
                 }
-              }
+              });
             }
           }
         }
       }
     }
 
-    HM.log(3, 'Final equipment collection:', equipment);
     return equipment;
   }
 
@@ -762,18 +696,27 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Combine base items with equipment selections
     const baseItems = [backgroundItem.toObject(), raceItem.toObject(), classItem.toObject()];
-    const equipmentItems = equipmentSelections.map(({ item, quantity }) => ({
-      ...item,
-      system: {
-        ...(item.system || {}),
-        quantity: quantity
-      }
-    }));
+    const equipmentItems = equipmentSelections.map((item) => {
+      // Item should already be in the correct format from collectEquipmentSelections
+      return {
+        ...item,
+        system: {
+          ...item.system,
+          // Preserve container reference if it exists
+          ...(item.container ? { container: item.container } : {})
+        }
+      };
+    });
 
-    // Add all items to the actor
+    // Create all items in order
     const allItems = [...baseItems, ...equipmentItems];
-    await actor.createEmbeddedDocuments('Item', allItems);
-    HM.log(3, 'All items added to actor:', allItems);
+    try {
+      await actor.createEmbeddedDocuments('Item', allItems, { keepId: true });
+      HM.log(3, 'All items added to actor:', allItems);
+    } catch (error) {
+      HM.log(1, 'Error creating items:', error);
+      console.error(error);
+    }
 
     // Ensure the items are fully added and the actor is updated
     await actor.update({});
