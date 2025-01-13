@@ -444,7 +444,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  static async collectEquipmentSelections(event) {
+  static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
     const equipment = [];
     const equipmentContainer = event.srcElement.querySelector('#equipment-container');
     if (!equipmentContainer) return equipment;
@@ -503,6 +503,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const equipmentSections = equipmentContainer.querySelectorAll('.equipment-choices > div');
 
     for (const section of equipmentSections) {
+      // Check if we should process this section based on its class
+      if (section.classList.contains('class-equipment-section') && !options.includeClass) {
+        continue;
+      }
+      if (section.classList.contains('background-equipment-section') && !options.includeBackground) {
+        continue;
+      }
+
+      HM.log(3, 'Processing new section');
       HM.log(3, 'Processing new section');
 
       // Process dropdowns
@@ -601,9 +610,26 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.log(3, 'Processing form data...');
     HM.log(3, formData);
 
-    // Collect equipment selections early to ensure they're ready when needed
-    HM.log(3, 'Calling collectEquipmentSelections...');
-    const equipmentSelections = await HeroMancer.collectEquipmentSelections(event);
+    // Check if using starting wealth
+    const useStartingWealth = formData.object['use-starting-wealth'];
+    const startingWealth = useStartingWealth ? await EquipmentParser.processStartingWealth(formData.object) : null;
+
+    // Get background equipment (always collected)
+    const backgroundEquipment = await HeroMancer.collectEquipmentSelections(event, {
+      includeClass: false,
+      includeBackground: true
+    });
+
+    // Get class equipment (only if not using starting wealth)
+    const classEquipment = !useStartingWealth
+      ? await HeroMancer.collectEquipmentSelections(event, {
+          includeClass: true,
+          includeBackground: false
+        })
+      : [];
+
+    // Combine all equipment
+    const equipmentSelections = [...backgroundEquipment, ...classEquipment];
     HM.log(3, 'Equipment selections:', equipmentSelections);
 
     try {
@@ -714,6 +740,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const allItems = [...baseItems, ...equipmentItems];
     try {
       await actor.createEmbeddedDocuments('Item', allItems, { keepId: true });
+      // Apply starting wealth if selected
+      if (startingWealth) {
+        await actor.update({
+          system: {
+            ...actor.system,
+            currency: startingWealth
+          }
+        });
+        HM.log(3, 'Added starting wealth to actor:', startingWealth);
+      }
       HM.log(3, 'All items added to actor:', allItems);
     } catch (error) {
       HM.log(1, 'Error creating items:', error);

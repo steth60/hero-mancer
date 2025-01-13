@@ -185,7 +185,9 @@ export class EquipmentParser {
       const header = document.createElement('h3');
       header.textContent = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
       sectionContainer.appendChild(header);
-
+      if (currentType === 'class' && this.classId) {
+        await this.renderClassWealthOption(this.classId, sectionContainer);
+      }
       // Render each item within the current section
       for (const item of items) {
         const itemDoc = await fromUuidSync(item.key);
@@ -863,6 +865,104 @@ export class EquipmentParser {
     itemContainer.appendChild(input);
 
     return itemContainer;
+  }
+
+  // Helper to process starting wealth from form data
+  static async processStartingWealth(formData) {
+    const useStartingWealth = formData['use-starting-wealth'];
+    if (!useStartingWealth) return null;
+
+    const wealthAmount = formData['starting-wealth-amount'];
+    if (!wealthAmount) return null;
+
+    // Parse the wealth amount (removes "gp" and converts to number)
+    const amount = parseInt(wealthAmount.replace(/[^\d]/g, ''));
+    if (isNaN(amount)) return null;
+
+    return {
+      pp: 0,
+      gp: amount,
+      ep: 0,
+      sp: 0,
+      cp: 0
+    };
+  }
+
+  async renderClassWealthOption(classId, sectionContainer) {
+    try {
+      // Get class document to check for wealth formula
+      const classDoc = await this.findItemInCompendiums(classId);
+      if (!classDoc || !classDoc.system.wealth) return;
+
+      // Create wealth option container
+      const wealthContainer = document.createElement('div');
+      wealthContainer.classList.add('wealth-option-container');
+
+      // Create checkbox for toggling wealth option
+      const wealthCheckbox = document.createElement('input');
+      wealthCheckbox.type = 'checkbox';
+      wealthCheckbox.id = 'use-starting-wealth';
+      wealthCheckbox.name = 'use-starting-wealth';
+
+      // Create label for checkbox
+      const wealthLabel = document.createElement('label');
+      wealthLabel.htmlFor = 'use-starting-wealth';
+      wealthLabel.textContent = 'Use Starting Wealth Instead';
+
+      // Create container for wealth rolling
+      const wealthRollContainer = document.createElement('div');
+      wealthRollContainer.classList.add('wealth-roll-container');
+      wealthRollContainer.style.display = 'none';
+
+      // Create input for wealth amount
+      const wealthInput = document.createElement('input');
+      wealthInput.type = 'text';
+      wealthInput.id = 'starting-wealth-amount';
+      wealthInput.name = 'starting-wealth-amount';
+      wealthInput.readOnly = true;
+      wealthInput.placeholder = '0 gp';
+
+      // Create roll button
+      const rollButton = document.createElement('button');
+      rollButton.type = 'button';
+      rollButton.textContent = 'Roll Starting Wealth';
+      rollButton.classList.add('wealth-roll-button');
+
+      // Add roll handler
+      rollButton.addEventListener('click', async () => {
+        const formula = classDoc.system.wealth;
+        const roll = new Roll(formula);
+        await roll.evaluate();
+        wealthInput.value = `${roll.total} gp`;
+      });
+
+      // Add checkbox handler
+      wealthCheckbox.addEventListener('change', (event) => {
+        const equipmentElements = sectionContainer.querySelectorAll('.equipment-item select, .equipment-item input[type="checkbox"]');
+        equipmentElements.forEach((el) => {
+          el.disabled = event.target.checked;
+          if (el.tagName === 'SELECT') {
+            el.style.opacity = event.target.checked ? '0.5' : '1';
+          }
+        });
+        wealthRollContainer.style.display = event.target.checked ? 'flex' : 'none';
+        if (!event.target.checked) {
+          wealthInput.value = '';
+        }
+      });
+
+      // Assemble the components
+      wealthContainer.appendChild(wealthCheckbox);
+      wealthContainer.appendChild(wealthLabel);
+      wealthRollContainer.appendChild(wealthInput);
+      wealthRollContainer.appendChild(rollButton);
+      wealthContainer.appendChild(wealthRollContainer);
+
+      // Add to section container
+      sectionContainer.appendChild(wealthContainer);
+    } catch (error) {
+      HM.log(1, 'Error rendering wealth option:', error);
+    }
   }
 
   static async initializeLookupItems() {
