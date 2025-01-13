@@ -633,7 +633,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
                 HM.log(3, 'ITEM IDS:', itemIds);
                 const contents = await pack.getDocuments({ _id__in: itemIds });
                 HM.log(3, 'CONTENTS:', contents);
+
                 if (contents.length > 0) {
+                  item.system.contents = contents.map((content) => ({
+                    item: content._id
+                  }));
+
                   for (const content of contents) {
                     equipment.push({
                       item: content,
