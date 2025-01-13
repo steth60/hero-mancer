@@ -482,6 +482,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
                 if (doc.id === fullContainer.id) {
                   transformed.system = transformed.system || {};
                   transformed.system.quantity = quantity;
+                  transformed.system.currency = fullContainer.system?.currency;
+                  transformed.system.equipped = true;
                 }
                 return transformed;
               }
