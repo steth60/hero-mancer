@@ -348,8 +348,8 @@ export class EquipmentParser {
 
   markAsRendered(entry) {
     entry.rendered = true;
-    entry.group = entry.group;
-    entry.sort = entry.sort;
+    // entry.group = entry.group;
+    // entry.sort = entry.sort;
     entry.isSpecialCase = true;
     HM.log(3, 'Marked as special case-rendered:', entry);
   }
@@ -439,7 +439,7 @@ export class EquipmentParser {
         });
 
         // Add shield options
-        const shieldOptions = Array.from(EquipmentParser.lookupItems['shield'] || []);
+        const shieldOptions = Array.from(EquipmentParser.lookupItems.shield || []);
         shieldOptions.sort((a, b) => a.name.localeCompare(b.name));
 
         shieldOptions.forEach((shield) => {

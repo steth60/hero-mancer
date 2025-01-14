@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 import { HM } from '../hero-mancer.js';
 import { CacheManager, DocumentService, DropdownHandler, EquipmentParser, Listeners, StatRoller } from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -449,6 +450,13 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const equipmentContainer = event.srcElement.querySelector('#equipment-container');
     if (!equipmentContainer) return equipment;
 
+    /**
+     * Searches for an item in the game's compendium packs by its UUID.
+     * @async
+     * @function findItemInPacks
+     * @param {string} itemId The UUID of the item to search for.
+     * @returns {Promise<object | null>} A promise that resolves to the full item document if found, or `null` if not found.
+     */
     async function findItemInPacks(itemId) {
       HM.log(3, `Searching for item ID: ${itemId}`);
       const indexItem = fromUuidSync(itemId);
@@ -465,6 +473,20 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       return null;
     }
 
+    /**
+     * Processes a container item by retrieving its full data from a compendium pack,
+     * populating it with its contents, and adding it to the equipment list.
+     * @async
+     * @function processContainerItem
+     * @param {object} containerItem The container item object to process.
+     * @param {string} containerItem.pack The ID of the compendium pack containing the container item.
+     * @param {string} containerItem._id The unique identifier of the container item in the pack.
+     * @param {number} quantity The quantity of the container item to set.
+     * @returns {Promise<void>} A promise that resolves when the container item has been processed.
+     *
+     * @throws Will log an error if there is an issue processing the container or its contents.
+     *
+     */
     async function processContainerItem(containerItem, quantity) {
       const packId = containerItem.pack;
       const pack = game.packs.get(packId);
