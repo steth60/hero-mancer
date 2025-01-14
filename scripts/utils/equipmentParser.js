@@ -657,18 +657,22 @@ export class EquipmentParser {
   async renderIndividualItem(child, select, renderedItemNames, focusInput) {
     if (child.type === 'linked') {
       const trueName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
-      if (renderedItemNames.has(trueName) || this.combinedItemIds.has(child._source.key)) return;
-      renderedItemNames.add(trueName);
+      const match = child.label.match(/^(\d+)\s*(.+)$/);
+      const displayName = match ? match[2] : trueName;
+      const count = match ? match[1] : '';
+
+      if (renderedItemNames.has(displayName) || this.combinedItemIds.has(child._source.key)) return;
+      renderedItemNames.add(displayName);
 
       const optionElement = document.createElement('option');
       optionElement.value = child._source.key;
-      optionElement.textContent = trueName;
+      optionElement.textContent = count ? `${count} ${displayName}` : displayName;
 
       if (child.requiresProficiency) {
         const requiredProficiency = `${child.type}:${child.key}`;
         if (!this.proficiencies.has(requiredProficiency)) {
           optionElement.disabled = true;
-          optionElement.textContent = `${trueName} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+          optionElement.textContent = `${optionElement.textContent} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
         }
       }
 
@@ -853,16 +857,37 @@ export class EquipmentParser {
   renderFocusItem(item, itemContainer) {
     if (this.shouldRenderAsDropdown(item)) return null;
 
-    const focusLabel = document.createElement('label');
-    focusLabel.htmlFor = item._source.key;
-    focusLabel.textContent = item.label || 'Custom Focus';
-    itemContainer.appendChild(focusLabel);
+    const focusType = item.key; // 'arcane', 'holy', 'druidic', etc.
+    const focusConfig = CONFIG.DND5E.focusTypes[focusType];
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.id = item._source.key;
-    input.value = `${item.key} ${item.type}`;
-    itemContainer.appendChild(input);
+    if (!focusConfig) {
+      HM.log(2, `No focus configuration found for type: ${focusType}`);
+      return null;
+    }
+
+    const select = document.createElement('select');
+    select.id = `${item._source.key}-focus`;
+
+    // Populate dropdown with focus items
+    Object.entries(focusConfig.itemIds).forEach(([focusName, itemId], index) => {
+      const option = document.createElement('option');
+      option.value = itemId;
+      option.textContent = focusName.charAt(0).toUpperCase() + focusName.slice(1);
+
+      // Make the first option the default selected
+      if (index === 0) {
+        option.selected = true;
+      }
+
+      select.appendChild(option);
+    });
+
+    const label = document.createElement('h4');
+    label.htmlFor = select.id;
+    label.textContent = focusConfig.label;
+
+    itemContainer.appendChild(label);
+    itemContainer.appendChild(select);
 
     return itemContainer;
   }
