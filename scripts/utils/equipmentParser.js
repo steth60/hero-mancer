@@ -505,41 +505,50 @@ export class EquipmentParser {
     // Handle regular items and focus items separately
     const renderedItemNames = new Set();
     const nonFocusItems = item.children.filter((child) => child.type !== 'focus');
+    const focusItem = item.children.find((child) => child.type === 'focus');
 
-    // Render non-focus items first
+    // Handle focus option if present
+    if (hasFocusOption && focusItem) {
+      const focusType = focusItem.key; // 'arcane', 'holy', 'druidic', etc.
+      const focusConfig = CONFIG.DND5E.focusTypes[focusType];
+
+      if (focusConfig) {
+        // Add component pouch as the first option if it exists in the non-focus items
+        const pouchItem = nonFocusItems.find((child) => child.type === 'linked' && child.label?.toLowerCase().includes('component pouch'));
+
+        if (pouchItem) {
+          // Mark the pouch item as rendered to prevent duplicate rendering
+          pouchItem.rendered = true;
+          renderedItemNames.add('Component Pouch');
+
+          const pouchOption = document.createElement('option');
+          pouchOption.value = pouchItem._source.key;
+          pouchOption.textContent = 'Component Pouch';
+          pouchOption.selected = true;
+          select.appendChild(pouchOption);
+
+          // Set the default selection
+          defaultSelection.value = pouchItem._source.key;
+        }
+
+        // Add focus options
+        Object.entries(focusConfig.itemIds).forEach(([focusName, itemId]) => {
+          const option = document.createElement('option');
+          option.value = itemId;
+          option.textContent = focusName.charAt(0).toUpperCase() + focusName.slice(1);
+          select.appendChild(option);
+        });
+      } else {
+        HM.log(2, `No focus configuration found for type: ${focusType}`);
+      }
+    }
+
     for (const child of nonFocusItems) {
       if (child.type === 'AND') {
         await this.renderAndGroup(child, select, renderedItemNames);
       } else if (['linked', 'weapon', 'tool', 'armor'].includes(child.type)) {
         await this.renderIndividualItem(child, select, renderedItemNames);
       }
-    }
-
-    // Handle focus option if present
-    if (hasFocusOption) {
-      const option = document.createElement('option');
-      option.value = 'arcane-focus';
-      option.textContent = 'Any Arcane Focus';
-      select.appendChild(option);
-
-      const inputField = document.createElement('input');
-      inputField.type = 'text';
-      inputField.id = `${select.id}-focus-input`;
-      inputField.placeholder = 'Enter your arcane focus...';
-      inputField.style.display = 'none';
-      inputField.classList.add('arcane-focus-input');
-
-      select.insertAdjacentElement('afterend', inputField);
-
-      select.addEventListener('change', (event) => {
-        const focusInput = document.getElementById(`${select.id}-focus-input`);
-        if (focusInput) {
-          focusInput.style.display = event.target.value === 'arcane-focus' ? 'block' : 'none';
-          if (event.target.value !== 'arcane-focus') {
-            focusInput.value = '';
-          }
-        }
-      });
     }
 
     return itemContainer;
@@ -676,6 +685,7 @@ export class EquipmentParser {
 
   async renderIndividualItem(child, select, renderedItemNames) {
     if (child.type === 'linked') {
+      if (this.combinedItemIds.has(child._source.key)) return;
       const label = child.label.trim();
       const [, count, name] = label.match(/^(\d+)\s*(.+)$/) || [null, null, label];
       const displayName = name || label.replace(/\s*\(.*?\)\s*/g, '');
