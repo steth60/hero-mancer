@@ -696,12 +696,16 @@ export class EquipmentParser {
       const optionElement = document.createElement('option');
       optionElement.value = child._source.key;
       optionElement.textContent = count ? `${count} ${displayName}` : displayName;
-      optionElement.selected = true; // Add this line
 
-      // Also set the default selection
-      const defaultSelection = select.parentElement.querySelector(`#${select.id}-default`);
-      if (defaultSelection) {
-        defaultSelection.value = child._source.key;
+      // Only set as selected if this is the first option in the dropdown
+      if (select.options.length === 0) {
+        // Changed this line
+        optionElement.selected = true;
+        // Set the default selection
+        const defaultSelection = select.parentElement.querySelector(`#${select.id}-default`);
+        if (defaultSelection) {
+          defaultSelection.value = child._source.key;
+        }
       }
 
       if (child.requiresProficiency) {
