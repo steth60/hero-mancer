@@ -558,9 +558,8 @@
 
 /* Wealth Option Styling */
 .wealth-option-container {
-  margin-top: 20px;
+  margin-bottom: 20px;
   padding: 10px;
-  border-top: 1px solid var(--color-border-light-tertiary);
 }
 
 .wealth-option-container label {

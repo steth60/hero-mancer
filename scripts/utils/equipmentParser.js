@@ -390,15 +390,7 @@ export class EquipmentParser {
       dropdownContainer.classList.add('dual-weapon-selection');
 
       secondSelect = document.createElement('select');
-
       secondSelect.id = `${item._source.key}-second`;
-
-      const secondLabel = document.createElement('label');
-      secondLabel.htmlFor = secondSelect.id;
-      secondLabel.textContent = 'Choose second option';
-      secondLabel.classList.add('second-weapon-label');
-
-      dropdownContainer.appendChild(secondLabel);
       dropdownContainer.appendChild(secondSelect);
       itemContainer.appendChild(dropdownContainer);
 
@@ -411,30 +403,26 @@ export class EquipmentParser {
       const weaponOptions = Array.from(EquipmentParser.lookupItems[weaponLookupKey] || []);
       weaponOptions.sort((a, b) => a.name.localeCompare(b.name));
 
-      // Add initial empty option to first dropdown
-      const emptyOption = document.createElement('option');
-      emptyOption.value = '';
-      emptyOption.textContent = 'Select a weapon';
-      select.appendChild(emptyOption);
-
-      weaponOptions.forEach((weapon) => {
+      // Add weapons to first dropdown and select the first one
+      weaponOptions.forEach((weapon, index) => {
         const option = document.createElement('option');
-
         option.value = weapon._source.key;
         option.textContent = weapon.name;
+        if (index === 0) option.selected = true; // Select first weapon
         select.appendChild(option);
       });
 
       // Function to populate second dropdown
       const populateSecondDropdown = () => {
-        secondSelect.innerHTML = '<option value="">Select second option</option>';
+        // Remove the empty option text
+        secondSelect.innerHTML = '';
 
-        // Add weapon options
-        weaponOptions.forEach((weapon) => {
+        // Add weapon options and select the first one
+        weaponOptions.forEach((weapon, index) => {
           const option = document.createElement('option');
-
           option.value = weapon._source.key;
           option.textContent = weapon.name;
+          if (index === 0) option.selected = true; // Select first weapon
           secondSelect.appendChild(option);
         });
 
@@ -843,10 +831,32 @@ export class EquipmentParser {
     }
 
     // Render lookup items as dropdowns
+    HM.log(3, 'Found lookup items:', lookupItems);
+
+    // Render lookup items as dropdowns
     for (const lookupItem of lookupItems) {
       const select = document.createElement('select');
       select.id = lookupItem._source.key;
-      await this.renderLookupOptions(lookupItem, select, new Set());
+
+      // Debug log the lookup key we're using
+      HM.log(3, `Processing lookup item with key: ${lookupItem.key}`);
+
+      // Get the correct lookup key - if it's 'sim', we want all simple weapons
+      const lookupKey = lookupItem.key === 'sim' ? 'sim' : lookupItem.key === 'simpleM' ? 'simpleM' : lookupItem.key === 'simpleR' ? 'simpleR' : lookupItem.key;
+
+      // Get the actual options from our lookup items
+      const lookupOptions = Array.from(EquipmentParser.lookupItems[lookupKey] || []);
+      HM.log(3, `Found ${lookupOptions.length} options for key ${lookupKey}`);
+
+      // Add all weapon options
+      lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
+      lookupOptions.forEach((weapon) => {
+        const option = document.createElement('option');
+        option.value = weapon._source.key;
+        option.textContent = weapon.name;
+        select.appendChild(option);
+      });
+
       itemContainer.appendChild(select);
     }
 
