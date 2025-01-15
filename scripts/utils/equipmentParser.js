@@ -282,10 +282,10 @@ export class EquipmentParser {
   }
 
   isItemRendered(item) {
-    if (item.key && item.rendered) {
+    if ((item.key && item.rendered) || item.isSpecialCase) {
       HM.log(3, `Skipping already rendered item: ${item._id}`);
       return true;
-    } else if (item.child && item.child.rendered) {
+    } else if (item.child && (item.child.rendered || item.child.isSpecialCase)) {
       HM.log(3, `Skipping already rendered parent item: ${item._id}`);
       return true;
     }
@@ -605,6 +605,11 @@ export class EquipmentParser {
     const combinedIds = [];
     const lookupKeys = ['sim', 'mar', 'simpleM', 'simpleR', 'martialM', 'martialR', 'shield'];
 
+    // Mark all children as rendered if this is part of an OR choice
+    const isPartOfOrChoice =
+      (child.group && this.equipmentData.class.some((p) => p._id === child.group && p.type === 'OR')) ||
+      this.equipmentData.background.some((p) => p._id === child.group && p.type === 'OR');
+
     for (const subChild of child.children) {
       try {
         // Check if this is a lookup key
@@ -614,6 +619,11 @@ export class EquipmentParser {
           const lookupLabel = this.getLookupKeyLabel(subChild.key);
           combinedLabel += `${subChild.count || ''} ${lookupLabel}`.trim();
           combinedIds.push(subChild._id);
+
+          if (isPartOfOrChoice) {
+            subChild.rendered = true;
+            subChild.isSpecialCase = true;
+          }
           continue;
         }
 
@@ -625,6 +635,10 @@ export class EquipmentParser {
         combinedLabel += `${subChild.count || ''} ${subChildItem.name}`.trim();
         combinedIds.push(subChild._id);
 
+        if (isPartOfOrChoice) {
+          subChild.rendered = true;
+          subChild.isSpecialCase = true;
+        }
         this.combinedItemIds.add(subChild._id);
       } catch (error) {
         HM.log(1, `Error processing sub-child in AND group for child ${child._id}: ${error.message}`);
@@ -638,6 +652,12 @@ export class EquipmentParser {
       optionElement.value = combinedIds.join(',');
       optionElement.textContent = combinedLabel;
       select.appendChild(optionElement);
+
+      // Mark the parent AND group as rendered
+      if (isPartOfOrChoice) {
+        child.rendered = true;
+        child.isSpecialCase = true;
+      }
     }
   }
 
@@ -654,12 +674,11 @@ export class EquipmentParser {
     return labels[key] || key;
   }
 
-  async renderIndividualItem(child, select, renderedItemNames, focusInput) {
+  async renderIndividualItem(child, select, renderedItemNames) {
     if (child.type === 'linked') {
-      const trueName = child.label.replace(/\s*\(.*?\)\s*/g, '').trim();
-      const match = child.label.match(/^(\d+)\s*(.+)$/);
-      const displayName = match ? match[2] : trueName;
-      const count = match ? match[1] : '';
+      const label = child.label.trim();
+      const [, count, name] = label.match(/^(\d+)\s*(.+)$/) || [null, null, label];
+      const displayName = name || label.replace(/\s*\(.*?\)\s*/g, '');
 
       if (renderedItemNames.has(displayName) || this.combinedItemIds.has(child._source.key)) return;
       renderedItemNames.add(displayName);
