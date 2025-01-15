@@ -686,6 +686,13 @@ export class EquipmentParser {
       const optionElement = document.createElement('option');
       optionElement.value = child._source.key;
       optionElement.textContent = count ? `${count} ${displayName}` : displayName;
+      optionElement.selected = true; // Add this line
+
+      // Also set the default selection
+      const defaultSelection = select.parentElement.querySelector(`#${select.id}-default`);
+      if (defaultSelection) {
+        defaultSelection.value = child._source.key;
+      }
 
       if (child.requiresProficiency) {
         const requiredProficiency = `${child.type}:${child.key}`;
@@ -696,30 +703,6 @@ export class EquipmentParser {
       }
 
       select.appendChild(optionElement);
-    } else if (child.type === 'focus' && child.key === 'arcane') {
-      if (!renderedItemNames.has('Any Arcane Focus')) {
-        renderedItemNames.add('Any Arcane Focus');
-        const optionElement = document.createElement('option');
-        optionElement.value = 'arcane-focus';
-        optionElement.textContent = 'Any Arcane Focus';
-        select.appendChild(optionElement);
-
-        const inputField = document.createElement('input');
-        inputField.type = 'text';
-        inputField.id = `${select.id}-focus-input`;
-        inputField.placeholder = 'Enter your arcane focus...';
-        inputField.style.display = 'none';
-        inputField.classList.add('arcane-focus-input');
-
-        select.insertAdjacentElement('afterend', inputField);
-
-        select.addEventListener('change', (event) => {
-          inputField.style.display = event.target.value === 'arcane-focus' ? 'block' : 'none';
-          if (event.target.value !== 'arcane-focus') {
-            inputField.value = '';
-          }
-        });
-      }
     } else if (['weapon', 'armor', 'tool', 'shield'].includes(child.type)) {
       await this.renderLookupOptions(child, select, renderedItemNames);
     }
@@ -739,7 +722,10 @@ export class EquipmentParser {
         select.parentElement.appendChild(defaultSelection);
       }
 
+      // Only select first enabled option if there are no existing options
+      let shouldSelectFirst = select.options.length === 0;
       let isFirstEnabledOption = true;
+
       lookupOptions.forEach((option) => {
         if (renderedItemNames.has(option.name)) return;
         if (option.rendered && option.sort === child.sort && option.group === child.group) return;
@@ -766,8 +752,8 @@ export class EquipmentParser {
           }
         }
 
-        // If this is the first enabled option, select it and set it as default
-        if (isFirstEnabledOption && isEnabled) {
+        // Only set as selected if this is the first enabled option AND we should select first
+        if (shouldSelectFirst && isFirstEnabledOption && isEnabled) {
           optionElement.selected = true;
           defaultSelection.value = option._source.key;
           select.value = option._source.key;
