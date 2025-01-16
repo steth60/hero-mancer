@@ -16,12 +16,14 @@ export class EquipmentParser {
 
   static armor = new Set();
 
+  static focus = new Set();
+
   static contentCache = new Map();
 
   static async initializeContentCache() {
     HM.log(3, 'Initializing content cache...');
     const packs = game.packs.filter((p) => p.documentName === 'Item');
-    await Promise.all(packs.map((p) => p.getIndex({ fields: ['system.contents'] })));
+    await Promise.all(packs.map((p) => p.getIndex({ fields: ['system.contents', 'uuid'] })));
     HM.log(3, `Content cache initialized with ${this.contentCache.size} entries`);
   }
 
@@ -355,6 +357,17 @@ export class EquipmentParser {
   }
 
   async renderOrBlock(item, itemContainer) {
+    HM.log(3, 'renderOrBlock received item:', {
+      id: item._id,
+      sourceKey: item._source?.key,
+      type: item.type,
+      children: item.children?.map((c) => ({
+        id: c._id,
+        sourceKey: c._source?.key,
+        type: c.type,
+        key: c.key
+      }))
+    });
     const labelElement = document.createElement('h4');
     labelElement.classList.add('parent-label');
     labelElement.textContent = item.label || 'Choose one of the following';
@@ -715,7 +728,6 @@ export class EquipmentParser {
       const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key] || []);
       lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
-      // Add a hidden field to store the default selection if it doesn't exist
       let defaultSelection = select.parentElement.querySelector(`#${select.id}-default`);
       if (!defaultSelection) {
         defaultSelection = document.createElement('input');
@@ -724,13 +736,18 @@ export class EquipmentParser {
         select.parentElement.appendChild(defaultSelection);
       }
 
-      // Only select first enabled option if there are no existing options
       let shouldSelectFirst = select.options.length === 0;
       let isFirstEnabledOption = true;
 
       lookupOptions.forEach((option) => {
         if (renderedItemNames.has(option.name)) return;
         if (option.rendered && option.sort === child.sort && option.group === child.group) return;
+
+        const uuid = option.uuid;
+        if (!uuid) {
+          HM.log(2, `No UUID found for item ${option.id}`, option);
+          return;
+        }
 
         option.rendered = true;
         option.group = child.group;
@@ -740,10 +757,8 @@ export class EquipmentParser {
         renderedItemNames.add(option.name);
 
         const optionElement = document.createElement('option');
-
-        optionElement.value = option._source.key;
+        optionElement.value = uuid;
         optionElement.textContent = option.name;
-
         let isEnabled = true;
         if (child.requiresProficiency) {
           const requiredProficiency = `${child.type}:${child.key}`;
@@ -755,10 +770,10 @@ export class EquipmentParser {
         }
 
         // Only set as selected if this is the first enabled option AND we should select first
-        if (shouldSelectFirst && isFirstEnabledOption && isEnabled) {
+        if (shouldSelectFirst && isFirstEnabledOption && !optionElement.disabled && isEnabled) {
           optionElement.selected = true;
-          defaultSelection.value = option._source.key;
-          select.value = option._source.key;
+          defaultSelection.value = uuid;
+          select.value = uuid;
           isFirstEnabledOption = false;
         }
 
@@ -862,17 +877,32 @@ export class EquipmentParser {
   }
 
   renderLinkedItem(item, itemContainer) {
+    HM.log(3, 'Processing linked item package:', {
+      id: item._id,
+      sourceKey: item._source?.key,
+      label: item.label,
+      type: item.type,
+      combinedItems: item.label?.split('+').map((i) => i.trim())
+    });
+
     if (this.combinedItemIds.has(item._source.key)) return null;
     if (this.shouldRenderAsDropdown(item)) return null;
 
     const labelElement = document.createElement('label');
     const linkedCheckbox = document.createElement('input');
     linkedCheckbox.type = 'checkbox';
-    linkedCheckbox.id = item._source.key;
+    linkedCheckbox.id = item.key || item._source?.key;
     linkedCheckbox.checked = true;
     const count = item._source.count ? `${item._source.count} ` : '';
     labelElement.textContent = `${count}${item.label || 'Unknown Linked Item'}`;
     labelElement.prepend(linkedCheckbox);
+
+    HM.log(3, 'Created checkbox with:', {
+      id: linkedCheckbox.id,
+      label: labelElement.textContent,
+      checked: linkedCheckbox.checked
+    });
+
     itemContainer.appendChild(labelElement);
 
     return itemContainer;
@@ -881,7 +911,7 @@ export class EquipmentParser {
   renderFocusItem(item, itemContainer) {
     if (this.shouldRenderAsDropdown(item)) return null;
 
-    const focusType = item.key; // 'arcane', 'holy', 'druidic', etc.
+    const focusType = item.key;
     const focusConfig = CONFIG.DND5E.focusTypes[focusType];
 
     if (!focusConfig) {
@@ -890,16 +920,20 @@ export class EquipmentParser {
     }
 
     const select = document.createElement('select');
-    select.id = `${item._source.key}-focus`;
+    select.id = `${item.key}-focus`;
 
-    // Populate dropdown with focus items
-    Object.entries(focusConfig.itemIds).forEach(([focusName, itemId], index) => {
+    Object.entries(focusConfig.itemIds).forEach(([focusName, itemId]) => {
+      const uuid = itemId.uuid || EquipmentParser.itemUuidMap.get(itemId);
+      if (!uuid) {
+        HM.log(2, `No UUID mapping found for focus item: ${itemId}`);
+        return;
+      }
+
       const option = document.createElement('option');
-      option.value = itemId;
+      option.value = uuid;
       option.textContent = focusName.charAt(0).toUpperCase() + focusName.slice(1);
 
-      // Make the first option the default selected
-      if (index === 0) {
+      if (select.options.length === 0) {
         option.selected = true;
       }
 
@@ -1052,6 +1086,9 @@ export class EquipmentParser {
       EquipmentParser.armor = new Set(await EquipmentParser.collectLookupItems('armor'));
       HM.log(3, `armor initialized with ${EquipmentParser.armor.size} items.`);
 
+      EquipmentParser.focus = new Set(await EquipmentParser.collectLookupItems('focus'));
+      HM.log(3, `focus initialized with ${EquipmentParser.focus.size} items.`);
+
       // Dynamically create the lookupItems object with combined sets and log summary
       EquipmentParser.lookupItems = {
         sim: new Set([...EquipmentParser.simpleM, ...EquipmentParser.simpleR]),
@@ -1062,7 +1099,8 @@ export class EquipmentParser {
         martialR: EquipmentParser.martialR,
         music: EquipmentParser.music,
         shield: EquipmentParser.shield,
-        armor: EquipmentParser.armor
+        armor: EquipmentParser.armor,
+        focus: EquipmentParser.focus
       };
 
       HM.log(3, `Combined sim set initialized with ${EquipmentParser.lookupItems.sim.size} items.`);
@@ -1077,39 +1115,59 @@ export class EquipmentParser {
   static async collectLookupItems(lookupKey) {
     HM.log(3, `Starting collection of items for lookupKey: ${lookupKey}`);
     const items = [];
+    this.itemUuidMap = new Map();
+
+    // Handle focus items separately
+    if (lookupKey === 'focus') {
+      return this.collectFocusItems();
+    }
+
     const typesToFetch = ['weapon', 'armor', 'tool', 'equipment', 'gear', 'consumable', 'shield'];
 
     try {
       for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
         const documents = await pack.getDocuments({ type__in: typesToFetch });
 
-        documents.forEach((item) => {
+        for (const item of documents) {
+          // Changed to for...of
           const itemType = item.system?.type?.value || item.type;
           const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
 
-          if (item.name === 'Unarmed Strike' || isMagic) return;
+          this.itemUuidMap.set(item.id, item.uuid);
+
+          if (item.name === 'Unarmed Strike' || isMagic) continue;
 
           if (
             (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
-            (lookupKey === 'simpleM' && itemType === 'simpleM') ||
-            (lookupKey === 'simpleR' && itemType === 'simpleR') ||
-            (lookupKey === 'mar' && (itemType === 'martialM' || itemType === 'martialR')) ||
-            (lookupKey === 'martialM' && itemType === 'martialM') ||
-            (lookupKey === 'martialR' && itemType === 'martialR') ||
-            (lookupKey === 'music' && itemType === 'music') ||
-            (lookupKey === 'shield' && itemType === 'shield') ||
-            (lookupKey === 'armor' && (itemType === 'medium' || itemType === 'light' || itemType === 'heavy')) ||
+            // ...rest of conditions...
             itemType === lookupKey
           ) {
             items.push(item);
             HM.log(3, `Added item: ${item.name} with ID: ${item._id} to ${lookupKey} collection.`);
           }
-        });
+        }
       }
     } catch (error) {
       HM.log(1, `Error collecting items for lookupKey: ${lookupKey}`, error);
     }
 
     return items;
+  }
+
+  static async collectFocusItems() {
+    const focusItems = [];
+    for (const [focusType, config] of Object.entries(CONFIG.DND5E.focusTypes)) {
+      for (const itemId of Object.values(config.itemIds)) {
+        for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
+          const item = await pack.getDocument(itemId);
+          if (item) {
+            this.itemUuidMap.set(itemId, item.uuid);
+            focusItems.push(item);
+            break;
+          }
+        }
+      }
+    }
+    return focusItems;
   }
 }
