@@ -1163,12 +1163,24 @@ export class EquipmentParser {
   }
 
   static async collectFocusItems() {
+    HM.log(3, 'Starting collectFocusItems');
     const focusItems = [];
-    for (const [config] of Object.entries(CONFIG.DND5E.focusTypes)) {
+    HM.log(3, 'CONFIG.DND5E:', CONFIG.DND5E);
+    HM.log(3, 'focusTypes:', CONFIG.DND5E.focusTypes);
+
+    for (const [key, config] of Object.entries(CONFIG.DND5E.focusTypes)) {
+      HM.log(3, `Processing focus type: ${key}`, config);
+      if (!config?.itemIds) {
+        HM.log(2, `No itemIds for config ${key}:`, config);
+        continue;
+      }
+
       for (const itemId of Object.values(config.itemIds)) {
+        HM.log(3, `Processing itemId: ${itemId}`);
         for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
           const item = await pack.getDocument(itemId);
           if (item) {
+            HM.log(3, `Found item: ${item.name} (${item.uuid})`);
             this.itemUuidMap.set(itemId, item.uuid);
             focusItems.push(item);
             break;

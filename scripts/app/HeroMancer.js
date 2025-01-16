@@ -731,6 +731,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     let actorName = formData.object.name || game.user.name; // Handling for blank hero name.
     let actorData = {
       name: actorName,
+      img: formData.object['character-art'],
+      prototypeToken: {
+        texture: {
+          src: formData.object['token-art']
+        }
+      },
       type: 'character',
       system: {
         abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }]))
