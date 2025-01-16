@@ -583,42 +583,78 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       // Process checkboxes
       const checkboxes = section.querySelectorAll('input[type="checkbox"]');
+      HM.log(3, `Found checkboxes in section: ${checkboxes.length}`);
+
       for (const checkbox of checkboxes) {
         if (!checkbox.checked) continue;
 
+        // Get the actual label text
+        const labelElement = checkbox.parentElement;
+        const fullLabel = labelElement.textContent.trim();
+        HM.log(3, 'Processing checkbox with label:', fullLabel);
+
         const itemIds = checkbox.id.split(',');
-        const label = checkbox.nextElementSibling?.textContent || '';
-        const entries = label.split('+').map((entry) => entry.trim());
+        // Split on '+' and trim each part
+        const entries = fullLabel.split('+').map((entry) => entry.trim());
+
+        HM.log(3, 'Parsed label:', {
+          fullLabel,
+          entries
+        });
 
         for (const itemId of itemIds) {
           if (!itemId) continue;
+          HM.log(3, `Processing itemId: ${itemId}`);
 
           const item = await findItemInPacks(itemId);
-          if (!item) continue;
+          if (!item) {
+            HM.log(2, `Could not find item for ID: ${itemId}`);
+            continue;
+          }
 
-          const itemName = item.name.toLowerCase();
-          const matchingEntry = entries.find((entry) => {
-            const itemPattern = new RegExp(`\\d*\\s*${itemName}`, 'i');
-            return itemPattern.test(entry);
+          HM.log(3, `Found item "${item.name}" (${itemId})`);
+
+          // Search all entries for this item's quantity
+          let quantity = 1;
+          HM.log(3, 'Looking for quantity in entries:', {
+            itemName: item.name,
+            entries,
+            entryTexts: entries.map((e) => `"${e}"`) // Show exact text with quotes
           });
 
-          if (matchingEntry) {
-            const quantityMatch = matchingEntry.match(/^(\d+)\s+/);
-            const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
+          for (const entry of entries) {
+            const itemPattern = new RegExp(`(\\d+)\\s+${item.name}`, 'i');
+            const match = entry.match(itemPattern);
+            HM.log(3, `Checking entry "${entry}" against pattern "${itemPattern}"`);
 
-            const itemData = item.toObject();
-            if (itemData.type === 'container') {
-              await processContainerItem(item, quantity);
-            } else {
-              equipment.push({
-                ...itemData,
-                system: {
-                  ...itemData.system,
-                  quantity: quantity,
-                  equipped: true
-                }
-              });
+            if (match) {
+              quantity = parseInt(match[1]);
+              HM.log(3, `Found quantity ${quantity} for ${item.name}`);
+              break;
             }
+          }
+
+          HM.log(3, 'Preparing to add item:', {
+            name: item.name,
+            quantity,
+            type: item.type,
+            entries
+          });
+
+          const itemData = item.toObject();
+          if (itemData.type === 'container') {
+            HM.log(3, `Processing container: ${item.name}`);
+            await processContainerItem(item, quantity);
+          } else {
+            equipment.push({
+              ...itemData,
+              system: {
+                ...itemData.system,
+                quantity: quantity,
+                equipped: true
+              }
+            });
+            HM.log(3, `Added item to equipment: ${item.name} (qty: ${quantity})`);
           }
         }
       }

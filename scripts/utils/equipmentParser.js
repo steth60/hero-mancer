@@ -881,8 +881,7 @@ export class EquipmentParser {
       id: item._id,
       sourceKey: item._source?.key,
       label: item.label,
-      type: item.type,
-      combinedItems: item.label?.split('+').map((i) => i.trim())
+      type: item.type
     });
 
     if (this.combinedItemIds.has(item._source.key)) return null;
@@ -891,20 +890,34 @@ export class EquipmentParser {
     const labelElement = document.createElement('label');
     const linkedCheckbox = document.createElement('input');
     linkedCheckbox.type = 'checkbox';
-    linkedCheckbox.id = item.key || item._source?.key;
+
+    // Important: For combined items, use the source key directly
+    linkedCheckbox.id = item._source.key;
+    linkedCheckbox.value = item._source.key;
     linkedCheckbox.checked = true;
+
+    // Keep original label text for packages
     const count = item._source.count ? `${item._source.count} ` : '';
     labelElement.textContent = `${count}${item.label || 'Unknown Linked Item'}`;
     labelElement.prepend(linkedCheckbox);
 
-    HM.log(3, 'Created checkbox with:', {
-      id: linkedCheckbox.id,
-      label: labelElement.textContent,
-      checked: linkedCheckbox.checked
-    });
-
     itemContainer.appendChild(labelElement);
-
+    linkedCheckbox.addEventListener('change', (event) => {
+      HM.log(3, 'Linked checkbox changed:', {
+        checked: event.target.checked,
+        id: event.target.id,
+        value: event.target.value,
+        itemKey: item.key
+      });
+    });
+    if (item.label?.includes('+')) {
+      HM.log(3, 'Processing combined item:', {
+        label: item.label,
+        keys: item.label?.split('+').map((i) => i.trim()),
+        sourceKey: item._source?.key,
+        key: item.key
+      });
+    }
     return itemContainer;
   }
 
