@@ -57,7 +57,7 @@
       },
       "done": "Done",
       "equipment": {
-        "preamble": "This is where you can manage and select your character's equipment. This feature is not currently implemented.",
+        "preamble": "The equipment tab in the Hero Mancer character creation tool now allows players to fully manage their character's gear and starting resources. Players can select class, background, and race-specific equipment, as well as choose from starting equipment packages or starting wealth rules. This provides a comprehensive workflow for equipping the character during the creation process.",
         "tooltip": "Manage your character's equipment",
         "class": "{type} Equipment",
         "race": "{type} Equipment",

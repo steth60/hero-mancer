@@ -87,4 +87,9 @@
 ## New Features: Art & Equipment Selection (0.4.0)
 
 - Added token/portrait art selection on the Start tab.
-- Continue to improve handling of equipment selector.
+- Added full support for adding class, background, and race items.
+- Added full support for starting equipment selection.
+- Added full support for starting wealth optional rules.
+- Support for custom compendiums via settings menu.
+- Added full locatalization for new pages.
+- Improved error handling overall.
