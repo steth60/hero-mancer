@@ -818,16 +818,14 @@ export class EquipmentParser {
         child.rendered = true;
       }
 
+      const label = document.createElement('label');
       const combinedCheckbox = document.createElement('input');
       combinedCheckbox.type = 'checkbox';
       combinedCheckbox.id = combinedIds.join(',');
       combinedCheckbox.checked = true;
-      itemContainer.appendChild(combinedCheckbox);
-
-      const combinedLabelElement = document.createElement('label');
-      combinedLabelElement.htmlFor = combinedCheckbox.id;
-      combinedLabelElement.textContent = combinedLabel;
-      itemContainer.appendChild(combinedLabelElement);
+      label.textContent = combinedLabel;
+      label.prepend(combinedCheckbox);
+      itemContainer.appendChild(label);
     }
 
     // Render lookup items as dropdowns
@@ -867,18 +865,15 @@ export class EquipmentParser {
     if (this.combinedItemIds.has(item._source.key)) return null;
     if (this.shouldRenderAsDropdown(item)) return null;
 
+    const labelElement = document.createElement('label');
     const linkedCheckbox = document.createElement('input');
     linkedCheckbox.type = 'checkbox';
     linkedCheckbox.id = item._source.key;
     linkedCheckbox.checked = true;
-    itemContainer.appendChild(linkedCheckbox);
-
-    const linkedLabel = document.createElement('label');
-    linkedLabel.htmlFor = item._source.key;
-    // Consider using item.count from _source if available
     const count = item._source.count ? `${item._source.count} ` : '';
-    linkedLabel.textContent = `${count}${item.label || 'Unknown Linked Item'}`;
-    itemContainer.appendChild(linkedLabel);
+    labelElement.textContent = `${count}${item.label || 'Unknown Linked Item'}`;
+    labelElement.prepend(linkedCheckbox);
+    itemContainer.appendChild(labelElement);
 
     return itemContainer;
   }
@@ -992,11 +987,18 @@ export class EquipmentParser {
 
       // Add checkbox handler
       wealthCheckbox.addEventListener('change', (event) => {
-        const equipmentElements = sectionContainer.querySelectorAll('.equipment-item select, .equipment-item input[type="checkbox"]');
+        const equipmentElements = sectionContainer.querySelectorAll('.equipment-item');
         equipmentElements.forEach((el) => {
-          el.disabled = event.target.checked;
-          if (el.tagName === 'SELECT') {
-            el.style.opacity = event.target.checked ? '0.5' : '1';
+          if (event.target.checked) {
+            el.classList.add('disabled');
+            el.querySelectorAll('select, input[type="checkbox"], label').forEach((input) => {
+              input.disabled = true;
+            });
+          } else {
+            el.classList.remove('disabled');
+            el.querySelectorAll('select, input[type="checkbox"], label').forEach((input) => {
+              input.disabled = false;
+            });
           }
         });
         wealthRollContainer.style.display = event.target.checked ? 'flex' : 'none';

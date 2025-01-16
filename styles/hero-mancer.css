@@ -435,7 +435,7 @@
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices input[type='text'] {
   width: fit-content; /* Allows the select to resize based on its content */
   min-width: 140px; /* Optional: Set a minimum width for usability */
-  max-width: 100%; /* Prevents it from exceeding its container */
+  max-width: 100%;
   margin-right: 0;
   margin-left: 0;
 }
@@ -539,59 +539,132 @@
   }
 }
 
+/* Core Equipment Styles */
+.equipment-container {
+  background: var(--color-background-alt);
+  border-radius: 8px;
+}
+
+.equipment-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+/* Equipment Sections */
+.class-equipment-section,
+.background-equipment-section {
+  padding: 2rem;
+  border: 1px solid #4b4b4b;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Headers */
+.equipment-choices h3 {
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--color-border-light-primary);
+  font-size: var(--font-size-20);
+  text-align: center;
+}
+
+.equipment-choices h4 {
+  margin: 1rem 0 0.5rem 0;
+}
+
+/* Items and Labels */
+.equipment-item {
+  margin-bottom: 1.25rem;
+}
+
+.equipment-choices label {
+  display: inline-flex;
+  align-items: start;
+  margin: 0.5rem 0;
+  font-size: var(--font-size-14);
+  line-height: 1.4;
+}
+
+.equipment-choices input[type='checkbox'] {
+  margin: 0.2rem 0.5rem 0 0;
+  flex-shrink: 0;
+}
+
+/* Wealth Options */
+.wealth-option-container {
+  margin: 0 0 2rem;
+  padding: 10px;
+  border: 1px solid var(--color-border-light-tertiary);
+  border-radius: 4px;
+}
+
+.wealth-option-container label {
+  font-weight: 500;
+}
+
+.wealth-roll-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-radius: 4px;
+}
+
+.application.hm-app .hm-app-tab-content .equipment-container .equipment-choices .wealth-roll-container input[type='text'] {
+  width: 85px;
+  min-width: 0px;
+  padding-right: 10px;
+  text-align: right;
+}
+
+/* Weapon Selection */
+.dual-weapon-selection {
+  margin-top: 1rem;
+}
+
+.second-weapon-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-dark-secondary);
+  font-size: var(--font-size-14);
+}
+
+/* Animation */
 .fa-dice-d6.rolling {
   animation: rollDice 0.5s ease-in-out;
   color: #ff6b6b;
 }
 
-/* Equipment Parser: Dual Weapon Style */
-.dual-weapon-selection {
-  margin-top: 8px;
+/* Disabled States */
+.equipment-choices select:disabled,
+.equipment-choices input:disabled,
+.equipment-choices label.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #888888;
 }
 
-.second-weapon-label {
-  display: block;
-  margin-bottom: 4px;
-  font-size: var(--font-size-14);
-  color: var(--color-text-dark-secondary);
+.equipment-item.disabled select,
+.equipment-item.disabled input[type='checkbox'],
+.equipment-item.disabled label {
+  pointer-events: none;
 }
 
-/* Wealth Option Styling */
-.wealth-option-container {
-  margin-bottom: 20px;
-  padding: 10px;
-}
+/* Responsive */
+@media (max-width: 768px) {
+  .equipment-choices {
+    grid-template-columns: 1fr;
+  }
 
-.wealth-option-container label {
-  margin-left: 8px;
-  font-weight: 500;
-}
+  .wealth-roll-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
 
-.wealth-roll-container {
-  gap: 10px;
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
-  padding-left: 24px;
-}
-
-.wealth-roll-container input[type='text'] {
-  width: 100px;
-  padding: 4px 8px;
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 4px;
-  text-align: right;
-}
-
-.wealth-roll-button {
-  padding: 4px 12px;
-  background-color: var(--color-button-background);
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 4px;
-  color: var(--color-text-light-highlight);
-  cursor: pointer;
-}
-
-.wealth-roll-button:hover {
-  background-color: var(--color-button-background-hover);
+  .wealth-roll-container input[type='text'] {
+    width: 100%;
+  }
 }
