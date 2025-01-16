@@ -695,7 +695,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       for (const property of validProperties) {
         const value = formData.object[property];
         if (value === null || value === undefined || value === '') {
-          throw new Error(`Missing required field: ${property}`);
+          throw new Warning(`Missing required field: ${property}`);
         }
       }
     } catch (err) {
@@ -715,13 +715,13 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     HM.log(3, 'Extracted Item Data:', { backgroundData, raceData, classData });
 
-    // Extract abilities from formData
+    // Extract abilities from formData with default 10
     let abilities = {};
     for (const key in formData.object) {
       const abilityMatch = key.match(/^abilities\[(\w+)\]\.score$/);
       if (abilityMatch) {
         const abilityKey = abilityMatch[1];
-        abilities[abilityKey] = formData.object[key];
+        abilities[abilityKey] = formData.object[key] || 10;
       }
     }
 
