@@ -34,7 +34,6 @@ export class EquipmentParser {
     this.proficiencies = new Set();
     this.combinedItemIds = new Set();
 
-    // Initialize content cache if not already done
     EquipmentParser.initializeContentCache();
 
     HM.log(3, 'EquipmentParser initialized with:', {
@@ -131,7 +130,7 @@ export class EquipmentParser {
         itemSet.forEach((item) => {
           delete item.rendered;
           delete item.isSpecialCase;
-          delete item.specialGrouping; // Maybe?
+          delete item.specialGrouping;
           if (item.child) {
             delete item.child.rendered;
             delete item.child.isSpecialCase;
@@ -175,12 +174,8 @@ export class EquipmentParser {
 
       // Get the localized placeholder text for the current type
       const placeholderText = game.i18n.localize(`hm.app.${currentType}.select-placeholder`);
-
-      // Get the current text of the selected option for the dropdown (e.g., Wizard, Acolyte)
       const dropdown = document.querySelector(`#${currentType}-dropdown`);
       const dropdownText = dropdown.selectedOptions[0].textContent;
-
-      // Determine if the selected text matches the localized placeholder
       const isPlaceholder = dropdownText === placeholderText;
 
       // Add a header for the section based on whether it's a placeholder
@@ -233,17 +228,15 @@ export class EquipmentParser {
             shouldAddLabel = true;
           } else {
             HM.log(2, `No document found for item key: ${item.key}`);
-            labelElement.textContent = item.label || 'Unknown Item';
+            labelElement.textContent = item.label || game.i18n.localize('hm.app.equipment.choose-one');
             shouldAddLabel = true;
           }
         } catch (error) {
           HM.log(2, `Error getting label for item ${item._source.key}: ${error.message}`);
-          labelElement.textContent = item.label || 'Unknown Item';
+          labelElement.textContent = item.label || game.i18n.localize('hm.app.equipment.choose-one');
           shouldAddLabel = true;
         }
       }
-
-      // Only append the label if we should
       if (shouldAddLabel) {
         itemContainer.appendChild(labelElement);
       }
@@ -350,8 +343,6 @@ export class EquipmentParser {
 
   markAsRendered(entry) {
     entry.rendered = true;
-    // entry.group = entry.group;
-    // entry.sort = entry.sort;
     entry.isSpecialCase = true;
     HM.log(3, 'Marked as special case-rendered:', entry);
   }
@@ -370,7 +361,7 @@ export class EquipmentParser {
     });
     const labelElement = document.createElement('h4');
     labelElement.classList.add('parent-label');
-    labelElement.textContent = item.label || 'Choose one of the following';
+    labelElement.textContent = item.label || game.i18n.localize('hm.app.equipment.choose-one');
     itemContainer.appendChild(labelElement);
 
     const select = document.createElement('select');
@@ -425,12 +416,8 @@ export class EquipmentParser {
         select.appendChild(option);
       });
 
-      // Function to populate second dropdown
       const populateSecondDropdown = () => {
-        // Remove the empty option text
         secondSelect.innerHTML = '';
-
-        // Add weapon options and select the first one
         weaponOptions.forEach((weapon, index) => {
           const option = document.createElement('option');
           option.value = weapon._source.key;
@@ -467,7 +454,7 @@ export class EquipmentParser {
 
       const secondLabel = document.createElement('label');
       secondLabel.htmlFor = secondSelect.id;
-      secondLabel.textContent = 'Choose second weapon';
+      secondLabel.textContent = game.i18n.localize('hm.app.equipment.choose-second-weapon');
       secondLabel.style.display = 'none';
       secondLabel.classList.add('second-weapon-label');
 
@@ -481,7 +468,7 @@ export class EquipmentParser {
         secondSelect.style.display = isWeaponSelection ? 'block' : 'none';
 
         if (isWeaponSelection) {
-          secondSelect.innerHTML = '<option value="">Select a weapon</option>';
+          secondSelect.innerHTML = `<option value="">${game.i18n.localize('hm.app.equipment.select-weapon')}</option>`;
           const lookupOptions = Array.from(EquipmentParser.lookupItems[weaponTypeChild.key] || []);
           lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -510,25 +497,20 @@ export class EquipmentParser {
 
     // Handle focus option if present
     if (hasFocusOption && focusItem) {
-      const focusType = focusItem.key; // 'arcane', 'holy', 'druidic', etc.
+      const focusType = focusItem.key;
       const focusConfig = CONFIG.DND5E.focusTypes[focusType];
 
       if (focusConfig) {
-        // Add component pouch as the first option if it exists in the non-focus items
         const pouchItem = nonFocusItems.find((child) => child.type === 'linked' && child.label?.toLowerCase().includes('component pouch'));
-
         if (pouchItem) {
-          // Mark the pouch item as rendered to prevent duplicate rendering
           pouchItem.rendered = true;
           renderedItemNames.add('Component Pouch');
 
           const pouchOption = document.createElement('option');
           pouchOption.value = pouchItem._source.key;
-          pouchOption.textContent = 'Component Pouch';
+          pouchOption.textContent = pouchItem.label || pouchItem.name;
           pouchOption.selected = true;
           select.appendChild(pouchOption);
-
-          // Set the default selection
           defaultSelection.value = pouchItem._source.key;
         }
 
@@ -671,6 +653,7 @@ export class EquipmentParser {
     }
   }
 
+  /* TODO: Get this data from CONFIG.DND5E instead. */
   getLookupKeyLabel(key) {
     const labels = {
       sim: 'Simple Weapon',
@@ -700,9 +683,7 @@ export class EquipmentParser {
 
       // Only set as selected if this is the first option in the dropdown
       if (select.options.length === 0) {
-        // Changed this line
         optionElement.selected = true;
-        // Set the default selection
         const defaultSelection = select.parentElement.querySelector(`#${select.id}-default`);
         if (defaultSelection) {
           defaultSelection.value = child._source.key;
@@ -790,7 +771,7 @@ export class EquipmentParser {
     } else {
       const andLabelElement = document.createElement('h4');
       andLabelElement.classList.add('parent-label');
-      andLabelElement.textContent = item.label || 'All of the following:';
+      andLabelElement.textContent = item.label || game.i18n.localize('hm.app.equipment.choose-all');
       itemContainer.appendChild(andLabelElement);
     }
 
@@ -844,24 +825,16 @@ export class EquipmentParser {
     }
 
     // Render lookup items as dropdowns
-    HM.log(3, 'Found lookup items:', lookupItems);
-
-    // Render lookup items as dropdowns
     for (const lookupItem of lookupItems) {
       const select = document.createElement('select');
       select.id = lookupItem._source.key;
-
-      // Debug log the lookup key we're using
       HM.log(3, `Processing lookup item with key: ${lookupItem.key}`);
 
-      // Get the correct lookup key - if it's 'sim', we want all simple weapons
       const lookupKey = lookupItem.key === 'sim' ? 'sim' : lookupItem.key === 'simpleM' ? 'simpleM' : lookupItem.key === 'simpleR' ? 'simpleR' : lookupItem.key;
 
-      // Get the actual options from our lookup items
       const lookupOptions = Array.from(EquipmentParser.lookupItems[lookupKey] || []);
       HM.log(3, `Found ${lookupOptions.length} options for key ${lookupKey}`);
 
-      // Add all weapon options
       lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
       lookupOptions.forEach((weapon) => {
         const option = document.createElement('option');
@@ -898,7 +871,7 @@ export class EquipmentParser {
 
     // Keep original label text for packages
     const count = item._source.count ? `${item._source.count} ` : '';
-    labelElement.textContent = `${count}${item.label || 'Unknown Linked Item'}`;
+    labelElement.textContent = `${count}${item.label || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
     labelElement.prepend(linkedCheckbox);
 
     itemContainer.appendChild(labelElement);
@@ -963,7 +936,6 @@ export class EquipmentParser {
     return itemContainer;
   }
 
-  // Helper to process starting wealth from form data
   static async processStartingWealth(formData) {
     const useStartingWealth = formData['use-starting-wealth'];
     if (!useStartingWealth) return null;
@@ -971,17 +943,47 @@ export class EquipmentParser {
     const wealthAmount = formData['starting-wealth-amount'];
     if (!wealthAmount) return null;
 
-    // Parse the wealth amount (removes "gp" and converts to number)
-    const amount = parseInt(wealthAmount.replace(/[^\d]/g, ''));
-    if (isNaN(amount)) return null;
-
-    return {
+    const currencies = {
       pp: 0,
-      gp: amount,
+      gp: 0,
       ep: 0,
       sp: 0,
       cp: 0
     };
+
+    // Match amounts with currency type: e.g. "25 gp", "30 sp"
+    const matches = wealthAmount.match(/(\d+)\s*([a-z]{2})/gi);
+
+    if (!matches) return null;
+
+    matches.forEach((match) => {
+      const [amount, currency] = match.toLowerCase().split(/\s+/);
+      const value = parseInt(amount);
+
+      if (!isNaN(value)) {
+        switch (currency) {
+          case 'pp':
+            currencies.pp = value;
+            break;
+          case 'gp':
+            currencies.gp = value;
+            break;
+          case 'ep':
+            currencies.ep = value;
+            break;
+          case 'sp':
+            currencies.sp = value;
+            break;
+          case 'cp':
+            currencies.cp = value;
+            break;
+          default:
+            currencies.gp = value; // Default to gold if currency not recognized
+        }
+      }
+    });
+
+    return currencies;
   }
 
   async renderClassWealthOption(classId, sectionContainer) {
@@ -1003,7 +1005,7 @@ export class EquipmentParser {
       // Create label for checkbox
       const wealthLabel = document.createElement('label');
       wealthLabel.htmlFor = 'use-starting-wealth';
-      wealthLabel.textContent = 'Use Starting Wealth Instead';
+      wealthLabel.textContent = game.i18n.localize('hm.app.equipment.use-starting-wealth');
 
       // Create container for wealth rolling
       const wealthRollContainer = document.createElement('div');
@@ -1016,12 +1018,12 @@ export class EquipmentParser {
       wealthInput.id = 'starting-wealth-amount';
       wealthInput.name = 'starting-wealth-amount';
       wealthInput.readOnly = true;
-      wealthInput.placeholder = '0 gp';
+      wealthInput.placeholder = game.i18n.localize('hm.app.equipment.wealth-placeholder');
 
       // Create roll button
       const rollButton = document.createElement('button');
       rollButton.type = 'button';
-      rollButton.textContent = 'Roll Starting Wealth';
+      rollButton.textContent = game.i18n.localize('hm.app.equipment.roll-wealth');
       rollButton.classList.add('wealth-roll-button');
 
       // Add roll handler
@@ -1077,7 +1079,6 @@ export class EquipmentParser {
     HM.log(3, 'Starting initialization of lookup items...');
 
     try {
-      // Populate individual sets and log each upon successful initialization
       EquipmentParser.simpleM = new Set(await EquipmentParser.collectLookupItems('simpleM'));
       HM.log(3, `simpleM initialized with ${EquipmentParser.simpleM.size} items.`);
 
@@ -1102,7 +1103,6 @@ export class EquipmentParser {
       EquipmentParser.focus = new Set(await EquipmentParser.collectLookupItems('focus'));
       HM.log(3, `focus initialized with ${EquipmentParser.focus.size} items.`);
 
-      // Dynamically create the lookupItems object with combined sets and log summary
       EquipmentParser.lookupItems = {
         sim: new Set([...EquipmentParser.simpleM, ...EquipmentParser.simpleR]),
         simpleM: EquipmentParser.simpleM,
@@ -1142,19 +1142,14 @@ export class EquipmentParser {
         const documents = await pack.getDocuments({ type__in: typesToFetch });
 
         for (const item of documents) {
-          // Changed to for...of
           const itemType = item.system?.type?.value || item.type;
           const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
 
           this.itemUuidMap.set(item.id, item.uuid);
-
+          /* TODO: This probably doesn't work with localization. */
           if (item.name === 'Unarmed Strike' || isMagic) continue;
 
-          if (
-            (lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) ||
-            // ...rest of conditions...
-            itemType === lookupKey
-          ) {
+          if ((lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) || itemType === lookupKey) {
             items.push(item);
             HM.log(3, `Added item: ${item.name} with ID: ${item._id} to ${lookupKey} collection.`);
           }
@@ -1169,7 +1164,7 @@ export class EquipmentParser {
 
   static async collectFocusItems() {
     const focusItems = [];
-    for (const [focusType, config] of Object.entries(CONFIG.DND5E.focusTypes)) {
+    for (const [config] of Object.entries(CONFIG.DND5E.focusTypes)) {
       for (const itemId of Object.values(config.itemIds)) {
         for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
           const item = await pack.getDocument(itemId);

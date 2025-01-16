@@ -64,7 +64,14 @@
         "background": "{type} Equipment",
         "choose-one": "Choose one (1) from:",
         "included-items": "Included items:",
-        "lacks-proficiency": "not proficient"
+        "lacks-proficiency": "not proficient",
+        "unknown-choice": "Unknown linked item.",
+        "choose-all": "Select all of the following:",
+        "choose-second-weapon": "Choose second weapon",
+        "select-weapon": "Select weapon",
+        "use-starting-wealth": "Use starting wealth instead",
+        "wealth-placeholder": "0 gp",
+        "roll-wealth": "Roll Starting Wealth"
       },
       "finalize": {
         "preamble": "This is where you finalize and submit your character's details. This feature is not currently implemented.",
