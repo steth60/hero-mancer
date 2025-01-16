@@ -4,20 +4,19 @@
 
 - Increase modularity in file structure and CSS class definition to improve readability, tracing, etc.
 - Remove all nasty CSS hacks (no more !important here).
-- Make several changes to CSS to support light mode, change font-sizes to use Foundry's built-in variables so text
-  scaling works as intended.
+- Make several changes to CSS to support light mode, change font-sizes to use Foundry's built-in variables so text scaling works as intended.
 - Changed logging setup for flexibility of info, warn, error, verbosity. Default: Warnings & Errors.
 
 ## Code Review: Phase 2 (0.0.3)
 
 - Refactor module.js (renamed to hero-mancer.js).
 - Renamed module.css to hero-mancer.css to comply with FoundryVTT conventions.
-- Refactor settings.js and sort various settings into registration functions, not needed currently but preps for future
-  expansion. Also fix scope of compendiums to world, etc.
+- Refactor settings.js and sort various settings into registration functions, not needed currently but preps for future expansion. Also fix scope of compendiums
+  to world, etc.
 - Refactor CustomCompendiums.js to clean up logic, improve documentation and error handling.
 - Refactor HeroMancer.js to clean up logic, made new listeners.js and cleaned up language.
 - New setting to allow custom roll formula as long as it is valid dice notation it will work.
-- Refactor rollStat logic into statRoller.js file to allow for cleaner code in HeroMancer.js.
+- Refactor rollStat logic into roller.js file to allow for cleaner code in HeroMancer.js.
 - Add more error handling in documents.js.
 - Refactor dropdowns.js to simplify logic and remove duplicate logic.
 - Refactor htmlManipulations.js to remove jQuery, add comments so this makes sense to me a year from now.
@@ -49,13 +48,11 @@
 
 ## Feature Enhancement: Custom Standard Array (0.1.1)
 
-- Allow GM to input a custom array, error handling to make sure it's as least as many numbers as there are valid ability
-  scores.
+- Allow GM to input a custom array, error handling to make sure it's as least as many numbers as there are valid ability scores.
 
 ## Bug Fixes & Clean-up (0.1.2)
 
-- Fix bad reference in github workflow so module.json contains the correct information, and no longer points to previous
-  module name.
+- Fix bad reference in github workflow so module.json contains the correct information, and no longer points to previous module name.
 - Fixed localization strings in Compendium picker settings application.
 - Clean up and expanded on instructions on the abilities tab based on which roll method is enabled.
 - Clarified that equipment and finalization tabs are not yet functional, same with point buy.
@@ -65,23 +62,21 @@
 - Added support for point buy, including if there are more than 6 abilities to choose from.
 - Custom CSS to make sure -/+ buttons looks reasonable, please suggest improvements.
 - Added a ton of new functions to allow pointbuy to work... I probably need to clean these up.
-- Temporarily disabled Equipment and Finalization tabs since these are not being used. You can still submit the form and
-  create a character.
+- Temporarily disabled Equipment and Finalization tabs since these are not being used. You can still submit the form and create a character.
 - Updated workflow to point towards the correct module.json/module.zip
 
 ## Bug Fixes (0.2.1)
 
 - Fixed some bad localization strings.
-- Removed caching for dropdowns and HTML; this is potentially temporary but in the mean time fixes the issue with
-  re-opening the application.
+- Removed caching for dropdowns and HTML; this is potentially temporary but in the mean time fixes the issue with re-opening the application.
 - Fixed console warning when user wasn't on the abilities tab.
 - Miscellaneous tooltip fixes in footer and abilities tab.
 
 ## Bug Fixes & Refactor (0.2.2)
 
 - Fixed long-standing bug with manual roll mode dropdowns.
-- Refactors tabs to render content more accurately and fix dropdowns getting sticky. (future refactor may load data when
-  clicking on a tab instead of when clicking on Hero Mancer button for improved streamlining.)
+- Refactors tabs to render content more accurately and fix dropdowns getting sticky. (future refactor may load data when clicking on a tab instead of when
+  clicking on Hero Mancer button for improved streamlining.)
 
 ## Started: Equipment Selection! (0.3.0)
 
@@ -91,5 +86,13 @@
 - Repost with proper build info.
 
 ## Build fix (0.3.1)
-
 - No new changes.
+
+## New Features: Art & Equipment Selection (0.4.0)
+- Added token/portrait art selection on the Start tab.
+- Added full support for adding class, background, and race items.
+- Added full support for starting equipment selection.
+- Added full support for starting wealth optional rules.
+- Support for custom compendiums via settings menu.
+- Added full locatalization for new pages.
+- Improved error handling overall.

@@ -1,6 +1,6 @@
 import { CustomCompendiums } from './app/CustomCompendiums.js';
 import { HM } from './hero-mancer.js';
-import * as HMUtils from './utils/index.js';
+import { StatRoller } from './utils/index.js';
 
 /**
  * Registers all the settings for the Hero Mancer module.
@@ -8,16 +8,6 @@ import * as HMUtils from './utils/index.js';
  * calling both module-specific and application-specific settings.
  */
 export function registerSettings() {
-  registerModuleSettings(); // Register HeroMancer-specific settings
-  registerApplicationSettings(); // Register compendium-specific settings
-}
-
-/**
- * Registers module-specific settings for Hero Mancer.
- * These settings include enabling or disabling the module and setting logging levels.
- * All settings are client-scoped and configurable per user.
- */
-function registerModuleSettings() {
   // Client-scoped: Enable or disable the module for individual users
   game.settings.register(HM.ID, 'enable', {
     name: `${HM.ABRV}.settings.enable.name`,
@@ -83,15 +73,32 @@ function registerModuleSettings() {
       }
     }
   });
-}
 
-/**
- * Registers application-specific settings for Hero Mancer.
- * These settings include custom compendium selection,
- * and GM-restricted settings for managing compendiums
- * All settings are world-scoped, shared across all players in the world.
- */
-function registerApplicationSettings() {
+  // Register chained rolls setting
+  game.settings.register(HM.ID, 'chainedRolls', {
+    name: `${HM.ABRV}.settings.chained-rolls.name`,
+    hint: `${HM.ABRV}.settings.chained-rolls.hint`,
+    scope: 'client',
+    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'manualFormula',
+    type: Boolean,
+    default: false
+  });
+
+  // Register roll delay setting
+  game.settings.register(HM.ID, 'rollDelay', {
+    name: `${HM.ABRV}.settings.roll-delay.name`,
+    hint: `${HM.ABRV}.settings.roll-delay.hint`,
+    scope: 'client',
+    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'manualFormula',
+    type: Number,
+    range: {
+      min: 100,
+      max: 2000,
+      step: 100
+    },
+    default: 500
+  });
+
   // Restricted to GM: Menu for custom compendium chooser
   game.settings.registerMenu(HM.ID, 'customCompendiumMenu', {
     name: `${HM.ABRV}.settings.custom-compendiums.menu.name`,
@@ -140,17 +147,17 @@ function registerApplicationSettings() {
     default: '', // Temporary default, checked in 'ready' hook
     onChange: (value) => {
       if (!value || value.trim() === '') {
-        game.settings.set(HM.ID, 'customStandardArray', HMUtils.getStandardArrayDefault());
+        game.settings.set(HM.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
         HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
       } else {
-        HMUtils.validateAndSetCustomStandardArray(value);
+        StatRoller.validateAndSetCustomStandardArray(value);
       }
     }
   });
   Hooks.on('ready', async () => {
     const customArraySetting = game.settings.get(HM.ID, 'customStandardArray');
     if (!customArraySetting || customArraySetting.trim() === '') {
-      await game.settings.set(HM.ID, 'customStandardArray', HMUtils.getStandardArrayDefault());
+      await game.settings.set(HM.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
       HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
     }
   });

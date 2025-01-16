@@ -1,29 +1,13 @@
-// Cache Management
 export { CacheManager } from './cacheManagement.js';
 
-// Document Handling
-export { fetchDocuments, prepareDocuments } from './documents.js';
+export { DocumentService } from './documentService.js';
 
-// Dropdown Handling
-export { initializeDropdown, updateAbilityDropdowns, generateDropdownHTML, selectionStorage } from './dropdowns.js';
+export { DropdownHandler } from './dropdownHandler.js';
 
-// UI Manipulations
-export { registerButton } from './htmlManipulations.js';
-export {
-  updateRemainingPointsDisplay,
-  updatePointsColor,
-  adjustScore,
-  updatePlusButtonState,
-  updateMinusButtonState
-} from './listeners.js';
+export { HtmlManipulator } from './htmlManipulator.js';
 
-// Miscellaneous
-export {
-  statRoller,
-  getStandardArrayDefault,
-  validateAndSetCustomStandardArray,
-  getStandardArray,
-  getTotalPoints,
-  getPointCost,
-  calculatePointsSpent
-} from './statRoller.js';
+export { Listeners } from './listeners.js';
+
+export { StatRoller } from './statRoller.js';
+
+export { EquipmentParser } from './equipmentParser.js';

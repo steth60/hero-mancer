@@ -42,5 +42,11 @@
   "styles": ["styles/hero-mancer.css"],
   "url": "https://github.com/Sayshal/hero-mancer",
   "manifest": "",
-  "download": ""
+  "download": "",
+  "flags": {
+    "hotReload": {
+      "extensions": ["css", "html", "hbs", "json"],
+      "paths": ["styles", "lang", "templates"]
+    }
+  }
 }

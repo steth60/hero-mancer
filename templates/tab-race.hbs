@@ -9,13 +9,7 @@
       <label for='race-dropdown'>{{localize 'hm.app.race.select-label'}}</label>
 
       <!-- Race Dropdown -->
-      <select
-        id='race-dropdown'
-        name='race'
-        data-dtype='String'
-        aria-describedby='race-description'
-        aria-label='{{localize "hm.app.race.select-label"}}'
-      >
+      <select id='race-dropdown' name='race' data-dtype='String' aria-describedby='race-description' aria-label='{{localize "hm.app.race.select-label"}}'>
         <option value=''>{{localize 'hm.app.race.select-placeholder'}}</option>
 
         {{#each raceDocs}}
