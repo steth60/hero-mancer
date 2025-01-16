@@ -83,9 +83,12 @@
 - First pass of implementing equipment selection, not yet ready for use.
 - Clean up some unused code.
 - Fix cache management.
+- Repost with proper build info.
+
+## Build fix (0.3.1)
+- No new changes.
 
 ## New Features: Art & Equipment Selection (0.4.0)
-
 - Added token/portrait art selection on the Start tab.
 - Added full support for adding class, background, and race items.
 - Added full support for starting equipment selection.
