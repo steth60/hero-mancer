@@ -668,3 +668,17 @@
     width: 100%;
   }
 }
+
+.application.hm-app .hm-app-tab-content .equipment-container .equipment-choices a.content-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: inline;
+  font-weight: italic;
+}
+
+.application.hm-app .hm-app-tab-content .equipment-container .equipment-choices a.content-link i {
+  font-size: inherit;
+  margin: 0 0.2em 0 0;
+}

@@ -188,6 +188,7 @@ export class EquipmentParser {
       // Render each item within the current section
       for (const item of items) {
         const itemDoc = await fromUuidSync(item.key);
+        HM.log(3, 'PROCESSING ITEM DEBUG:', item, itemDoc);
         item.name = itemDoc?.name || item.key;
 
         HM.log(3, `Creating HTML element for item in ${currentType} equipment:`, item);
@@ -207,7 +208,7 @@ export class EquipmentParser {
     if (this.isItemRendered(item)) return null;
 
     item.rendered = true;
-    HM.log(3, `Rendering item: ${item._source.key}`, { group: item.group, sort: item.sort, key: item.key });
+    HM.log(3, `Rendering item: ${item._source.key}`);
 
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
@@ -218,22 +219,20 @@ export class EquipmentParser {
 
       let shouldAddLabel = false;
 
-      // Only try to get item name if the item has a key
       if (item.key) {
         try {
           const itemDoc = await fromUuidSync(item.key);
           if (itemDoc) {
-            const label = item.count ? `${item.count}x ${itemDoc.name}` : itemDoc.name;
-            labelElement.textContent = label;
+            labelElement.innerHTML = item.label || `${item.count || ''} ${itemDoc.name}`;
             shouldAddLabel = true;
           } else {
             HM.log(2, `No document found for item key: ${item.key}`);
-            labelElement.textContent = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+            labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
             shouldAddLabel = true;
           }
         } catch (error) {
           HM.log(2, `Error getting label for item ${item._source.key}: ${error.message}`);
-          labelElement.textContent = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+          labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
           shouldAddLabel = true;
         }
       }
@@ -302,7 +301,7 @@ export class EquipmentParser {
 
     const labelElement = document.createElement('h4');
     labelElement.classList.add('parent-label');
-    labelElement.textContent = item.label;
+    labelElement.innerHTML = item.label;
     itemContainer.appendChild(labelElement);
 
     const dropdown1 = await this.createDropdown(item, 'AND');
@@ -361,7 +360,7 @@ export class EquipmentParser {
     });
     const labelElement = document.createElement('h4');
     labelElement.classList.add('parent-label');
-    labelElement.textContent = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+    labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
     itemContainer.appendChild(labelElement);
 
     const select = document.createElement('select');
@@ -411,7 +410,7 @@ export class EquipmentParser {
       weaponOptions.forEach((weapon, index) => {
         const option = document.createElement('option');
         option.value = weapon._source.key;
-        option.textContent = weapon.name;
+        option.innerHTML = weapon.name;
         if (index === 0) option.selected = true; // Select first weapon
         select.appendChild(option);
       });
@@ -421,7 +420,7 @@ export class EquipmentParser {
         weaponOptions.forEach((weapon, index) => {
           const option = document.createElement('option');
           option.value = weapon._source.key;
-          option.textContent = weapon.name;
+          option.innerHTML = weapon.name;
           if (index === 0) option.selected = true; // Select first weapon
           secondSelect.appendChild(option);
         });
@@ -433,7 +432,7 @@ export class EquipmentParser {
         shieldOptions.forEach((shield) => {
           const option = document.createElement('option');
           option.value = shield._source.key;
-          option.textContent = shield.name;
+          option.innerHTML = shield.name;
           secondSelect.appendChild(option);
         });
       };
@@ -624,7 +623,8 @@ export class EquipmentParser {
         if (!subChildItem) throw new Error(`Item not found for UUID: ${subChild.key}`);
 
         if (combinedLabel) combinedLabel += ' + ';
-        combinedLabel += `${subChild.count || ''} ${subChildItem.name}`.trim();
+        // Create proper HTML link
+        combinedLabel += `${subChild.count || ''} <a class="content-link" draggable="true" data-uuid="${subChild.key}">${subChildItem.name}</a>`.trim();
         combinedIds.push(subChild._id);
 
         if (isPartOfOrChoice) {
@@ -642,7 +642,7 @@ export class EquipmentParser {
       renderedItemNames.add(combinedLabel);
       const optionElement = document.createElement('option');
       optionElement.value = combinedIds.join(',');
-      optionElement.textContent = combinedLabel;
+      optionElement.innerHTML = combinedLabel;
       select.appendChild(optionElement);
 
       // Mark the parent AND group as rendered
@@ -679,7 +679,7 @@ export class EquipmentParser {
 
       const optionElement = document.createElement('option');
       optionElement.value = child._source.key;
-      optionElement.textContent = count ? `${count} ${displayName}` : displayName;
+      optionElement.innerHTML = count ? `${count} ${displayName}` : displayName;
 
       // Only set as selected if this is the first option in the dropdown
       if (select.options.length === 0) {
@@ -694,7 +694,7 @@ export class EquipmentParser {
         const requiredProficiency = `${child.type}:${child.key}`;
         if (!this.proficiencies.has(requiredProficiency)) {
           optionElement.disabled = true;
-          optionElement.textContent = `${optionElement.textContent} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+          optionElement.innerHTML = `${optionElement.innerHTML} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
         }
       }
 
@@ -739,13 +739,13 @@ export class EquipmentParser {
 
         const optionElement = document.createElement('option');
         optionElement.value = uuid;
-        optionElement.textContent = option.name;
+        optionElement.innerHTML = option.name;
         let isEnabled = true;
         if (child.requiresProficiency) {
           const requiredProficiency = `${child.type}:${child.key}`;
           if (!this.proficiencies.has(requiredProficiency)) {
             optionElement.disabled = true;
-            optionElement.textContent = `${option.name} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+            optionElement.innerHTML = `${option.name} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
             isEnabled = false;
           }
         }
@@ -771,7 +771,7 @@ export class EquipmentParser {
     } else {
       const andLabelElement = document.createElement('h4');
       andLabelElement.classList.add('parent-label');
-      andLabelElement.textContent = item.label || game.i18n.localize('hm.app.equipment.choose-all');
+      andLabelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-all');
       itemContainer.appendChild(andLabelElement);
     }
 
@@ -819,7 +819,7 @@ export class EquipmentParser {
       combinedCheckbox.type = 'checkbox';
       combinedCheckbox.id = combinedIds.join(',');
       combinedCheckbox.checked = true;
-      label.textContent = combinedLabel;
+      label.innerHTML = combinedLabel;
       label.prepend(combinedCheckbox);
       itemContainer.appendChild(label);
     }
@@ -839,7 +839,7 @@ export class EquipmentParser {
       lookupOptions.forEach((weapon) => {
         const option = document.createElement('option');
         option.value = weapon._source.key;
-        option.textContent = weapon.name;
+        option.innerHTML = weapon.name;
         select.appendChild(option);
       });
 
@@ -871,7 +871,7 @@ export class EquipmentParser {
 
     // Keep original label text for packages
     const count = item._source.count ? `${item._source.count} ` : '';
-    labelElement.textContent = `${count}${item.label || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
+    labelElement.innerHTML = `${count}${item.label || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
     labelElement.prepend(linkedCheckbox);
 
     itemContainer.appendChild(labelElement);
@@ -928,7 +928,7 @@ export class EquipmentParser {
 
     const label = document.createElement('h4');
     label.htmlFor = select.id;
-    label.textContent = focusConfig.label;
+    label.innerHTML = focusConfig.label;
 
     itemContainer.appendChild(label);
     itemContainer.appendChild(select);
@@ -1005,7 +1005,7 @@ export class EquipmentParser {
       // Create label for checkbox
       const wealthLabel = document.createElement('label');
       wealthLabel.htmlFor = 'use-starting-wealth';
-      wealthLabel.textContent = game.i18n.localize('hm.app.equipment.use-starting-wealth');
+      wealthLabel.innerHTML = game.i18n.localize('hm.app.equipment.use-starting-wealth');
 
       // Create container for wealth rolling
       const wealthRollContainer = document.createElement('div');
