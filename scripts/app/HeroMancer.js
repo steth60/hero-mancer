@@ -148,6 +148,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       if (doc?.description) {
         try {
           // Enrich description
+          HM.log(3, `Enriching description for '${doc.name}'...`, doc);
           doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
         } catch (error) {
           HM.log(1, `${HM.ID} | Error enriching description or processing starting equipment for '${doc.name}':`, error);
@@ -695,7 +696,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       for (const property of validProperties) {
         const value = formData.object[property];
         if (value === null || value === undefined || value === '') {
-          throw new Warning(`Missing required field: ${property}`);
+          HM.log(2, `Missing required field: ${property}`);
         }
       }
     } catch (err) {
