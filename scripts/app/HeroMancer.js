@@ -170,7 +170,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   _preparePartContext(partId, context) {
-    HM.log(3, `Preparing part context for: ${{ partId }}`);
+    HM.log(3, 'Preparing part context', { partId, context });
 
     switch (partId) {
       case 'start':
@@ -801,11 +801,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       };
     });
 
-    // Create all items in order
-    const allItems = [...baseItems, ...equipmentItems];
     try {
-      await actor.createEmbeddedDocuments('Item', allItems, { keepId: true });
-      // Apply starting wealth if selected
+      // First handle equipment and wealth
+      if (equipmentItems.length) {
+        await actor.createEmbeddedDocuments('Item', equipmentItems, { keepId: true });
+      }
+
       if (startingWealth) {
         await actor.update({
           system: {
@@ -813,47 +814,47 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
             currency: startingWealth
           }
         });
-        HM.log(3, 'Added starting wealth to actor:', startingWealth);
       }
-      HM.log(3, 'All items added to actor:', allItems);
+
+      // Then let advancement manager handle class/race/background
+      await processAdvancements([classItem, raceItem, backgroundItem], actor);
     } catch (error) {
-      HM.log(1, 'Error creating items:', error);
+      HM.log(1, 'Error during character creation:', error);
       console.error(error);
     }
 
-    // Ensure the items are fully added and the actor is updated
-    await actor.update({});
+    async function processAdvancements(items, newActor) {
+      HM.log(3, 'Creating advancement managers');
 
-    // Trigger advancements for all added items
-    /*     for (const item of items) {
-        // Log the actor and the current levels
-        HM.log(3,`Current levels for item ${item.name}:`, item.system.levels);
-        HM.log(3,'Actor details for advancement:', newActor);
+      const managers = await Promise.all(
+        items.map(async (item) => {
+          try {
+            const manager = await dnd5e.applications.advancement.AdvancementManager.forNewItem(newActor, item.toObject());
+            return manager?.steps?.length ? manager : null;
+          } catch (error) {
+            HM.log(1, `Error creating manager for ${item.name}:`, error);
+            return null;
+          }
+        })
+      ).then((m) => m.filter(Boolean));
 
-        let manager = dnd5e.applications.advancement.AdvancementManager;
-        const cls = newActor.itemTypes.class.find((c) => c.identifier === item.system.identifier);
-        // Check if the item is a class and handle differently
-        if (item.type === 'class') {
-            if (cls) {
-                manager.forModifyChoices(newActor, cls.id, 1);
-                if (manager.steps.length) {
-                    manager.render(true);
-                }
-            }
+      function doAdvancements(managers, index = 0) {
+        if (index >= managers.length) {
+          newActor.sheet.render(true);
+          return;
         } else {
-            // Use the standard advancement manager for other items
-            manager.forNewItem(newActor, item);
-            HM.log(3,`Standard Advancement Manager initialized for item: ${item.name}`, manager);
-            if (manager.steps.length) {
-                manager.render(true);
-            }
+          HM.log(3, `Rendering manager ${index + 1}/${managers.length}`);
+          Hooks.once('dnd5e.advancementManagerComplete', () => {
+            setTimeout(() => {
+              doAdvancements(managers, index + 1);
+            }, 1000);
+            // managers[index].close();
+          });
+          managers[index].render(true);
         }
-    } */
+      }
 
-    // Delay opening the sheet until after advancements are triggered
-    setTimeout(() => {
-      actor.sheet.render(true);
-      HM.log(3, 'Opened character sheet for:', actor.name);
-    }, 1000); // 1 second delay to ensure everything is processed
+      doAdvancements(managers);
+    }
   }
 }
