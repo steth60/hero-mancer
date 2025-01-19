@@ -107,6 +107,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         : StatRoller.getStandardArray(extraAbilities);
     const totalPoints = StatRoller.getTotalPoints();
     const remainingPoints = Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
+    const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
+      key,
+      abbreviation: value.abbreviation.toUpperCase(),
+      currentScore: 8
+    }));
 
     // Check if cached data is available to avoid re-fetching
     if (CacheManager.isCacheValid()) {
@@ -114,7 +119,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       return {
         raceDocs: CacheManager.getCachedRaceDocs(),
         classDocs: CacheManager.getCachedClassDocs(),
-        backgroundDocs: CacheManager.getCachedBackgroundDocs()
+        backgroundDocs: CacheManager.getCachedBackgroundDocs(),
+        tabs: this._getTabs(options.parts),
+        abilities,
+        rollStat: this.rollStat,
+        diceRollMethod: diceRollingMethod,
+        standardArray: standardArray,
+        selectedAbilities: HeroMancer.selectedAbilities,
+        remainingPoints: remainingPoints,
+        totalPoints: totalPoints
       };
     }
 
@@ -123,12 +136,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const { types: raceDocs } = await DocumentService.prepDocs('race');
     const { types: classDocs } = await DocumentService.prepDocs('class');
     const { types: backgroundDocs } = await DocumentService.prepDocs('background');
-
-    const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
-      key,
-      abbreviation: value.abbreviation.toUpperCase(),
-      currentScore: 8
-    }));
 
     const context = {
       raceDocs,
@@ -142,7 +149,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       selectedAbilities: HeroMancer.selectedAbilities,
       remainingPoints: remainingPoints,
       totalPoints: totalPoints
-      // equipmentData: {} // Include parsed equipment data for later use
     };
 
     const allDocs = [
@@ -793,8 +799,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
 
-    // Combine base items with equipment selections
-    const baseItems = [backgroundItem.toObject(), raceItem.toObject(), classItem.toObject()];
     const equipmentItems = equipmentSelections.map((item) => {
       // Item should already be in the correct format from collectEquipmentSelections
       return {
@@ -828,7 +832,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       HM.log(1, 'Error during character creation:', error);
       console.error(error);
     }
-
+    /**
+     * Processes a list of items for advancement for a given actor.
+     * @async
+     * @function processAdvancements
+     * @param {Array<object>} items The items to be processed for advancement.
+     * @param {object} newActor The actor to which the advancements are applied.
+     * @returns {Promise<void>} Resolves when the advancement process is complete.
+     */
     async function processAdvancements(items, newActor) {
       if (!Array.isArray(items) || !items.length) {
         HM.log(2, 'No items provided for advancement');
@@ -838,31 +849,48 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       HM.log(3, 'Creating advancement manager');
       let currentManager;
 
-      async function createManagerWithTimeout(item, retryCount = 0) {
+      /**
+       * Creates an advancement manager for a specific item with retries.
+       * @async
+       * @function createAdvancementManager
+       * @param {object} item The item for which the advancement manager is created.
+       * @param {number} [retryCount=0] The current retry attempt count.
+       * @returns {Promise<object>} Resolves with the created advancement manager.
+       * @throws {Error} If the manager creation fails after the allowed retries.
+       */
+      async function createAdvancementManager(item, retryCount = 0) {
         try {
           const manager = await Promise.race([
             dnd5e.applications.advancement.AdvancementManager.forNewItem(newActor, item.toObject()),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Manager creation timed out')), HeroMancer.ADVANCEMENT_DELAY.renderTimeout))
+            new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Manager creation timed out')), HeroMancer.ADVANCEMENT_DELAY.renderTimeout);
+            })
           ]);
           if (!manager) throw new Error('Failed to create manager');
           return manager;
         } catch (error) {
           if (retryCount < HeroMancer.ADVANCEMENT_DELAY.retryAttempts - 1) {
             HM.log(2, `Retry ${retryCount + 1}/${HeroMancer.ADVANCEMENT_DELAY.retryAttempts} for ${item.name}`);
-            return createManagerWithTimeout(item, retryCount + 1);
+            return createAdvancementManager(item, retryCount + 1);
           }
           throw error;
         }
       }
 
       try {
-        currentManager = await createManagerWithTimeout(items[0]);
+        currentManager = await createAdvancementManager(items[0]);
         HM.log(
           3,
           'Initial clone items:',
           currentManager?.clone?.items?.contents?.map((i) => i.name)
         );
 
+        /**
+         * Recursively processes advancements for each item in the list.
+         * @function doAdvancement
+         * @param {number} [itemIndex=0] The index of the current item being processed.
+         * @returns {void} Initiates the advancement process for the items.
+         */
         function doAdvancement(itemIndex = 0) {
           if (itemIndex >= items.length) {
             HM.log(
@@ -885,7 +913,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
               if (itemIndex + 1 < items.length) {
                 try {
-                  currentManager = await createManagerWithTimeout(items[itemIndex + 1]);
+                  currentManager = await createAdvancementManager(items[itemIndex + 1]);
                   currentManager.render(true);
                 } catch (error) {
                   HM.log(1, `Error creating manager for ${items[itemIndex + 1].name}:`, error);
