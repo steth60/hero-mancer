@@ -1,4 +1,4 @@
-import { HtmlManipulator } from './utils/index.js';
+import { HtmlManipulator, DocumentService, CacheManager } from './utils/index.js';
 import { registerSettings } from './settings.js';
 import { CustomCompendiums } from './app/CustomCompendiums.js';
 import { HeroMancer } from './app/HeroMancer.js';
@@ -15,12 +15,21 @@ export class HM {
 
   static logLevel = 0;
 
+  static documents = null;
+
   /* Initialize the module */
   static initialize() {
     console.log('Initializing Module.');
     this.initializeSettings();
     this.initializeHeroMancer();
     this.logLevel = parseInt(game.settings.get(HM.ID, 'loggingLevel'));
+
+    // Initialize documents object
+    this.documents = {
+      race: null,
+      class: null,
+      background: null
+    };
 
     // Logging setup
     if (this.logLevel > 0) {
@@ -81,6 +90,46 @@ export class HM {
       }
     }
   }
+
+  static async prepareDocuments() {
+    HM.log(3, 'Preparing documents for Hero Mancer');
+    try {
+      const { types: raceDocs } = await DocumentService.prepDocs('race');
+      const { types: classDocs } = await DocumentService.prepDocs('class');
+      const { types: backgroundDocs } = await DocumentService.prepDocs('background');
+
+      this.documents.race = raceDocs;
+      this.documents.class = classDocs;
+      this.documents.background = backgroundDocs;
+
+      // Enrich descriptions after document preparation
+      const allDocs = [
+        ...(raceDocs?.flatMap((folder) => folder.docs) || []),
+        ...(classDocs?.flatMap((pack) => pack.docs) || []),
+        ...(backgroundDocs?.flatMap((pack) => pack.docs) || [])
+      ];
+
+      for (const doc of allDocs) {
+        if (doc?.description) {
+          try {
+            doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
+          } catch (error) {
+            HM.log(1, `Error enriching description for '${doc.name}':`, error);
+          }
+        }
+      }
+
+      CacheManager.cacheDocuments({
+        raceDocs,
+        classDocs,
+        backgroundDocs
+      });
+
+      HM.log(3, 'Document preparation complete');
+    } catch (error) {
+      HM.log(1, 'Error preparing documents:', error);
+    }
+  }
 }
 
 /* Register the initialization hook */
@@ -100,4 +149,8 @@ Hooks.on('init', () => {
 Hooks.on('renderActorDirectory', () => {
   HtmlManipulator.registerButton();
   HM.log(3, 'Injecting button into Actor Directory');
+});
+
+Hooks.on('ready', async () => {
+  await HM.prepareDocuments();
 });

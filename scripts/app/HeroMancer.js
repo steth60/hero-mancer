@@ -117,9 +117,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     if (CacheManager.isCacheValid()) {
       HM.log(3, 'Documents cached and descriptions enriched!');
       return {
-        raceDocs: CacheManager.getCachedRaceDocs(),
-        classDocs: CacheManager.getCachedClassDocs(),
-        backgroundDocs: CacheManager.getCachedBackgroundDocs(),
+        raceDocs: HM.documents.race || CacheManager.getCachedRaceDocs(),
+        classDocs: HM.documents.class || CacheManager.getCachedClassDocs(),
+        backgroundDocs: HM.documents.background || CacheManager.getCachedBackgroundDocs(),
         tabs: this._getTabs(options.parts),
         abilities,
         rollStat: this.rollStat,
@@ -133,14 +133,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     ui.notifications.info('hm.actortab-button.loading', { localize: true });
 
-    const { types: raceDocs } = await DocumentService.prepDocs('race');
-    const { types: classDocs } = await DocumentService.prepDocs('class');
-    const { types: backgroundDocs } = await DocumentService.prepDocs('background');
-
     const context = {
-      raceDocs,
-      classDocs,
-      backgroundDocs,
+      raceDocs: HM.documents.race || CacheManager.getCachedRaceDocs(),
+      classDocs: HM.documents.class || CacheManager.getCachedClassDocs(),
+      backgroundDocs: HM.documents.background || CacheManager.getCachedBackgroundDocs(),
       tabs: this._getTabs(options.parts),
       abilities,
       rollStat: this.rollStat,
