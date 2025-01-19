@@ -88,6 +88,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   };
 
+  static ADVANCEMENT_DELAY = {
+    transitionDelay: 1000, // Time between advancements in ms
+    renderTimeout: 5000, // Max time to wait for render
+    retryAttempts: 3 // Number of retry attempts for failed managers
+  };
+
   /** @override */
   async _prepareContext(options) {
     HM.log(3, 'Preparing context.');
@@ -816,7 +822,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         });
       }
 
-      // Then let advancement manager handle class/race/background
+      // Then let advancement manager handle race/background
       await processAdvancements([classItem, raceItem, backgroundItem], actor);
     } catch (error) {
       HM.log(1, 'Error during character creation:', error);
@@ -824,37 +830,84 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     async function processAdvancements(items, newActor) {
-      HM.log(3, 'Creating advancement managers');
+      if (!Array.isArray(items) || !items.length) {
+        HM.log(2, 'No items provided for advancement');
+        return;
+      }
 
-      const managers = await Promise.all(
-        items.map(async (item) => {
-          try {
-            const manager = await dnd5e.applications.advancement.AdvancementManager.forNewItem(newActor, item.toObject());
-            return manager?.steps?.length ? manager : null;
-          } catch (error) {
-            HM.log(1, `Error creating manager for ${item.name}:`, error);
-            return null;
+      HM.log(3, 'Creating advancement manager');
+      let currentManager;
+
+      async function createManagerWithTimeout(item, retryCount = 0) {
+        try {
+          const manager = await Promise.race([
+            dnd5e.applications.advancement.AdvancementManager.forNewItem(newActor, item.toObject()),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Manager creation timed out')), HeroMancer.ADVANCEMENT_DELAY.renderTimeout))
+          ]);
+          if (!manager) throw new Error('Failed to create manager');
+          return manager;
+        } catch (error) {
+          if (retryCount < HeroMancer.ADVANCEMENT_DELAY.retryAttempts - 1) {
+            HM.log(2, `Retry ${retryCount + 1}/${HeroMancer.ADVANCEMENT_DELAY.retryAttempts} for ${item.name}`);
+            return createManagerWithTimeout(item, retryCount + 1);
           }
-        })
-      ).then((m) => m.filter(Boolean));
-
-      function doAdvancements(managers, index = 0) {
-        if (index >= managers.length) {
-          newActor.sheet.render(true);
-          return;
-        } else {
-          HM.log(3, `Rendering manager ${index + 1}/${managers.length}`);
-          Hooks.once('dnd5e.advancementManagerComplete', () => {
-            setTimeout(() => {
-              doAdvancements(managers, index + 1);
-            }, 1000);
-            // managers[index].close();
-          });
-          managers[index].render(true);
+          throw error;
         }
       }
 
-      doAdvancements(managers);
+      try {
+        currentManager = await createManagerWithTimeout(items[0]);
+        HM.log(
+          3,
+          'Initial clone items:',
+          currentManager?.clone?.items?.contents?.map((i) => i.name)
+        );
+
+        function doAdvancement(itemIndex = 0) {
+          if (itemIndex >= items.length) {
+            HM.log(
+              3,
+              'Final actor items:',
+              newActor.items.contents.map((i) => i.name)
+            );
+            currentManager?.close();
+            newActor.sheet.render(true);
+            return;
+          }
+
+          HM.log(3, `Processing ${items[itemIndex].name}`);
+
+          Hooks.once('dnd5e.advancementManagerComplete', () => {
+            HM.log(3, `Completed ${items[itemIndex].name}`);
+
+            setTimeout(async () => {
+              currentManager = null;
+
+              if (itemIndex + 1 < items.length) {
+                try {
+                  currentManager = await createManagerWithTimeout(items[itemIndex + 1]);
+                  currentManager.render(true);
+                } catch (error) {
+                  HM.log(1, `Error creating manager for ${items[itemIndex + 1].name}:`, error);
+                  newActor.sheet.render(true);
+                  return;
+                }
+              }
+              doAdvancement(itemIndex + 1);
+            }, HeroMancer.ADVANCEMENT_DELAY.transitionDelay);
+          });
+
+          if (itemIndex === 0) {
+            currentManager.render(true);
+          }
+        }
+
+        doAdvancement();
+      } catch (error) {
+        HM.log(1, 'Error in advancement process:', error);
+        if (currentManager) await currentManager.close();
+        newActor.sheet.render(true);
+      }
     }
   }
 }
