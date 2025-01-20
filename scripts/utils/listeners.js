@@ -81,23 +81,41 @@ export class Listeners {
 
   /**
    * Updates the state of the plus buttons to disable them if remaining points are insufficient.
+   * Also updates the hidden input values for formData.
    * @param {number} remainingPoints The number of points left for allocation.
    */
   static updatePlusButtonState(remainingPoints) {
     document.querySelectorAll('.plus-button').forEach((button, index) => {
       const currentScore = HeroMancer.selectedAbilities[index];
       const pointCostForNextIncrease = StatRoller.getPointCost(currentScore + 1) - StatRoller.getPointCost(currentScore);
+
+      // Update button state
       button.disabled = currentScore >= 15 || remainingPoints < pointCostForNextIncrease;
+
+      // Update hidden input for formData
+      const inputElement = document.getElementById(`ability-${index}-input`);
+      if (inputElement) {
+        inputElement.value = currentScore;
+      }
     });
   }
 
   /**
    * Updates the state of the minus buttons to disable them if the score is at the minimum allowed value.
+   * Also updates the hidden input values for formData.
    */
   static updateMinusButtonState() {
     document.querySelectorAll('.minus-button').forEach((button, index) => {
       const currentScore = HeroMancer.selectedAbilities[index];
+
+      // Update button state
       button.disabled = currentScore <= 8;
+
+      // Update hidden input for formData
+      const inputElement = document.getElementById(`ability-${index}-input`);
+      if (inputElement) {
+        inputElement.value = currentScore;
+      }
     });
   }
 }

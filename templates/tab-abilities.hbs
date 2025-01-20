@@ -16,20 +16,50 @@
 </div>
 
 
-  <div class="ability-container point-buy">
-    {{#each abilities}}
- <div id="ability-block-{{@index}}" class="ability-block point-buy">
-      <span class="ability-label" aria-label="{{localize 'hm.app.abilities.label'}}">{{this.abbreviation}}</span>
-      <div class="control-row score-adjustment">
-        <button type="button" class="adjust-button minus-button" data-action="decreaseScore" data-ability-index="{{@index}}" aria-label="{{localize "hm.app.abilities.decrease"}}">-</button>
-        
-        <span id="ability-score-{{@index}}" class="current-score" aria-live="polite">{{this.currentScore}}</span>
-        
-        <button type="button" class="adjust-button plus-button" data-action="increaseScore" data-ability-index="{{@index}}" aria-label="{{localize "hm.app.abilities.increase"}}">+</button>
-      </div>
+<div class="ability-container point-buy">
+  {{#each abilities}}
+  <div id="ability-block-{{@index}}" class="ability-block point-buy">
+    <!-- Ability Label -->
+    <span class="ability-label" aria-label="{{localize 'hm.app.abilities.label'}}">{{this.abbreviation}}</span>
+
+    <!-- Score Adjustment Controls -->
+    <div class="control-row score-adjustment">
+      <button
+        type="button"
+        class="adjust-button minus-button"
+        data-action="decreaseScore"
+        data-ability-index="{{@index}}"
+        aria-label="{{localize "hm.app.abilities.decrease"}}"
+      >-</button>
+
+      <!-- Visible Score -->
+      <span
+        id="ability-score-{{@index}}"
+        class="current-score"
+        aria-live="polite"
+      >{{this.currentScore}}</span>
+
+      <button
+        type="button"
+        class="adjust-button plus-button"
+        data-action="increaseScore"
+        data-ability-index="{{@index}}"
+        aria-label="{{localize "hm.app.abilities.increase"}}"
+      >+</button>
     </div>
-    {{/each}}
+
+    <!-- Hidden Input for Form Data -->
+    <input
+      type="hidden"
+      id="ability-{{@index}}-input"
+      name="abilities[{{this.key}}]"
+      value="{{this.currentScore}}"
+      data-dtype="Number"
+    />
   </div>
+  {{/each}}
+</div>
+
 
     {{else if (eq diceRollMethod 'standardArray')}}
       {{! Render standard array interface }}

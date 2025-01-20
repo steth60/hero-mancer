@@ -289,7 +289,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const abilityDropdowns = html.querySelectorAll('.ability-dropdown');
     const selectedAbilities = Array.from(abilityDropdowns).map(() => ''); // Initialize with empty strings
-
     const totalPoints = StatRoller.getTotalPoints();
 
     // Set up event listeners and initial dropdown state based on mode
@@ -725,16 +724,29 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.log(3, 'Extracted Item Data:', { backgroundData, raceData, classData });
 
     // Extract abilities from formData with default 10
+    HM.log(3, 'ABILITIES: Initializing abilities object');
     let abilities = {};
+
+    HM.log(3, 'ABILITIES: Starting to iterate over formData.object keys');
     for (const key in formData.object) {
-      const abilityMatch = key.match(/^abilities\[(\w+)\]\.score$/);
+      HM.log(3, `ABILITIES: Inspecting key: ${key}`);
+
+      const abilityMatch = key.match(/^abilities\[(\w+)\]\.score$/) || key.match(/^abilities\[(\w+)\]$/);
       if (abilityMatch) {
+        HM.log(3, `ABILITIES: Key matches abilities pattern: ${key}`);
+
         const abilityKey = abilityMatch[1];
+        HM.log(3, `ABILITIES: Extracted abilityKey: ${abilityKey}`);
+
         abilities[abilityKey] = formData.object[key] || 10;
+        HM.log(3, `ABILITIES: Set abilities[${abilityKey}] to ${abilities[abilityKey]}`);
+      } else {
+        HM.log(3, `ABILITIES: Key does not match abilities pattern: ${key}`);
       }
     }
+    HM.log(3, 'ABILITIES: Finished processing formData.object keys');
 
-    HM.log(3, 'Abilities extracted:', abilities);
+    HM.log(3, 'ABILITIES: Abilities extracted:', abilities);
 
     // Create the new actor
     let actorName = formData.object.name || game.user.name; // Handling for blank hero name.
