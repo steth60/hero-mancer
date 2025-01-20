@@ -1,7 +1,8 @@
 # Hero Mancer
 
 [![Foundry Version](https://img.shields.io/badge/Foundry-v12-informational)](https://foundryvtt.com/releases/12.331)  
-[![DND5E Version](https://img.shields.io/badge/D&D5E-3.3.1-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-3.3.1)  
+[![DND5E Version](https://img.shields.io/badge/D&D5E-3.3.1-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-3.3.1)
+[![DND5E Version](https://img.shields.io/badge/D&D5E-4.1.2-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-4.1.2)  
 [![Downloads](https://img.shields.io/github/downloads/Sayshal/hero-mancer/total)](https://github.com/Sayshal/hero-mancer)
 
 ## Supporting The Module
