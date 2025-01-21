@@ -430,7 +430,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       const selectedEquipment = Array.from(document.querySelectorAll('#equipment-container select, #equipment-container input:checked'))
         .map((el) => el.options?.[el.selectedIndex]?.text || el.parentElement?.textContent?.trim())
         .filter(Boolean);
-
+      /*TODO: V13 BUG: textContent is null*/
       document.querySelector('.equipment-summary').textContent = selectedEquipment.length
         ? `They wield ${selectedEquipment.join(', ')} as their adventure begins`
         : 'They begin their adventure';
@@ -484,6 +484,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /**
    * Action to open the FilePicker for selecting character art
+   * TODO: Convert FilePicker to AppV2 for V13 release
    * @param {PointerEvent} event The originating click event
    * @param {HTMLElement} target The element that triggered the event
    */
