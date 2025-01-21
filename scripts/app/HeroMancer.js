@@ -77,10 +77,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     equipment: {
       template: `${HM.TMPL}/tab-equipment.hbs`,
       classes: [`${HM.ABRV}-app-tab-content`]
-    },
-    finalize: {
-      template: `${HM.TMPL}/tab-finalize.hbs`,
-      classes: [`${HM.ABRV}-app-tab-content`]
+      // },
+      // finalize: {
+      //   template: `${HM.TMPL}/tab-finalize.hbs`,
+      //   classes: [`${HM.ABRV}-app-tab-content`]
     },
     footer: {
       template: `${HM.TMPL}/app-footer.hbs`,
@@ -200,9 +200,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       case 'equipment':
         context.tab = context.tabs[partId];
         break;
-      case 'finalize':
-        context.tab = context.tabs[partId];
-        break;
+      // case 'finalize':
+      //   context.tab = context.tabs[partId];
+      //   context.alignments = game.settings
+      //     .get(HM.ID, 'alignments')
+      //     ?.split(',')
+      //     .map((d) => d.trim()) || ['None'];
+      //   context.deities = game.settings
+      //     .get(HM.ID, 'deities')
+      //     ?.split(',')
+      //     .map((d) => d.trim()) || ['None'];
+      //   break;
     }
     return context;
   }
@@ -259,11 +267,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.equipment`)}`;
           tab.icon = 'fa-solid fa-shield-halved';
           break;
-        case 'finalize':
-          tab.id = 'finalize';
-          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.finalize`)}`;
-          tab.icon = 'fa-solid fa-check-circle';
-          break;
+        // case 'finalize':
+        //   tab.id = 'finalize';
+        //   tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.finalize`)}`;
+        //   tab.icon = 'fa-solid fa-check-circle';
+        //   break;
         case 'footer':
           return tabs;
       }
@@ -386,6 +394,76 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     });
 
     document.getElementById('link-token-art').addEventListener('change', HeroMancer._toggleTokenArtRow);
+
+    document.querySelector('#background-dropdown')?.addEventListener('change', (event) => {
+      const backgroundName = event.target.options[event.target.selectedIndex].text;
+      const backgroundSummary = document.querySelector('.background-summary');
+      if (backgroundSummary) {
+        const article = /^[aeiou]/i.test(backgroundName) ? 'an' : 'a';
+        backgroundSummary.textContent = `Starting as ${article} ${backgroundName}`;
+      }
+    });
+
+    document.querySelector('#race-dropdown, #class-dropdown')?.addEventListener('change', (event) => {
+      const raceName = document.querySelector('#race-dropdown').options[document.querySelector('#race-dropdown').selectedIndex].text;
+      const className = document.querySelector('#class-dropdown').options[document.querySelector('#class-dropdown').selectedIndex].text;
+      const classRaceSummary = document.querySelector('.class-race-summary');
+      if (classRaceSummary) {
+        classRaceSummary.innerHTML = `This <a href="#" data-tab="race">${raceName || 'unknown race'}</a> <a href="#" data-tab="class">${className || 'unknown class'}</a>`;
+      }
+    });
+
+    function updateAbilitiesSummary() {
+      const scores = Array.from(document.querySelectorAll('.ability-score'))
+        .map((el) => ({
+          name: el.getAttribute('data-ability'),
+          score: parseInt(el.value) || 0
+        }))
+        .sort((a, b) => b.score - a.score);
+
+      if (scores.length >= 2) {
+        document.querySelector('.abilities-summary').textContent = `prides themself on their impressive ${scores[0].name} and ${scores[1].name}`;
+      }
+    }
+
+    function updateEquipmentSummary() {
+      const selectedEquipment = Array.from(document.querySelectorAll('#equipment-container select, #equipment-container input:checked'))
+        .map((el) => el.options?.[el.selectedIndex]?.text || el.parentElement?.textContent?.trim())
+        .filter(Boolean);
+
+      document.querySelector('.equipment-summary').textContent = selectedEquipment.length
+        ? `They wield ${selectedEquipment.join(', ')} as their adventure begins`
+        : 'They begin their adventure';
+    }
+
+    // Add to _onRender
+    function updateNameAndPortrait() {
+      const nameInput = document.querySelector('#character-name');
+      HM.log(3, 'updateNameAndPortrait:', nameInput);
+      const artInput = document.querySelector('#character-art-path');
+      HM.log(3, 'updateNameAndPortrait:', artInput);
+      const portraitName = document.querySelector('.character-portrait h2');
+      HM.log(3, 'updateNameAndPortrait:', portraitName);
+      const portraitImg = document.querySelector('.character-portrait img');
+      HM.log(3, 'updateNameAndPortrait:', portraitImg);
+
+      if (portraitName) {
+        portraitName.textContent = nameInput?.value || game.user.name;
+        HM.log(3, 'updateNameAndPortrait:', portraitName.textContent);
+      }
+      if (portraitImg) {
+        portraitImg.src = artInput?.value || '';
+        HM.log(3, 'updateNameAndPortrait:', portraitImg.src);
+      }
+
+      // Add listeners
+      nameInput?.addEventListener('change', updateNameAndPortrait);
+      artInput?.addEventListener('change', updateNameAndPortrait);
+    }
+
+    updateNameAndPortrait(); // Initial call
+
+    document.querySelector('#equipment-container')?.addEventListener('change', updateEquipmentSummary);
   }
 
   /* Logic for rolling stats and updating input fields */
@@ -543,7 +621,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         continue;
       }
 
-      HM.log(3, 'Processing new section');
       HM.log(3, 'Processing new section');
 
       // Process dropdowns

@@ -59,6 +59,8 @@ export class DocumentService {
       selectedPacks = game.settings.get('hero-mancer', 'classPacks') || [];
     } else if (type === 'race') {
       selectedPacks = game.settings.get('hero-mancer', 'racePacks') || [];
+    } else if (type === 'species') {
+      selectedPacks = game.settings.get('hero-mancer', 'racePacks') || [];
     } else if (type === 'background') {
       selectedPacks = game.settings.get('hero-mancer', 'backgroundPacks') || [];
     }

@@ -2,5 +2,136 @@
   <fieldset>
     <legend>{{localize 'hm.app.finalize.tooltip'}}</legend>
     <p>{{localize 'hm.app.finalize.preamble'}}</p>
+    {{! Summary Section }}
+    <div class='summary-section'>
+      <div class='character-portrait'>
+        <img src='{{characterArt}}' alt='Character Portrait' />
+        <h2>{{name}}</h2>
+      </div>
+      <div class='character-summary'>
+        <p class='background-summary'>Starting as an adventurer</p>
+        <p class='class-race-summary'>This <a href='#' data-tab='race'>unknown race</a> <a href='#' data-tab='class'>unknown class</a></p>
+        <p class='abilities-summary'>prides themself on their impressive abilities.</p>
+        <p class='equipment-summary'>They begin their adventure.</p>
+      </div>
+    </div>
+
+    {{! Biography Section }}
+    <div class='biography-section'>
+      <div class='flex-row'>
+        <div class='form-group'>
+          <label>Alignment</label>
+          <select name='alignment'>
+            {{#each alignments}}
+              <option value='{{this}}'>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+
+        <div class='form-group'>
+          <label>Faith</label>
+          <select name='faith'>
+            {{#each deities}}
+              <option value='{{this}}'>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </div>
+
+      <div class='physical-appearance'>
+        <h3>Physical Appearance</h3>
+        <div class='grid-3'>
+          <div class='form-group'>
+            <label>Eyes</label>
+            <input type='text' name='eyes' />
+          </div>
+          <div class='form-group'>
+            <label>Hair</label>
+            <input type='text' name='hair' />
+          </div>
+          <div class='form-group'>
+            <label>Skin</label>
+            <input type='text' name='skin' />
+          </div>
+          <div class='form-group'>
+            <label>Height</label>
+            <input type='text' name='height' />
+          </div>
+          <div class='form-group'>
+            <label>Weight</label>
+            <input type='text' name='weight' />
+          </div>
+          <div class='form-group'>
+            <label>Age</label>
+            <input type='text' name='age' />
+          </div>
+          <div class='form-group'>
+            <label>Gender</label>
+            <input type='text' name='gender' />
+          </div>
+        </div>
+        <div class='form-group'>
+          <label>Description</label>
+          <div class='flex-row'>
+            <textarea name='appearance-text' rows='3'></textarea>
+            <button type='button' class='generate-description'>
+              <i class='fas fa-dice'></i>
+              Generate
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class='personality-traits'>
+        <div class='form-group'>
+          <label>Personality Traits</label>
+          <div class='flex-row'>
+            <textarea name='traits'></textarea>
+            <button type='button' class='roll-table' data-table='traits'>
+              <i class='fas fa-dice'></i>
+              Roll
+            </button>
+          </div>
+        </div>
+
+        <div class='form-group'>
+          <label>Ideals</label>
+          <div class='flex-row'>
+            <textarea name='ideals'></textarea>
+            <button type='button' class='roll-table' data-table='ideals'>
+              <i class='fas fa-dice'></i>
+              Roll
+            </button>
+          </div>
+        </div>
+
+        <div class='form-group'>
+          <label>Bonds</label>
+          <div class='flex-row'>
+            <textarea name='bonds'></textarea>
+            <button type='button' class='roll-table' data-table='bonds'>
+              <i class='fas fa-dice'></i>
+              Roll
+            </button>
+          </div>
+        </div>
+
+        <div class='form-group'>
+          <label>Flaws</label>
+          <div class='flex-row'>
+            <textarea name='flaws'></textarea>
+            <button type='button' class='roll-table' data-table='flaws'>
+              <i class='fas fa-dice'></i>
+              Roll
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class='form-group biography'>
+        <label>Biography</label>
+        {{!-- {{editor content=biography target='biography' button=true owner=owner editable=editable}} --}}
+      </div>
+    </div>
   </fieldset>
 </div>

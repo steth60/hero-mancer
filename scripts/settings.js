@@ -41,6 +41,26 @@ export function registerSettings() {
     }
   });
 
+  game.settings.register(HM.ID, 'deities', {
+    name: 'Available Deities',
+    hint: 'Comma-separated list of deities available for character creation',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: 'None,Aphrodite,Apollo,Ares,Artemis,Athena,Demeter,Dionysus,Hades,Hecate,Hephaestus,Hera,Hercules,Hermes,Hestia,Nike,Pan,Poseidon,Tyche,Zeus',
+    restricted: true
+  });
+
+  game.settings.register(HM.ID, 'alignments', {
+    name: 'Available Alignments',
+    hint: 'Comma-separated list of alignments available for character creation',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: 'None,Lawful Good,Neutral Good,Chaotic Good,Lawful Neutral,True Neutral,Chaotic Neutral,Lawful Evil,Neutral Evil,Chaotic Evil',
+    restricted: true
+  });
+
   // Add a new setting for selecting the Dice Rolling Method
   game.settings.register(HM.ID, 'diceRollingMethod', {
     name: `${HM.ABRV}.settings.dice-rolling-method.name`,
