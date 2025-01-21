@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 import { HM } from '../hero-mancer.js';
-import { CacheManager, DocumentService, DropdownHandler, EquipmentParser, Listeners, StatRoller } from '../utils/index.js';
+import { CacheManager, DropdownHandler, EquipmentParser, Listeners, StatRoller } from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 // const { AdvancementManager } = dnd5e.applications.advancement;
 
@@ -110,8 +110,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
       key,
       abbreviation: value.abbreviation.toUpperCase(),
+      fullKey: value.fullKey.toUpperCase(),
       currentScore: 8
     }));
+    HM.log(3, 'ABILITIES:', abilities);
 
     // Check if cached data is available to avoid re-fetching
     if (CacheManager.isCacheValid()) {

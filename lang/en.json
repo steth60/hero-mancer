@@ -78,7 +78,7 @@
         "tooltip": "Finalize your character creation"
       },
       "header-context": "Creating {name}",
-      "header-title": "Hero Mancer: Creation Wizard",
+      "header-title": "Hero Mancer Creation Wizard",
       "no-description": "Unable to load a valid description for this item.",
       "race": {
         "none": "No races available.",
@@ -112,7 +112,7 @@
         "equipment": "Equipment",
         "finalize": "Finalize",
         "race": "Race",
-        "start": "Start!"
+        "start": "Start"
       },
       "tabs": "Hero Mancer Navigation Tabs"
     },

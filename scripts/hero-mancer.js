@@ -135,14 +135,6 @@ export class HM {
 /* Register the initialization hook */
 Hooks.on('init', () => {
   HM.initialize(); // Initialize the module and register settings
-  // Register the hm-range helper to generate a range of numbers.
-  Handlebars.registerHelper('hm-range', function (min, max) {
-    const range = [];
-    for (let i = min; i < max; i++) {
-      range.push(i);
-    }
-    return range;
-  });
 });
 
 /* Add button to ActorDirectory */

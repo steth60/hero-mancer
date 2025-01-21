@@ -1,8 +1,7 @@
 # Hero Mancer
 
 [![Foundry Version](https://img.shields.io/badge/Foundry-v12-informational)](https://foundryvtt.com/releases/12.331)  
-[![DND5E Version](https://img.shields.io/badge/D&D5E-3.3.1-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-3.3.1)
-[![DND5E Version](https://img.shields.io/badge/D&D5E-4.1.2-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-4.1.2)  
+[![DND5E Version](https://img.shields.io/badge/D&D5E-3.3.1-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-3.3.1) [![DND5E Version](https://img.shields.io/badge/D&D5E-4.2.0-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-4.2.0)  
 [![Downloads](https://img.shields.io/github/downloads/Sayshal/hero-mancer/total)](https://github.com/Sayshal/hero-mancer)
 
 ## Supporting The Module
@@ -11,13 +10,11 @@
 
 ## Introduction
 
-**Hero Mancer** is the ultimate companion for character creation in FoundryVTT, offering everything you need to build
-your heroes effortlessly and with style! Whether you're a player building from scratch or a GM guiding character
-advancement, Hero Mancer's sleek UI and dynamic integration make it a breeze. It covers every aspect of character
-creation!
+**Hero Mancer** is the ultimate companion for character creation in FoundryVTT, offering everything you need to build your heroes effortlessly and with style!
+Whether you're a player building from scratch or a GM guiding character advancement, Hero Mancer's sleek UI and dynamic integration make it a breeze. It covers
+every aspect of character creation!
 
-Stop struggling with hard-to-search compendiums and manual processes! **Hero Mancer** automates it all in one seamless
-experience.
+Stop struggling with hard-to-search compendiums and manual processes! **Hero Mancer** automates it all in one seamless experience.
 
 ---
 
@@ -25,20 +22,18 @@ experience.
 
 Hero Mancer has been crafted with powerful features to give your character creation process a boost:
 
-- **Compendium Magic**: No more searching through endless lists—Hero Mancer automatically pulls races, classes,
-  backgrounds, and more from compendiums-you can even specify your own!
-- **Smooth Navigation**: Dynamic dropdowns organize options by folders and packs, making it easy to select the perfect
-  combination of traits for your character.
-- **Enriched Descriptions**: Get detailed, formatted descriptions at your fingertips, thanks to automatic HTML
-  enrichment for all the choices you make.
+- **Compendium Magic**: No more searching through endless lists—Hero Mancer automatically pulls races, classes, backgrounds, and more from compendiums-you can
+  even specify your own!
+- **Smooth Navigation**: Dynamic dropdowns organize options by folders and packs, making it easy to select the perfect combination of traits for your character.
+- **Enriched Descriptions**: Get detailed, formatted descriptions at your fingertips, thanks to automatic HTML enrichment for all the choices you make.
 - **Stat Rolling**: Roll your dice with ease- and assign your rolls to your ability scores!
 
 ---
 
 ## Installation
 
-The easiest way to get started with Hero Mancer is through Foundry’s **Module Manager** or **The Forge's Bazaar**. But
-if you prefer to do it yourself, we’ve got you covered.
+The easiest way to get started with Hero Mancer is through Foundry’s **Module Manager** or **The Forge's Bazaar**. But if you prefer to do it yourself, we’ve
+got you covered.
 
 ### Manual Installation
 
@@ -108,8 +103,8 @@ _The finalization tab for reviewing and completing the character creation proces
 
 ## Why Hero Mancer?
 
-Hero Mancer isn’t just a module—it’s your character creation powerhouse! With its automated processes, enriched
-descriptions, and built-in tools, it turns the often tedious task of character creation into a smooth, exciting part of
-your adventure. So what are you waiting for? Let Hero Mancer take your characters to the next level!
+Hero Mancer isn’t just a module—it’s your character creation powerhouse! With its automated processes, enriched descriptions, and built-in tools, it turns the
+often tedious task of character creation into a smooth, exciting part of your adventure. So what are you waiting for? Let Hero Mancer take your characters to
+the next level!
 
 ---

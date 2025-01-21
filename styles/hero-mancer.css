@@ -9,14 +9,18 @@
   max-height: calc(100vh - 150px);
   overflow: hidden;
 }
+/* Set the icon to the users color */
+.application.hm-app .fa-egg {
+  color: var(--user-color);
+}
 /* Fieldset styling for forms, ensuring proper layout and scrollability */
 .application.hm-app fieldset {
   min-width: 0;
   min-height: 0;
   max-height: 100%;
-  margin: 0;
-  margin-top: 25px;
-  border: 2px groove var(--color-cool-3);
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  border: 2px groove var(--user-color); /* Open to thoughts on this one. Might be a bit bold.*/
   border-radius: 6px;
   overflow-x: hidden;
   overflow-y: auto;
@@ -76,6 +80,48 @@
 /* .hm-app-header contains the content above navigation, currently just the app title Hero Mancer. */
 .hm-app-header {
   text-align: center;
+  flex: 0 0 var(--hm-app-header-height, 100px);
+  background: transparent;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.hm-app-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('../../../systems/dnd5e/ui/texture-gray2.webp') no-repeat center bottom / cover;
+  opacity: 0.8; /* Adjust the opacity value here */
+  z-index: -1; /* Ensure the background is below the content */
+}
+
+.hm-app-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 5px; /* Match the parent border radius */
+  background-repeat: no-repeat;
+  background-size:
+    100% 10px,
+    100% 10px,
+    10px 100%,
+    10px 100%;
+  pointer-events: none; /* Ensure the feather effect doesn’t block interactions */
+}
+.hm-app-header h1 {
+  border-bottom: unset;
+  margin: 0;
 }
 /* .hm-app-nav contains the navigation between tabs. */
 .application.hm-app .hm-app-nav {
@@ -134,7 +180,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 16px;
 }
 /* Footer action buttons styling */
 .hm-app-footer-actions {
@@ -165,6 +210,9 @@
   height: 200px;
 }
 .hm-app .ability-container.point-buy {
+  margin-right: 0.5rem;
+  margin-left: 0.5rem;
+  margin-bottom: 0.5rem;
   height: unset;
 }
 /* Ability block layout for dropdown and text fields */
@@ -205,30 +253,37 @@
 }
 /* Point-buy specific block styling */
 .ability-block.point-buy {
-  gap: 0.5em;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box; /* Ensures padding and border are included in the width calculation */
+  width: 14%; /* Adjust this to control how wide each block is */
+  max-width: 14%; /* Optionally limit the maximum width to ensure consistency */
+  flex-grow: 0; /* Prevent it from stretching */
 }
+
 .minus-button,
 .plus-button {
-  display: flex; /* Ensure consistent button width */
+  display: flex;
   justify-content: center;
   align-items: center;
   width: 2em;
   height: 2em;
   font-size: 1em;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
 }
+
 /* Center the ability label (e.g., STR) above the controls */
 .ability-block.point-buy .ability-label {
-  margin-bottom: 5px;
   font-weight: bold; /* Space between label and controls */
 }
 
 /* Flex row for minus, score, and plus buttons */
 .ability-block.point-buy .control-row {
-  gap: 8px;
+  gap: 5px;
   display: flex;
   align-items: center; /* Space between the buttons and score */
 }
@@ -483,6 +538,9 @@
   align-items: center;
   margin-bottom: 8px;
 }
+.hm-app .hm-app-tab-content .art-selection-row {
+  margin-bottom: unset;
+}
 
 /* Set fixed percentage widths for each column */
 .hm-app .hm-app-tab-content .label-15 {
@@ -490,9 +548,7 @@
 }
 .hm-app .hm-app-tab-content .input-35 {
   flex: 0 0 35%;
-  box-sizing: border-box;
   max-width: 35%;
-  padding: 5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -510,12 +566,6 @@
   align-items: center;
   font-size: 0.9em;
   white-space: nowrap;
-}
-
-/* Additional styling for inputs and buttons */
-.hm-app .hm-app-tab-content .art-input,
-.hm-app .hm-app-tab-content #character-name {
-  padding: 5px;
 }
 
 /* Optional styling for consistency */
