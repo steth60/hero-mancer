@@ -5,6 +5,9 @@
 ![GitHub release (with filter)](https://img.shields.io/github/v/release/Sayshal/hero-mancer?style=for-the-badge)
 ![Foundry Core Compatible Version](https://img.shields.io/badge/dynamic/json.svg?url=https://github.com/Sayshal/hero-mancer/releases/latest/download/module.json&label=Foundry%20Version&query=$.compatibility.verified&colorB=orange&style=for-the-badge)
 ![GitHub all releases](https://img.shields.io/github/downloads/Sayshal/hero-mancer/total?style=for-the-badge)
+![Github License](https://img.shields.io/github/license/Sayshal/hero-mancer?style=for-the-badge)
+
+![Release Progress](https://img.shields.io/github/milestones/progress-percent/Sayshal/hero-mancer/4?label=1.0%20Release%20Progress)
 
 ## Supporting The Module
 
