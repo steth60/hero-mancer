@@ -1,8 +1,10 @@
 # Hero Mancer
 
-[![Foundry Version](https://img.shields.io/badge/Foundry-v12-informational)](https://foundryvtt.com/releases/12.331)  
-[![DND5E Version](https://img.shields.io/badge/D&D5E-3.3.1-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-3.3.1) [![DND5E Version](https://img.shields.io/badge/D&D5E-4.2.0-orange)](https://github.com/foundryvtt/dnd5e/releases/tag/release-4.2.0)  
-[![Downloads](https://img.shields.io/github/downloads/Sayshal/hero-mancer/total)](https://github.com/Sayshal/hero-mancer)
+![GitHub issues](https://img.shields.io/github/issues/Sayshal/hero-mancer?style=for-the-badge)
+![Latest Release Download Count](https://img.shields.io/github/downloads/Sayshal/hero-mancer/latest/module.zip?color=2b82fc&label=Latest+Release+Download+Count&style=for-the-badge)
+![GitHub release (with filter)](https://img.shields.io/github/v/release/Sayshal/hero-mancer?style=for-the-badge)
+![Foundry Core Compatible Version](https://img.shields.io/badge/dynamic/json.svg?url=https://github.com/Sayshal/hero-mancer/releases/latest/download/module.json&label=Foundry%20Version&query=$.compatibility.verified&colorB=orange&style=for-the-badge)
+![GitHub all releases](https://img.shields.io/github/downloads/Sayshal/hero-mancer/total?style=for-the-badge)
 
 ## Supporting The Module
 
