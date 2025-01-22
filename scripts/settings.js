@@ -3,45 +3,50 @@ import { HM } from './hero-mancer.js';
 import { StatRoller } from './utils/index.js';
 
 /**
- * Registers all the settings for the Hero Mancer module.
- * This function is the entry point for setting registration,
- * calling both module-specific and application-specific settings.
+ * Registers core module settings - enable/disable and logging settings.
+ * These settings affect basic functionality and debug capabilities.
+ * @function
  */
-export function registerSettings() {
-  // Client-scoped: Enable or disable the module for individual users
-  game.settings.register(HM.ID, 'enable', {
-    name: `${HM.ABRV}.settings.enable.name`,
+function registerCoreSettings() {
+  game.settings.register(HM.CONFIG.ID, 'enable', {
+    name: `${HM.CONFIG.ABRV}.settings.enable.name`,
+    hint: `${HM.CONFIG.ABRV}.settings.enable.hint`,
     default: true,
     type: Boolean,
     scope: 'client',
     config: true,
-    hint: `${HM.ABRV}.settings.enable.hint`,
     requiresReload: true
   });
 
-  // Client-scoped: Set the logging level for individual users
-  game.settings.register(HM.ID, 'loggingLevel', {
-    name: `${HM.ABRV}.settings.logger.name`,
-    hint: `${HM.ABRV}.settings.logger.hint`,
+  game.settings.register(HM.CONFIG.ID, 'loggingLevel', {
+    name: `${HM.CONFIG.ABRV}.settings.logger.name`,
+    hint: `${HM.CONFIG.ABRV}.settings.logger.hint`,
     scope: 'client',
     config: true,
     type: String,
     choices: {
-      0: `${HM.ABRV}.settings.logger.choices.off`,
-      1: `${HM.ABRV}.settings.logger.choices.errors`,
-      2: `${HM.ABRV}.settings.logger.choices.warnings`,
-      3: `${HM.ABRV}.settings.logger.choices.verbose`
+      0: `${HM.CONFIG.ABRV}.settings.logger.choices.off`,
+      1: `${HM.CONFIG.ABRV}.settings.logger.choices.errors`,
+      2: `${HM.CONFIG.ABRV}.settings.logger.choices.warnings`,
+      3: `${HM.CONFIG.ABRV}.settings.logger.choices.verbose`
     },
     default: 2,
     onChange: (value) => {
-      const logMessage = `${HM.ABRV}.settings.logger.level.${value}`;
+      const logMessage = `${HM.CONFIG.ABRV}.settings.logger.level.${value}`;
       if (value !== '0') {
-        HM.log(3, logMessage); // Log the current logging level unless it's Off
+        HM.log(3, logMessage);
       }
     }
   });
+}
 
-  game.settings.register(HM.ID, 'deities', {
+/**
+ * Registers world-level settings for character creation options.
+ * Handles deities and alignment configurations available to all users.
+ * @function
+ */
+function registerWorldSettings() {
+  game.settings.register(HM.CONFIG.ID, 'deities', {
     name: 'Available Deities',
     hint: 'Comma-separated list of deities available for character creation',
     scope: 'world',
@@ -51,7 +56,7 @@ export function registerSettings() {
     restricted: true
   });
 
-  game.settings.register(HM.ID, 'alignments', {
+  game.settings.register(HM.CONFIG.ID, 'alignments', {
     name: 'Available Alignments',
     hint: 'Comma-separated list of alignments available for character creation',
     scope: 'world',
@@ -60,56 +65,59 @@ export function registerSettings() {
     default: 'None,Lawful Good,Neutral Good,Chaotic Good,Lawful Neutral,True Neutral,Chaotic Neutral,Lawful Evil,Neutral Evil,Chaotic Evil',
     restricted: true
   });
+}
 
-  // Add a new setting for selecting the Dice Rolling Method
-  game.settings.register(HM.ID, 'diceRollingMethod', {
-    name: `${HM.ABRV}.settings.dice-rolling-method.name`,
-    hint: `${HM.ABRV}.settings.dice-rolling-method.hint`,
+/**
+ * Registers dice rolling related settings.
+ * Manages dice methods, formulas, and arrays for character ability scores.
+ * @function
+ */
+function registerDiceSettings() {
+  game.settings.register(HM.CONFIG.ID, 'diceRollingMethod', {
+    name: `${HM.CONFIG.ABRV}.settings.dice-rolling-method.name`,
+    hint: `${HM.CONFIG.ABRV}.settings.dice-rolling-method.hint`,
     scope: 'client',
     config: true,
     type: String,
     requiresReload: true,
     choices: {
-      standardArray: game.i18n.localize(`${HM.ABRV}.settings.dice-rolling-method.standard-array`),
-      pointBuy: game.i18n.localize(`${HM.ABRV}.settings.dice-rolling-method.point-buy`),
-      manualFormula: game.i18n.localize(`${HM.ABRV}.settings.dice-rolling-method.manual-formula`)
+      standardArray: game.i18n.localize(`${HM.CONFIG.ABRV}.settings.dice-rolling-method.standard-array`),
+      pointBuy: game.i18n.localize(`${HM.CONFIG.ABRV}.settings.dice-rolling-method.point-buy`),
+      manualFormula: game.i18n.localize(`${HM.CONFIG.ABRV}.settings.dice-rolling-method.manual-formula`)
     },
     default: 'standardArray'
   });
 
-  // Add the custom roll formula setting restricted to GM
-  game.settings.register(HM.ID, 'customRollFormula', {
-    name: `${HM.ABRV}.settings.custom-roll-formula.name`,
-    hint: `${HM.ABRV}.settings.custom-roll-formula.hint`,
+  game.settings.register(HM.CONFIG.ID, 'customRollFormula', {
+    name: `${HM.CONFIG.ABRV}.settings.custom-roll-formula.name`,
+    hint: `${HM.CONFIG.ABRV}.settings.custom-roll-formula.hint`,
     scope: 'client',
-    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'manualFormula',
+    config: game.settings.get(HM.CONFIG.ID, 'diceRollingMethod') === 'manualFormula',
     type: String,
     restricted: true,
     default: '4d6kh3',
     onChange: (value) => {
       if (!value || value.trim() === '') {
-        game.settings.set(HM.ID, 'customRollFormula', '4d6kh3'); // Reset to default if empty
+        game.settings.set(HM.CONFIG.ID, 'customRollFormula', '4d6kh3');
         HM.log(3, 'Resetting Custom Roll Formula to default (4d6kh3)');
       }
     }
   });
 
-  // Register chained rolls setting
-  game.settings.register(HM.ID, 'chainedRolls', {
-    name: `${HM.ABRV}.settings.chained-rolls.name`,
-    hint: `${HM.ABRV}.settings.chained-rolls.hint`,
+  game.settings.register(HM.CONFIG.ID, 'chainedRolls', {
+    name: `${HM.CONFIG.ABRV}.settings.chained-rolls.name`,
+    hint: `${HM.CONFIG.ABRV}.settings.chained-rolls.hint`,
     scope: 'client',
-    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'manualFormula',
+    config: game.settings.get(HM.CONFIG.ID, 'diceRollingMethod') === 'manualFormula',
     type: Boolean,
     default: false
   });
 
-  // Register roll delay setting
-  game.settings.register(HM.ID, 'rollDelay', {
-    name: `${HM.ABRV}.settings.roll-delay.name`,
-    hint: `${HM.ABRV}.settings.roll-delay.hint`,
+  game.settings.register(HM.CONFIG.ID, 'rollDelay', {
+    name: `${HM.CONFIG.ABRV}.settings.roll-delay.name`,
+    hint: `${HM.CONFIG.ABRV}.settings.roll-delay.hint`,
     scope: 'client',
-    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'manualFormula',
+    config: game.settings.get(HM.CONFIG.ID, 'diceRollingMethod') === 'manualFormula',
     type: Number,
     range: {
       min: 100,
@@ -119,65 +127,85 @@ export function registerSettings() {
     default: 500
   });
 
-  // Restricted to GM: Menu for custom compendium chooser
-  game.settings.registerMenu(HM.ID, 'customCompendiumMenu', {
-    name: `${HM.ABRV}.settings.custom-compendiums.menu.name`,
-    hint: `${HM.ABRV}.settings.custom-compendiums.menu.hint`,
-    label: `${HM.ABRV}.settings.custom-compendiums.menu.label`,
-    icon: 'fa-solid fa-bars',
-    type: CustomCompendiums,
-    restricted: true
-  });
-
-  // World-scoped: Save selected class compendium packs (shared across all players)
-  game.settings.register(HM.ID, 'classPacks', {
-    name: `${HM.ABRV}.settings.class-packs.name`,
+  game.settings.register(HM.CONFIG.ID, 'customStandardArray', {
+    name: `${HM.CONFIG.ABRV}.settings.custom-standard-array.name`,
+    hint: `${HM.CONFIG.ABRV}.settings.custom-standard-array.hint`,
     scope: 'world',
-    config: false,
-    type: Array,
-    default: []
-  });
-
-  // World-scoped: Save selected race compendium packs (shared across all players)
-  game.settings.register(HM.ID, 'racePacks', {
-    name: `${HM.ABRV}.settings.race-packs.name`,
-    scope: 'world',
-    config: false,
-    type: Array,
-    default: []
-  });
-
-  // World-scoped: Save selected background compendium packs (shared across all players)
-  game.settings.register(HM.ID, 'backgroundPacks', {
-    name: `${HM.ABRV}.settings.background-packs.name`,
-    scope: 'world',
-    config: false,
-    type: Array,
-    default: []
-  });
-
-  // Register the custom standard array setting
-  game.settings.register(HM.ID, 'customStandardArray', {
-    name: `${HM.ABRV}.settings.custom-standard-array.name`,
-    hint: `${HM.ABRV}.settings.custom-standard-array.hint`,
-    scope: 'world',
-    config: game.settings.get(HM.ID, 'diceRollingMethod') === 'standardArray',
+    config: game.settings.get(HM.CONFIG.ID, 'diceRollingMethod') === 'standardArray',
     type: String,
     restricted: true,
-    default: '', // Temporary default, checked in 'ready' hook
+    default: '',
     onChange: (value) => {
       if (!value || value.trim() === '') {
-        game.settings.set(HM.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
+        game.settings.set(HM.CONFIG.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
         HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
       } else {
         StatRoller.validateAndSetCustomStandardArray(value);
       }
     }
   });
+}
+
+/**
+ * Registers compendium-related settings and menus.
+ * Controls which compendium packs are available for races, classes and backgrounds.
+ * @function
+ */
+function registerCompendiumSettings() {
+  game.settings.registerMenu(HM.CONFIG.ID, 'customCompendiumMenu', {
+    name: `${HM.CONFIG.ABRV}.settings.custom-compendiums.menu.name`,
+    hint: `${HM.CONFIG.ABRV}.settings.custom-compendiums.menu.hint`,
+    label: `${HM.CONFIG.ABRV}.settings.custom-compendiums.menu.label`,
+    icon: 'fa-solid fa-bars',
+    type: CustomCompendiums,
+    restricted: true
+  });
+
+  game.settings.register(HM.CONFIG.ID, 'classPacks', {
+    name: `${HM.CONFIG.ABRV}.settings.class-packs.name`,
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: []
+  });
+
+  game.settings.register(HM.CONFIG.ID, 'racePacks', {
+    name: `${HM.CONFIG.ABRV}.settings.race-packs.name`,
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: []
+  });
+
+  game.settings.register(HM.CONFIG.ID, 'backgroundPacks', {
+    name: `${HM.CONFIG.ABRV}.settings.background-packs.name`,
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: []
+  });
+}
+
+/**
+ * Main registration function that initializes all module settings.
+ * Sets up core, world, dice, and compendium settings and handles
+ * the ready hook for standard array initialization.
+ * @function
+ */
+export function registerSettings() {
+  registerCoreSettings();
+  HM.log(3, 'Core settings registered.');
+  registerWorldSettings();
+  HM.log(3, 'World settings registered.');
+  registerDiceSettings();
+  HM.log(3, 'Dice settings registered.');
+  registerCompendiumSettings();
+  HM.log(3, 'Compendium settings registered.');
+
   Hooks.on('ready', async () => {
-    const customArraySetting = game.settings.get(HM.ID, 'customStandardArray');
+    const customArraySetting = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
     if (!customArraySetting || customArraySetting.trim() === '') {
-      await game.settings.set(HM.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
+      await game.settings.set(HM.CONFIG.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
       HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
     }
   });

@@ -1,39 +1,78 @@
+/**
+ * Manages document caching with singleton pattern
+ * @class
+ */
 export class CacheManager {
-  static cachedRaceDocs = null;
+  static #instance;
 
-  static cachedClassDocs = null;
+  #raceDocs;
 
-  static cachedBackgroundDocs = null;
+  #classDocs;
 
-  static enrichedCache = false;
+  #backgroundDocs;
 
-  static cacheDocuments({ raceDocs, classDocs, backgroundDocs }) {
-    this.cachedRaceDocs = raceDocs;
-    this.cachedClassDocs = classDocs;
-    this.cachedBackgroundDocs = backgroundDocs;
-    this.enrichedCache = true;
+  constructor() {
+    if (CacheManager.#instance) {
+      return CacheManager.#instance;
+    }
+    CacheManager.#instance = this;
   }
 
-  static isCacheValid() {
-    return this.cachedRaceDocs && this.cachedClassDocs && this.cachedBackgroundDocs && this.enrichedCache;
+  /**
+   * Stores documents in cache
+   * @param {object} params Document parameters
+   * @param {Array} params.raceDocs Race documents
+   * @param {Array} params.classDocs Class documents
+   * @param {Array} params.backgroundDocs Background documents
+   * @throws {Error} If documents are invalid
+   */
+  cacheDocuments({ raceDocs, classDocs, backgroundDocs }) {
+    if (!Array.isArray(raceDocs) || !Array.isArray(classDocs) || !Array.isArray(backgroundDocs)) {
+      throw new Error('All documents must be arrays');
+    }
+
+    if (!raceDocs.length || !classDocs.length || !backgroundDocs.length) {
+      throw new Error('Document arrays cannot be empty');
+    }
+
+    this.#raceDocs = raceDocs;
+    this.#classDocs = classDocs;
+    this.#backgroundDocs = backgroundDocs;
   }
 
-  static getCachedRaceDocs() {
-    return this.cachedRaceDocs;
+  /**
+   * Checks if cache contains valid documents
+   * @returns {boolean}
+   */
+  isCacheValid() {
+    return Boolean(this.#raceDocs && this.#classDocs && this.#backgroundDocs);
   }
 
-  static getCachedClassDocs() {
-    return this.cachedClassDocs;
+  /**
+   * Retrieves cached documents based on type
+   * @param {'race'|'class'|'background'} type Type of documents to retrieve
+   * @returns {Array|null} Requested cached documents
+   * @throws {Error} If invalid type is provided
+   */
+  getCachedDocs(type) {
+    switch (type) {
+      case 'race':
+        return this.#raceDocs;
+      case 'class':
+        return this.#classDocs;
+      case 'background':
+        return this.#backgroundDocs;
+      default:
+        throw new Error('Invalid document type. Must be "race", "class", or "background"');
+    }
   }
 
-  static getCachedBackgroundDocs() {
-    return this.cachedBackgroundDocs;
-  }
-
-  static resetCache() {
-    this.cachedRaceDocs = null;
-    this.cachedClassDocs = null;
-    this.cachedBackgroundDocs = null;
-    this.enrichedCache = false;
+  /**
+   * Resets all cached documents
+   */
+  resetCache() {
+    this.#raceDocs = null;
+    this.#classDocs = null;
+    this.#backgroundDocs = null;
   }
 }

@@ -31,7 +31,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   static #validPacksCache = new Map();
 
   get title() {
-    return `${HM.TITLE} | ${game.i18n.localize('hm.settings.custom-compendiums.menu.name')}`;
+    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.custom-compendiums.menu.name')}`;
   }
 
   static PARTS = {
@@ -235,7 +235,8 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       });
       await Promise.all(settingPromises);
 
-      CacheManager.resetCache();
+      const cacheManager = new CacheManager();
+      cacheManager.resetCache();
       CustomCompendiums.#validPacksCache.clear();
 
       ui.notifications.info(game.i18n.localize('hm.settings.custom-compendiums.form-saved'));

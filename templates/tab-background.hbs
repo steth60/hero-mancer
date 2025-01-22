@@ -11,13 +11,7 @@
       <label for='background-dropdown'>{{localize 'hm.app.background.select-label'}}</label>
 
       <!-- Background Dropdown -->
-      <select
-        id='background-dropdown'
-        name='background'
-        data-dtype='String'
-        aria-describedby='background-description'
-        aria-label='{{localize "hm.app.background.select-label"}}'
-      >
+      <select id='background-dropdown' name='background' data-dtype='String' aria-describedby='background-description' aria-label='{{localize "hm.app.background.select-label"}}'>
         <option value=''>{{localize 'hm.app.background.select-placeholder'}}</option>
 
         {{#each backgroundDocs}}

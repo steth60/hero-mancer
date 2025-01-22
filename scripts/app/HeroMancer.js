@@ -13,7 +13,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   static DEFAULT_OPTIONS = {
-    id: `${HM.ID}-app`,
+    id: `${HM.CONFIG.ID}-app`,
     tag: 'form',
     form: {
       handler: HeroMancer.formHandler,
@@ -27,7 +27,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       selectCharacterArt: this.selectCharacterArt,
       selectTokenArt: this.selectTokenArt
     },
-    classes: [`${HM.ABRV}-app`],
+    classes: [`${HM.CONFIG.ABRV}-app`],
     position: {
       height: 'auto',
       width: 'auto',
@@ -41,50 +41,50 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* Getter to set the title of the application. */
   get title() {
-    return `${HM.TITLE} | ${game.user.name}`;
+    return `${HM.CONFIG.TITLE} | ${game.user.name}`;
   }
 
   /** @override */
   static PARTS = {
     header: {
-      template: `${HM.TMPL}/app-header.hbs`,
-      classes: [`${HM.ABRV}-app-header`]
+      template: `${HM.CONFIG.TEMPLATES}/app-header.hbs`,
+      classes: [`${HM.CONFIG.ABRV}-app-header`]
     },
     tabs: {
-      template: `${HM.TMPL}/app-nav.hbs`,
-      classes: [`${HM.ABRV}-app-nav`]
+      template: `${HM.CONFIG.TEMPLATES}/app-nav.hbs`,
+      classes: [`${HM.CONFIG.ABRV}-app-nav`]
     },
     start: {
-      template: `${HM.TMPL}/tab-start.hbs`,
-      classes: [`${HM.ABRV}-app-tab-content`]
+      template: `${HM.CONFIG.TEMPLATES}/tab-start.hbs`,
+      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
     },
     background: {
-      template: `${HM.TMPL}/tab-background.hbs`,
-      classes: [`${HM.ABRV}-app-tab-content`]
+      template: `${HM.CONFIG.TEMPLATES}/tab-background.hbs`,
+      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
     },
     race: {
-      template: `${HM.TMPL}/tab-race.hbs`,
-      classes: [`${HM.ABRV}-app-tab-content`]
+      template: `${HM.CONFIG.TEMPLATES}/tab-race.hbs`,
+      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
     },
     class: {
-      template: `${HM.TMPL}/tab-class.hbs`,
-      classes: [`${HM.ABRV}-app-tab-content`]
+      template: `${HM.CONFIG.TEMPLATES}/tab-class.hbs`,
+      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
     },
     abilities: {
-      template: `${HM.TMPL}/tab-abilities.hbs`,
-      classes: [`${HM.ABRV}-app-tab-content`]
+      template: `${HM.CONFIG.TEMPLATES}/tab-abilities.hbs`,
+      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
     },
     equipment: {
-      template: `${HM.TMPL}/tab-equipment.hbs`,
-      classes: [`${HM.ABRV}-app-tab-content`]
+      template: `${HM.CONFIG.TEMPLATES}/tab-equipment.hbs`,
+      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
       // },
       // finalize: {
-      //   template: `${HM.TMPL}/tab-finalize.hbs`,
-      //   classes: [`${HM.ABRV}-app-tab-content`]
+      //   template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`,
+      //   classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
     },
     footer: {
-      template: `${HM.TMPL}/app-footer.hbs`,
-      classes: [`${HM.ABRV}-app-footer`]
+      template: `${HM.CONFIG.TEMPLATES}/app-footer.hbs`,
+      classes: [`${HM.CONFIG.ABRV}-app-footer`]
     }
   };
 
@@ -100,11 +100,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     HeroMancer.selectedAbilities = Array(abilitiesCount).fill(8);
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
-    const diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
+    const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
     const standardArray =
-      diceRollingMethod === 'standardArray'
-        ? game.settings.get(HM.ID, 'customStandardArray').split(',').map(Number)
-        : StatRoller.getStandardArray(extraAbilities);
+      diceRollingMethod === 'standardArray' ? game.settings.get(HM.CONFIG.ID, 'customStandardArray').split(',').map(Number) : StatRoller.getStandardArray(extraAbilities);
     const totalPoints = StatRoller.getTotalPoints();
     const remainingPoints = Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
@@ -114,14 +112,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       currentScore: 8
     }));
     HM.log(3, 'ABILITIES:', abilities);
+    const cacheManager = new CacheManager();
 
     // Check if cached data is available to avoid re-fetching
-    if (CacheManager.isCacheValid()) {
+    if (cacheManager.isCacheValid()) {
       HM.log(3, 'Documents cached and descriptions enriched!');
       return {
-        raceDocs: HM.documents.race || CacheManager.getCachedRaceDocs(),
-        classDocs: HM.documents.class || CacheManager.getCachedClassDocs(),
-        backgroundDocs: HM.documents.background || CacheManager.getCachedBackgroundDocs(),
+        raceDocs: HM.documents.race || cacheManager.getCachedDocs('race'),
+        classDocs: HM.documents.class || cacheManager.getCachedDocs('class'),
+        backgroundDocs: HM.documents.background || cacheManager.getCachedDocs('background'),
         tabs: this._getTabs(options.parts),
         abilities,
         rollStat: this.rollStat,
@@ -136,9 +135,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     ui.notifications.info('hm.actortab-button.loading', { localize: true });
 
     const context = {
-      raceDocs: HM.documents.race || CacheManager.getCachedRaceDocs(),
-      classDocs: HM.documents.class || CacheManager.getCachedClassDocs(),
-      backgroundDocs: HM.documents.background || CacheManager.getCachedBackgroundDocs(),
+      raceDocs: HM.documents.race || cacheManager.getCachedRaceDocs(),
+      classDocs: HM.documents.class || cacheManager.getCachedClassDocs(),
+      backgroundDocs: HM.documents.background || cacheManager.getCachedBackgroundDocs(),
       tabs: this._getTabs(options.parts),
       abilities,
       rollStat: this.rollStat,
@@ -161,16 +160,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           HM.log(3, `Enriching description for '${doc.name}'...`, doc);
           doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
         } catch (error) {
-          HM.log(1, `${HM.ID} | Error enriching description or processing starting equipment for '${doc.name}':`, error);
+          HM.log(1, `${HM.CONFIG.ID} | Error enriching description or processing starting equipment for '${doc.name}':`, error);
         }
       }
     }
 
-    CacheManager.cacheDocuments({
-      raceDocs,
-      classDocs,
-      backgroundDocs,
-      abilities
+    cacheManager.cacheDocuments({
+      raceDocs: context.raceDocs,
+      classDocs: context.classDocs,
+      backgroundDocs: context.backgroundDocs
     });
 
     HM.log(3, 'Documents registered and enriched, caching results.');
@@ -203,11 +201,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       // case 'finalize':
       //   context.tab = context.tabs[partId];
       //   context.alignments = game.settings
-      //     .get(HM.ID, 'alignments')
+      //     .get(HM.CONFIG.ID, 'alignments')
       //     ?.split(',')
       //     .map((d) => d.trim()) || ['None'];
       //   context.deities = game.settings
-      //     .get(HM.ID, 'deities')
+      //     .get(HM.CONFIG.ID, 'deities')
       //     ?.split(',')
       //     .map((d) => d.trim()) || ['None'];
       //   break;
@@ -239,37 +237,37 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           return tabs;
         case 'start':
           tab.id = 'start';
-          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.start`)}`;
+          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.start`)}`;
           tab.icon = 'fa-solid fa-play-circle';
           break;
         case 'background':
           tab.id = 'background';
-          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.background`)}`;
+          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.background`)}`;
           tab.icon = 'fa-solid fa-scroll';
           break;
         case 'race':
           tab.id = 'race';
-          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.race`)}`;
+          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.race`)}`;
           tab.icon = 'fa-solid fa-feather-alt';
           break;
         case 'class':
           tab.id = 'class';
-          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.class`)}`;
+          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.class`)}`;
           tab.icon = 'fa-solid fa-chess-rook';
           break;
         case 'abilities':
           tab.id = 'abilities';
-          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.abilities`)}`;
+          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.abilities`)}`;
           tab.icon = 'fa-solid fa-fist-raised';
           break;
         case 'equipment':
           tab.id = 'equipment';
-          tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.equipment`)}`;
+          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.equipment`)}`;
           tab.icon = 'fa-solid fa-shield-halved';
           break;
         // case 'finalize':
         //   tab.id = 'finalize';
-        //   tab.label = `${game.i18n.localize(`${HM.ABRV}.app.tab-names.finalize`)}`;
+        //   tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.finalize`)}`;
         //   tab.icon = 'fa-solid fa-check-circle';
         //   break;
         case 'footer':
@@ -288,182 +286,31 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @param {RenderOptions} options Provided render options
    * @protected
    */
+  /**
+   * Actions performed after any render of the Application.
+   * Post-render steps are not awaited by the render process.
+   * @param {ApplicationRenderContext} context Prepared context data
+   * @param {RenderOptions} options Provided render options
+   * @protected
+   */
   _onRender(context, options) {
     HM.log(3, 'Rendering application with context and options.');
     const html = this.element;
 
-    // Initialize dropdowns for race, class, and background
     DropdownHandler.initializeDropdown({ type: 'class', html, context });
     DropdownHandler.initializeDropdown({ type: 'race', html, context });
     DropdownHandler.initializeDropdown({ type: 'background', html, context });
 
-    const abilityDropdowns = html.querySelectorAll('.ability-dropdown');
-    const selectedAbilities = Array.from(abilityDropdowns).map(() => ''); // Initialize with empty strings
-    const totalPoints = StatRoller.getTotalPoints();
+    // Store cleanup function
+    this._cleanup = Listeners.initializeListeners(html, context, HeroMancer.selectedAbilities);
+  }
 
-    // Set up event listeners and initial dropdown state based on mode
-    abilityDropdowns.forEach((dropdown, index) => {
-      dropdown.addEventListener('change', (event) => {
-        selectedAbilities[index] = event.target.value || ''; // Store selected ability name/abbreviation
-        DropdownHandler.updateAbilityDropdowns(
-          abilityDropdowns,
-          selectedAbilities,
-          totalPoints,
-          context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula'
-        );
-      });
-    });
-
-    // Initial update on render
-    DropdownHandler.updateAbilityDropdowns(
-      abilityDropdowns,
-      selectedAbilities,
-      totalPoints,
-      context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula'
-    );
-    Listeners.updatePlusButtonState(context.remainingPoints);
-    Listeners.updateMinusButtonState();
-
-    // Assuming dropdown elements have IDs #classDropdown, #raceDropdown, and #backgroundDropdown
-    const classId = document.querySelector('#class-dropdown').value;
-    const backgroundId = document.querySelector('#background-dropdown').value;
-
-    // Target container where equipment choices will be appended
-    const equipmentContainer = document.querySelector('#equipment-container');
-
-    // Initial render of equipment choices (renders both class and background)
-    const equipment = new EquipmentParser(classId, backgroundId);
-    equipment
-      .renderEquipmentChoices()
-      .then((equipmentChoices) => {
-        equipmentContainer.appendChild(equipmentChoices);
-      })
-      .catch((error) => {
-        console.error('Error rendering initial equipment choices:', error);
-      });
-
-    // Separate event listeners for class and background dropdowns
-    document.querySelector('#class-dropdown').addEventListener('change', async (event) => {
-      const selectedValue = event.target.value;
-      DropdownHandler.selectionStorage.class = {
-        selectedValue,
-        selectedId: selectedValue.split(' ')[0] // Extract the item ID
-      };
-      equipment.classId = DropdownHandler.selectionStorage.class.selectedId;
-      HM.log(3, 'SELECTION STORAGE UPDATED (class):', DropdownHandler.selectionStorage);
-
-      // Render only the class equipment section
-      try {
-        const updatedChoices = await equipment.renderEquipmentChoices('class');
-        const classSection = updatedChoices.querySelector('.class-equipment-section');
-        const existingClassSection = equipmentContainer.querySelector('.class-equipment-section');
-
-        if (existingClassSection) {
-          existingClassSection.replaceWith(classSection);
-        } else {
-          equipmentContainer.appendChild(classSection);
-        }
-      } catch (error) {
-        console.error('Error updating class equipment choices:', error);
-      }
-    });
-
-    document.querySelector('#background-dropdown').addEventListener('change', async (event) => {
-      const selectedValue = event.target.value;
-      DropdownHandler.selectionStorage.background = {
-        selectedValue,
-        selectedId: selectedValue.split(' ')[0] // Extract the item ID
-      };
-      equipment.backgroundId = DropdownHandler.selectionStorage.background.selectedId;
-      HM.log(3, 'SELECTION STORAGE UPDATED (background):', DropdownHandler.selectionStorage);
-
-      // Render only the background equipment section
-      try {
-        const updatedChoices = await equipment.renderEquipmentChoices('background');
-        const backgroundSection = updatedChoices.querySelector('.background-equipment-section');
-        const existingBackgroundSection = equipmentContainer.querySelector('.background-equipment-section');
-
-        if (existingBackgroundSection) {
-          existingBackgroundSection.replaceWith(backgroundSection);
-        } else {
-          equipmentContainer.appendChild(backgroundSection);
-        }
-      } catch (error) {
-        console.error('Error updating background equipment choices:', error);
-      }
-    });
-
-    document.getElementById('link-token-art').addEventListener('change', HeroMancer._toggleTokenArtRow);
-
-    document.querySelector('#background-dropdown')?.addEventListener('change', (event) => {
-      const backgroundName = event.target.options[event.target.selectedIndex].text;
-      const backgroundSummary = document.querySelector('.background-summary');
-      if (backgroundSummary) {
-        const article = /^[aeiou]/i.test(backgroundName) ? 'an' : 'a';
-        backgroundSummary.textContent = `Starting as ${article} ${backgroundName}`;
-      }
-    });
-
-    document.querySelector('#race-dropdown, #class-dropdown')?.addEventListener('change', (event) => {
-      const raceName = document.querySelector('#race-dropdown').options[document.querySelector('#race-dropdown').selectedIndex].text;
-      const className = document.querySelector('#class-dropdown').options[document.querySelector('#class-dropdown').selectedIndex].text;
-      const classRaceSummary = document.querySelector('.class-race-summary');
-      if (classRaceSummary) {
-        classRaceSummary.innerHTML = `This <a href="#" data-tab="race">${raceName || 'unknown race'}</a> <a href="#" data-tab="class">${className || 'unknown class'}</a>`;
-      }
-    });
-
-    function updateAbilitiesSummary() {
-      const scores = Array.from(document.querySelectorAll('.ability-score'))
-        .map((el) => ({
-          name: el.getAttribute('data-ability'),
-          score: parseInt(el.value) || 0
-        }))
-        .sort((a, b) => b.score - a.score);
-
-      if (scores.length >= 2) {
-        document.querySelector('.abilities-summary').textContent = `prides themself on their impressive ${scores[0].name} and ${scores[1].name}`;
-      }
+  _onClose() {
+    HM.log(3, 'Closing application.');
+    if (this._cleanup) {
+      this._cleanup();
     }
-
-    function updateEquipmentSummary() {
-      const selectedEquipment = Array.from(document.querySelectorAll('#equipment-container select, #equipment-container input:checked'))
-        .map((el) => el.options?.[el.selectedIndex]?.text || el.parentElement?.textContent?.trim())
-        .filter(Boolean);
-      /*TODO: V13 BUG: textContent is null*/
-      document.querySelector('.equipment-summary').textContent = selectedEquipment.length
-        ? `They wield ${selectedEquipment.join(', ')} as their adventure begins`
-        : 'They begin their adventure';
-    }
-
-    // Add to _onRender
-    function updateNameAndPortrait() {
-      const nameInput = document.querySelector('#character-name');
-      HM.log(3, 'updateNameAndPortrait:', nameInput);
-      const artInput = document.querySelector('#character-art-path');
-      HM.log(3, 'updateNameAndPortrait:', artInput);
-      const portraitName = document.querySelector('.character-portrait h2');
-      HM.log(3, 'updateNameAndPortrait:', portraitName);
-      const portraitImg = document.querySelector('.character-portrait img');
-      HM.log(3, 'updateNameAndPortrait:', portraitImg);
-
-      if (portraitName) {
-        portraitName.textContent = nameInput?.value || game.user.name;
-        HM.log(3, 'updateNameAndPortrait:', portraitName.textContent);
-      }
-      if (portraitImg) {
-        portraitImg.src = artInput?.value || '';
-        HM.log(3, 'updateNameAndPortrait:', portraitImg.src);
-      }
-
-      // Add listeners
-      nameInput?.addEventListener('change', updateNameAndPortrait);
-      artInput?.addEventListener('change', updateNameAndPortrait);
-    }
-
-    updateNameAndPortrait(); // Initial call
-
-    document.querySelector('#equipment-container')?.addEventListener('change', updateEquipmentSummary);
+    super._onClose();
   }
 
   /* Logic for rolling stats and updating input fields */
@@ -474,12 +321,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static increaseScore(event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
-    Listeners.adjustScore(index, 1);
+    Listeners.adjustScore(index, 1, HeroMancer.selectedAbilities);
   }
 
   static decreaseScore(event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
-    Listeners.adjustScore(index, -1);
+    Listeners.adjustScore(index, -1, HeroMancer.selectedAbilities);
   }
 
   /**
@@ -787,7 +634,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         }
       }
     } catch (err) {
-      console.error(err);
+      HM.log(1, err);
     }
 
     // Extract itemId and packId from the formData
@@ -877,8 +724,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       if (!raceItem) throw new Error(game.i18n.localize('hm.errors.no-race'));
       if (!classItem) throw new Error(game.i18n.localize('hm.errors.no-class'));
     } catch (error) {
-      // Log error to the console and notify the user
-      console.error(error);
+      HM.log(1, error);
       ui.notifications.error(game.i18n.localize('hm.errors.fetch-fail'));
     }
 
@@ -918,7 +764,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       await processAdvancements([classItem, raceItem, backgroundItem], actor);
     } catch (error) {
       HM.log(1, 'Error during character creation:', error);
-      console.error(error);
     }
     /**
      * Processes a list of items for advancement for a given actor.

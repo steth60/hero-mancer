@@ -5,31 +5,24 @@ import { HeroMancer } from './app/HeroMancer.js';
 
 /* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
 export class HM {
-  static ID = 'hero-mancer'; // Used to define folders, classes, file structures, foundry api, etc.
-
-  static TITLE = 'Hero Mancer'; // Module title
-
-  static ABRV = 'hm'; // Abbreviation for CSS classes and localization
-
-  static TMPL = `modules/${HM.ID}/templates`; // Path to templates
-
-  static logLevel = 0;
-
-  static documents = null;
-
-  /* Initialize the module */
-  static initialize() {
-    console.log('Initializing Module.');
-    this.initializeSettings();
-    this.initializeHeroMancer();
-    this.logLevel = parseInt(game.settings.get(HM.ID, 'loggingLevel'));
-
-    // Initialize documents object
-    this.documents = {
+  static CONFIG = {
+    ID: 'hero-mancer',
+    TITLE: 'Hero Mancer',
+    ABRV: 'hm',
+    TEMPLATES: 'modules/hero-mancer/templates',
+    DOCUMENTS: {
       race: null,
       class: null,
       background: null
-    };
+    }
+  };
+
+  static logLevel = 0;
+
+  static init() {
+    this.initSettings();
+    this.logLevel = parseInt(game.settings.get(this.CONFIG.ID, 'loggingLevel'));
+    this.CONFIG.DOCUMENTS = { ...this.CONFIG.DOCUMENTS }; // Clone default structure
 
     // Logging setup
     if (this.logLevel > 0) {
@@ -38,30 +31,9 @@ export class HM {
     }
   }
 
-  /* Initialize HeroMancer */
-  static initializeHeroMancer() {
-    console.log('Initializing HeroMancer.');
-
-    Hooks.on('ready', () => {
-      if (!game.settings.get(HM.ID, 'enable')) return;
-
-      // Initialize HeroMancer after everything is ready.
-      this.heroMancer = new HeroMancer();
-
-      // Load the saved compendium selections from the settings
-      CustomCompendiums.classPacks = game.settings.get('hero-mancer', 'classPacks');
-      CustomCompendiums.racePacks = game.settings.get('hero-mancer', 'racePacks');
-      CustomCompendiums.backgroundPacks = game.settings.get('hero-mancer', 'backgroundPacks');
-
-      HM.log(3, 'Loaded classPacks:', CustomCompendiums.classPacks);
-      HM.log(3, 'Loaded racePacks:', CustomCompendiums.racePacks);
-      HM.log(3, 'Loaded backgroundPacks:', CustomCompendiums.backgroundPacks);
-    });
-  }
-
   /* Register Settings */
-  static initializeSettings() {
-    console.log('Registering Module Settings.');
+  static initSettings() {
+    console.log(`${HM.CONFIG.ID} | Registering module settings.`);
     registerSettings();
 
     Hooks.once('renderSettingConfig', () => {
@@ -78,71 +50,98 @@ export class HM {
     if (this.logLevel > 0 && level <= this.logLevel) {
       switch (level) {
         case 1:
-          console.error(`${HM.ID} |`, ...args);
+          console.error(`${HM.CONFIG.ID} |`, ...args);
           break;
         case 2:
-          console.warn(`${HM.ID} |`, ...args);
+          console.warn(`${HM.CONFIG.ID} |`, ...args);
           break;
         case 3:
         default:
-          console.log(`${HM.ID} |`, ...args);
+          console.log(`${HM.CONFIG.ID} |`, ...args);
           break;
       }
     }
   }
 
+  /**
+   * Prepares and caches game documents
+   * @throws {Error} If document preparation fails
+   * @async
+   */
   static async prepareDocuments() {
     HM.log(3, 'Preparing documents for Hero Mancer');
+
     try {
-      const { types: raceDocs } = await DocumentService.prepDocs('race');
-      const { types: classDocs } = await DocumentService.prepDocs('class');
-      const { types: backgroundDocs } = await DocumentService.prepDocs('background');
+      const [raceDocs, classDocs, backgroundDocs] = await Promise.all([
+        DocumentService.prepDocs('race'),
+        DocumentService.prepDocs('class'),
+        DocumentService.prepDocs('background')
+      ]).then((results) => results.map((r) => r.types));
 
-      this.documents.race = raceDocs;
-      this.documents.class = classDocs;
-      this.documents.background = backgroundDocs;
+      this.documents = { race: raceDocs, class: classDocs, background: backgroundDocs };
 
-      // Enrich descriptions after document preparation
       const allDocs = [
         ...(raceDocs?.flatMap((folder) => folder.docs) || []),
         ...(classDocs?.flatMap((pack) => pack.docs) || []),
         ...(backgroundDocs?.flatMap((pack) => pack.docs) || [])
       ];
 
-      for (const doc of allDocs) {
-        if (doc?.description) {
-          try {
-            doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
-          } catch (error) {
-            HM.log(1, `Error enriching description for '${doc.name}':`, error);
+      await Promise.all(
+        allDocs.map(async (doc) => {
+          if (doc?.description) {
+            try {
+              doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
+            } catch (error) {
+              HM.log(1, `Failed to enrich description for '${doc.name}':`, error);
+            }
           }
-        }
-      }
+        })
+      );
 
-      CacheManager.cacheDocuments({
-        raceDocs,
-        classDocs,
-        backgroundDocs
-      });
-
+      const cacheManager = new CacheManager();
+      cacheManager.cacheDocuments({ raceDocs, classDocs, backgroundDocs });
       HM.log(3, 'Document preparation complete');
     } catch (error) {
-      HM.log(1, 'Error preparing documents:', error);
+      HM.log(1, 'Failed to prepare documents:', error.message);
+      throw error; // Re-throw to handle at caller level
     }
+  }
+
+  static updateSelection(type, selection) {
+    this.CONFIG.SELECT_STORAGE[type] = selection;
   }
 }
 
-/* Register the initialization hook */
-Hooks.on('init', () => {
-  HM.initialize(); // Initialize the module and register settings
+// Add SELECT_STORAGE after class definition
+HM.CONFIG.SELECT_STORAGE = {
+  class: { selectedValue: '', selectedId: '' },
+  race: { selectedValue: '', selectedId: '' },
+  background: { selectedValue: '', selectedId: '' }
+};
+
+Hooks.on('init', () => HM.init());
+
+Hooks.on('ready', async () => {
+  if (!game.settings.get(HM.CONFIG.ID, 'enable')) return;
+
+  await HM.prepareDocuments();
+
+  // Initialize HeroMancer
+  HM.heroMancer = new HeroMancer();
+
+  // Load compendium selections
+  CustomCompendiums.classPacks = game.settings.get('hero-mancer', 'classPacks');
+  CustomCompendiums.racePacks = game.settings.get('hero-mancer', 'racePacks');
+  CustomCompendiums.backgroundPacks = game.settings.get('hero-mancer', 'backgroundPacks');
+
+  HM.log(3, {
+    classPacks: CustomCompendiums.classPacks,
+    racePacks: CustomCompendiums.racePacks,
+    backgroundPacks: CustomCompendiums.backgroundPacks
+  });
 });
 
-/* Add button to ActorDirectory */
 Hooks.on('renderActorDirectory', () => {
   HtmlManipulator.registerButton();
   HM.log(3, 'Injecting button into Actor Directory');
-});
-
-Hooks.on('ready', async () => {
-  await HM.prepareDocuments();
 });

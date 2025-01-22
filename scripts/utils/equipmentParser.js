@@ -1,4 +1,3 @@
-import { DropdownHandler } from './index.js';
 import { HM } from '../hero-mancer.js';
 
 export class EquipmentParser {
@@ -29,8 +28,8 @@ export class EquipmentParser {
 
   constructor() {
     this.equipmentData = null;
-    this.classId = DropdownHandler.selectionStorage.class.selectedId;
-    this.backgroundId = DropdownHandler.selectionStorage.background.selectedId;
+    this.classId = HM.CONFIG.SELECT_STORAGE.class.selectedId;
+    this.backgroundId = HM.CONFIG.SELECT_STORAGE.background.selectedId;
     this.proficiencies = new Set();
     this.combinedItemIds = new Set();
 
@@ -67,7 +66,7 @@ export class EquipmentParser {
    * @returns {Promise<Array>} - The starting equipment array.
    */
   async getStartingEquipment(type) {
-    const { selectedId } = DropdownHandler.selectionStorage[type] || {};
+    const { selectedId } = HM.CONFIG.SELECT_STORAGE[type] || {};
     HM.log(3, `Fetching starting equipment for type: ${type}, selectedId: ${selectedId}`);
 
     if (!selectedId) {
@@ -269,10 +268,7 @@ export class EquipmentParser {
   }
 
   isStandaloneAndBlock(item) {
-    return (
-      !this.equipmentData.class.some((p) => p._id === item.group && p.type === 'OR') &&
-      !this.equipmentData.background.some((p) => p._id === item.group && p.type === 'OR')
-    );
+    return !this.equipmentData.class.some((p) => p._id === item.group && p.type === 'OR') && !this.equipmentData.background.some((p) => p._id === item.group && p.type === 'OR');
   }
 
   isItemRendered(item) {
@@ -287,11 +283,7 @@ export class EquipmentParser {
   }
 
   isSpecialMultiOptionCase(item) {
-    return (
-      item.type === 'OR' &&
-      item.children.some((child) => child.type === 'AND' && child.children.length > 1) &&
-      item.children.some((entry) => entry.count && entry.count > 1)
-    );
+    return item.type === 'OR' && item.children.some((child) => child.type === 'AND' && child.children.length > 1) && item.children.some((entry) => entry.count && entry.count > 1);
   }
 
   async renderSpecialMultiOptionCase(item) {
@@ -549,15 +541,13 @@ export class EquipmentParser {
   shouldRenderAsDropdown(item) {
     // Check for items that are part of an OR block
     if (item.group) {
-      const parentItem =
-        this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
+      const parentItem = this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
       return parentItem?.type === 'OR';
     }
 
     // Check for combined items that should be rendered in a dropdown
     if (item.type === 'AND' && item.children?.length > 1) {
-      const parent =
-        this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
+      const parent = this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
       if (parent?.type === 'OR') {
         return true;
       }
@@ -778,12 +768,7 @@ export class EquipmentParser {
     const lookupItems = item.children.filter(
       (child) =>
         child.type === 'weapon' &&
-        (child.key === 'sim' ||
-          child.key === 'mar' ||
-          child.key === 'simpleM' ||
-          child.key === 'simpleR' ||
-          child.key === 'martialM' ||
-          child.key === 'martialR')
+        (child.key === 'sim' || child.key === 'mar' || child.key === 'simpleM' || child.key === 'simpleR' || child.key === 'martialM' || child.key === 'martialR')
     );
     const linkedItems = item.children.filter((child) => child.type === 'linked');
 
