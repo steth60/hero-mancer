@@ -7,7 +7,7 @@
 ![GitHub all releases](https://img.shields.io/github/downloads/Sayshal/hero-mancer/total?style=for-the-badge)
 ![Github License](https://img.shields.io/github/license/Sayshal/hero-mancer?style=for-the-badge)
 
-![Release Progress](https://img.shields.io/github/milestones/progress-percent/Sayshal/hero-mancer/4?label=1.0%20Release%20Progress)
+![Release Progress](https://img.shields.io/github/milestones/progress-percent/Sayshal/hero-mancer/4?style=for-the-badge&label=1.0%20Release%20Progress)
 
 ## Supporting The Module
 
