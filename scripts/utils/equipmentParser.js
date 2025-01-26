@@ -204,10 +204,13 @@ export class EquipmentParser {
   }
 
   async createEquipmentElement(item) {
-    if (this.isItemRendered(item)) return null;
+    if (this.isItemRendered(item)) {
+      HM.log(3, `RENDER DEBUG: Skipping already rendered item: ${item._source.key}`, item);
+      return null;
+    }
 
     item.rendered = true;
-    HM.log(3, `Rendering item: ${item._source.key}`);
+    HM.log(3, `RENDER DEBUG: Rendering item: ${item?.label || item._source?.key || item.type}`, item);
 
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
@@ -223,19 +226,23 @@ export class EquipmentParser {
           const itemDoc = await fromUuidSync(item.key);
           if (itemDoc) {
             labelElement.innerHTML = item.label || `${item.count || ''} ${itemDoc.name}`;
+            HM.log(3, `RENDER DEBUG: Adding label: ${labelElement.innerHTML} for item key: ${item.key}`, item, labelElement);
             shouldAddLabel = true;
           } else {
-            HM.log(2, `No document found for item key: ${item.key}`);
+            HM.log(2, `No document found for item key: ${item.key}`, item, labelElement);
             labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+            HM.log(3, `RENDER DEBUG: Fallback label added: ${labelElement.innerHTML}`, item, labelElement);
             shouldAddLabel = true;
           }
         } catch (error) {
-          HM.log(2, `Error getting label for item ${item._source.key}: ${error.message}`);
+          HM.log(2, `Error getting label for item ${item._source.key}: ${error.message}`, item, labelElement);
           labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+          HM.log(3, `RENDER DEBUG: Error fallback label added: ${labelElement.innerHTML}`, item, labelElement);
           shouldAddLabel = true;
         }
       }
       if (shouldAddLabel) {
+        HM.log(3, `RENDER DEBUG: Appending label element to item container: ${labelElement.outerHTML}`, item, labelElement);
         itemContainer.appendChild(labelElement);
       }
     }
@@ -244,25 +251,30 @@ export class EquipmentParser {
     if (item.group) {
       const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
       if (parentItem?.type === 'OR') {
-        return null; // Skip individual rendering for items that will be in a dropdown
+        HM.log(3, `RENDER DEBUG: Skipping rendering for item in OR choice group: ${item._source.key}`, item, parentItem);
+        return null;
       }
     }
 
     switch (item.type) {
       case 'OR':
+        HM.log(3, `RENDER DEBUG: Rendering OR block for item: ${item._source.key}`, item);
         return this.renderOrBlock(item, itemContainer);
       case 'AND':
-        // Only render AND block if it's not part of an OR choice
         if (!item.group || this.isStandaloneAndBlock(item)) {
+          HM.log(3, `RENDER DEBUG: Rendering AND block for item: ${item._source?.key || item.type}`, item);
           return this.renderAndBlock(item, itemContainer);
         }
+        HM.log(3, `RENDER DEBUG: Skipping AND block as part of a group: ${item._source.key}`, item);
         return null;
       case 'linked':
+        HM.log(3, `RENDER DEBUG: Rendering linked item: ${item._source.key}`, item);
         return this.renderLinkedItem(item, itemContainer);
       case 'focus':
+        HM.log(3, `RENDER DEBUG: Rendering focus item: ${item._source.key}`, item);
         return this.renderFocusItem(item, itemContainer);
       default:
-        HM.log(2, `Unknown item type encountered: ${item.type}`, { itemId: item._id });
+        HM.log(2, `Unknown item type encountered: ${item.type}`, { itemId: item._id }, item);
         return null;
     }
   }
@@ -756,8 +768,8 @@ export class EquipmentParser {
   }
 
   async renderAndBlock(item, itemContainer) {
-    if (item.group) {
-      HM.log(3, `Skipping label for AND group with parent group: ${item.group}`);
+    if (!item.group) {
+      HM.log(3, `Skipping label for AND group without parent group: ${item.group}`);
     } else {
       const andLabelElement = document.createElement('h4');
       andLabelElement.classList.add('parent-label');
@@ -771,12 +783,14 @@ export class EquipmentParser {
         (child.key === 'sim' || child.key === 'mar' || child.key === 'simpleM' || child.key === 'simpleR' || child.key === 'martialM' || child.key === 'martialR')
     );
     const linkedItems = item.children.filter((child) => child.type === 'linked');
+    HM.log(3, 'RENDER DEBUG (AND):', linkedItems, lookupItems);
 
     const renderedItemNames = new Set();
     const combinedIds = [];
     let combinedLabel = '';
 
     for (const child of linkedItems) {
+      HM.log(3, 'RENDER DEBUG (AND): Processing linked item:', child);
       if (!child._source?.key) continue;
 
       // Get the actual item using fromUuidSync to get its name

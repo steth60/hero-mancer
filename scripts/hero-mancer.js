@@ -1,4 +1,4 @@
-import { HtmlManipulator, DocumentService, CacheManager } from './utils/index.js';
+import { HtmlManipulator, DocumentService, CacheManager, EquipmentParser } from './utils/index.js';
 import { registerSettings } from './settings.js';
 import { CustomCompendiums } from './app/CustomCompendiums.js';
 import { HeroMancer } from './app/HeroMancer.js';
@@ -119,10 +119,16 @@ HM.CONFIG.SELECT_STORAGE = {
   background: { selectedValue: '', selectedId: '' }
 };
 
-Hooks.on('init', () => HM.init());
+Hooks.on('init', () => {
+  HM.init();
+  CONFIG.Item.compendiumIndexFields = ['system.type.value', 'system.properties', 'type', 'name'];
+});
 
-Hooks.on('ready', async () => {
+Hooks.once('ready', async () => {
   if (!game.settings.get(HM.CONFIG.ID, 'enable')) return;
+  for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
+    await pack.getIndex();
+  }
 
   await HM.prepareDocuments();
 
@@ -139,6 +145,8 @@ Hooks.on('ready', async () => {
     racePacks: CustomCompendiums.racePacks,
     backgroundPacks: CustomCompendiums.backgroundPacks
   });
+
+  await EquipmentParser.initializeLookupItems();
 });
 
 Hooks.on('renderActorDirectory', () => {
