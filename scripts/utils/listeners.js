@@ -93,15 +93,25 @@ export class Listeners {
    */
   static async updateEquipmentSection(equipment, container, type) {
     try {
+      // Reset rendered flags on all items before updating
+      if (EquipmentParser.lookupItems) {
+        Object.values(EquipmentParser.lookupItems).forEach((itemSet) => {
+          itemSet.forEach((item) => {
+            delete item.rendered;
+            delete item.isSpecialCase;
+            delete item.specialGrouping;
+          });
+        });
+      }
+
       const updatedChoices = await equipment.renderEquipmentChoices(type);
       const sectionClass = `${type}-equipment-section`;
-      const newSection = updatedChoices.querySelector(`.${sectionClass}`);
       const existingSection = container.querySelector(`.${sectionClass}`);
 
       if (existingSection) {
-        existingSection.replaceWith(newSection);
+        existingSection.replaceWith(updatedChoices.querySelector(`.${sectionClass}`));
       } else {
-        container.appendChild(newSection);
+        container.appendChild(updatedChoices.querySelector(`.${sectionClass}`));
       }
     } catch (error) {
       HM.log(1, `Error updating ${type} equipment choices:`, error);
@@ -142,61 +152,6 @@ export class Listeners {
     nameInput?.addEventListener('change', updatePortrait);
     artInput?.addEventListener('change', updatePortrait);
     updatePortrait();
-  }
-
-  /**
-   * Initializes listeners for updating various summary sections
-   */
-  static initializeSummaryListeners() {
-    const raceDropdown = document.querySelector('#race-dropdown');
-    const classDropdown = document.querySelector('#class-dropdown');
-    const equipmentContainer = document.querySelector('#equipment-container');
-
-    raceDropdown?.addEventListener('change', () => this.updateClassRaceSummary());
-    classDropdown?.addEventListener('change', () => this.updateClassRaceSummary());
-    equipmentContainer?.addEventListener('change', () => this.updateEquipmentSummary());
-  }
-
-  /**
-   * Updates the background summary text based on selected background
-   * @param {HTMLSelectElement} backgroundSelect The background dropdown element
-   */
-  static updateBackgroundSummary(backgroundSelect) {
-    const backgroundName = backgroundSelect.options[backgroundSelect.selectedIndex].text;
-    const backgroundSummary = document.querySelector('.background-summary');
-    if (backgroundSummary) {
-      const article = /^[aeiou]/i.test(backgroundName) ? 'an' : 'a';
-      backgroundSummary.textContent = `Starting as ${article} ${backgroundName}`;
-    }
-  }
-
-  /**
-   * Updates the class and race summary text
-   */
-  static updateClassRaceSummary() {
-    const raceSelect = document.querySelector('#race-dropdown');
-    const classSelect = document.querySelector('#class-dropdown');
-    const summary = document.querySelector('.class-race-summary');
-
-    if (summary && raceSelect && classSelect) {
-      const raceName = raceSelect.options[raceSelect.selectedIndex].text;
-      const className = classSelect.options[classSelect.selectedIndex].text;
-      summary.innerHTML = `This <a href="#" data-tab="race">${raceName || 'unknown race'}</a> <a href="#" data-tab="class">${className || 'unknown class'}</a>`;
-    }
-  }
-
-  /**
-   * Updates the equipment summary text based on selected equipment
-   */
-  static updateEquipmentSummary() {
-    const selectedEquipment = Array.from(document.querySelectorAll('#equipment-container select, #equipment-container input:checked'))
-      .map((el) => el.options?.[el.selectedIndex]?.text || el.parentElement?.textContent?.trim())
-      .filter(Boolean);
-
-    const summary = document.querySelector('.equipment-summary');
-    if (summary) {
-      summary.textContent = selectedEquipment.length ? `They wield ${selectedEquipment.join(', ')} as their adventure begins` : 'They begin their adventure';
-    }
   }
 
   /**
@@ -300,5 +255,60 @@ export class Listeners {
         inputElement.value = currentScore;
       }
     });
+  }
+
+  /**
+   * Initializes listeners for updating various summary sections
+   */
+  static initializeSummaryListeners() {
+    const raceDropdown = document.querySelector('#race-dropdown');
+    const classDropdown = document.querySelector('#class-dropdown');
+    const equipmentContainer = document.querySelector('#equipment-container');
+
+    raceDropdown?.addEventListener('change', () => this.updateClassRaceSummary());
+    classDropdown?.addEventListener('change', () => this.updateClassRaceSummary());
+    equipmentContainer?.addEventListener('change', () => this.updateEquipmentSummary());
+  }
+
+  /**
+   * Updates the background summary text based on selected background
+   * @param {HTMLSelectElement} backgroundSelect The background dropdown element
+   */
+  static updateBackgroundSummary(backgroundSelect) {
+    const backgroundName = backgroundSelect.options[backgroundSelect.selectedIndex].text;
+    const backgroundSummary = document.querySelector('.background-summary');
+    if (backgroundSummary) {
+      const article = /^[aeiou]/i.test(backgroundName) ? 'an' : 'a';
+      backgroundSummary.textContent = `Starting as ${article} ${backgroundName}`;
+    }
+  }
+
+  /**
+   * Updates the class and race summary text
+   */
+  static updateClassRaceSummary() {
+    const raceSelect = document.querySelector('#race-dropdown');
+    const classSelect = document.querySelector('#class-dropdown');
+    const summary = document.querySelector('.class-race-summary');
+
+    if (summary && raceSelect && classSelect) {
+      const raceName = raceSelect.options[raceSelect.selectedIndex].text;
+      const className = classSelect.options[classSelect.selectedIndex].text;
+      summary.innerHTML = `This <a href="#" data-tab="race">${raceName || 'unknown race'}</a> <a href="#" data-tab="class">${className || 'unknown class'}</a>`;
+    }
+  }
+
+  /**
+   * Updates the equipment summary text based on selected equipment
+   */
+  static updateEquipmentSummary() {
+    const selectedEquipment = Array.from(document.querySelectorAll('#equipment-container select, #equipment-container input:checked'))
+      .map((el) => el.options?.[el.selectedIndex]?.text || el.parentElement?.textContent?.trim())
+      .filter(Boolean);
+
+    const summary = document.querySelector('.equipment-summary');
+    if (summary) {
+      summary.textContent = selectedEquipment.length ? `They wield ${selectedEquipment.join(', ')} as their adventure begins` : 'They begin their adventure';
+    }
   }
 }

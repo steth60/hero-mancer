@@ -8,34 +8,34 @@
     },
     "app": {
       "abilities": {
+        "decrease": "-1",
+        "increase": "+1",
+        "instructions": {
+          "manual": {
+            "description": "For each ability below, roll the designated formula (default is 4d6 drop the lowest), and enter the result as your ability score. Repeat for each ability.",
+            "preamble": "The Manual Rolling method allows you to create a unique character profile by rolling dice to determine each ability score. By default, this uses the classic 4d6 drop the lowest method, but your DM may specify a custom rolling formula. While the results of this method can range from strong to average or even low scores, it adds an element of unpredictability to character building that can yield distinct strengths and weaknesses. This method is perfect for creating varied characters in short campaigns or one-shots, where surprising stats can inspire creative roleplaying. Embrace the randomness and enjoy the unique outcomes!",
+            "title": "Stat Generation Method: Manual Rolling"
+          },
+          "no-roll-method": "Error loading a valid roll method, please report to developer.",
+          "point-buy": {
+            "description": "Assign points to each ability score. You have a base of 27 points to spend, with the maximum score capped at 15.",
+            "preamble": "The Point Buy method provides flexibility by allowing you to assign a set number of points to your abilities. Distribute your points across abilities to create a balanced or specialized character profile. Each score above 8 has a point cost, so plan wisely!",
+            "remaining": "Remaining",
+            "title": "Stat Generation Method: Point Buy"
+          },
+          "standard-array": {
+            "description": "For each ability below, choose a value from the dropdown. Keep in mind your class and character goals when deciding. You can only use a value once.",
+            "preamble": "The Standard Array allows you to assign a set of predefined scores to your character's ability scores, designed to keep characters balanced and simplify character creation. This method is ideal for new players or those wanting a consistent, balanced setup across the party, ensuring each character begins on the same power level. Remember, your racial bonuses will still influence your final ability scores. Consider your class and racial bonuses carefully as you place these scores to optimize your character’s performance in their primary role.",
+            "title": "Stat Generation Method: Standard Array"
+          }
+        },
+        "label": "Ability",
         "roll-dice": "Roll dice for ability",
         "score-label": "Ability Score",
         "score-placeholder": "Enter score",
         "select-placeholder": "Choose",
-        "tooltip": "Select and assign abilities",
-        "instructions": {
-          "standard-array": {
-            "title": "Stat Generation Method: Standard Array",
-            "description": "For each ability below, choose a value from the dropdown. Keep in mind your class and character goals when deciding. You can only use a value once.",
-            "preamble": "The Standard Array allows you to assign a set of predefined scores to your character's ability scores, designed to keep characters balanced and simplify character creation. This method is ideal for new players or those wanting a consistent, balanced setup across the party, ensuring each character begins on the same power level. Remember, your racial bonuses will still influence your final ability scores. Consider your class and racial bonuses carefully as you place these scores to optimize your character’s performance in their primary role."
-          },
-          "manual": {
-            "title": "Stat Generation Method: Manual Rolling",
-            "description": "For each ability below, roll the designated formula (default is 4d6 drop the lowest), and enter the result as your ability score. Repeat for each ability.",
-            "preamble": "The Manual Rolling method allows you to create a unique character profile by rolling dice to determine each ability score. By default, this uses the classic 4d6 drop the lowest method, but your DM may specify a custom rolling formula. While the results of this method can range from strong to average or even low scores, it adds an element of unpredictability to character building that can yield distinct strengths and weaknesses. This method is perfect for creating varied characters in short campaigns or one-shots, where surprising stats can inspire creative roleplaying. Embrace the randomness and enjoy the unique outcomes!"
-          },
-          "point-buy": {
-            "title": "Stat Generation Method: Point Buy",
-            "description": "Assign points to each ability score. You have a base of 27 points to spend, with the maximum score capped at 15.",
-            "preamble": "The Point Buy method provides flexibility by allowing you to assign a set number of points to your abilities. Distribute your points across abilities to create a balanced or specialized character profile. Each score above 8 has a point cost, so plan wisely!",
-            "remaining": "Remaining"
-          },
-          "no-roll-method": "Error loading a valid roll method, please report to developer."
-        },
-        "label": "Ability",
-        "decrease": "-1",
-        "increase": "+1",
-        "select-value": "Select a value"
+        "select-value": "Select a value",
+        "tooltip": "Select and assign abilities"
       },
       "background": {
         "none": "No backgrounds available.",
@@ -46,7 +46,7 @@
         "tooltip": "Select a background for your character"
       },
       "cancel": "Cancel",
-      "cancel-description": "Cancel and return to the previous screen.",
+      "cancel-description": "Cancel and close Hero Mancer",
       "class": {
         "none": "No classes available.",
         "preamble": "Choose your character's class from the available options.",
@@ -57,21 +57,21 @@
       },
       "done": "Done",
       "equipment": {
-        "preamble": "The equipment tab in the Hero Mancer character creation tool now allows players to fully manage their character's gear and starting resources. Players can select class, background, and race-specific equipment, as well as choose from starting equipment packages or starting wealth rules. This provides a comprehensive workflow for equipping the character during the creation process.",
-        "tooltip": "Manage your character's equipment",
-        "class": "{type} Equipment",
-        "race": "{type} Equipment",
         "background": "{type} Equipment",
+        "choose-all": "Select all of the following:",
         "choose-one": "Choose one (1) from:",
+        "choose-second-weapon": "Choose second weapon",
+        "class": "{type} Equipment",
         "included-items": "Included items:",
         "lacks-proficiency": "not proficient",
-        "unknown-choice": "Unknown linked item.",
-        "choose-all": "Select all of the following:",
-        "choose-second-weapon": "Choose second weapon",
+        "preamble": "The equipment tab in the Hero Mancer character creation tool now allows players to fully manage their character's gear and starting resources. Players can select class, background, and race-specific equipment, as well as choose from starting equipment packages or starting wealth rules. This provides a comprehensive workflow for equipping the character during the creation process.",
+        "race": "{type} Equipment",
+        "roll-wealth": "Roll Starting Wealth",
         "select-weapon": "Select weapon",
+        "tooltip": "Manage your character's equipment",
+        "unknown-choice": "Unknown linked item.",
         "use-starting-wealth": "Use starting wealth instead",
-        "wealth-placeholder": "0 gp",
-        "roll-wealth": "Roll Starting Wealth"
+        "wealth-placeholder": "0 gp"
       },
       "finalize": {
         "preamble": "This is where you finalize and submit your character's details. This feature is not currently implemented.",
@@ -80,6 +80,8 @@
       "header-context": "Creating {name}",
       "header-title": "Hero Mancer Creation Wizard",
       "no-description": "Unable to load a valid description for this item.",
+      "optionsReset": "Reset Hero Mancer! Let's try again!",
+      "optionsSaved": "Options saved! Re-open Hero Mancer to continue where you left off!",
       "race": {
         "none": "No races available.",
         "preamble": "Choose your character's race from the available options.",
@@ -88,23 +90,27 @@
         "select-placeholder": "Choose a race",
         "tooltip": "Select a race for your character"
       },
+      "reset": "Reset",
+      "reset-description": "Reset Hero Mancer",
+      "save": "Save For Later",
+      "save-description": "Save character for later",
       "start": {
+        "character-art-label": "Character Art",
+        "character-art-placeholder": "Choose art for your character",
         "name-label": "Character Name",
-        "name-placeholder": "Enter your character's name",
+        "name-placeholder": "Choose a name for your character",
         "preamble": {
           "a": "Welcome to the Hero Mancer Creation Wizard!",
           "b": "In the next 7 steps, you will create a brand-new character in FoundryVTT. You can move between sections freely, and no data will be lost. All fields require input, so if you want to skip a section, enter a space."
         },
-        "tooltip": "Start your character creation",
-        "character-art-label": "Character Art",
-        "character-art-placeholder": "Choose character art!",
         "select-art": "Select",
-        "token-same-as-character": "Use same image for token? (Default: Yes)",
         "token-art-label": "Token Art",
-        "token-art-placeholder": "Choose token art!"
+        "token-art-placeholder": "Choose token art for your character",
+        "token-same-as-character": "Use same image for token?",
+        "tooltip": "Start your character creation"
       },
       "submit": "Submit",
-      "submit-description": "Submit your form data.",
+      "submit-description": "Submit your Hero Mancer",
       "tab-names": {
         "abilities": "Abilities",
         "background": "Background",
@@ -116,13 +122,31 @@
       },
       "tabs": "Hero Mancer Navigation Tabs"
     },
+    "dialogs": {
+      "reroll": {
+        "cancel": "Cancel",
+        "chain-roll-label": "Roll all ability scores in sequence",
+        "confirm": "Reroll",
+        "content": "One or more ability scores already have values. Are you sure you want to reroll? This action cannot be undone.",
+        "title": "Reroll stat?"
+      }
+    },
+    "errors": {
+      "fetch-fail": "An error occurred while fetching selected items. Please try again.",
+      "no-background": "The selected background could not be found.",
+      "no-class": "The selected class could not be found.",
+      "no-race": "The selected race could not be found.",
+      "select-background": "Please select a background before submitting.",
+      "select-class": "Please select a class before submitting.",
+      "select-race": "Please select a race before submitting."
+    },
     "no-backgrounds-available": "No backgrounds available",
     "no-classes-available": "No classes available",
     "no-races-available": "No races available",
     "settings": {
       "chained-rolls": {
-        "name": "Chained Rolls",
-        "hint": "Chain 1 stat roll after the other to roll a complete character."
+        "hint": "Chain 1 stat roll after the other to roll a complete character.",
+        "name": "Chained Rolls"
       },
       "custom-compendiums": {
         "background": "Background",
@@ -131,6 +155,7 @@
         "classes-label": "Set Class Compendiums:",
         "description": "Configure your custom compendiums for classes, races, and backgrounds.",
         "error": "Failed to retrieve documents from compendium pack: {pack}",
+        "error-saving": "There was an error saving your compendium settings. Please see console (F12).",
         "form-saved": "Compendium form settings have been saved.",
         "invalid-pack": "One or more compendium packs are no longer valid.",
         "manage-backgrounds": "Manage Backgrounds",
@@ -138,15 +163,14 @@
         "manage-races": "Manage Races",
         "menu": {
           "hint": "Open dialog to configure custom compendiums for all categories.",
-          "name": "Set Custom Compendiums",
-          "label": ""
+          "label": "",
+          "name": "Set Custom Compendiums"
         },
         "no-valid-packs": "No valid compendium packs were found.",
         "race": "Race",
         "races-label": "Set Race Compendiums:",
         "saved": "{type} compendium settings have been saved.",
-        "title": "Select your {type} compendiums!",
-        "error-saving": "There was an error saving your compendium settings. Please see console (F12)."
+        "title": "Select your {type} compendiums!"
       },
       "custom-roll-formula": {
         "hint": "Specify the roll formula for generating ability scores. Default is '4d6kh3'.",
@@ -182,26 +206,8 @@
       },
       "no-selection": "No compendiums selected. Please select at least one.",
       "roll-delay": {
-        "name": "Roll Animation Delay",
-        "hint": "Controls the delay (in milliseconds) between each roll when using chained rolling. Lower values make the process faster, while higher values make it easier to follow. This setting has no effect if you are manually rolling with physical dice."
-      }
-    },
-    "errors": {
-      "select-background": "Please select a background before submitting.",
-      "select-race": "Please select a race before submitting.",
-      "select-class": "Please select a class before submitting.",
-      "no-background": "The selected background could not be found.",
-      "no-race": "The selected race could not be found.",
-      "no-class": "The selected class could not be found.",
-      "fetch-fail": "An error occurred while fetching selected items. Please try again."
-    },
-    "dialogs": {
-      "reroll": {
-        "title": "Reroll stat?",
-        "content": "One or more ability scores already have values. Are you sure you want to reroll? This action cannot be undone.",
-        "confirm": "Reroll",
-        "cancel": "Cancel",
-        "chain-roll-label": "Roll all ability scores in sequence"
+        "hint": "Controls the delay (in milliseconds) between each roll when using chained rolling. Lower values make the process faster, while higher values make it easier to follow. This setting has no effect if you are manually rolling with physical dice.",
+        "name": "Roll Animation Delay"
       }
     }
   }

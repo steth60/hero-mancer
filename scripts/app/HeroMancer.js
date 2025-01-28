@@ -1,8 +1,7 @@
 /* eslint-disable indent */
 import { HM } from '../hero-mancer.js';
-import { CacheManager, DropdownHandler, EquipmentParser, Listeners, StatRoller } from '../utils/index.js';
+import { CacheManager, DropdownHandler, EquipmentParser, Listeners, StatRoller, SavedOptions } from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
-// const { AdvancementManager } = dnd5e.applications.advancement;
 
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(options = {}) {
@@ -25,7 +24,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       decreaseScore: HeroMancer.decreaseScore,
       increaseScore: HeroMancer.increaseScore,
       selectCharacterArt: this.selectCharacterArt,
-      selectTokenArt: this.selectTokenArt
+      selectTokenArt: this.selectTokenArt,
+      resetOptions: HeroMancer.resetOptions
     },
     classes: [`${HM.CONFIG.ABRV}-app`],
     position: {
@@ -77,11 +77,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     equipment: {
       template: `${HM.CONFIG.TEMPLATES}/tab-equipment.hbs`,
       classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
-      // },
-      // finalize: {
-      //   template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`,
-      //   classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
     },
+    // finalize: {
+    //   template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`,
+    //   classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
+    // },
     footer: {
       template: `${HM.CONFIG.TEMPLATES}/app-footer.hbs`,
       classes: [`${HM.CONFIG.ABRV}-app-footer`]
@@ -286,22 +286,38 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @param {RenderOptions} options Provided render options
    * @protected
    */
-  /**
-   * Actions performed after any render of the Application.
-   * Post-render steps are not awaited by the render process.
-   * @param {ApplicationRenderContext} context Prepared context data
-   * @param {RenderOptions} options Provided render options
-   * @protected
-   */
-  _onRender(context, options) {
-    HM.log(3, 'Rendering application with context and options.');
+  async _onRender(context, options) {
     const html = this.element;
+    HM.log(3, 'RESTORE: Root element:', html);
 
+    const savedOptions = await SavedOptions.loadOptions();
+
+    // Initialize dropdowns first
     DropdownHandler.initializeDropdown({ type: 'class', html, context });
     DropdownHandler.initializeDropdown({ type: 'race', html, context });
     DropdownHandler.initializeDropdown({ type: 'background', html, context });
 
-    // Store cleanup function
+    if (Object.keys(savedOptions).length > 0) {
+      for (const [key, value] of Object.entries(savedOptions)) {
+        const selector = `[name="${key}"]`;
+        HM.log(3, `RESTORE: Looking for selector "${selector}" in:`, html);
+        const elem = html.querySelector(selector);
+        HM.log(3, `RESTORE: Found element for ${key}:`, elem);
+
+        if (!elem) continue;
+
+        if (elem.type === 'checkbox') {
+          elem.checked = value;
+        } else if (elem.tagName === 'SELECT') {
+          elem.value = value;
+          elem.dispatchEvent(new Event('change'));
+          Listeners.updateClassRaceSummary();
+        } else {
+          elem.value = value;
+        }
+      }
+    }
+
     this._cleanup = Listeners.initializeListeners(html, context, HeroMancer.selectedAbilities);
   }
 
@@ -311,6 +327,30 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       this._cleanup();
     }
     super._onClose();
+  }
+
+  static async resetOptions(event, target) {
+    HM.log(3, 'Resetting options.', { event: event, target: target });
+    await game.user.setFlag(HM.CONFIG.ID, SavedOptions.FLAG, null);
+
+    const form = target.ownerDocument.getElementById('hero-mancer-app');
+    if (!form) return;
+
+    form.querySelectorAll('select, input').forEach((elem) => {
+      if (elem.type === 'checkbox') {
+        elem.checked = false;
+        elem.dispatchEvent(new Event('change'));
+      } else if (elem.tagName === 'SELECT') {
+        elem.value = '';
+        elem.dispatchEvent(new Event('change'));
+      } else {
+        elem.value = '';
+        elem.dispatchEvent(new Event('change'));
+      }
+    });
+    Listeners.updateClassRaceSummary();
+    this.render(true);
+    ui.notifications.info(game.i18n.localize('hm.app.optionsReset'));
   }
 
   /* Logic for rolling stats and updating input fields */
@@ -331,7 +371,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /**
    * Action to open the FilePicker for selecting character art
-   * TODO: Convert FilePicker to AppV2 for V13 release
+   * TODO: Convert FilePicker to AppV2 for V13 release (https://github.com/foundryvtt/foundryvtt/issues/11348)
    * @param {PointerEvent} event The originating click event
    * @param {HTMLElement} target The element that triggered the event
    */
@@ -600,6 +640,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */
   static async formHandler(event, form, formData) {
+    if (event.submitter?.dataset.action === 'saveOptions') {
+      await SavedOptions.saveOptions(formData.object);
+      ui.notifications.info(game.i18n.localize('hm.app.optionsSaved'));
+      return;
+    }
     HM.log(3, 'Processing form data...');
     HM.log(3, formData);
 

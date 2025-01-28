@@ -79,49 +79,49 @@
 }
 /* .hm-app-header contains the content above navigation, currently just the app title Hero Mancer. */
 .hm-app-header {
-  text-align: center;
-  flex: 0 0 var(--hm-app-header-height, 100px);
-  background: transparent;
-  border-radius: 6px;
   display: flex;
-  align-items: center;
-  justify-content: center;
   position: relative;
-  overflow: hidden;
+  flex: 0 0 var(--hm-app-header-height, 100px);
+  justify-content: center;
+  align-items: center;
   margin-bottom: 1rem;
+  border-radius: 6px;
+  overflow: hidden;
+  text-align: center;
+  background: transparent;
 }
 
 .hm-app-header::before {
-  content: '';
+  opacity: 0.8;
+  z-index: -1;
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: url('../../../systems/dnd5e/ui/texture-gray2.webp') no-repeat center bottom / cover;
-  opacity: 0.8; /* Adjust the opacity value here */
-  z-index: -1; /* Ensure the background is below the content */
+  content: ''; /* Adjust the opacity value here */
+  background: url('../../../systems/dnd5e/ui/texture-gray2.webp') no-repeat center bottom / cover; /* Ensure the background is below the content */
 }
 
 .hm-app-header::after {
-  content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  border-radius: 5px; /* Match the parent border radius */
+  border-radius: 5px;
+  pointer-events: none; /* Match the parent border radius */
+  content: '';
   background-repeat: no-repeat;
   background-size:
     100% 10px,
     100% 10px,
     10px 100%,
-    10px 100%;
-  pointer-events: none; /* Ensure the feather effect doesn’t block interactions */
+    10px 100%; /* Ensure the feather effect doesn’t block interactions */
 }
 .hm-app-header h1 {
-  border-bottom: unset;
   margin: 0;
+  border-bottom: unset;
 }
 /* .hm-app-nav contains the navigation between tabs. */
 .application.hm-app .hm-app-nav {
@@ -180,19 +180,20 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 10px;
 }
-/* Footer action buttons styling */
+
 .hm-app-footer-actions {
   gap: 10px;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  width: 30%;
+  white-space: nowrap; /* Prevent text wrapping */
 }
-/* Styling for submit/cancel buttons */
+
 .hm-app .hm-app-footer .hm-app-footer-actions button {
   padding: 0.5rem 1rem;
-  font-size: var(--font-size-16);
+  white-space: nowrap;
 }
 /* Hover effects for submit button */
 .hm-app .hm-app-footer .hm-app-footer-actions button:hover {
@@ -210,10 +211,10 @@
   height: 200px;
 }
 .hm-app .ability-container.point-buy {
-  margin-right: 0.5rem;
-  margin-left: 0.5rem;
-  margin-bottom: 0.5rem;
   height: unset;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  margin-left: 0.5rem;
 }
 /* Ability block layout for dropdown and text fields */
 .hm-app .ability-block {
@@ -254,26 +255,26 @@
 /* Point-buy specific block styling */
 .ability-block.point-buy {
   display: flex;
+  flex-grow: 0;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-sizing: border-box; /* Ensures padding and border are included in the width calculation */
-  width: 14%; /* Adjust this to control how wide each block is */
-  max-width: 14%; /* Optionally limit the maximum width to ensure consistency */
-  flex-grow: 0; /* Prevent it from stretching */
+  box-sizing: border-box;
+  width: 14%;
+  max-width: 14%; /* Ensures padding and border are included in the width calculation */
+  border: 1px solid #ccc; /* Adjust this to control how wide each block is */
+  border-radius: 6px; /* Optionally limit the maximum width to ensure consistency */
+  text-align: center; /* Prevent it from stretching */
 }
 
 .minus-button,
 .plus-button {
   display: flex;
+  flex-shrink: 0;
   justify-content: center;
   align-items: center;
   width: 2em;
   height: 2em;
-  font-size: 1em;
-  flex-shrink: 0; /* Prevent buttons from shrinking */
+  font-size: 1em; /* Prevent buttons from shrinking */
 }
 
 /* Center the ability label (e.g., STR) above the controls */
@@ -591,14 +592,14 @@
 
 /* Core Equipment Styles */
 .equipment-container {
-  background: var(--color-background-alt);
   border-radius: 8px;
+  background: var(--color-background-alt);
 }
 
 .equipment-choices {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: grid;
   margin-top: 1rem;
 }
 
@@ -638,8 +639,8 @@
 }
 
 .equipment-choices input[type='checkbox'] {
-  margin: 0.2rem 0.5rem 0 0;
   flex-shrink: 0;
+  margin: 0.2rem 0.5rem 0 0;
 }
 
 /* Wealth Options */
@@ -656,8 +657,8 @@
 
 .wealth-roll-container {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 0 10px;
   border-radius: 4px;
 }
@@ -683,8 +684,8 @@
 
 /* Animation */
 .fa-dice-d6.rolling {
-  animation: rollDice 0.5s ease-in-out;
   color: #ff6b6b;
+  animation: rollDice 0.5s ease-in-out;
 }
 
 /* Disabled States */
@@ -692,8 +693,8 @@
 .equipment-choices input:disabled,
 .equipment-choices label.disabled {
   opacity: 0.5;
-  cursor: not-allowed;
   color: #888888;
+  cursor: not-allowed;
 }
 
 .equipment-item.disabled select,
@@ -709,9 +710,9 @@
   }
 
   .wealth-roll-container {
+    gap: 0.75rem;
     flex-direction: column;
     align-items: stretch;
-    gap: 0.75rem;
   }
 
   .wealth-roll-container input[type='text'] {
@@ -720,15 +721,15 @@
 }
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices a.content-link {
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
   display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
   font-weight: italic;
+  background: none;
 }
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices a.content-link i {
-  font-size: inherit;
   margin: 0 0.2em 0 0;
+  font-size: inherit;
 }

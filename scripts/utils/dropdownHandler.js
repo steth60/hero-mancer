@@ -186,7 +186,7 @@ export class DropdownHandler {
     if (!docs) return;
 
     const selectedDoc = docs.find((doc) => doc.id === selectedId);
-    const content = selectedDoc?.enrichedDescription || game.i18n.localize(`${HM.CONFIG.ABRV}.app.no-description`);
+    const content = selectedDoc?.enrichedDescription || '';
 
     EventBus.emit('description-update', {
       elementId: `#${type}-description`,

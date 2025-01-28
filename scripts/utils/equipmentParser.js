@@ -19,6 +19,10 @@ export class EquipmentParser {
 
   static contentCache = new Map();
 
+  static renderedItems = new Set();
+
+  static combinedItemIds = new Set();
+
   static async initializeContentCache() {
     HM.log(3, 'Initializing content cache...');
     const packs = game.packs.filter((p) => p.documentName === 'Item');
@@ -31,7 +35,6 @@ export class EquipmentParser {
     this.classId = HM.CONFIG.SELECT_STORAGE.class.selectedId;
     this.backgroundId = HM.CONFIG.SELECT_STORAGE.background.selectedId;
     this.proficiencies = new Set();
-    this.combinedItemIds = new Set();
 
     EquipmentParser.initializeContentCache();
 
@@ -123,30 +126,16 @@ export class EquipmentParser {
   }
 
   async renderEquipmentChoices(type = null) {
-    // Reset rendered flags for all items in lookupItems
-    if (EquipmentParser.lookupItems) {
-      Object.values(EquipmentParser.lookupItems).forEach((itemSet) => {
-        itemSet.forEach((item) => {
-          delete item.rendered;
-          delete item.isSpecialCase;
-          delete item.specialGrouping;
-          if (item.child) {
-            delete item.child.rendered;
-            delete item.child.isSpecialCase;
-            delete item.child.specialGrouping;
-          }
-        });
-      });
-    }
+    EquipmentParser.renderedItems = new Set();
+    EquipmentParser.combinedItemIds = new Set();
+    this.equipmentData = null;
 
     await EquipmentParser.initializeLookupItems();
     HM.log(3, EquipmentParser.lookupItems);
     HM.log(3, `Rendering equipment choices for ${type || 'all types'}.`);
-    this.combinedItemIds.clear();
 
     await this.fetchEquipmentData();
 
-    // Get or create the main equipment-choices container
     let container = document.querySelector('.equipment-choices');
     if (!container) {
       container = document.createElement('div');
@@ -209,8 +198,7 @@ export class EquipmentParser {
       return null;
     }
 
-    item.rendered = true;
-    HM.log(3, `RENDER DEBUG: Rendering item: ${item?.label || item._source?.key || item.type}`, item);
+    HM.log(3, `RENDER DEBUG: Rendering item: ${item?.name || item._source?.key || item.type}`, item);
 
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
@@ -256,27 +244,36 @@ export class EquipmentParser {
       }
     }
 
+    let result;
     switch (item.type) {
       case 'OR':
         HM.log(3, `RENDER DEBUG: Rendering OR block for item: ${item._source.key}`, item);
-        return this.renderOrBlock(item, itemContainer);
+        result = await this.renderOrBlock(item, itemContainer);
+        break;
       case 'AND':
         if (!item.group || this.isStandaloneAndBlock(item)) {
           HM.log(3, `RENDER DEBUG: Rendering AND block for item: ${item._source?.key || item.type}`, item);
-          return this.renderAndBlock(item, itemContainer);
+          result = await this.renderAndBlock(item, itemContainer);
         }
-        HM.log(3, `RENDER DEBUG: Skipping AND block as part of a group: ${item._source.key}`, item);
-        return null;
+        break;
       case 'linked':
         HM.log(3, `RENDER DEBUG: Rendering linked item: ${item._source.key}`, item);
-        return this.renderLinkedItem(item, itemContainer);
+        result = await this.renderLinkedItem(item, itemContainer);
+        break;
       case 'focus':
         HM.log(3, `RENDER DEBUG: Rendering focus item: ${item._source.key}`, item);
-        return this.renderFocusItem(item, itemContainer);
+        result = await this.renderFocusItem(item, itemContainer);
+        break;
       default:
         HM.log(2, `Unknown item type encountered: ${item.type}`, { itemId: item._id }, item);
         return null;
     }
+
+    if (result) {
+      EquipmentParser.renderedItems.add(item._id);
+    }
+
+    return result;
   }
 
   isStandaloneAndBlock(item) {
@@ -284,14 +281,7 @@ export class EquipmentParser {
   }
 
   isItemRendered(item) {
-    if ((item.key && item.rendered) || item.isSpecialCase) {
-      HM.log(3, `Skipping already rendered item: ${item._id}`);
-      return true;
-    } else if (item.child && (item.child.rendered || item.child.isSpecialCase)) {
-      HM.log(3, `Skipping already rendered parent item: ${item._id}`);
-      return true;
-    }
-    return false;
+    return EquipmentParser.renderedItems.has(item._id);
   }
 
   isSpecialMultiOptionCase(item) {
@@ -566,7 +556,7 @@ export class EquipmentParser {
     }
 
     // Check if item is already part of a combined selection
-    if (this.combinedItemIds.has(item._source.key)) {
+    if (EquipmentParser.combinedItemIds.has(item._source.key)) {
       return true;
     }
 
@@ -597,6 +587,7 @@ export class EquipmentParser {
     let combinedLabel = '';
     const combinedIds = [];
     const lookupKeys = ['sim', 'mar', 'simpleM', 'simpleR', 'martialM', 'martialR', 'shield'];
+    const processedIds = new Set();
 
     // Mark all children as rendered if this is part of an OR choice
     const isPartOfOrChoice =
@@ -605,12 +596,14 @@ export class EquipmentParser {
 
     for (const subChild of child.children) {
       try {
+        if (processedIds.has(subChild._id)) continue;
+        processedIds.add(subChild._id);
         // Check if this is a lookup key
         if (lookupKeys.includes(subChild.key)) {
           if (combinedLabel) combinedLabel += ' + ';
           // Create a descriptive label based on the key
           const lookupLabel = this.getLookupKeyLabel(subChild.key);
-          combinedLabel += `${subChild.count || ''} ${lookupLabel}`.trim();
+          combinedLabel += `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} ${lookupLabel}`.trim();
           combinedIds.push(subChild._id);
 
           if (isPartOfOrChoice) {
@@ -626,14 +619,15 @@ export class EquipmentParser {
 
         if (combinedLabel) combinedLabel += ' + ';
         // Create proper HTML link
-        combinedLabel += `${subChild.count || ''} <a class="content-link" draggable="true" data-uuid="${subChild.key}">${subChildItem.name}</a>`.trim();
+        combinedLabel +=
+          `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} <a class="content-link" draggable="true" data-uuid="${subChild.key}">${subChildItem.name}</a>`.trim();
         combinedIds.push(subChild._id);
 
         if (isPartOfOrChoice) {
           subChild.rendered = true;
           subChild.isSpecialCase = true;
         }
-        this.combinedItemIds.add(subChild._id);
+        EquipmentParser.combinedItemIds.add(subChild._id);
       } catch (error) {
         HM.log(1, `Error processing sub-child in AND group for child ${child._id}: ${error.message}`);
         continue;
@@ -647,7 +641,12 @@ export class EquipmentParser {
       optionElement.innerHTML = combinedLabel;
       select.appendChild(optionElement);
 
-      // Mark the parent AND group as rendered
+      // Mark all items in the combination as rendered
+      combinedIds.forEach((id) => {
+        EquipmentParser.renderedItems.add(id);
+        EquipmentParser.combinedItemIds.add(id);
+      });
+
       if (isPartOfOrChoice) {
         child.rendered = true;
         child.isSpecialCase = true;
@@ -671,19 +670,18 @@ export class EquipmentParser {
 
   async renderIndividualItem(child, select, renderedItemNames) {
     if (child.type === 'linked') {
-      if (this.combinedItemIds.has(child._source.key)) return;
+      if (EquipmentParser.combinedItemIds.has(child._source.key)) return;
       const label = child.label.trim();
       const [, count, name] = label.match(/^(\d+)\s*(.+)$/) || [null, null, label];
       const displayName = name || label.replace(/\s*\(.*?\)\s*/g, '');
 
-      if (renderedItemNames.has(displayName) || this.combinedItemIds.has(child._source.key)) return;
+      if (renderedItemNames.has(displayName) || EquipmentParser.combinedItemIds.has(child._source.key)) return;
       renderedItemNames.add(displayName);
 
       const optionElement = document.createElement('option');
       optionElement.value = child._source.key;
-      optionElement.innerHTML = count ? `${count} ${displayName}` : displayName;
+      optionElement.innerHTML = count > 1 || count !== null ? `${count} ${displayName}` : displayName;
 
-      // Only set as selected if this is the first option in the dropdown
       if (select.options.length === 0) {
         optionElement.selected = true;
         const defaultSelection = select.parentElement.querySelector(`#${select.id}-default`);
@@ -768,73 +766,158 @@ export class EquipmentParser {
   }
 
   async renderAndBlock(item, itemContainer) {
-    if (!item.group) {
-      HM.log(3, `Skipping label for AND group without parent group: ${item.group}`);
-    } else {
+    const processedIds = new Set();
+    if (item.group) {
       const andLabelElement = document.createElement('h4');
       andLabelElement.classList.add('parent-label');
       andLabelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-all');
       itemContainer.appendChild(andLabelElement);
     }
 
-    const lookupItems = item.children.filter(
-      (child) =>
-        child.type === 'weapon' &&
-        (child.key === 'sim' || child.key === 'mar' || child.key === 'simpleM' || child.key === 'simpleR' || child.key === 'martialM' || child.key === 'martialR')
+    const hasWeaponAmmoContainer = async (items) => {
+      const itemDocs = await Promise.all(
+        items.map(async (item) => {
+          const doc = await fromUuidSync(item._source?.key);
+          HM.log(3, 'Got item doc:', doc);
+          return doc;
+        })
+      );
+
+      HM.log(3, 'Checking entire group:', itemDocs);
+
+      const hasWeapon = itemDocs.some((doc) => doc?.type === 'weapon' || (doc?.system?.properties && Array.from(doc.system.properties).includes('amm')));
+      const hasAmmo = itemDocs.some((doc) => doc?.system?.type?.value === 'ammo');
+      const hasContainer = itemDocs.some((doc) => doc?.type === 'container');
+
+      const shouldGroup = hasWeapon || hasAmmo || hasContainer;
+      HM.log(3, 'Group check result:', { hasWeapon, hasAmmo, hasContainer, shouldGroup });
+      return shouldGroup;
+    };
+
+    const lookupItems = item.children.filter((child) => child.type === 'weapon' && ['sim', 'mar', 'simpleM', 'simpleR', 'martialM', 'martialR'].includes(child.key));
+
+    const linkedItems = await Promise.all(
+      item.children
+        .filter((child) => child.type === 'linked')
+        .map(async (child) => {
+          const shouldGroup = await hasWeaponAmmoContainer([child]);
+          HM.log(3, 'GROUPING CHECK:', {
+            child,
+            key: child._source?.key,
+            type: child.type,
+            shouldGroup
+          });
+          return shouldGroup ? child : null;
+        })
     );
-    const linkedItems = item.children.filter((child) => child.type === 'linked');
-    HM.log(3, 'RENDER DEBUG (AND):', linkedItems, lookupItems);
 
-    const renderedItemNames = new Set();
-    const combinedIds = [];
-    let combinedLabel = '';
+    const filteredLinkedItems = linkedItems.filter((item) => item !== null);
+    HM.log(
+      3,
+      'FILTERED ITEMS:',
+      filteredLinkedItems.map((i) => i._source?.key)
+    );
 
-    for (const child of linkedItems) {
-      HM.log(3, 'RENDER DEBUG (AND): Processing linked item:', child);
-      if (!child._source?.key) continue;
+    const groupedItems = [];
+    const processedItems = new Set();
 
-      // Get the actual item using fromUuidSync to get its name
-      const linkedItem = await fromUuidSync(child._source.key);
-      if (!linkedItem) continue;
+    for (const child of filteredLinkedItems) {
+      if (processedItems.has(child._source?.key)) continue;
 
-      const count = child._source.count || 1;
-      combinedIds.push(child._source.key);
+      const relatedItems = await Promise.all(
+        filteredLinkedItems.map(async (item) => {
+          if (processedItems.has(item._source?.key) || item._source?.key === child._source?.key) return null;
+          const result = await hasWeaponAmmoContainer([child, item]);
+          return result ? item : null;
+        })
+      );
 
-      if (combinedLabel) combinedLabel += ' + ';
-      combinedLabel += `${count || ''} ${linkedItem.name}`.trim();
+      const validRelatedItems = relatedItems.filter((item) => item !== null);
+      HM.log(3, 'Valid related items:', validRelatedItems);
+
+      if (validRelatedItems.length > 0) {
+        groupedItems.push([child, ...validRelatedItems]);
+        validRelatedItems.forEach((item) => processedItems.add(item._source?.key));
+        processedItems.add(child._source?.key);
+      } else if (!processedItems.has(child._source?.key)) {
+        groupedItems.push([child]);
+        processedItems.add(child._source?.key);
+      }
     }
 
-    // Render linked items checkbox if there are any
-    if (combinedLabel && !renderedItemNames.has(combinedLabel)) {
-      renderedItemNames.add(combinedLabel);
+    HM.log(
+      3,
+      'FINAL GROUPS:',
+      groupedItems.map((g) => g.map((i) => i._source?.key))
+    );
 
-      for (const child of linkedItems) {
+    for (const group of groupedItems) {
+      let combinedLabel = '';
+      const combinedIds = [];
+
+      for (const child of group) {
+        if (processedIds.has(child._source?.key)) continue;
+        processedIds.add(child._source?.key);
+
+        const linkedItem = await fromUuidSync(child._source?.key);
+        HM.log(3, 'Got linked item:', linkedItem);
+        if (!linkedItem) continue;
+
+        const count = child._source?.count > 1 || child._source?.count !== null ? child._source?.count : '';
+        combinedIds.push(child._source?.key);
+
+        if (combinedLabel) combinedLabel += ' + ';
+        combinedLabel += `${count ? `${count} ` : ''}${linkedItem.name}`.trim();
+
+        // Add to tracking sets immediately
+        EquipmentParser.renderedItems.add(child._id);
+        EquipmentParser.combinedItemIds.add(child._source?.key);
+
         child.specialGrouping = true;
         child.rendered = true;
       }
 
-      const label = document.createElement('label');
-      const combinedCheckbox = document.createElement('input');
-      combinedCheckbox.type = 'checkbox';
-      combinedCheckbox.id = combinedIds.join(',');
-      combinedCheckbox.checked = true;
-      label.innerHTML = combinedLabel;
-      label.prepend(combinedCheckbox);
-      itemContainer.appendChild(label);
+      HM.log(3, 'Creating combined label:', {
+        groupLength: group.length,
+        combinedLabel,
+        combinedIds,
+        group: group.map((g) => ({
+          key: g._source?.key,
+          count: g._source?.count,
+          name: g.name
+        }))
+      });
+
+      if (combinedLabel && group.length > 1) {
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = combinedIds.join(',');
+        checkbox.checked = true;
+        label.innerHTML = combinedLabel;
+        label.prepend(checkbox);
+        itemContainer.appendChild(label);
+      } else {
+        for (const child of group) {
+          child.rendered = false;
+          child.specialGrouping = false;
+          // Also remove from tracking sets if ungrouping
+          EquipmentParser.renderedItems.delete(child._id);
+          EquipmentParser.combinedItemIds.delete(child._source?.key);
+        }
+      }
     }
 
     // Render lookup items as dropdowns
     for (const lookupItem of lookupItems) {
       const select = document.createElement('select');
       select.id = lookupItem._source.key;
-      HM.log(3, `Processing lookup item with key: ${lookupItem.key}`);
 
       const lookupKey = lookupItem.key === 'sim' ? 'sim' : lookupItem.key === 'simpleM' ? 'simpleM' : lookupItem.key === 'simpleR' ? 'simpleR' : lookupItem.key;
 
       const lookupOptions = Array.from(EquipmentParser.lookupItems[lookupKey] || []);
-      HM.log(3, `Found ${lookupOptions.length} options for key ${lookupKey}`);
-
       lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
+
       lookupOptions.forEach((weapon) => {
         const option = document.createElement('option');
         option.value = weapon._source.key;
@@ -849,31 +932,58 @@ export class EquipmentParser {
   }
 
   renderLinkedItem(item, itemContainer) {
-    HM.log(3, 'Processing linked item package:', {
-      id: item._id,
-      sourceKey: item._source?.key,
-      label: item.label,
-      type: item.type
-    });
+    if (item.group) {
+      const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
+      if (parentItem?.type === 'OR') {
+        return null;
+      }
+    }
+    // Don't mark as rendered until we confirm the item should be displayed
+    if (EquipmentParser.combinedItemIds.has(item._source.key)) {
+      HM.log(3, 'Skipping item in combinedItems:', item._source.key);
+      return null;
+    }
+    if (this.shouldRenderAsDropdown(item)) {
+      HM.log(3, 'Skipping item that should be dropdown:', item._source.key);
+      return null;
+    }
 
-    if (this.combinedItemIds.has(item._source.key)) return null;
-    if (this.shouldRenderAsDropdown(item)) return null;
+    // Only check renderedItems if we've confirmed it's not part of a combination
+    if (EquipmentParser.renderedItems.has(item._id)) {
+      HM.log(3, 'Skipping previously rendered item:', item._id);
+      return null;
+    }
 
+    // Create elements
     const labelElement = document.createElement('label');
     const linkedCheckbox = document.createElement('input');
     linkedCheckbox.type = 'checkbox';
-
-    // Important: For combined items, use the source key directly
     linkedCheckbox.id = item._source.key;
     linkedCheckbox.value = item._source.key;
     linkedCheckbox.checked = true;
 
-    // Keep original label text for packages
-    const count = item._source.count ? `${item._source.count} ` : '';
-    labelElement.innerHTML = `${count}${item.label || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
-    labelElement.prepend(linkedCheckbox);
+    // Process display label
+    let displayLabel = item.label;
+    let displayCount = '';
 
+    if (item.label?.includes('<a class')) {
+      const countMatch = item.label.match(/^(\d+)&times;/);
+      if (countMatch) {
+        displayCount = countMatch[1];
+        displayLabel = item.label.replace(/^\d+&times;\s*/, '').replace('</i>', `</i>${displayCount} `);
+      }
+    } else {
+      displayCount = item._source.count > 1 || item._source.count !== null ? item._source.count : '';
+    }
+
+    labelElement.innerHTML = `${displayLabel?.trim() || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
+    labelElement.prepend(linkedCheckbox);
     itemContainer.appendChild(labelElement);
+
+    // Only mark as rendered after successful creation
+    EquipmentParser.renderedItems.add(item._id);
+
+    // Rest of the event listener code...
     linkedCheckbox.addEventListener('change', (event) => {
       HM.log(3, 'Linked checkbox changed:', {
         checked: event.target.checked,
@@ -882,14 +992,7 @@ export class EquipmentParser {
         itemKey: item.key
       });
     });
-    if (item.label?.includes('+')) {
-      HM.log(3, 'Processing combined item:', {
-        label: item.label,
-        keys: item.label?.split('+').map((i) => i.trim()),
-        sourceKey: item._source?.key,
-        key: item.key
-      });
-    }
+
     return itemContainer;
   }
 
