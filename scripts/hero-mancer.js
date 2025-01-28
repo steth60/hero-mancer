@@ -121,7 +121,7 @@ HM.CONFIG.SELECT_STORAGE = {
 
 Hooks.on('init', () => {
   HM.init();
-  CONFIG.Item.compendiumIndexFields = ['system.type.value', 'system.properties', 'type', 'name'];
+  CONFIG.Item.compendiumIndexFields = ['system.type.value', 'system.properties', 'system.identifier', 'system.description.value', 'type', 'name', '_id', 'uuid', 'pack'];
 });
 
 Hooks.once('ready', async () => {

@@ -54,31 +54,31 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
    * @returns {Promise<Set>} A set of valid pack objects
    */
   static async #collectValidPacks(type, useCache = true) {
-    // Check cache first if enabled
     if (useCache && this.#validPacksCache.has(type)) {
       return this.#validPacksCache.get(type);
     }
 
     const validPacks = new Set();
-    const documentPromises = game.packs.map(async (pack) => {
+    const indexPromises = game.packs.map(async (pack) => {
       try {
-        const documents = await pack.getDocuments({ type });
-        if (documents.length > 0) {
+        const index = await pack.getIndex();
+        const hasTypeDocuments = index.some((doc) => doc.type === type);
+
+        if (hasTypeDocuments) {
           validPacks.add({
             packName: pack.metadata.label,
             packId: pack.metadata.id,
             type: pack.metadata.type
           });
-          HM.log(3, `Retrieved ${documents.length} documents from pack: ${pack.metadata.label}`);
+          HM.log(3, `Found documents of type ${type} in pack: ${pack.metadata.label}`);
         }
       } catch (error) {
-        HM.log(2, `Failed to retrieve documents from pack ${pack.metadata.label}: ${error}`);
+        HM.log(2, `Failed to retrieve index from pack ${pack.metadata.label}: ${error}`);
       }
     });
 
-    await Promise.all(documentPromises);
+    await Promise.all(indexPromises);
 
-    // Cache the results
     if (useCache) {
       this.#validPacksCache.set(type, validPacks);
     }

@@ -1173,123 +1173,85 @@ export class EquipmentParser {
   }
 
   static async initializeLookupItems() {
-    if (EquipmentParser.lookupItemsInitialized) {
-      HM.log(3, 'Lookup items already initialized. Skipping reinitialization.');
+    if (this.lookupItemsInitialized) {
+      HM.log(3, 'Lookup items already initialized');
       return;
     }
-    EquipmentParser.lookupItemsInitialized = true;
-    HM.log(3, 'Starting initialization of lookup items...');
+    this.lookupItemsInitialized = true;
+    this.itemUuidMap = new Map();
 
     try {
-      EquipmentParser.simpleM = new Set(await EquipmentParser.collectLookupItems('simpleM'));
-      HM.log(3, `simpleM initialized with ${EquipmentParser.simpleM.size} items.`);
-
-      EquipmentParser.simpleR = new Set(await EquipmentParser.collectLookupItems('simpleR'));
-      HM.log(3, `simpleR initialized with ${EquipmentParser.simpleR.size} items.`);
-
-      EquipmentParser.martialM = new Set(await EquipmentParser.collectLookupItems('martialM'));
-      HM.log(3, `martialM initialized with ${EquipmentParser.martialM.size} items.`);
-
-      EquipmentParser.martialR = new Set(await EquipmentParser.collectLookupItems('martialR'));
-      HM.log(3, `martialR initialized with ${EquipmentParser.martialR.size} items.`);
-
-      EquipmentParser.music = new Set(await EquipmentParser.collectLookupItems('music'));
-      HM.log(3, `music initialized with ${EquipmentParser.music.size} items.`);
-
-      EquipmentParser.shield = new Set(await EquipmentParser.collectLookupItems('shield'));
-      HM.log(3, `shield initialized with ${EquipmentParser.shield.size} items.`);
-
-      EquipmentParser.armor = new Set(await EquipmentParser.collectLookupItems('armor'));
-      HM.log(3, `armor initialized with ${EquipmentParser.armor.size} items.`);
-
-      EquipmentParser.focus = new Set(await EquipmentParser.collectLookupItems('focus'));
-      HM.log(3, `focus initialized with ${EquipmentParser.focus.size} items.`);
-
-      EquipmentParser.lookupItems = {
-        sim: new Set([...EquipmentParser.simpleM, ...EquipmentParser.simpleR]),
-        simpleM: EquipmentParser.simpleM,
-        simpleR: EquipmentParser.simpleR,
-        mar: new Set([...EquipmentParser.martialM, ...EquipmentParser.martialR]),
-        martialM: EquipmentParser.martialM,
-        martialR: EquipmentParser.martialR,
-        music: EquipmentParser.music,
-        shield: EquipmentParser.shield,
-        armor: EquipmentParser.armor,
-        focus: EquipmentParser.focus
+      const allItems = await this.collectAllItems();
+      const categories = {
+        simpleM: new Set(),
+        simpleR: new Set(),
+        martialM: new Set(),
+        martialR: new Set(),
+        music: new Set(),
+        shield: new Set(),
+        armor: new Set(),
+        focus: new Set()
       };
 
-      HM.log(3, `Combined sim set initialized with ${EquipmentParser.lookupItems.sim.size} items.`);
-      HM.log(3, `Combined mar set initialized with ${EquipmentParser.lookupItems.mar.size} items.`);
+      // Sort items into categories
+      for (const item of allItems) {
+        const type = item.system?.type?.value || item.type;
+        if (categories[type]) categories[type].add(item);
+      }
+
+      // Store categories and create combined sets
+      Object.assign(this, categories);
+      this.lookupItems = {
+        ...categories,
+        sim: new Set([...categories.simpleM, ...categories.simpleR]),
+        mar: new Set([...categories.martialM, ...categories.martialR])
+      };
+
+      HM.log(3, 'Equipment lookup initialization complete');
     } catch (error) {
       HM.log(1, 'Error initializing lookup items:', error);
     }
-
-    HM.log(3, 'EquipmentParser lookup items fully initialized:', EquipmentParser.lookupItems);
   }
 
-  static async collectLookupItems(lookupKey) {
-    HM.log(3, `Starting collection of items for lookupKey: ${lookupKey}`);
+  static async collectAllItems() {
     const items = [];
-    this.itemUuidMap = new Map();
+    const packs = game.packs.filter((pack) => pack.documentName === 'Item');
+    const focusItemIds = new Set();
 
-    // Handle focus items separately
-    if (lookupKey === 'focus') {
-      return this.collectFocusItems();
+    // Collect focus item IDs
+    for (const config of Object.values(CONFIG.DND5E.focusTypes)) {
+      if (config?.itemIds) {
+        Object.values(config.itemIds).forEach((id) => focusItemIds.add(id));
+      }
     }
-
-    const typesToFetch = ['weapon', 'armor', 'tool', 'equipment', 'gear', 'consumable', 'shield'];
 
     try {
-      for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
-        const documents = await pack.getDocuments({ type__in: typesToFetch });
+      const packIndices = await Promise.all(packs.map((pack) => pack.getIndex()));
 
-        for (const item of documents) {
-          const itemType = item.system?.type?.value || item.type;
-          const isMagic = item.system?.properties instanceof Set && item.system.properties.has('mgc');
+      for (const index of packIndices) {
+        for (const item of index) {
+          const isMagic = Array.isArray(item.system?.properties) && item.system.properties.includes('mgc');
 
-          this.itemUuidMap.set(item.id, item.uuid);
-          /* TODO: This probably doesn't work with localization. */
-          if (item.name === 'Unarmed Strike' || isMagic) continue;
+          this.itemUuidMap.set(item._id, item.uuid);
 
-          if ((lookupKey === 'sim' && (itemType === 'simpleM' || itemType === 'simpleR')) || itemType === lookupKey) {
-            items.push(item);
-            HM.log(3, `Added item: ${item.name} with ID: ${item._id} to ${lookupKey} collection.`);
+          if (item.system?.identifier === 'unarmed-strike' || isMagic) {
+            HM.log(3, `Skipping ${item.name} (${item._id})`);
+            continue;
           }
+
+          // Add focus items by ID check
+          if (focusItemIds.has(item._id)) {
+            item.system.type.value = 'focus';
+          }
+
+          items.push(item);
         }
       }
+
+      return items;
     } catch (error) {
-      HM.log(1, `Error collecting items for lookupKey: ${lookupKey}`, error);
+      HM.log(1, 'Error collecting items:', error);
+      return [];
     }
-
-    return items;
-  }
-
-  static async collectFocusItems() {
-    HM.log(3, 'Starting collectFocusItems');
-    const focusItems = [];
-    HM.log(3, 'CONFIG.DND5E:', CONFIG.DND5E);
-    HM.log(3, 'focusTypes:', CONFIG.DND5E.focusTypes);
-
-    for (const [key, config] of Object.entries(CONFIG.DND5E.focusTypes)) {
-      HM.log(3, `Processing focus type: ${key}`, config);
-      if (!config?.itemIds) {
-        HM.log(2, `No itemIds for config ${key}:`, config);
-        continue;
-      }
-
-      for (const itemId of Object.values(config.itemIds)) {
-        HM.log(3, `Processing itemId: ${itemId}`);
-        for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
-          const item = await pack.getDocument(itemId);
-          if (item) {
-            HM.log(3, `Found item: ${item.name} (${item.uuid})`);
-            this.itemUuidMap.set(itemId, item.uuid);
-            focusItems.push(item);
-            break;
-          }
-        }
-      }
-    }
-    return focusItems;
   }
 }
