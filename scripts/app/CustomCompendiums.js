@@ -148,11 +148,10 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   /**
    * Retrieves and validates the selected compendium packs for the given type, with fallback handling.
    * If selected packs are invalid or missing, attempts to fall back to SRD packs or all available packs.
+   * @async
    * @param {string} type The type of compendium ('class', 'race', or 'background').
    * @param {Set} validPacks Set of valid pack objects containing packId and packName.
    * @returns {Promise<Array<string>>} A promise that resolves to an array of valid pack IDs.
-   * If no valid packs are found, falls back to SRD packs or all available packs.
-   * @async
    * @throws {Error} Throws an error if type parameter is invalid.
    */
   static async getSelectedPacksByType(type, validPacks) {
@@ -221,6 +220,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
 
   static async formHandler(event, form, formData) {
     const types = ['class', 'race', 'background'];
+    const requiresWorldReload = true; // Settings changes require world reload
 
     try {
       // First collect the valid packs
@@ -239,11 +239,27 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       cacheManager.resetCache();
       CustomCompendiums.#validPacksCache.clear();
 
+      this.constructor.reloadConfirm({ world: requiresWorldReload });
+
       ui.notifications.info(game.i18n.localize('hm.settings.custom-compendiums.form-saved'));
       HM.log(3, 'Form submitted and settings saved');
     } catch (error) {
       HM.log(1, 'Error in form submission:', error);
       ui.notifications.error(game.i18n.localize('hm.settings.custom-compendiums.error-saving'));
     }
+  }
+
+  static async reloadConfirm({ world = false } = {}) {
+    const reload = await DialogV2.confirm({
+      id: 'reload-world-confirm',
+      modal: true,
+      rejectClose: false,
+      window: { title: 'SETTINGS.ReloadPromptTitle' },
+      position: { width: 400 },
+      content: `<p>${game.i18n.localize('SETTINGS.ReloadPromptBody')}</p>`
+    });
+    if (!reload) return;
+    if (world && game.user.can('SETTINGS_MODIFY')) game.socket.emit('reload');
+    foundry.utils.debouncedReload();
   }
 }
