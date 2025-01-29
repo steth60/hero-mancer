@@ -62,7 +62,7 @@ function registerWorldSettings() {
     scope: 'world',
     config: true,
     type: String,
-    default: 'None, Lawful Good, Neutral Good, Chaotic Good, Lawful Neutral, True Neutral, Chaotic Neutral, Lawful Evil, Neutral Evil, Chaotic Evil',
+    default: 'None,Lawful Good,Neutral Good,Chaotic Good,Lawful Neutral,True Neutral,Chaotic Neutral,Lawful Evil,Neutral Evil,Chaotic Evil',
     restricted: true
   });
 }
@@ -158,8 +158,7 @@ function registerCompendiumSettings() {
     label: `${HM.CONFIG.ABRV}.settings.custom-compendiums.menu.label`,
     icon: 'fa-solid fa-bars',
     type: CustomCompendiums,
-    restricted: true,
-    requiresReload: true
+    restricted: true
   });
 
   game.settings.register(HM.CONFIG.ID, 'classPacks', {
@@ -167,8 +166,7 @@ function registerCompendiumSettings() {
     scope: 'world',
     config: false,
     type: Array,
-    default: [],
-    requiresReload: true
+    default: []
   });
 
   game.settings.register(HM.CONFIG.ID, 'racePacks', {
@@ -176,8 +174,7 @@ function registerCompendiumSettings() {
     scope: 'world',
     config: false,
     type: Array,
-    default: [],
-    requiresReload: true
+    default: []
   });
 
   game.settings.register(HM.CONFIG.ID, 'backgroundPacks', {
@@ -185,8 +182,7 @@ function registerCompendiumSettings() {
     scope: 'world',
     config: false,
     type: Array,
-    default: [],
-    requiresReload: true
+    default: []
   });
 }
 
