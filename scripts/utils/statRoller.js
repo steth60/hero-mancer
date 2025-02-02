@@ -1,4 +1,5 @@
 import { HM } from '../hero-mancer.js';
+import { SummaryManager } from './summaryManager.js';
 
 const { DialogV2 } = foundry.applications.api;
 
@@ -26,7 +27,10 @@ export class StatRoller {
       const index = form.getAttribute('data-index');
       const input = this.getAbilityInput(index);
 
-      if (this.hasExistingValues()) {
+      // Only check for existing value on the current input when not in a chain roll
+      const hasExistingValue = !this.chainRollEnabled && input?.value?.trim() !== '';
+
+      if (hasExistingValue) {
         await this.showRerollDialog(rollFormula, chainedRolls, index, input);
       } else if (chainedRolls) {
         await this.rollAllStats(rollFormula);
@@ -83,7 +87,7 @@ export class StatRoller {
   static async showRerollDialog(rollFormula, chainedRolls, index, input) {
     const dialog = new DialogV2({
       window: {
-        title: game.i18n.localize(`${HM.CONFIG.ABRV}.dialogs.reroll.title`),
+        title: game.i18n.localize('hm.dialogs.reroll.title'),
         icon: 'fas fa-dice-d6'
       },
       content: this.getRerollDialogContent(),
@@ -102,17 +106,25 @@ export class StatRoller {
    * @returns {string} The HTML content for the dialog
    */
   static getRerollDialogContent() {
+    // Only show the chain roll checkbox if chain rolls are enabled in settings
+    const chainedRolls = game.settings.get(HM.CONFIG.ID, 'chainedRolls');
+    const chainRollCheckbox = chainedRolls
+      ? `
+    <div class="form-group">
+      <label class="checkbox">
+        <input type="checkbox" name="chainRoll" ${this.chainRollEnabled ? 'checked' : ''}>
+        ${game.i18n.localize('hm.dialogs.reroll.chain-roll-label')}
+      </label>
+    </div>
+  `
+      : '';
+
     return `
-      <form class="dialog-form">
-        <p>${game.i18n.localize(`${HM.CONFIG.ABRV}.dialogs.reroll.content`)}</p>
-        <div class="form-group">
-          <label class="checkbox">
-            <input type="checkbox" name="chainRoll" ${this.chainRollEnabled ? 'checked' : ''}>
-            ${game.i18n.localize(`${HM.CONFIG.ABRV}.dialogs.reroll.chain-roll-label`)}
-          </label>
-        </div>
-      </form>
-    `;
+    <form class="dialog-form">
+      <p>${game.i18n.localize('hm.dialogs.reroll.content')}</p>
+      ${chainRollCheckbox}
+    </form>
+  `;
   }
 
   /**
@@ -127,7 +139,7 @@ export class StatRoller {
     return [
       {
         action: 'confirm',
-        label: game.i18n.localize(`${HM.CONFIG.ABRV}.dialogs.reroll.confirm`),
+        label: game.i18n.localize('hm.dialogs.reroll.confirm'),
         icon: 'fas fa-check',
         default: true,
         async callback(event, button, dialog) {
@@ -145,7 +157,7 @@ export class StatRoller {
       },
       {
         action: 'cancel',
-        label: game.i18n.localize(`${HM.CONFIG.ABRV}.dialogs.reroll.cancel`),
+        label: game.i18n.localize('hm.dialogs.reroll.cancel'),
         icon: 'fas fa-times'
       }
     ];
@@ -206,6 +218,7 @@ export class StatRoller {
           });
         }
       }
+      SummaryManager.updateAbilitiesSummary();
     } finally {
       this.isRolling = false;
     }
@@ -229,14 +242,14 @@ export class StatRoller {
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
 
     if (!/^(\d+,)*\d+$/.test(value)) {
-      ui.notifications.warn(game.i18n.localize('hm.settings.custom-standard-array.invalid-format'));
+      ui.notifications.warn('hm.settings.custom-standard-array.invalid-format', { localize: true });
       return;
     }
 
     let scores = value.split(',').map(Number);
     if (scores.length < abilitiesCount) {
       scores = this.getStandardArrayDefault().split(',').map(Number);
-      ui.notifications.info(game.i18n.localize('hm.settings.custom-standard-array.reset-default'));
+      ui.notifications.info('hm.settings.custom-standard-array.reset-default', { localize: true });
     }
 
     game.settings.set(HM.CONFIG.ID, 'customStandardArray', scores.sort((a, b) => b - a).join(','));

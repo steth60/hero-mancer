@@ -9,8 +9,8 @@ import { StatRoller } from './utils/index.js';
  */
 function registerCoreSettings() {
   game.settings.register(HM.CONFIG.ID, 'enable', {
-    name: `${HM.CONFIG.ABRV}.settings.enable.name`,
-    hint: `${HM.CONFIG.ABRV}.settings.enable.hint`,
+    name: 'hm.settings.enable.name',
+    hint: 'hm.settings.enable.hint',
     default: true,
     type: Boolean,
     scope: 'client',
@@ -19,20 +19,20 @@ function registerCoreSettings() {
   });
 
   game.settings.register(HM.CONFIG.ID, 'loggingLevel', {
-    name: `${HM.CONFIG.ABRV}.settings.logger.name`,
-    hint: `${HM.CONFIG.ABRV}.settings.logger.hint`,
+    name: 'hm.settings.logger.name',
+    hint: 'hm.settings.logger.hint',
     scope: 'client',
     config: true,
     type: String,
     choices: {
-      0: `${HM.CONFIG.ABRV}.settings.logger.choices.off`,
-      1: `${HM.CONFIG.ABRV}.settings.logger.choices.errors`,
-      2: `${HM.CONFIG.ABRV}.settings.logger.choices.warnings`,
-      3: `${HM.CONFIG.ABRV}.settings.logger.choices.verbose`
+      0: 'hm.settings.logger.choices.off',
+      1: 'hm.settings.logger.choices.errors',
+      2: 'hm.settings.logger.choices.warnings',
+      3: 'hm.settings.logger.choices.verbose'
     },
     default: 2,
     onChange: (value) => {
-      const logMessage = `${HM.CONFIG.ABRV}.settings.logger.level.${value}`;
+      const logMessage = `hm.settings.logger.level.${value}`;
       if (value !== '0') {
         HM.log(3, logMessage);
       }
@@ -74,23 +74,23 @@ function registerWorldSettings() {
  */
 function registerDiceSettings() {
   game.settings.register(HM.CONFIG.ID, 'diceRollingMethod', {
-    name: `${HM.CONFIG.ABRV}.settings.dice-rolling-method.name`,
-    hint: `${HM.CONFIG.ABRV}.settings.dice-rolling-method.hint`,
+    name: 'hm.settings.dice-rolling-method.name',
+    hint: 'hm.settings.dice-rolling-method.hint',
     scope: 'client',
     config: true,
     type: String,
     requiresReload: true,
     choices: {
-      standardArray: game.i18n.localize(`${HM.CONFIG.ABRV}.settings.dice-rolling-method.standard-array`),
-      pointBuy: game.i18n.localize(`${HM.CONFIG.ABRV}.settings.dice-rolling-method.point-buy`),
-      manualFormula: game.i18n.localize(`${HM.CONFIG.ABRV}.settings.dice-rolling-method.manual-formula`)
+      standardArray: game.i18n.localize('hm.settings.dice-rolling-method.standard-array'),
+      pointBuy: game.i18n.localize('hm.settings.dice-rolling-method.point-buy'),
+      manualFormula: game.i18n.localize('hm.settings.dice-rolling-method.manual-formula')
     },
     default: 'standardArray'
   });
 
   game.settings.register(HM.CONFIG.ID, 'customRollFormula', {
-    name: `${HM.CONFIG.ABRV}.settings.custom-roll-formula.name`,
-    hint: `${HM.CONFIG.ABRV}.settings.custom-roll-formula.hint`,
+    name: 'hm.settings.custom-roll-formula.name',
+    hint: 'hm.settings.custom-roll-formula.hint',
     scope: 'client',
     config: game.settings.get(HM.CONFIG.ID, 'diceRollingMethod') === 'manualFormula',
     type: String,
@@ -105,8 +105,8 @@ function registerDiceSettings() {
   });
 
   game.settings.register(HM.CONFIG.ID, 'chainedRolls', {
-    name: `${HM.CONFIG.ABRV}.settings.chained-rolls.name`,
-    hint: `${HM.CONFIG.ABRV}.settings.chained-rolls.hint`,
+    name: 'hm.settings.chained-rolls.name',
+    hint: 'hm.settings.chained-rolls.hint',
     scope: 'client',
     config: game.settings.get(HM.CONFIG.ID, 'diceRollingMethod') === 'manualFormula',
     type: Boolean,
@@ -114,8 +114,8 @@ function registerDiceSettings() {
   });
 
   game.settings.register(HM.CONFIG.ID, 'rollDelay', {
-    name: `${HM.CONFIG.ABRV}.settings.roll-delay.name`,
-    hint: `${HM.CONFIG.ABRV}.settings.roll-delay.hint`,
+    name: 'hm.settings.roll-delay.name',
+    hint: 'hm.settings.roll-delay.hint',
     scope: 'client',
     config: game.settings.get(HM.CONFIG.ID, 'diceRollingMethod') === 'manualFormula',
     type: Number,
@@ -128,8 +128,8 @@ function registerDiceSettings() {
   });
 
   game.settings.register(HM.CONFIG.ID, 'customStandardArray', {
-    name: `${HM.CONFIG.ABRV}.settings.custom-standard-array.name`,
-    hint: `${HM.CONFIG.ABRV}.settings.custom-standard-array.hint`,
+    name: 'hm.settings.custom-standard-array.name',
+    hint: 'hm.settings.custom-standard-array.hint',
     scope: 'world',
     config: game.settings.get(HM.CONFIG.ID, 'diceRollingMethod') === 'standardArray',
     type: String,
@@ -153,9 +153,8 @@ function registerDiceSettings() {
  */
 function registerCompendiumSettings() {
   game.settings.registerMenu(HM.CONFIG.ID, 'customCompendiumMenu', {
-    name: `${HM.CONFIG.ABRV}.settings.custom-compendiums.menu.name`,
-    hint: `${HM.CONFIG.ABRV}.settings.custom-compendiums.menu.hint`,
-    label: `${HM.CONFIG.ABRV}.settings.custom-compendiums.menu.label`,
+    name: 'hm.settings.custom-compendiums.menu.name',
+    hint: 'hm.settings.custom-compendiums.menu.hint',
     icon: 'fa-solid fa-bars',
     type: CustomCompendiums,
     restricted: true,
@@ -163,7 +162,7 @@ function registerCompendiumSettings() {
   });
 
   game.settings.register(HM.CONFIG.ID, 'classPacks', {
-    name: `${HM.CONFIG.ABRV}.settings.class-packs.name`,
+    name: 'hm.settings.class-packs.name',
     scope: 'world',
     config: false,
     type: Array,
@@ -172,7 +171,7 @@ function registerCompendiumSettings() {
   });
 
   game.settings.register(HM.CONFIG.ID, 'racePacks', {
-    name: `${HM.CONFIG.ABRV}.settings.race-packs.name`,
+    name: 'hm.settings.race-packs.name',
     scope: 'world',
     config: false,
     type: Array,
@@ -181,7 +180,7 @@ function registerCompendiumSettings() {
   });
 
   game.settings.register(HM.CONFIG.ID, 'backgroundPacks', {
-    name: `${HM.CONFIG.ABRV}.settings.background-packs.name`,
+    name: 'hm.settings.background-packs.name',
     scope: 'world',
     config: false,
     type: Array,

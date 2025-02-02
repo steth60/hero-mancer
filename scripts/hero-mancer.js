@@ -8,7 +8,6 @@ export class HM {
   static CONFIG = {
     ID: 'hero-mancer',
     TITLE: 'Hero Mancer',
-    ABRV: 'hm',
     TEMPLATES: 'modules/hero-mancer/templates',
     DOCUMENTS: {
       race: null,

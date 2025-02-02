@@ -1,35 +1,37 @@
 <div class='tab {{tabs.finalize.cssClass}}' data-tab='finalize' data-group='hero-mancer-tabs'>
   <fieldset>
     <legend>{{localize 'hm.app.finalize.tooltip'}}</legend>
-    <p>{{localize 'hm.app.finalize.preamble'}}</p>
-    {{! Summary Section }}
+
+    {{! Character Summary }}
     <div class='summary-section'>
       <div class='character-portrait'>
-        <img src='{{characterArt}}' alt='Character Portrait' />
-        <h2>{{name}}</h2>
+        <img alt='{{localize "hm.app.finalize.character-portrait"}}' />
+        <span class='character-name'>{{name}}</span>
       </div>
       <div class='character-summary'>
-        <p class='background-summary'>Starting as an adventurer</p>
-        <p class='class-race-summary'>This <a href='#' data-tab='race'>unknown race</a> <a href='#' data-tab='class'>unknown class</a></p>
-        <p class='abilities-summary'>prides themself on their impressive abilities.</p>
-        <p class='equipment-summary'>They begin their adventure.</p>
+        <span class='background-summary'>Starting as <a data-action='switchToTab' data-tab='background'>an adventurer</a>,</span>
+        <span class='class-race-summary'>this
+          <a data-action='switchToTab' data-tab='race'>unknown race</a>
+          <a data-action='switchToTab' data-tab='class'>unknown class</a></span>
+        <span class='abilities-summary'>prides themself on their impressive abilities</span>
+        <span class='equipment-summary'>and begins their adventure.</span>
       </div>
     </div>
 
-    {{! Biography Section }}
-    <div class='biography-section'>
-      <div class='flex-row'>
+    {{! Character Details }}
+    <section class='character-details-section'>
+      <h3>{{localize 'hm.app.finalize.character-details'}}</h3>
+      <div class='character-details-row'>
         <div class='form-group'>
-          <label>Alignment</label>
+          <label>{{localize 'DND5E.Alignment'}}</label>
           <select name='alignment'>
             {{#each alignments}}
               <option value='{{this}}'>{{this}}</option>
             {{/each}}
           </select>
         </div>
-
         <div class='form-group'>
-          <label>Faith</label>
+          <label>{{localize 'DND5E.Faith'}}</label>
           <select name='faith'>
             {{#each deities}}
               <option value='{{this}}'>{{this}}</option>
@@ -37,101 +39,121 @@
           </select>
         </div>
       </div>
+    </section>
 
-      <div class='physical-appearance'>
-        <h3>Physical Appearance</h3>
-        <div class='grid-3'>
-          <div class='form-group'>
-            <label>Eyes</label>
-            <input type='text' name='eyes' />
-          </div>
-          <div class='form-group'>
-            <label>Hair</label>
-            <input type='text' name='hair' />
-          </div>
-          <div class='form-group'>
-            <label>Skin</label>
-            <input type='text' name='skin' />
-          </div>
-          <div class='form-group'>
-            <label>Height</label>
-            <input type='text' name='height' />
-          </div>
-          <div class='form-group'>
-            <label>Weight</label>
-            <input type='text' name='weight' />
-          </div>
-          <div class='form-group'>
-            <label>Age</label>
-            <input type='text' name='age' />
-          </div>
-          <div class='form-group'>
-            <label>Gender</label>
-            <input type='text' name='gender' />
-          </div>
+    {{! Physical Characteristics }}
+    <section class='physical-char-section'>
+      <h3>{{localize 'hm.app.finalize.physical-characteristics'}}</h3>
+      <div class='physical-traits-grid'>
+        <div class='trait-group'>
+          <label>{{localize 'DND5E.Eyes'}}</label>
+          <input type='text' name='eyes' />
         </div>
-        <div class='form-group'>
-          <label>Description</label>
-          <div class='flex-row'>
-            <textarea name='appearance-text' rows='3'></textarea>
-            <button type='button' class='generate-description'>
-              <i class='fas fa-dice'></i>
-              Generate
-            </button>
-          </div>
+        <div class='trait-group'>
+          <label>{{localize 'DND5E.Hair'}}</label>
+          <input type='text' name='hair' />
+        </div>
+        <div class='trait-group'>
+          <label>{{localize 'DND5E.Skin'}}</label>
+          <input type='text' name='skin' />
+        </div>
+        <div class='trait-group'>
+          <label>{{localize 'DND5E.Height'}}</label>
+          <input type='text' name='height' />
+        </div>
+        <div class='trait-group'>
+          <label>{{localize 'DND5E.Weight'}}</label>
+          <input type='text' name='weight' />
+        </div>
+        <div class='trait-group'>
+          <label>{{localize 'DND5E.Age'}}</label>
+          <input type='text' name='age' />
+        </div>
+        <div class='trait-group'>
+          <label>{{localize 'DND5E.Gender'}}</label>
+          <input type='text' name='gender' />
         </div>
       </div>
+      <div class='description-group'>
+        <label>{{localize 'DND5E.Description'}}</label>
+        <div class='description-input'>
+          <textarea name='description' rows='3'></textarea>
+        </div>
+      </div>
+    </section>
 
-      <div class='personality-traits'>
-        <div class='form-group'>
-          <label>Personality Traits</label>
-          <div class='flex-row'>
+    {{! Personal Characteristics }}
+    <section class='personal-char-section'>
+      <h3>{{localize 'hm.app.finalize.personal-characteristics'}}</h3>
+      <div class='personality-grid'>
+        <div class='personality-group'>
+          <label>{{localize 'hm.app.finalize.personality-traits'}}</label>
+          <div class='input-with-roll'>
             <textarea name='traits'></textarea>
-            <button type='button' class='roll-table' data-table='traits'>
+            <button type='button' class='roll-btn' data-table='traits'>
               <i class='fas fa-dice'></i>
-              Roll
+              {{localize 'DND5E.Roll'}}
             </button>
           </div>
         </div>
-
-        <div class='form-group'>
-          <label>Ideals</label>
-          <div class='flex-row'>
+        <div class='personality-group'>
+          <label>{{localize 'DND5E.Ideals'}}</label>
+          <div class='input-with-roll'>
             <textarea name='ideals'></textarea>
-            <button type='button' class='roll-table' data-table='ideals'>
+            <button type='button' class='roll-btn' data-table='ideals'>
               <i class='fas fa-dice'></i>
-              Roll
+              {{localize 'DND5E.Roll'}}
             </button>
           </div>
         </div>
-
-        <div class='form-group'>
-          <label>Bonds</label>
-          <div class='flex-row'>
+        <div class='personality-group'>
+          <label>{{localize 'DND5E.Bonds'}}</label>
+          <div class='input-with-roll'>
             <textarea name='bonds'></textarea>
-            <button type='button' class='roll-table' data-table='bonds'>
+            <button type='button' class='roll-btn' data-table='bonds'>
               <i class='fas fa-dice'></i>
-              Roll
+              {{localize 'DND5E.Roll'}}
             </button>
           </div>
         </div>
-
-        <div class='form-group'>
-          <label>Flaws</label>
-          <div class='flex-row'>
+        <div class='personality-group'>
+          <label>{{localize 'DND5E.Flaws'}}</label>
+          <div class='input-with-roll'>
             <textarea name='flaws'></textarea>
-            <button type='button' class='roll-table' data-table='flaws'>
+            <button type='button' class='roll-btn' data-table='flaws'>
               <i class='fas fa-dice'></i>
-              Roll
+              {{localize 'DND5E.Roll'}}
             </button>
           </div>
         </div>
       </div>
+    </section>
 
-      <div class='form-group biography'>
-        <label>Biography</label>
-        {{!-- {{editor content=biography target='biography' button=true owner=owner editable=editable}} --}}
+    {{! Notes }}
+    <section class='notes-section'>
+      <h3>{{localize 'DND5E.Notes'}}</h3>
+      <div class='notes-grid'>
+        <div class='notes-group'>
+          <label>{{localize 'hm.app.finalize.organizations'}}</label>
+          <textarea name='organizations'></textarea>
+        </div>
+        <div class='notes-group'>
+          <label>{{localize 'hm.app.finalize.allies'}}</label>
+          <textarea name='allies'></textarea>
+        </div>
+        <div class='notes-group'>
+          <label>{{localize 'hm.app.finalize.enemies'}}</label>
+          <textarea name='enemies'></textarea>
+        </div>
+        <div class='notes-group'>
+          <label>{{localize 'hm.app.finalize.backstory'}}</label>
+          <textarea name='backstory'></textarea>
+        </div>
+        <div class='notes-group'>
+          <label>{{localize 'hm.app.finalize.misc'}}</label>
+          <textarea name='miscellaneous'></textarea>
+        </div>
       </div>
-    </div>
+    </section>
   </fieldset>
 </div>

@@ -23,3 +23,6 @@ export { SavedOptions } from './savedOptions.js';
 
 /** Manages ability score calculations and updates */
 export { StatRoller } from './statRoller.js';
+
+/** Manages all listener and building activities for the Finalization tab */
+export { SummaryManager, TableManager } from './summaryManager.js';

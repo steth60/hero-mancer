@@ -94,7 +94,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     const validPacks = await this.#collectValidPacks(type);
 
     if (validPacks.size === 0) {
-      ui.notifications.warn(game.i18n.localize('hm.settings.custom-compendiums.no-valid-packs'));
+      ui.notifications.warn('hm.settings.custom-compendiums.no-valid-packs', { localize: true });
       return;
     }
 
@@ -242,11 +242,11 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
 
       this.constructor.reloadConfirm({ world: requiresWorldReload });
 
-      ui.notifications.info(game.i18n.localize('hm.settings.custom-compendiums.form-saved'));
+      ui.notifications.info('hm.settings.custom-compendiums.form-saved', { localize: true });
       HM.log(3, 'Form submitted and settings saved');
     } catch (error) {
       HM.log(1, 'Error in form submission:', error);
-      ui.notifications.error(game.i18n.localize('hm.settings.custom-compendiums.error-saving'));
+      ui.notifications.error('hm.settings.custom-compendiums.error-saving', { localize: true });
     }
   }
 

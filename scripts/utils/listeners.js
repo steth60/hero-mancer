@@ -1,4 +1,4 @@
-import { StatRoller } from './index.js';
+import { StatRoller, SummaryManager } from './index.js';
 import { HeroMancer } from '../app/HeroMancer.js';
 import { DropdownHandler } from './dropdownHandler.js';
 import { EquipmentParser } from './equipmentParser.js';
@@ -20,7 +20,6 @@ export class Listeners {
     this.initializeAbilityListeners(context, selectedAbilities);
     this.initializeEquipmentListeners();
     this.initializeCharacterListeners();
-    this.initializeSummaryListeners();
   }
 
   /**
@@ -32,17 +31,36 @@ export class Listeners {
     const abilityDropdowns = document.querySelectorAll('.ability-dropdown');
     const selectedValues = Array.from(abilityDropdowns).map(() => '');
     const totalPoints = StatRoller.getTotalPoints();
+    const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
 
     abilityDropdowns.forEach((dropdown, index) => {
       dropdown.addEventListener('change', (event) => {
-        selectedValues[index] = event.target.value || '';
-        DropdownHandler.updateAbilityDropdowns(abilityDropdowns, selectedValues, totalPoints, context.diceRollMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
+        if (diceRollingMethod === 'manualFormula') {
+          // Handle manual formula dropdown selection
+          const selectedValue = event.target.value;
+          selectedValues[index] = selectedValue;
+
+          // Update all dropdowns to disable selected values
+          abilityDropdowns.forEach((otherDropdown, otherIndex) => {
+            Array.from(otherDropdown.options).forEach((option) => {
+              if (option.value && option.value !== '') {
+                option.disabled = selectedValues.includes(option.value) && selectedValues[otherIndex] !== option.value;
+              }
+            });
+          });
+        } else {
+          // Handle point buy/standard array cases
+          selectedValues[index] = event.target.value || '';
+          DropdownHandler.updateAbilityDropdowns(abilityDropdowns, selectedValues, totalPoints, diceRollingMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
+        }
       });
     });
 
-    this.updateRemainingPointsDisplay(context.remainingPoints);
-    this.updatePlusButtonState(selectedAbilities, context.remainingPoints);
-    this.updateMinusButtonState(selectedAbilities);
+    if (diceRollingMethod === 'pointBuy') {
+      this.updateRemainingPointsDisplay(context.remainingPoints);
+      this.updatePlusButtonState(selectedAbilities, context.remainingPoints);
+      this.updateMinusButtonState(selectedAbilities);
+    }
   }
 
   /**
@@ -80,7 +98,9 @@ export class Listeners {
       };
       equipment.backgroundId = HM.CONFIG.SELECT_STORAGE.background.selectedId;
       await this.updateEquipmentSection(equipment, equipmentContainer, 'background');
-      this.updateBackgroundSummary(event.target);
+      SummaryManager.updateBackgroundSummary(event.target);
+
+      await SummaryManager.handleBackgroundChange(HM.CONFIG.SELECT_STORAGE.background);
     });
   }
 
@@ -124,34 +144,6 @@ export class Listeners {
   static initializeCharacterListeners() {
     const tokenArtCheckbox = document.querySelector('#link-token-art');
     tokenArtCheckbox?.addEventListener('change', HeroMancer._toggleTokenArtRow);
-
-    this.setupCharacterPortrait();
-  }
-
-  /**
-   * Sets up character portrait updating functionality and initializes related listeners
-   */
-  static setupCharacterPortrait() {
-    const updatePortrait = () => {
-      const nameInput = document.querySelector('#character-name');
-      const artInput = document.querySelector('#character-art-path');
-      const portraitName = document.querySelector('.character-portrait h2');
-      const portraitImg = document.querySelector('.character-portrait img');
-
-      if (portraitName) {
-        portraitName.textContent = nameInput?.value || game.user.name;
-      }
-      if (portraitImg && artInput) {
-        portraitImg.src = artInput.value || '';
-      }
-    };
-
-    const nameInput = document.querySelector('#character-name');
-    const artInput = document.querySelector('#character-art-path');
-
-    nameInput?.addEventListener('change', updatePortrait);
-    artInput?.addEventListener('change', updatePortrait);
-    updatePortrait();
   }
 
   /**
@@ -166,7 +158,7 @@ export class Listeners {
     const totalPoints = StatRoller.getTotalPoints();
 
     if (remainingPointsElement) {
-      remainingPointsElement.textContent = remainingPoints;
+      remainingPointsElement.innerHTML = remainingPoints;
       this.#updatePointsColor(remainingPointsElement, remainingPoints, totalPoints);
     }
   }
@@ -198,7 +190,7 @@ export class Listeners {
       return;
     }
     const abilityScoreElement = document.getElementById(`ability-score-${index}`);
-    const currentScore = parseInt(abilityScoreElement.textContent, 10);
+    const currentScore = parseInt(abilityScoreElement.innerHTML, 10);
     const newScore = Math.min(15, Math.max(8, currentScore + change));
 
     const totalPoints = StatRoller.getTotalPoints();
@@ -210,7 +202,7 @@ export class Listeners {
     }
 
     if (newScore !== currentScore) {
-      abilityScoreElement.textContent = newScore;
+      abilityScoreElement.innerHTML = newScore;
       selectedAbilities[index] = newScore;
 
       const updatedPointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
@@ -255,60 +247,5 @@ export class Listeners {
         inputElement.value = currentScore;
       }
     });
-  }
-
-  /**
-   * Initializes listeners for updating various summary sections
-   */
-  static initializeSummaryListeners() {
-    const raceDropdown = document.querySelector('#race-dropdown');
-    const classDropdown = document.querySelector('#class-dropdown');
-    const equipmentContainer = document.querySelector('#equipment-container');
-
-    raceDropdown?.addEventListener('change', () => this.updateClassRaceSummary());
-    classDropdown?.addEventListener('change', () => this.updateClassRaceSummary());
-    equipmentContainer?.addEventListener('change', () => this.updateEquipmentSummary());
-  }
-
-  /**
-   * Updates the background summary text based on selected background
-   * @param {HTMLSelectElement} backgroundSelect The background dropdown element
-   */
-  static updateBackgroundSummary(backgroundSelect) {
-    const backgroundName = backgroundSelect.options[backgroundSelect.selectedIndex].text;
-    const backgroundSummary = document.querySelector('.background-summary');
-    if (backgroundSummary) {
-      const article = /^[aeiou]/i.test(backgroundName) ? 'an' : 'a';
-      backgroundSummary.textContent = `Starting as ${article} ${backgroundName}`;
-    }
-  }
-
-  /**
-   * Updates the class and race summary text
-   */
-  static updateClassRaceSummary() {
-    const raceSelect = document.querySelector('#race-dropdown');
-    const classSelect = document.querySelector('#class-dropdown');
-    const summary = document.querySelector('.class-race-summary');
-
-    if (summary && raceSelect && classSelect) {
-      const raceName = raceSelect.options[raceSelect.selectedIndex].text;
-      const className = classSelect.options[classSelect.selectedIndex].text;
-      summary.innerHTML = `This <a href="#" data-tab="race">${raceName || 'unknown race'}</a> <a href="#" data-tab="class">${className || 'unknown class'}</a>`;
-    }
-  }
-
-  /**
-   * Updates the equipment summary text based on selected equipment
-   */
-  static updateEquipmentSummary() {
-    const selectedEquipment = Array.from(document.querySelectorAll('#equipment-container select, #equipment-container input:checked'))
-      .map((el) => el.options?.[el.selectedIndex]?.text || el.parentElement?.textContent?.trim())
-      .filter(Boolean);
-
-    const summary = document.querySelector('.equipment-summary');
-    if (summary) {
-      summary.textContent = selectedEquipment.length ? `They wield ${selectedEquipment.join(', ')} as their adventure begins` : 'They begin their adventure';
-    }
   }
 }

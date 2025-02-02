@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 import { HM } from '../hero-mancer.js';
-import { CacheManager, DropdownHandler, EquipmentParser, Listeners, StatRoller, SavedOptions } from '../utils/index.js';
+import { CacheManager, DropdownHandler, EquipmentParser, Listeners, StatRoller, SavedOptions, SummaryManager } from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -25,9 +25,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       increaseScore: HeroMancer.increaseScore,
       selectCharacterArt: this.selectCharacterArt,
       selectTokenArt: this.selectTokenArt,
-      resetOptions: HeroMancer.resetOptions
+      resetOptions: HeroMancer.resetOptions,
+      switchToTab: HeroMancer.switchToTab
     },
-    classes: [`${HM.CONFIG.ABRV}-app`],
+    classes: ['hm-app'],
     position: {
       height: 'auto',
       width: 'auto',
@@ -48,43 +49,43 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static PARTS = {
     header: {
       template: `${HM.CONFIG.TEMPLATES}/app-header.hbs`,
-      classes: [`${HM.CONFIG.ABRV}-app-header`]
+      classes: ['hm-app-header']
     },
     tabs: {
       template: `${HM.CONFIG.TEMPLATES}/app-nav.hbs`,
-      classes: [`${HM.CONFIG.ABRV}-app-nav`]
+      classes: ['hm-app-nav']
     },
     start: {
       template: `${HM.CONFIG.TEMPLATES}/tab-start.hbs`,
-      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
+      classes: ['hm-app-tab-content']
     },
     background: {
       template: `${HM.CONFIG.TEMPLATES}/tab-background.hbs`,
-      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
+      classes: ['hm-app-tab-content']
     },
     race: {
       template: `${HM.CONFIG.TEMPLATES}/tab-race.hbs`,
-      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
+      classes: ['hm-app-tab-content']
     },
     class: {
       template: `${HM.CONFIG.TEMPLATES}/tab-class.hbs`,
-      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
+      classes: ['hm-app-tab-content']
     },
     abilities: {
       template: `${HM.CONFIG.TEMPLATES}/tab-abilities.hbs`,
-      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
+      classes: ['hm-app-tab-content']
     },
     equipment: {
       template: `${HM.CONFIG.TEMPLATES}/tab-equipment.hbs`,
-      classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
+      classes: ['hm-app-tab-content']
+      // },
+      // finalize: {
+      //   template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`,
+      //   classes: ['hm-app-tab-content']
     },
-    // finalize: {
-    //   template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`,
-    //   classes: [`${HM.CONFIG.ABRV}-app-tab-content`]
-    // },
     footer: {
       template: `${HM.CONFIG.TEMPLATES}/app-footer.hbs`,
-      classes: [`${HM.CONFIG.ABRV}-app-footer`]
+      classes: ['hm-app-footer']
     }
   };
 
@@ -221,7 +222,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   _getTabs(parts) {
     const tabGroup = 'hero-mancer-tabs';
-    this.tabGroups[tabGroup] = 'start'; // Default active tab
+    if (!this.tabGroups[tabGroup]) {
+      this.tabGroups[tabGroup] = 'start';
+    }
 
     return parts.reduce((tabs, partId) => {
       const tab = {
@@ -237,37 +240,37 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           return tabs;
         case 'start':
           tab.id = 'start';
-          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.start`)}`;
+          tab.label = `${game.i18n.localize('hm.app.tab-names.start')}`;
           tab.icon = 'fa-solid fa-play-circle';
           break;
         case 'background':
           tab.id = 'background';
-          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.background`)}`;
+          tab.label = `${game.i18n.localize('hm.app.tab-names.background')}`;
           tab.icon = 'fa-solid fa-scroll';
           break;
         case 'race':
           tab.id = 'race';
-          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.race`)}`;
+          tab.label = `${game.i18n.localize('hm.app.tab-names.race')}`;
           tab.icon = 'fa-solid fa-feather-alt';
           break;
         case 'class':
           tab.id = 'class';
-          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.class`)}`;
+          tab.label = `${game.i18n.localize('hm.app.tab-names.class')}`;
           tab.icon = 'fa-solid fa-chess-rook';
           break;
         case 'abilities':
           tab.id = 'abilities';
-          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.abilities`)}`;
+          tab.label = `${game.i18n.localize('hm.app.tab-names.abilities')}`;
           tab.icon = 'fa-solid fa-fist-raised';
           break;
         case 'equipment':
           tab.id = 'equipment';
-          tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.equipment`)}`;
+          tab.label = `${game.i18n.localize('hm.app.tab-names.equipment')}`;
           tab.icon = 'fa-solid fa-shield-halved';
           break;
         // case 'finalize':
         //   tab.id = 'finalize';
-        //   tab.label = `${game.i18n.localize(`${HM.CONFIG.ABRV}.app.tab-names.finalize`)}`;
+        //   tab.label = `${game.i18n.localize('hm.app.tab-names.finalize')}`;
         //   tab.icon = 'fa-solid fa-check-circle';
         //   break;
         case 'footer':
@@ -292,11 +295,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const savedOptions = await SavedOptions.loadOptions();
 
-    // Initialize dropdowns first
+    // Initialize all UI components in sequence
     DropdownHandler.initializeDropdown({ type: 'class', html, context });
     DropdownHandler.initializeDropdown({ type: 'race', html, context });
     DropdownHandler.initializeDropdown({ type: 'background', html, context });
 
+    // Initialize remaining listeners after dropdowns
+    SummaryManager.initializeSummaryListeners();
+    Listeners.initializeListeners(html, context, HeroMancer.selectedAbilities);
+
+    // Handle saved options restoration
     if (Object.keys(savedOptions).length > 0) {
       for (const [key, value] of Object.entries(savedOptions)) {
         const selector = `[name="${key}"]`;
@@ -311,14 +319,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         } else if (elem.tagName === 'SELECT') {
           elem.value = value;
           elem.dispatchEvent(new Event('change'));
-          Listeners.updateClassRaceSummary();
+          SummaryManager.updateClassRaceSummary();
         } else {
           elem.value = value;
         }
       }
     }
-
-    this._cleanup = Listeners.initializeListeners(html, context, HeroMancer.selectedAbilities);
   }
 
   _onClose() {
@@ -348,9 +354,19 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         elem.dispatchEvent(new Event('change'));
       }
     });
-    Listeners.updateClassRaceSummary();
+    SummaryManager.updateClassRaceSummary();
     this.render(true);
-    ui.notifications.info(game.i18n.localize('hm.app.optionsReset'));
+    ui.notifications.info('hm.app.optionsReset', { localize: true });
+  }
+
+  static switchToTab(event, target) {
+    const tabId = target.dataset.tab;
+    HM.log(3, 'TAB ID:', tabId);
+    if (!tabId) return;
+    const app = HM.heroMancer;
+    if (!app) return;
+    app.tabGroups['hero-mancer-tabs'] = tabId;
+    app.render(false);
   }
 
   /* Logic for rolling stats and updating input fields */
@@ -378,12 +394,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static async selectCharacterArt(event, target) {
     const inputField = document.getElementById('character-art-path');
     const currentPath = inputField.value || '/';
+    const portraitImg = document.querySelector('.character-portrait img');
 
     const filepicker = new FilePicker({
       type: 'image',
       current: currentPath,
       callback: (path) => {
         inputField.value = path;
+        if (portraitImg) {
+          portraitImg.src = path;
+        }
         // If the checkbox is checked, update Token Art to match Character Art
         if (document.getElementById('link-token-art').checked) {
           document.getElementById('token-art-path').value = path;
@@ -642,7 +662,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static async formHandler(event, form, formData) {
     if (event.submitter?.dataset.action === 'saveOptions') {
       await SavedOptions.saveOptions(formData.object);
-      ui.notifications.info(game.i18n.localize('hm.app.optionsSaved'));
+      ui.notifications.info('hm.app.optionsSaved', { localize: true });
       return;
     }
     HM.log(3, 'Processing form data...');
@@ -735,7 +755,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }]))
       }
     };
-
+    ui.notifications.info('hm.actortab-button.creating', { localize: true });
     let actor = await Actor.create(actorData);
     let newActor = game.actors.getName(actorName);
     HM.log(3, newActor);
@@ -747,15 +767,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     try {
       // Check if each required item is selected before fetching
       if (!backgroundData?.packId || !backgroundData?.itemId) {
-        ui.notifications.warn(game.i18n.localize('hm.errors.select-background'));
+        ui.notifications.warn('hm.errors.select-background', { localize: true });
         return;
       }
       if (!raceData?.packId || !raceData?.itemId) {
-        ui.notifications.warn(game.i18n.localize('hm.errors.select-race'));
+        ui.notifications.warn('hm.errors.select-race', { localize: true });
         return;
       }
       if (!classData?.packId || !classData?.itemId) {
-        ui.notifications.warn(game.i18n.localize('hm.errors.select-class'));
+        ui.notifications.warn('hm.errors.select-class', { localize: true });
         return;
       }
 
@@ -770,7 +790,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       if (!classItem) throw new Error(game.i18n.localize('hm.errors.no-class'));
     } catch (error) {
       HM.log(1, error);
-      ui.notifications.error(game.i18n.localize('hm.errors.fetch-fail'));
+      ui.notifications.error('hm.errors.fetch-fail', { localize: true });
     }
 
     if (!backgroundItem || !raceItem || !classItem) {

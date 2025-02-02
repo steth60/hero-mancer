@@ -733,3 +733,141 @@
   margin: 0 0.2em 0 0;
   font-size: inherit;
 }
+
+/* Summary Section */
+.hm-app-tab-content .summary-section {
+  display: grid;
+  grid-template-areas: 'portrait summary';
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.hm-app-tab-content .character-portrait {
+  grid-area: portrait;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.hm-app-tab-content .character-portrait img {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border: 1px solid #666;
+}
+
+.hm-app-tab-content .character-name {
+  font-size: 1.2em;
+}
+
+.hm-app-tab-content .character-summary {
+  grid-area: summary;
+  padding: 10px;
+}
+
+/* Section Headers */
+.hm-app-tab-content section {
+  margin-top: 20px;
+}
+
+.hm-app-tab-content h3 {
+  border-bottom: 1px solid #666;
+  margin-bottom: 10px;
+}
+
+/* Character Details */
+.hm-app-tab-content .character-details-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.hm-app-tab-content .character-details-row select {
+  min-height: 25px;
+}
+
+.hm-app-tab-content .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hm-app-tab-content .form-group select {
+  width: fit-content;
+  min-width: 120px;
+}
+
+/* Physical Traits */
+.hm-app-tab-content .physical-traits-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.hm-app-tab-content .trait-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 5px;
+}
+
+.hm-app-tab-content .physical-traits-grid .trait-group input {
+  width: 100%;
+  max-width: 65px;
+}
+
+/* Description */
+.hm-app-tab-content .description-group {
+  margin-top: 10px;
+}
+
+.hm-app-tab-content .description-input {
+  display: flex;
+  gap: 10px;
+}
+
+.hm-app-tab-content .description-input textarea {
+  resize: none;
+  flex: 1;
+}
+
+/* Personal Characteristics */
+.hm-app-tab-content .personality-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.hm-app-tab-content .input-with-roll {
+  display: flex;
+  gap: 10px;
+}
+
+.hm-app-tab-content .input-with-roll textarea {
+  resize: none;
+  flex: 1;
+}
+
+/* Notes Section */
+.hm-app-tab-content .notes-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.hm-app-tab-content .notes-group textarea {
+  resize: none;
+  width: 100%;
+  min-height: 60px;
+}
+
+/* Buttons */
+.hm-app-tab-content .personal-char-section button {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 1.5px;
+  width: 60px;
+  height: 30px;
+}

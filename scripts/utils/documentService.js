@@ -63,13 +63,13 @@ export class DocumentService {
             doc,
             packName,
             packId: pack.metadata.id,
-            description: doc.system.description?.value || game.i18n.localize(`${HM.CONFIG.ABRV}.app.no-description`),
+            description: doc.system.description?.value || game.i18n.localize(`hm.app.no-description`),
             folderName: doc.folder?.name || null
           });
         });
       } catch (error) {
         HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}:`, error);
-        ui.notifications.error(`Failed to retrieve documents from compendium pack: ${pack.metadata.label}`);
+        ui.notifications.error(game.i18n.format('hm.errors.failed-compendium-retrieval', { type: pack.metadata.label }));
       }
     }
 

@@ -184,6 +184,7 @@ export class EquipmentParser {
 
       // Add a header for the section based on whether it's a placeholder
       const header = document.createElement('h3');
+      /** TODO: Make this localization friendly. */
       header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
       sectionContainer.appendChild(header);
       if (currentType === 'class' && this.classId) {
