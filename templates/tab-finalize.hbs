@@ -75,9 +75,9 @@
         </div>
       </div>
       <div class='description-group'>
-        <label>{{localize 'DND5E.Description'}}</label>
+        <label>{{localize 'hm.app.finalize.physical-description'}}</label>
         <div class='description-input'>
-          <textarea name='description' rows='3'></textarea>
+          <textarea name='appearance' rows='3'></textarea>
         </div>
       </div>
     </section>
@@ -89,7 +89,7 @@
         <div class='personality-group'>
           <label>{{localize 'hm.app.finalize.personality-traits'}}</label>
           <div class='input-with-roll'>
-            <textarea name='traits'></textarea>
+            <textarea name='traits' placeholder='{{localize "hm.app.finalize.traits-placeholder"}}'></textarea>
             <button type='button' class='roll-btn' data-table='traits'>
               <i class='fas fa-dice'></i>
               {{localize 'DND5E.Roll'}}
@@ -99,7 +99,7 @@
         <div class='personality-group'>
           <label>{{localize 'DND5E.Ideals'}}</label>
           <div class='input-with-roll'>
-            <textarea name='ideals'></textarea>
+            <textarea name='ideals' placeholder='{{localize "hm.app.finalize.ideals-placeholder"}}'></textarea>
             <button type='button' class='roll-btn' data-table='ideals'>
               <i class='fas fa-dice'></i>
               {{localize 'DND5E.Roll'}}
@@ -109,7 +109,7 @@
         <div class='personality-group'>
           <label>{{localize 'DND5E.Bonds'}}</label>
           <div class='input-with-roll'>
-            <textarea name='bonds'></textarea>
+            <textarea name='bonds' placeholder='{{localize "hm.app.finalize.bonds-placeholder"}}'></textarea>
             <button type='button' class='roll-btn' data-table='bonds'>
               <i class='fas fa-dice'></i>
               {{localize 'DND5E.Roll'}}
@@ -119,7 +119,7 @@
         <div class='personality-group'>
           <label>{{localize 'DND5E.Flaws'}}</label>
           <div class='input-with-roll'>
-            <textarea name='flaws'></textarea>
+            <textarea name='flaws' placeholder='{{localize "hm.app.finalize.flaws-placeholder"}}'></textarea>
             <button type='button' class='roll-btn' data-table='flaws'>
               <i class='fas fa-dice'></i>
               {{localize 'DND5E.Roll'}}
@@ -131,27 +131,11 @@
 
     {{! Notes }}
     <section class='notes-section'>
-      <h3>{{localize 'DND5E.Notes'}}</h3>
+      <h3>{{localize 'hm.app.finalize.backstory'}}</h3>
       <div class='notes-grid'>
         <div class='notes-group'>
-          <label>{{localize 'hm.app.finalize.organizations'}}</label>
-          <textarea name='organizations'></textarea>
-        </div>
-        <div class='notes-group'>
-          <label>{{localize 'hm.app.finalize.allies'}}</label>
-          <textarea name='allies'></textarea>
-        </div>
-        <div class='notes-group'>
-          <label>{{localize 'hm.app.finalize.enemies'}}</label>
-          <textarea name='enemies'></textarea>
-        </div>
-        <div class='notes-group'>
-          <label>{{localize 'hm.app.finalize.backstory'}}</label>
-          <textarea name='backstory'></textarea>
-        </div>
-        <div class='notes-group'>
-          <label>{{localize 'hm.app.finalize.misc'}}</label>
-          <textarea name='miscellaneous'></textarea>
+          <prose-mirror name='backstory' value='{{localize "hm.app.finalize.backstory-placeholder"}}'>
+          </prose-mirror>
         </div>
       </div>
     </section>

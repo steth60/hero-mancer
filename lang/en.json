@@ -90,7 +90,13 @@
         "allies": "Allies",
         "enemies": "Enemies",
         "backstory": "Backstory",
-        "misc": "Miscellaneous"
+        "misc": "Miscellaneous",
+        "backstory-placeholder": "Write a backstory for your character. Consider what organizations they belong to, any allies they've made or enemies they've earned, and other important details from their life before becoming an adventurer.",
+        "traits-placeholder": "Describe your character's personality. How do their abilities shape who they are? Are they wise and contemplative, or charismatic and outgoing? Press the Roll button to draw from personality traits suggested by your background.",
+        "ideals-placeholder": "What principles guide your character? What cause or belief drives them to adventure? What would they fight or die for? Press the Roll button to draw from ideals suggested by your background.",
+        "bonds-placeholder": "Who or what is most dear to your character? What place feels like home? What object means everything to them? Press the Roll button to draw from bonds suggested by your background.",
+        "flaws-placeholder": "What are your character's shortcomings or weaknesses? Consider both personality quirks and ability score limitations. What traits might others find difficult? Press the Roll button to draw from flaws suggested by your background.",
+        "physical-description": "Physical Description"
       },
       "header-title": "Hero Mancer Creation Wizard",
       "no-description": "Unable to load a valid description for this item.",

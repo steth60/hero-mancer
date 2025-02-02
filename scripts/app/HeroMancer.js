@@ -78,10 +78,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     equipment: {
       template: `${HM.CONFIG.TEMPLATES}/tab-equipment.hbs`,
       classes: ['hm-app-tab-content']
-      // },
-      // finalize: {
-      //   template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`,
-      //   classes: ['hm-app-tab-content']
+    },
+    finalize: {
+      template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`,
+      classes: ['hm-app-tab-content']
     },
     footer: {
       template: `${HM.CONFIG.TEMPLATES}/app-footer.hbs`,
@@ -199,17 +199,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       case 'equipment':
         context.tab = context.tabs[partId];
         break;
-      // case 'finalize':
-      //   context.tab = context.tabs[partId];
-      //   context.alignments = game.settings
-      //     .get(HM.CONFIG.ID, 'alignments')
-      //     ?.split(',')
-      //     .map((d) => d.trim()) || ['None'];
-      //   context.deities = game.settings
-      //     .get(HM.CONFIG.ID, 'deities')
-      //     ?.split(',')
-      //     .map((d) => d.trim()) || ['None'];
-      //   break;
+      case 'finalize':
+        context.tab = context.tabs[partId];
+        context.alignments = game.settings
+          .get(HM.CONFIG.ID, 'alignments')
+          ?.split(',')
+          .map((d) => d.trim()) || ['None'];
+        context.deities = game.settings
+          .get(HM.CONFIG.ID, 'deities')
+          ?.split(',')
+          .map((d) => d.trim()) || ['None'];
+        break;
     }
     return context;
   }
@@ -268,11 +268,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           tab.label = `${game.i18n.localize('hm.app.tab-names.equipment')}`;
           tab.icon = 'fa-solid fa-shield-halved';
           break;
-        // case 'finalize':
-        //   tab.id = 'finalize';
-        //   tab.label = `${game.i18n.localize('hm.app.tab-names.finalize')}`;
-        //   tab.icon = 'fa-solid fa-check-circle';
-        //   break;
+        case 'finalize':
+          tab.id = 'finalize';
+          tab.label = `${game.i18n.localize('hm.app.tab-names.finalize')}`;
+          tab.icon = 'fa-solid fa-check-circle';
+          break;
         case 'footer':
           return tabs;
       }
@@ -660,6 +660,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */
   static async formHandler(event, form, formData) {
+    HM.log(3, 'FORMHANDLER:', { event: event, form: form, formData: formData });
     if (event.submitter?.dataset.action === 'saveOptions') {
       await SavedOptions.saveOptions(formData.object);
       ui.notifications.info('hm.app.optionsSaved', { localize: true });
@@ -752,7 +753,26 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       },
       type: 'character',
       system: {
-        abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }]))
+        abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }])),
+        details: {
+          age: formData.object.age || '',
+          alignment: formData.object.alignment || '',
+          appearance: formData.object.description || '',
+          bond: formData.object.bonds || '',
+          eyes: formData.object.eyes || '',
+          faith: formData.object.faith || '',
+          flaw: formData.object.flaws || '',
+          gender: formData.object.gender || '',
+          hair: formData.object.hair || '',
+          height: formData.object.height || '',
+          ideal: formData.object.ideals || '',
+          skin: formData.object.skin || '',
+          trait: formData.object.traits || '',
+          weight: formData.object.weight || '',
+          biography: {
+            value: formData.object.backstory || ''
+          }
+        }
       }
     };
     ui.notifications.info('hm.actortab-button.creating', { localize: true });
@@ -934,6 +954,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         if (currentManager) await currentManager.close();
         newActor.sheet.render(true);
       }
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker(),
+        content: SummaryManager.getSummaryForChat(),
+        flags: {
+          'hero-mancer': {
+            type: 'character-summary'
+          }
+        }
+      });
     }
   }
 }

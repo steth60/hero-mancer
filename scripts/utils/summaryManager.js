@@ -23,28 +23,37 @@ export class TableManager {
     HM.log(3, 'Initializing tables for background:', background.id);
     this.currentTables.delete(background.id);
 
-    const tableIds = this._extractTableIds(background.system.description.value);
-    if (!tableIds.length) {
-      HM.log(2, 'No table IDs found in background description:', background.system.description.value);
-      return;
-    }
-
     try {
+      // Find all RollTable UUIDs in the description
+      const description = background.system.description.value;
+      const uuidPattern = /@UUID\[Compendium\.(.*?)\.(.*?)\.RollTable\.(.*?)\]/g;
+      const matches = [...description.matchAll(uuidPattern)];
+
+      if (!matches.length) {
+        HM.log(2, 'No RollTable UUIDs found in background description');
+        return;
+      }
+
+      // Load each table from its UUID
       const tables = await Promise.all(
-        tableIds.map(async (id) => {
-          const table = game.tables.get(id);
-          if (!table) {
-            // HM.log(2, `Could not find table with ID: ${id}`);
+        matches.map(async (match) => {
+          const uuid = `Compendium.${match[1]}.${match[2]}.RollTable.${match[3]}`;
+          try {
+            const table = await fromUuid(uuid);
+            if (!table) {
+              HM.log(2, `Could not load table with UUID: ${uuid}`);
+              return null;
+            }
+            HM.log(3, `Loaded table:`, table);
+            return table;
+          } catch (error) {
+            HM.log(1, `Error loading table with UUID ${uuid}:`, error);
             return null;
           }
-          HM.log(3, 'Found table:', table);
-          return table;
         })
       );
 
       const validTables = tables.filter((table) => table !== null);
-      HM.log(3, 'Valid tables found:', validTables);
-
       if (validTables.length) {
         for (const table of validTables) {
           try {
@@ -56,7 +65,7 @@ export class TableManager {
         this.currentTables.set(background.id, validTables);
         HM.log(3, 'Tables initialized and stored for background:', background.id);
       } else {
-        // HM.log(2, 'No valid tables found for background');
+        HM.log(2, 'No valid tables could be loaded');
       }
     } catch (error) {
       HM.log(1, 'Error initializing tables for background:', error);
@@ -69,17 +78,36 @@ export class TableManager {
 
     if (!tables) return null;
 
-    const table = tables.find((t) => t.name.includes(characteristicType));
+    const table = tables.find((t) => {
+      const tableName = t.name.toLowerCase();
+      const searchTerm = characteristicType.toLowerCase();
+      return tableName.includes(searchTerm) || (searchTerm === 'traits' && tableName.includes('personality'));
+    });
+
     HM.log(3, 'Found matching table for type:', characteristicType, table);
 
     if (!table) return null;
 
     try {
-      const { results } = await table.draw({
-        displayChat: false
-      });
+      // Set replacement to false to prevent duplicates
+      const drawOptions = {
+        displayChat: false,
+        replacement: false
+      };
 
+      const { results } = await table.draw(drawOptions);
       HM.log(3, 'Draw results:', results);
+
+      if (!results.length) return null;
+
+      // Mark the result as drawn
+      await table.updateEmbeddedDocuments('TableResult', [
+        {
+          _id: results[0].id,
+          drawn: true
+        }
+      ]);
+
       return results[0]?.text || null;
     } catch (error) {
       console.error('Error rolling for characteristic:', error);
@@ -91,10 +119,16 @@ export class TableManager {
     const tables = this.currentTables.get(backgroundId);
     if (!tables) return true;
 
-    const table = tables.find((t) => t.name.includes(characteristicType));
+    const table = tables.find((t) => {
+      const tableName = t.name.toLowerCase();
+      const searchTerm = characteristicType.toLowerCase();
+      return tableName.includes(searchTerm) || (searchTerm === 'traits' && tableName.includes('personality'));
+    });
     if (!table) return true;
 
-    return table.results.every((r) => r.drawn);
+    // Check if there are any undrawn results left
+    const availableResults = table.results.filter((r) => !r.drawn);
+    return availableResults.length === 0;
   }
 
   static async resetTables(backgroundId) {
@@ -387,7 +421,7 @@ export class SummaryManager {
         HM.log(3, 'Roll result:', result);
 
         if (result) {
-          textarea.value = textarea.value ? `${textarea.value}\n${result}` : result;
+          textarea.value = textarea.value ? `${textarea.value} ${result}` : result;
 
           if (TableManager.isTableExhausted(backgroundId, tableType)) {
             button.disabled = true;
@@ -413,5 +447,42 @@ export class SummaryManager {
       const rollButtons = document.querySelectorAll('.roll-btn');
       rollButtons.forEach((button) => (button.disabled = false));
     }
+  }
+
+  static getSummaryForChat() {
+    const characterName = document.querySelector('#character-name')?.value || game.user.name;
+
+    const summaries = {
+      classRace: document.querySelector('.class-race-summary')?.innerHTML || '',
+      background: document.querySelector('.background-summary')?.innerHTML || '',
+      abilities: document.querySelector('.abilities-summary')?.innerHTML || '',
+      equipment: document.querySelector('.equipment-summary')?.innerHTML || ''
+    };
+
+    let message = `
+    <div class="character-summary" style="line-height: 1.7; margin: 0.5em 0;">
+        <h2 style="margin-bottom: 0.5em">${characterName}</h2>
+        <hr style="margin: 0.5em 0">
+    `;
+
+    if (summaries.classRace) {
+      message += `<span class="summary-section class-race">${summaries.classRace}</span> `;
+    }
+
+    if (summaries.background) {
+      message += `<span class="summary-section background">${summaries.background}</span> `;
+    }
+
+    if (summaries.abilities) {
+      message += `<span class="summary-section abilities">${summaries.abilities}</span> `;
+    }
+
+    if (summaries.equipment) {
+      message += `<span class="summary-section equipment">${summaries.equipment}</span>`;
+    }
+
+    message += '</div>';
+
+    return message;
   }
 }

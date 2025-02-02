@@ -288,7 +288,7 @@ export class EquipmentParser {
         result = await this.renderFocusItem(item, itemContainer);
         break;
       default:
-        HM.log(1, `Unsupported item type: ${item.type}`, { item: item });
+        HM.log(3, `Unsupported item type: ${item.type}`, { item: item });
         return null;
     }
 
