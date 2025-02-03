@@ -407,7 +407,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         if (portraitImg) {
           portraitImg.src = path;
         }
-        // If the checkbox is checked, update Token Art to match Character Art
         if (document.getElementById('link-token-art').checked) {
           document.getElementById('token-art-path').value = path;
         }
