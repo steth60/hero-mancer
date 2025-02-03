@@ -36,11 +36,15 @@ export class Listeners {
     abilityDropdowns.forEach((dropdown, index) => {
       dropdown.addEventListener('change', (event) => {
         if (diceRollingMethod === 'manualFormula') {
-          // Handle manual formula dropdown selection
           const selectedValue = event.target.value;
           selectedValues[index] = selectedValue;
+          const scoreInput = event.target.parentElement.querySelector('.ability-score');
 
-          // Update all dropdowns to disable selected values
+          // Both dropdown and input should reference the selected ability
+          event.target.setAttribute('name', `abilities[${selectedValue}]`);
+          scoreInput.setAttribute('name', `abilities[${selectedValue}].score`);
+
+          // Existing code for disabling options
           abilityDropdowns.forEach((otherDropdown, otherIndex) => {
             Array.from(otherDropdown.options).forEach((option) => {
               if (option.value && option.value !== '') {

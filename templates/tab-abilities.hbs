@@ -118,7 +118,7 @@
             <input
               id='ability-{{@index}}-score'
               type='number'
-              name='abilities[{{this.key}}].score'
+              name='abilities[{{lookup . (concat "abilities[" this.key "]")}}].score'
               class='ability-score'
               data-dtype='Number'
               placeholder='{{localize "hm.app.abilities.score-placeholder"}}'
