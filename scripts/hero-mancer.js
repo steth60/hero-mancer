@@ -3,6 +3,8 @@ import { registerSettings } from './settings.js';
 import { CustomCompendiums } from './app/CustomCompendiums.js';
 import { HeroMancer } from './app/HeroMancer.js';
 
+const { CompendiumBrowser, CompendiumBrowserSettingsConfig } = dnd5e.applications;
+
 /* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
 export class HM {
   static CONFIG = {
@@ -122,6 +124,38 @@ Hooks.on('init', () => {
   HM.init();
   CONFIG.Item.compendiumIndexFields = ['system.type.value', 'system.properties', 'system.identifier', 'system.description.value', 'type', 'name', '_id', 'uuid', 'pack'];
 });
+
+/* Hooks.once('setup', () => {
+  if (!game.dnd5e?.applications?.CompendiumBrowser) return;
+
+  const originalFetch = game.dnd5e.applications.CompendiumBrowser.fetch;
+  game.dnd5e.applications.CompendiumBrowser.fetch = async function (documentClass, options = {}) {
+    options.filters = Array.isArray(options.filters) ? options.filters : [];
+
+    const enabledPrefixes = new Set();
+    ['classPacks', 'racePacks', 'backgroundPacks'].forEach((setting) => {
+      const packs = game.settings.get(HM.CONFIG.ID, setting);
+      const packList = Array.isArray(packs) ? packs : [packs];
+      packList.forEach((pack) => {
+        if (pack) {
+          const prefix = pack.split('.')[0];
+          enabledPrefixes.add(prefix);
+        }
+      });
+    });
+
+    options.filters.additional = {
+      source: Object.fromEntries(
+        [...game.packs].map((pack) => {
+          const prefix = pack.collection.split('.')[0];
+          return [pack.collection, enabledPrefixes.has(prefix) ? 1 : -1];
+        })
+      )
+    };
+
+    return originalFetch.call(this, documentClass, options);
+  };
+}); */
 
 Hooks.once('ready', async () => {
   if (!game.settings.get(HM.CONFIG.ID, 'enable')) return;

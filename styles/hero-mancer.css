@@ -534,7 +534,6 @@
 /* Container for each row */
 .hm-app .hm-app-tab-content .form-row,
 .hm-app .hm-app-tab-content .art-selection-row {
-  gap: 5px;
   display: flex;
   align-items: center;
   margin-bottom: 8px;
@@ -545,17 +544,12 @@
 
 /* Set fixed percentage widths for each column */
 .hm-app .hm-app-tab-content .label-15 {
-  flex: 0 0 15%;
+  flex: 0 0 120px;
+  margin-right: 5px;
 }
-.hm-app .hm-app-tab-content .input-35 {
-  flex: 0 0 35%;
-  max-width: 35%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+
 .hm-app .hm-app-tab-content .button-7 {
-  flex: 0 0 7%;
+  flex: 0 0 auto;
   width: auto; /* Ensures the button remains compact */
   white-space: nowrap;
 }
@@ -571,11 +565,8 @@
 
 /* Optional styling for consistency */
 .hm-app .hm-app-tab-content .checkbox-label {
-  gap: 5px;
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  font-size: 0.9em;
+  flex: 1;
+  margin-left: 10px;
 }
 
 @keyframes rollDice {
@@ -736,25 +727,25 @@
 
 /* Summary Section */
 .hm-app-tab-content .summary-section {
-  display: grid;
-  grid-template-areas: 'portrait summary';
   gap: 10px;
+  grid-template-areas: 'portrait summary';
+  display: grid;
   margin-bottom: 20px;
   line-height: 1.9;
 }
 
 .hm-app-tab-content .character-portrait {
+  gap: 5px;
   grid-area: portrait;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
 }
 
 .hm-app-tab-content .character-portrait img {
+  object-fit: cover;
   width: 150px;
   height: 150px;
-  object-fit: cover;
   border: 1px solid #666;
 }
 
@@ -773,15 +764,15 @@
 }
 
 .hm-app-tab-content h3 {
-  border-bottom: 1px solid #666;
   margin-bottom: 10px;
+  border-bottom: 1px solid #666;
 }
 
 /* Character Details */
 .hm-app-tab-content .character-details-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  display: grid;
 }
 
 .hm-app-tab-content .character-details-row select {
@@ -789,9 +780,9 @@
 }
 
 .hm-app-tab-content .form-group {
+  gap: 5px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
 }
 
 .hm-app-tab-content .form-group select {
@@ -801,18 +792,18 @@
 
 /* Physical Traits */
 .hm-app-tab-content .physical-traits-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
   gap: 10px;
+  grid-template-columns: repeat(7, 1fr);
+  display: grid;
   margin-bottom: 10px;
 }
 
 .hm-app-tab-content .trait-group {
+  gap: 5px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 5px;
 }
 
 .hm-app-tab-content .physical-traits-grid .trait-group input {
@@ -826,38 +817,38 @@
 }
 
 .hm-app-tab-content .description-input {
-  display: flex;
   gap: 10px;
+  display: flex;
 }
 
 .hm-app-tab-content .description-input textarea {
-  resize: none;
   flex: 1;
+  resize: none;
 }
 
 /* Personal Characteristics */
 .hm-app-tab-content .personality-grid {
-  display: grid;
   gap: 10px;
+  display: grid;
 }
 
 .hm-app-tab-content .input-with-roll {
-  display: flex;
   gap: 10px;
+  display: flex;
 }
 
 .hm-app-tab-content .input-with-roll textarea {
-  resize: none;
   flex: 1;
+  min-height: 80px;
   font-size: var(--font-size-12);
   font-family: var(--font-h3);
-  min-height: 80px;
+  resize: none;
 }
 
 /* Notes Section */
 .hm-app-tab-content .notes-grid {
-  display: grid;
   gap: 10px;
+  display: grid;
 }
 
 .hm-app-tab-content .notes-group prose-mirror {
@@ -867,10 +858,38 @@
 
 /* Buttons */
 .hm-app-tab-content .personal-char-section button {
+  gap: 1.5px;
   display: flex;
   align-items: center;
   align-self: center;
-  gap: 1.5px;
   width: 60px;
   height: 30px;
+}
+
+.customization-row,
+.form-row,
+.art-selection-row {
+  gap: 10px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.hm-app .hm-app-tab-content .input-35,
+.hm-app .hm-app-tab-content color-picker {
+  display: flex;
+  flex: 1;
+  max-width: 35%;
+}
+
+.hm-app .hm-app-tab-content color-picker input[type='text'] {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+}
+
+.hm-app .hm-app-tab-content color-picker input[type='color'] {
+  width: 30px;
+  min-width: 30px;
+  max-width: 35%;
 }

@@ -38,5 +38,23 @@
       <input id='token-art-path' type='text' name='token-art' class='art-input input-35' readonly placeholder='{{localize "hm.app.start.token-art-placeholder"}}' />
       <button data-action='selectTokenArt' type='button' class='select-button button-7'>{{localize 'hm.app.start.select-art'}}</button>
     </div>
+
+    <!-- Player Customization -->
+    {{#if customizationEnabled}}
+      <hr />
+      <div class='customization-row' id='color-row'>
+        <label for='player-color' class='label-15'>{{localize 'hm.app.start.player-color'}}</label>
+        <color-picker name='player-color' value='' placeholder='{{localize "hm.app.start.player-color-placeholder"}}' />
+      </div>
+      <div class='customization-row' id='pronoun-row'>
+        <label for='player-pronouns' class='label-15'>{{localize 'hm.app.start.player-pronouns'}}</label>
+        <input type='text' name='player-pronouns' class='input-35' placeholder='{{localize "hm.app.start.player-pronouns-placeholder"}}' />
+      </div>
+      <div class='customization-row' id='avatar-row'>
+        <label for='player-avatar-path' class='label-15'>{{localize 'hm.app.start.player-avatar'}}</label>
+        <input id='player-avatar-path' type='text' name='player-avatar' class='art-input input-35' readonly placeholder='{{localize "hm.app.start.player-avatar-placeholder"}}' />
+        <button data-action='selectPlayerAvatar' type='button' class='select-button button-7'>{{localize 'hm.app.start.select-art'}}</button>
+      </div>
+    {{/if}}
   </fieldset>
 </div>

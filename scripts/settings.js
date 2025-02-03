@@ -38,6 +38,16 @@ function registerCoreSettings() {
       }
     }
   });
+
+  game.settings.register(HM.CONFIG.ID, 'enableCustomization', {
+    name: 'hm.settings.player-customization.name',
+    hint: 'hm.settings.player-customization.hint',
+    default: false,
+    type: Boolean,
+    scope: 'world',
+    config: true,
+    requiresReload: true
+  });
 }
 
 /**
@@ -181,6 +191,15 @@ function registerCompendiumSettings() {
 
   game.settings.register(HM.CONFIG.ID, 'backgroundPacks', {
     name: 'hm.settings.background-packs.name',
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+    requiresReload: true
+  });
+
+  game.settings.register(HM.CONFIG.ID, 'itemPacks', {
+    name: 'hm.settings.item-packs.name',
     scope: 'world',
     config: false,
     type: Array,

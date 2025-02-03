@@ -25,6 +25,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       increaseScore: HeroMancer.increaseScore,
       selectCharacterArt: this.selectCharacterArt,
       selectTokenArt: this.selectTokenArt,
+      selectPlayerAvatar: this.selectPlayerAvatar,
       resetOptions: HeroMancer.resetOptions,
       switchToTab: HeroMancer.switchToTab
     },
@@ -129,7 +130,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         standardArray: standardArray,
         selectedAbilities: HeroMancer.selectedAbilities,
         remainingPoints: remainingPoints,
-        totalPoints: totalPoints
+        totalPoints: totalPoints,
+        customizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableCustomization')
       };
     }
 
@@ -146,7 +148,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       standardArray: standardArray,
       selectedAbilities: HeroMancer.selectedAbilities,
       remainingPoints: remainingPoints,
-      totalPoints: totalPoints
+      totalPoints: totalPoints,
+      customizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableCustomization')
     };
 
     const allDocs = [
@@ -415,6 +418,20 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static async selectTokenArt(event, target) {
     const inputField = document.getElementById('token-art-path');
+    const currentPath = inputField.value || '/';
+
+    const filepicker = new FilePicker({
+      type: 'image',
+      current: currentPath,
+      callback: (path) => {
+        inputField.value = path;
+      }
+    });
+    filepicker.render(true);
+  }
+
+  static async selectPlayerAvatar(event, target) {
+    const inputField = document.getElementById('player-avatar-path');
     const currentPath = inputField.value || '/';
 
     const filepicker = new FilePicker({
@@ -847,6 +864,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       // Then let advancement manager handle race/background
       await processAdvancements([classItem, raceItem, backgroundItem], actor);
+
+      // Update some user stuff
+      if (game.settings.get('hero-mancer', 'enableCustomization')) {
+        game.user.update({
+          color: formData.object['player-color'],
+          pronouns: formData.object['player-pronouns'],
+          avatar: formData.object['player-avatar']
+        });
+      }
+      game.user.update({ character: actor.id });
     } catch (error) {
       HM.log(1, 'Error during character creation:', error);
     }

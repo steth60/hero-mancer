@@ -34,6 +34,10 @@ export class EquipmentParser {
   /** @type {Set<string>} Tracks combined item IDs for multi-item equipment */
   static combinedItemIds = new Set();
 
+  static async getSelectedItemPacks() {
+    return game.settings.get('hero-mancer', 'itemPacks') || [];
+  }
+
   /**
    * Initializes the content cache by loading indices from all Item-type compendium packs
    * @static
@@ -41,7 +45,8 @@ export class EquipmentParser {
    * @throws {Error} If pack index loading fails
    */
   static async initializeContentCache() {
-    const packs = game.packs.filter((p) => p.documentName === 'Item');
+    const selectedPacks = await this.getSelectedItemPacks();
+    const packs = selectedPacks.map((id) => game.packs.get(id)).filter((p) => p?.documentName === 'Item');
     await Promise.all(packs.map((p) => p.getIndex({ fields: ['system.contents', 'uuid'] })));
     HM.log(3, `EquipmentParser cache initialized with ${this.contentCache.size} entries`);
   }
@@ -55,19 +60,20 @@ export class EquipmentParser {
   }
 
   /**
-   * Searches all Item compendiums for a document by ID
+   * Searches all selectedPacks for a document by ID
    * @async
    * @param {string} itemId Item ID to search for
    * @returns {Promise<Item|null>} Found item document or null
    */
   async findItemInCompendiums(itemId) {
-    for (const pack of game.packs.filter((pack) => pack.documentName === 'Item')) {
-      const item = await pack.getDocument(itemId);
-      if (item) {
-        return item;
+    const selectedPacks = await EquipmentParser.getSelectedItemPacks();
+    for (const packId of selectedPacks) {
+      const pack = game.packs.get(packId);
+      if (pack?.documentName === 'Item') {
+        const item = await pack.getDocument(itemId);
+        if (item) return item;
       }
     }
-    HM.log(2, `Item ${itemId} not found in any 'Item' compendiums.`);
     return null;
   }
 
@@ -1339,16 +1345,14 @@ export class EquipmentParser {
   static async initializeLookupItems() {
     const startTime = performance.now();
 
-    if (this.lookupItemsInitialized) {
-      HM.log(3, 'Lookup items already initialized');
-      return;
-    }
-
+    if (this.lookupItemsInitialized) return;
     this.lookupItemsInitialized = true;
     this.itemUuidMap = new Map();
 
+    const selectedPacks = await this.getSelectedItemPacks();
+
     try {
-      const allItems = await this.collectAllItems();
+      const allItems = await this.collectAllItems(selectedPacks);
       if (!allItems?.length) {
         HM.log(1, 'No items collected from compendiums');
       }
@@ -1389,16 +1393,17 @@ export class EquipmentParser {
   }
 
   /**
-   * Collects and filters equipment items from all available compendiums
+   * Collects and filters equipment items from selected compendiums
    * @static
    * @async
+   * @param {string[]} selectedPacks Array of selected compendium IDs
    * @returns {Promise<Array<object>>} Array of non-magical equipment items
    * @throws {Error} If item collection fails
    */
-  static async collectAllItems() {
+  static async collectAllItems(selectedPacks) {
     const startTime = performance.now();
     const items = [];
-    const packs = game.packs.filter((pack) => pack.documentName === 'Item');
+    const packs = selectedPacks.map((id) => game.packs.get(id)).filter((p) => p?.documentName === 'Item');
     const focusItemIds = new Set();
 
     // Collect focus item IDs

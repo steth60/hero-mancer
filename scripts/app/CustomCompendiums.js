@@ -4,6 +4,8 @@ import { CacheManager } from '../utils/cacheManagement.js';
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2) {
+  static EXCLUDED_TYPES = ['class', 'race', 'background', 'npc', 'character', 'subclass', 'rolltable', 'journal'];
+
   static DEFAULT_OPTIONS = {
     id: 'hero-mancer-settings-custom-compendiums',
     classes: ['hm-app'],
@@ -16,7 +18,8 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     actions: {
       classes: () => CustomCompendiums.manageCompendium('class'),
       races: () => CustomCompendiums.manageCompendium('race'),
-      backgrounds: () => CustomCompendiums.manageCompendium('background')
+      backgrounds: () => CustomCompendiums.manageCompendium('background'),
+      items: () => CustomCompendiums.manageCompendium('item')
     },
     position: {
       height: 'auto',
@@ -61,16 +64,28 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     const validPacks = new Set();
     const indexPromises = game.packs.map(async (pack) => {
       try {
-        const index = await pack.getIndex();
-        const hasTypeDocuments = index.some((doc) => doc.type === type);
+        if (pack.metadata.type === 'Item') {
+          const index = await pack.getIndex();
 
-        if (hasTypeDocuments) {
-          validPacks.add({
-            packName: pack.metadata.label,
-            packId: pack.metadata.id,
-            type: pack.metadata.type
-          });
-          HM.log(3, `Found documents of type ${type} in pack: ${pack.metadata.label}`);
+          if (type === 'item') {
+            const validDocs = index.filter((doc) => !this.EXCLUDED_TYPES.includes(doc.type));
+            if (validDocs.length > 0) {
+              validPacks.add({
+                packName: pack.metadata.label,
+                packId: pack.metadata.id,
+                type: pack.metadata.type
+              });
+            }
+          } else {
+            const typeDocuments = index.filter((doc) => doc.type === type);
+            if (typeDocuments.length > 0) {
+              validPacks.add({
+                packName: pack.metadata.label,
+                packId: pack.metadata.id,
+                type: pack.metadata.type
+              });
+            }
+          }
         }
       } catch (error) {
         HM.log(2, `Failed to retrieve index from pack ${pack.metadata.label}: ${error}`);
@@ -78,11 +93,6 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     });
 
     await Promise.all(indexPromises);
-
-    if (useCache) {
-      this.#validPacksCache.set(type, validPacks);
-    }
-
     return validPacks;
   }
 
@@ -220,7 +230,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   }
 
   static async formHandler(event, form, formData) {
-    const types = ['class', 'race', 'background'];
+    const types = ['class', 'race', 'background', 'item'];
     const requiresWorldReload = true; // Settings changes require world reload
 
     try {

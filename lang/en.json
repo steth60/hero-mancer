@@ -9,6 +9,8 @@
     "app": {
       "abilities": {
         "decrease": "-1",
+        "default": "prides themself on their impressive abilities",
+        "excels": "excels in",
         "increase": "+1",
         "instructions": {
           "manual": {
@@ -35,19 +37,17 @@
         "score-placeholder": "Enter score",
         "select-placeholder": "Choose",
         "select-value": "Select a value",
-        "tooltip": "Select and assign abilities",
         "summary": "{action} {first} and {second}",
-        "excels": "excels in",
-        "default": "prides themself on their impressive abilities"
+        "tooltip": "Select and assign abilities"
       },
       "background": {
+        "default": "Starting as <a data-action='switchToTab' data-tab='background'>{article} adventurer</a>",
         "none": "No backgrounds available.",
         "preamble": "Choose your character's background from the available options.",
         "select-label": "Background",
         "select-placeholder": "Choose a background",
-        "tooltip": "Select a background for your character",
         "summary": "Starting as {article} {name}",
-        "default": "Starting as <a data-action='switchToTab' data-tab='background'>{article} adventurer</a>"
+        "tooltip": "Select a background for your character"
       },
       "cancel": "Cancel",
       "cancel-description": "Cancel and close Hero Mancer",
@@ -60,6 +60,9 @@
       },
       "done": "Done",
       "equipment": {
+        "and": ", and ",
+        "article": "a",
+        "article-plural": "an",
         "choose-all": "Select all of the following:",
         "choose-one": "Choose one (1) from:",
         "choose-second-weapon": "Choose second weapon",
@@ -67,36 +70,33 @@
         "preamble": "The equipment tab in the Hero Mancer character creation tool now allows players to fully manage their character's gear and starting resources. Players can select class, background, and race-specific equipment, as well as choose from starting equipment packages or starting wealth rules. This provides a comprehensive workflow for equipping the character during the creation process.",
         "roll-wealth": "Roll Starting Wealth",
         "select-weapon": "Select weapon",
+        "separator": ", ",
+        "summary": "wielding {items} on their journey.",
         "tooltip": "Manage your character's equipment",
         "unknown-choice": "Unknown linked item.",
         "use-starting-wealth": "Use starting wealth instead",
-        "wealth-placeholder": "0 gp",
-        "summary": "wielding {items} on their journey.",
-        "separator": ", ",
-        "and": ", and ",
-        "article-plural": "an",
-        "article": "a"
+        "wealth-placeholder": "0 gp"
       },
       "finalize": {
-        "preamble": "This is where you finalize and submit your character's details. This feature is not currently implemented.",
-        "tooltip": "Finalize your character creation",
-        "class-race-summary": "This {race} {class}",
-        "character-portrait": "Character Portrait",
+        "allies": "Allies",
+        "backstory": "Backstory",
+        "backstory-placeholder": "Write a backstory for your character. Consider what organizations they belong to, any allies they've made or enemies they've earned, and other important details from their life before becoming an adventurer.",
+        "bonds-placeholder": "Who or what is most dear to your character? What place feels like home? What object means everything to them? Press the Roll button to draw from bonds suggested by your background.",
         "character-details": "Character Details",
-        "physical-characteristics": "Physical Characteristics",
+        "character-portrait": "Character Portrait",
+        "class-race-summary": "This {race} {class}",
+        "enemies": "Enemies",
+        "flaws-placeholder": "What are your character's shortcomings or weaknesses? Consider both personality quirks and ability score limitations. What traits might others find difficult? Press the Roll button to draw from flaws suggested by your background.",
+        "ideals-placeholder": "What principles guide your character? What cause or belief drives them to adventure? What would they fight or die for? Press the Roll button to draw from ideals suggested by your background.",
+        "misc": "Miscellaneous",
+        "organizations": "Organizations",
         "personal-characteristics": "Personal Characteristics",
         "personality-traits": "Personality Traits",
-        "organizations": "Organizations",
-        "allies": "Allies",
-        "enemies": "Enemies",
-        "backstory": "Backstory",
-        "misc": "Miscellaneous",
-        "backstory-placeholder": "Write a backstory for your character. Consider what organizations they belong to, any allies they've made or enemies they've earned, and other important details from their life before becoming an adventurer.",
-        "traits-placeholder": "Describe your character's personality. How do their abilities shape who they are? Are they wise and contemplative, or charismatic and outgoing? Press the Roll button to draw from personality traits suggested by your background.",
-        "ideals-placeholder": "What principles guide your character? What cause or belief drives them to adventure? What would they fight or die for? Press the Roll button to draw from ideals suggested by your background.",
-        "bonds-placeholder": "Who or what is most dear to your character? What place feels like home? What object means everything to them? Press the Roll button to draw from bonds suggested by your background.",
-        "flaws-placeholder": "What are your character's shortcomings or weaknesses? Consider both personality quirks and ability score limitations. What traits might others find difficult? Press the Roll button to draw from flaws suggested by your background.",
-        "physical-description": "Physical Description"
+        "physical-characteristics": "Physical Characteristics",
+        "physical-description": "Physical Description",
+        "preamble": "This is where you finalize and submit your character's details. This feature is not currently implemented.",
+        "tooltip": "Finalize your character creation",
+        "traits-placeholder": "Describe your character's personality. How do their abilities shape who they are? Are they wise and contemplative, or charismatic and outgoing? Press the Roll button to draw from personality traits suggested by your background."
       },
       "header-title": "Hero Mancer Creation Wizard",
       "no-description": "Unable to load a valid description for this item.",
@@ -120,13 +120,19 @@
         "name-placeholder": "Choose a name for your character",
         "preamble": {
           "a": "Welcome to the Hero Mancer Creation Wizard!",
-          "b": "In the next 7 steps, you will create a brand-new character in FoundryVTT. You can move between sections freely, and no data will be lost. All fields require input, so if you want to skip a section, enter a space."
+          "b": "In the next 7 steps, you will create a brand-new character in FoundryVTT. You can move between sections freely, and no data will be lost. Do your best to enter some data for everything, the more details the better your DM can craft a world for your character to explore!"
         },
         "select-art": "Select",
         "token-art-label": "Token Art",
         "token-art-placeholder": "Choose token art for your character",
         "token-same-as-character": "Use same image for token?",
-        "tooltip": "Start your character creation"
+        "tooltip": "Start your character creation",
+        "player-color": "Player Color",
+        "player-pronouns": "Player Pronouns",
+        "player-avatar": "Player Avatar",
+        "player-avatar-placeholder": "Choose art for your player",
+        "player-color-placeholder": "Choose a color for your player",
+        "player-pronouns-placeholder": "Choose your preferred pronouns"
       },
       "submit": "Submit",
       "submit-description": "Submit your Hero Mancer",
@@ -161,9 +167,15 @@
       "select-race": "Please select a race before submitting."
     },
     "settings": {
+      "background-packs": {
+        "name": "Background Packs"
+      },
       "chained-rolls": {
         "hint": "Chain 1 stat roll after the other to roll a complete character.",
         "name": "Chained Rolls"
+      },
+      "class-packs": {
+        "name": "Class Packs"
       },
       "custom-compendiums": {
         "background": "Background",
@@ -175,8 +187,10 @@
         "error-saving": "There was an error saving your compendium settings. Please see console (F12).",
         "form-saved": "Compendium form settings have been saved.",
         "invalid-pack": "One or more compendium packs are no longer valid.",
+        "items-label": "Set Item Compendiums:",
         "manage-backgrounds": "Manage Backgrounds",
         "manage-classes": "Manage Classes",
+        "manage-items": "Manage Items",
         "manage-races": "Manage Races",
         "menu": {
           "hint": "Open dialog to configure custom compendiums for all categories.",
@@ -210,6 +224,9 @@
         "hint": "Adds a button to use Hero Mancer on the Actors tab. (Default: Enabled)",
         "name": "Enable Hero Mancer?"
       },
+      "item-packs": {
+        "name": "Item Packs"
+      },
       "logger": {
         "choices": {
           "errors": "Errors",
@@ -221,9 +238,16 @@
         "name": "Logging Level"
       },
       "no-selection": "No compendiums selected. Please select at least one.",
+      "race-packs": {
+        "name": "Race Packs"
+      },
       "roll-delay": {
         "hint": "Controls the delay (in milliseconds) between each roll when using chained rolling. Lower values make the process faster, while higher values make it easier to follow. This setting has no effect if you are manually rolling with physical dice.",
         "name": "Roll Animation Delay"
+      },
+      "player-customization": {
+        "name": "Allow Player Customization",
+        "hint": "Allow your players to set some information up during character creation, such as player color, pronouns, and avatar."
       }
     },
     "unknown": "unknown {type}",
