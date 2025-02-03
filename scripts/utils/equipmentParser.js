@@ -35,7 +35,12 @@ export class EquipmentParser {
   static combinedItemIds = new Set();
 
   static async getSelectedItemPacks() {
-    return game.settings.get('hero-mancer', 'itemPacks') || [];
+    const itemPacks = (await game.settings.get('hero-mancer', 'itemPacks')) || [];
+    const classPacks = (await game.settings.get('hero-mancer', 'classPacks')) || [];
+    const backgroundPacks = (await game.settings.get('hero-mancer', 'backgroundPacks')) || [];
+    const racePacks = (await game.settings.get('hero-mancer', 'racePacks')) || [];
+
+    return [...itemPacks, ...classPacks, ...backgroundPacks, ...racePacks];
   }
 
   /**
@@ -98,7 +103,7 @@ export class EquipmentParser {
     if (doc) {
       this.proficiencies = await this.getProficiencies(doc.system.advancement || []);
     } else {
-      HM.log(2, `No document found for type ${type} with selectedId ${selectedId}`);
+      HM.log(2, `No document found for type ${type} with selectedId ${selectedId}`, { doc: doc });
     }
 
     return doc?.system.startingEquipment || [];
@@ -1439,7 +1444,7 @@ export class EquipmentParser {
       }
 
       const endTime = performance.now();
-      HM.log(3, `Items collected in ${(endTime - startTime).toFixed(2)}ms. ` + `Processed: ${processedCount}, Included: ${items.length}, Skipped: ${skippedCount}`);
+      HM.log(3, `Items collected in ${(endTime - startTime).toFixed(2)}ms. Processed: ${processedCount}, Included: ${items.length}, Skipped: ${skippedCount}`);
       return items;
     } catch (error) {
       const endTime = performance.now();

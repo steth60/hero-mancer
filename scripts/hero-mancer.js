@@ -3,8 +3,6 @@ import { registerSettings } from './settings.js';
 import { CustomCompendiums } from './app/CustomCompendiums.js';
 import { HeroMancer } from './app/HeroMancer.js';
 
-const { CompendiumBrowser, CompendiumBrowserSettingsConfig } = dnd5e.applications;
-
 /* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
 export class HM {
   static CONFIG = {

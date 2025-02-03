@@ -44,7 +44,7 @@ export class TableManager {
               HM.log(2, `Could not load table with UUID: ${uuid}`);
               return null;
             }
-            HM.log(3, `Loaded table:`, table);
+            HM.log(3, 'Loaded table:', table);
             return table;
           } catch (error) {
             HM.log(1, `Error loading table with UUID ${uuid}:`, error);
