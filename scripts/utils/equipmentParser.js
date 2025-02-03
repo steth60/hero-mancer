@@ -1187,6 +1187,11 @@ export class EquipmentParser {
    * @returns {object|null} Currency amounts or null if invalid
    */
   static async processStartingWealth(formData) {
+    if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
+      HM.log(3, 'USING MODERN RULES - NO STARTING WEALTH');
+      return null;
+    }
+
     if (!formData) {
       HM.log(1, 'Invalid form data for wealth processing');
       return null;
@@ -1249,6 +1254,8 @@ export class EquipmentParser {
    * @throws {Error} If wealth option rendering fails
    */
   async renderClassWealthOption(classId, sectionContainer) {
+    if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') return;
+
     try {
       const classDoc = await this.findItemInCompendiums(classId);
       if (!classDoc || !classDoc.system.wealth) return;

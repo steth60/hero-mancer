@@ -192,8 +192,14 @@ export class SummaryManager {
       abilityBlocks.forEach((block) => {
         const currentScore = block.querySelector('.current-score');
         if (currentScore) {
-          currentScore.addEventListener('DOMSubtreeModified', () => this.updateAbilitiesSummary());
+          const observer = new MutationObserver(() => this.updateAbilitiesSummary());
+          observer.observe(currentScore, {
+            childList: true,
+            characterData: true,
+            subtree: true
+          });
         }
+
         const otherInputs = block.querySelectorAll('.ability-dropdown, .ability-score');
         otherInputs.forEach((input) => {
           input.addEventListener('change', () => this.updateAbilitiesSummary());
