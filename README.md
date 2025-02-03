@@ -12,6 +12,7 @@
 ## Supporting The Module
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/sayshal)
+[![](https://dcbadge.limes.pink/api/server/PzzUwU9gdz)](https://discord.gg/PzzUwU9gdz)
 
 ## Introduction
 
