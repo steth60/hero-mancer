@@ -948,3 +948,7 @@
   min-width: 30px;
   max-width: 35%;
 }
+
+.hm-app .form-group .hint {
+  color: var(--color-text-light-primary);
+}

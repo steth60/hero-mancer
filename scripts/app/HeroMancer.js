@@ -98,15 +98,24 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   async _prepareContext(options) {
-    HM.log(3, 'Preparing context.');
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     HeroMancer.selectedAbilities = Array(abilitiesCount).fill(8);
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
+
+    // Add available roll methods
+    const rollMethods = {
+      pointBuy: game.i18n.localize('hm.app.abilities.methods.pointBuy'),
+      standardArray: game.i18n.localize('hm.app.abilities.methods.standardArray'),
+      manualFormula: game.i18n.localize('hm.app.abilities.methods.manual')
+    };
+
     const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
     const standardArray =
       diceRollingMethod === 'standardArray' ? game.settings.get(HM.CONFIG.ID, 'customStandardArray').split(',').map(Number) : StatRoller.getStandardArray(extraAbilities);
+
     const totalPoints = StatRoller.getTotalPoints();
     const remainingPoints = Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
+
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
       key,
       abbreviation: value.abbreviation.toUpperCase(),
@@ -130,13 +139,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         tabs: this._getTabs(options.parts),
         abilities,
         rollStat: this.rollStat,
+        rollMethods,
         diceRollMethod: diceRollingMethod,
+        allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
         standardArray: standardArray,
         selectedAbilities: HeroMancer.selectedAbilities,
-        remainingPoints: remainingPoints,
-        totalPoints: totalPoints,
-        playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
-        tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')
+        remainingPoints,
+        totalPoints,
+        playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')
+        // tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')
       };
     }
 
@@ -149,13 +160,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       tabs: this._getTabs(options.parts),
       abilities,
       rollStat: this.rollStat,
+      rollMethods,
       diceRollMethod: diceRollingMethod,
+      allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
       standardArray: standardArray,
       selectedAbilities: HeroMancer.selectedAbilities,
-      remainingPoints: remainingPoints,
-      totalPoints: totalPoints,
-      playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
-      tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')
+      remainingPoints,
+      totalPoints,
+      playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')
+      // tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')
     };
 
     const allDocs = [

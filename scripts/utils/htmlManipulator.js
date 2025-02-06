@@ -34,15 +34,15 @@ export class HtmlManipulator {
    * @private
    */
   static createButton() {
-    const buttonHint = game.i18n.localize(`hm.actortab-button.hint`);
-    const buttonName = game.i18n.localize(`hm.actortab-button.name`);
+    const buttonHint = game.i18n.localize('hm.actortab-button.hint');
+    const buttonName = game.i18n.localize('hm.actortab-button.name');
 
     const button = document.createElement('button');
     button.type = 'button';
-    button.classList.add(`hm-actortab-button`);
+    button.classList.add('hm-actortab-button');
     button.setAttribute('title', buttonHint);
     button.setAttribute('aria-label', buttonName);
-    button.setAttribute('aria-describedby', `hm-button-hint`);
+    button.setAttribute('aria-describedby', 'hm-button-hint');
     button.setAttribute('role', 'button');
     button.innerHTML = `<i class="fa-solid fa-egg" style="color: var(--user-color)"></i> ${buttonName}`;
 
@@ -55,9 +55,9 @@ export class HtmlManipulator {
    * @private
    */
   static createHiddenHint() {
-    const buttonHint = game.i18n.localize(`hm.actortab-button.hint`);
+    const buttonHint = game.i18n.localize('hm.actortab-button.hint');
     const hiddenHint = document.createElement('span');
-    hiddenHint.id = `hm-button-hint`;
+    hiddenHint.id = 'hm-button-hint';
     hiddenHint.classList.add('sr-only');
     hiddenHint.textContent = buttonHint;
     return hiddenHint;

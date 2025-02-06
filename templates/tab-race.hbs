@@ -14,18 +14,18 @@
 
         {{#each raceDocs}}
           {{#if this.folderName}}
-            <!-- Render an optgroup for foldered races -->
             <optgroup label='{{this.folderName}}'>
               {{#each this.docs}}
-                <option value='{{this.id}} ({{this.packId}})' data-description='{{this.enrichedDescription}}'>
+                <option value='{{this.id}} ({{this.packId}})'>
                   {{this.name}}
+                  ({{this.packName}})
                 </option>
               {{/each}}
             </optgroup>
           {{else}}
-            <!-- Render standalone races -->
-            <option value='{{this.id}}' data-description='{{this.enrichedDescription}}'>
+            <option value='{{this.id}}'>
               {{this.name}}
+              ({{this.packName}})
             </option>
           {{/if}}
         {{else}}

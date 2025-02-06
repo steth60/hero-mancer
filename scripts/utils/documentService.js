@@ -63,7 +63,7 @@ export class DocumentService {
             doc,
             packName,
             packId: pack.metadata.id,
-            description: doc.system.description?.value || game.i18n.localize(`hm.app.no-description`),
+            description: doc.system.description?.value || game.i18n.localize('hm.app.no-description'),
             folderName: doc.folder?.name || null
           });
         });
@@ -89,7 +89,7 @@ export class DocumentService {
     if (id.includes('players-handbook')) return game.i18n.localize('hm.app.document-service.phb'); // Shorthand for 2024 PHB
     if (id.includes('dnd5e')) return game.i18n.localize('hm.app.document-service.srd'); // Shorthand for SRD
     if (id.includes('dd')) return game.i18n.localize('hm.app.document-service.dndbeyond-importer'); // Shorthand for DDB
-    if (game.settings.get(HM.CONFIG.ID, 'elkanCompatibility')) {
+    if (game.modules.get('elkan5e').active) {
       if (id.includes('elkan5e')) return game.i18n.localize('hm.app.document-service.elkan5e'); // Shorthand for Elkan 5e
     }
     return id;

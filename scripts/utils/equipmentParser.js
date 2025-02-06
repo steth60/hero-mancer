@@ -101,7 +101,7 @@ export class EquipmentParser {
     HM.log(3, `Fetching starting equipment for type: ${type}, selectedId: ${selectedId}`);
 
     if (!selectedId) {
-      HM.log(2, `No selection found for type: ${type}`);
+      HM.log(2, `No selection found for type: ${type}. Ignore this warning if first-render.`);
       return [];
     }
 

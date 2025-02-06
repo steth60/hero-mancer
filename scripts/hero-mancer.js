@@ -1,6 +1,7 @@
 import { HtmlManipulator, DocumentService, CacheManager, EquipmentParser } from './utils/index.js';
 import { registerSettings } from './settings.js';
 import { CustomCompendiums } from './app/CustomCompendiums.js';
+import { DiceRolling } from './app/DiceRolling.js';
 import { HeroMancer } from './app/HeroMancer.js';
 
 /* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
@@ -38,6 +39,7 @@ export class HM {
 
     Hooks.once('renderSettingConfig', () => {
       this.customCompendiums = new CustomCompendiums();
+      this.diceRolling = new DiceRolling();
     });
   }
 

@@ -20,6 +20,7 @@ export class Listeners {
     this.initializeAbilityListeners(context, selectedAbilities);
     this.initializeEquipmentListeners();
     this.initializeCharacterListeners();
+    this.initializeRollMethodListener(html);
   }
 
   /**
@@ -249,6 +250,47 @@ export class Listeners {
       const inputElement = document.getElementById(`ability-${index}-input`);
       if (inputElement) {
         inputElement.value = currentScore;
+      }
+    });
+  }
+
+  static initializeRollMethodListener(html) {
+    HM.log(3, 'Initializing roll method listener');
+    if (!html) {
+      HM.log(3, 'HTML element is undefined');
+      return;
+    }
+
+    const rollSelect = document.getElementById('roll-method');
+    if (!rollSelect) {
+      HM.log(3, 'Roll method select element not found');
+      return;
+    }
+
+    rollSelect.addEventListener('change', async (event) => {
+      const method = event.target.value;
+      HM.log(3, `Roll method changed to: ${method}`);
+
+      await game.settings.set(HM.CONFIG.ID, 'diceRollingMethod', method);
+      HM.log(3, 'Updated diceRollingMethod setting');
+
+      HeroMancer.selectedAbilities = Array(Object.keys(CONFIG.DND5E.abilities).length).fill(8);
+      HM.log(3, 'Reset abilities array:', HeroMancer.selectedAbilities);
+
+      this.initializeAbilityListeners(
+        {
+          remainingPoints: StatRoller.getTotalPoints()
+        },
+        HeroMancer.selectedAbilities
+      );
+      HM.log(3, 'Reinitialized ability listeners');
+
+      const app = HM.heroMancer;
+      if (app) {
+        HM.log(3, 'Triggering re-render');
+        app.render(true);
+      } else {
+        HM.log(3, 'App instance not found for re-render');
       }
     });
   }
