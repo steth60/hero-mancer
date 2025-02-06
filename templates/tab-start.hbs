@@ -40,7 +40,7 @@
     </div>
 
     <!-- Player Customization -->
-    {{#if customizationEnabled}}
+    {{#if playerCustomizationEnabled}}
       <hr />
       <div class='customization-row' id='color-row'>
         <label for='player-color' class='label-15'>{{localize 'hm.app.start.player-color'}}</label>
@@ -55,6 +55,11 @@
         <input id='player-avatar-path' type='text' name='player-avatar' class='art-input input-35' readonly placeholder='{{localize "hm.app.start.player-avatar-placeholder"}}' />
         <button data-action='selectPlayerAvatar' type='button' class='select-button button-7'>{{localize 'hm.app.start.select-art'}}</button>
       </div>
+    {{/if}}
+
+    <!-- Player Customization -->
+    {{#if tokenCustomizationEnabled}}
+      <hr />
     {{/if}}
   </fieldset>
 </div>

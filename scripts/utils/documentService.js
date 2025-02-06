@@ -86,9 +86,12 @@ export class DocumentService {
    * @returns {string}
    */
   static #determinePackName(id) {
-    if (id.includes('players-handbook')) return 'PHB'; // Shorthand for 2024 PHB
-    if (id.includes('dnd5e')) return 'SRD'; // Shorthand for SRD
-    if (id.includes('dd')) return 'DDB'; // Shorthand for DDB
+    if (id.includes('players-handbook')) return game.i18n.localize('hm.app.document-service.phb'); // Shorthand for 2024 PHB
+    if (id.includes('dnd5e')) return game.i18n.localize('hm.app.document-service.srd'); // Shorthand for SRD
+    if (id.includes('dd')) return game.i18n.localize('hm.app.document-service.dndbeyond-importer'); // Shorthand for DDB
+    if (game.settings.get(HM.CONFIG.ID, 'elkanCompatibility')) {
+      if (id.includes('elkan5e')) return game.i18n.localize('hm.app.document-service.elkan5e'); // Shorthand for Elkan 5e
+    }
     return id;
   }
 

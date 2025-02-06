@@ -34,6 +34,13 @@ export class EquipmentParser {
   /** @type {Set<string>} Tracks combined item IDs for multi-item equipment */
   static combinedItemIds = new Set();
 
+  /**
+   * Retrieves all selected compendium packs from settings.
+   * Combines item packs, class packs, background packs, and race packs into a single array.
+   * @async
+   * @static
+   * @returns {Promise<string[]>} Array of compendium pack IDs
+   */
   static async getSelectedItemPacks() {
     const itemPacks = (await game.settings.get('hero-mancer', 'itemPacks')) || [];
     const classPacks = (await game.settings.get('hero-mancer', 'classPacks')) || [];

@@ -116,6 +116,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.log(3, 'ABILITIES:', abilities);
     const cacheManager = new CacheManager();
 
+    if (HM.COMPAT?.ELKAN) {
+      options.parts = options.parts.filter((part) => part !== 'equipment');
+    }
+
     // Check if cached data is available to avoid re-fetching
     if (cacheManager.isCacheValid()) {
       HM.log(3, 'Documents cached and descriptions enriched!');
@@ -131,7 +135,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         selectedAbilities: HeroMancer.selectedAbilities,
         remainingPoints: remainingPoints,
         totalPoints: totalPoints,
-        customizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableCustomization')
+        playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
+        tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')
       };
     }
 
@@ -149,7 +154,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       selectedAbilities: HeroMancer.selectedAbilities,
       remainingPoints: remainingPoints,
       totalPoints: totalPoints,
-      customizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableCustomization')
+      playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
+      tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')
     };
 
     const allDocs = [
@@ -267,6 +273,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           tab.icon = 'fa-solid fa-fist-raised';
           break;
         case 'equipment':
+          if (HM.COMPAT?.ELKAN) break;
           tab.id = 'equipment';
           tab.label = `${game.i18n.localize('hm.app.tab-names.equipment')}`;
           tab.icon = 'fa-solid fa-shield-halved';
@@ -865,7 +872,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       await processAdvancements([classItem, raceItem, backgroundItem], actor);
 
       // Update some user stuff
-      if (game.settings.get('hero-mancer', 'enableCustomization')) {
+      if (game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')) {
         game.user.update({
           color: formData.object['player-color'],
           pronouns: formData.object['player-pronouns'],

@@ -39,9 +39,19 @@ function registerCoreSettings() {
     }
   });
 
-  game.settings.register(HM.CONFIG.ID, 'enableCustomization', {
+  game.settings.register(HM.CONFIG.ID, 'enablePlayerCustomization', {
     name: 'hm.settings.player-customization.name',
     hint: 'hm.settings.player-customization.hint',
+    default: false,
+    type: Boolean,
+    scope: 'world',
+    config: true,
+    requiresReload: true
+  });
+
+  game.settings.register(HM.CONFIG.ID, 'enableTokenCustomization', {
+    name: 'hm.settings.token-customization.name',
+    hint: 'hm.settings.token-customization.hint',
     default: false,
     type: Boolean,
     scope: 'world',
@@ -140,7 +150,7 @@ function registerDiceSettings() {
   game.settings.register(HM.CONFIG.ID, 'customStandardArray', {
     name: 'hm.settings.custom-standard-array.name',
     hint: 'hm.settings.custom-standard-array.hint',
-    scope: 'world',
+    scope: 'client',
     config: game.settings.get(HM.CONFIG.ID, 'diceRollingMethod') === 'standardArray',
     type: String,
     restricted: true,
@@ -209,6 +219,25 @@ function registerCompendiumSettings() {
 }
 
 /**
+ * Registers compatibility-related settings.
+ * Controls which compatibility settings load.
+ * @function
+ */
+function registerCompatibilitySettings() {
+  if (game.modules.get('elkan5e')) {
+    game.settings.register(HM.CONFIG.ID, 'elkanCompatibility', {
+      name: 'hm.settings.elkan.name',
+      hint: 'hm.settings.elkan.hint',
+      scope: 'client',
+      config: true,
+      type: Boolean,
+      default: false,
+      requiresReload: true
+    });
+  }
+}
+
+/**
  * Main registration function that initializes all module settings.
  * Sets up core, world, dice, and compendium settings and handles
  * the ready hook for standard array initialization.
@@ -223,6 +252,8 @@ export function registerSettings() {
   HM.log(3, 'Dice settings registered.');
   registerCompendiumSettings();
   HM.log(3, 'Compendium settings registered.');
+  registerCompatibilitySettings();
+  HM.log(3, 'Compatibility settings registerd.');
 
   Hooks.on('ready', async () => {
     const customArraySetting = game.settings.get(HM.CONFIG.ID, 'customStandardArray');

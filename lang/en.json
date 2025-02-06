@@ -140,7 +140,13 @@
         "race": "Race",
         "start": "Start"
       },
-      "tabs": "Hero Mancer Navigation Tabs"
+      "tabs": "Hero Mancer Navigation Tabs",
+      "document-service": {
+        "phb": "PHB",
+        "srd": "SRD",
+        "dndbeyond-importer": "DDB",
+        "elkan5e": "Elkan"
+      }
     },
     "dialogs": {
       "reroll": {
@@ -183,6 +189,7 @@
         "form-saved": "Compendium form settings have been saved.",
         "invalid-pack": "One or more compendium packs are no longer valid.",
         "items-label": "Set Item Compendiums:",
+        "item": "Item",
         "manage-backgrounds": "Manage Backgrounds",
         "manage-classes": "Manage Classes",
         "manage-items": "Manage Items",
@@ -237,12 +244,20 @@
         "hint": "Allow your players to set some information up during character creation, such as player color, pronouns, and avatar.",
         "name": "Allow Player Customization"
       },
+      "token-customization": {
+        "hint": "Allow your players to set some default token settings usually reserved for the GM, such as display name status, dynamic token ring settings, and display bars.",
+        "name": "Allow Token Customization"
+      },
       "race-packs": {
         "name": "Race Packs"
       },
       "roll-delay": {
         "hint": "Controls the delay (in milliseconds) between each roll when using chained rolling. Lower values make the process faster, while higher values make it easier to follow. This setting has no effect if you are manually rolling with physical dice.",
         "name": "Roll Animation Delay"
+      },
+      "elkan": {
+        "name": "Enable Elkan5e compatibility?",
+        "hint": "Enabling this setting will ensure compatibility with Elkan5e. Please note this disabled the Equipment tab of Hero Mancer."
       }
     },
     "unknown": "unknown {type}",
