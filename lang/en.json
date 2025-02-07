@@ -151,7 +151,8 @@
         "phb": "PHB",
         "srd": "SRD",
         "dndbeyond-importer": "DDB",
-        "elkan5e": "Elkan"
+        "elkan5e": "Elkan",
+        "homebrew": "Homebrew"
       }
     },
     "dialogs": {

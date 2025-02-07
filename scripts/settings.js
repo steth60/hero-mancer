@@ -100,7 +100,7 @@ export function registerSettings() {
     }
   });
 
-  if (game.modules.get('elkan5e').active) {
+  if (game.modules.get('elkan5e')?.active) {
     game.settings.register(HM.CONFIG.ID, 'elkanCompatibility', {
       name: 'hm.settings.elkan.name',
       hint: 'hm.settings.elkan.hint',

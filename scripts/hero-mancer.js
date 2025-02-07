@@ -163,7 +163,7 @@ Hooks.once('ready', async () => {
   for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
     await pack.getIndex();
   }
-  if (game.modules.get('elkan5e').active && game.settings.get(HM.CONFIG.ID, 'elkanCompatibility')) {
+  if (game.modules.get('elkan5e')?.active && game.settings.get(HM.CONFIG.ID, 'elkanCompatibility')) {
     HM.COMPAT = { ELKAN: true };
     HM.log(3, 'Elkan Detected: Compatibility auto-enabled.');
   }
