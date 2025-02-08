@@ -9,19 +9,20 @@
       <label for='class-dropdown'>{{localize 'hm.app.class.select-label'}}</label>
 
       <!-- Class Dropdown -->
-      <select id='class-dropdown' name='class' data-dtype='String' aria-describedby='class-description' aria-label='{{localize "hm.app.class.select-label"}}'>
+      <select id='class-dropdown' name='class' data-dtype='String' aria-describedby='class-description'
+        aria-label='{{localize "hm.app.class.select-label"}}'>
         <option value=''>{{localize 'hm.app.class.select-placeholder'}}</option>
 
         {{#each classDocs}}
-          <optgroup label='{{this.packName}}'>
-            {{#each this.docs}}
-              <option value='{{this.id}} ({{this.packId}})'>
-                {{this.name}}
-              </option>
-            {{/each}}
-          </optgroup>
+        <optgroup label='{{this.packName}}'>
+          {{#each this.docs}}
+          <option value='{{this.id}} ({{this.packId}})'>
+            {{this.name}}
+          </option>
+          {{/each}}
+        </optgroup>
         {{else}}
-          <option>{{localize 'hm.app.class.none'}}</option>
+        <option>{{localize 'hm.app.class.none'}}</option>
         {{/each}}
       </select>
     </div>

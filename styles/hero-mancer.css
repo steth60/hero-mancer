@@ -645,7 +645,7 @@
 /* Optional styling for consistency */
 .hm-app .hm-app-tab-content .checkbox-label {
   flex: 1;
-  margin-left: 10px;
+  margin-left: 0.313rem;
 }
 
 /* stylelint-disable-next-line keyframes-name-pattern */
@@ -951,4 +951,15 @@
 
 .hm-app .form-group .hint {
   color: var(--color-text-light-primary);
+}
+
+.hm-app .hm-app-tab-content .ring-effects {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.hm-app .hm-app-tab-content .ring-effects .checkbox-label {
+  width: calc(100% - 120px);
+  margin-left: 0;
+  padding-left: 0.313rem;
 }

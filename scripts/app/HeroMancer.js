@@ -115,19 +115,47 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const totalPoints = StatRoller.getTotalPoints();
     const remainingPoints = Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
-
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
       key,
       abbreviation: value.abbreviation.toUpperCase(),
       fullKey: value.fullKey.toUpperCase(),
       currentScore: 8
     }));
+
     HM.log(3, 'ABILITIES:', abilities);
+
     const cacheManager = new CacheManager();
 
     if (HM.COMPAT?.ELKAN) {
       options.parts = options.parts.filter((part) => part !== 'equipment');
     }
+
+    const trackedAttrs = TokenDocument.implementation._getConfiguredTrackedAttributes('character');
+    const token = {
+      displayModes: Object.entries(CONST.TOKEN_DISPLAY_MODES).reduce((obj, e) => {
+        obj[e[1]] = game.i18n.localize(`TOKEN.DISPLAY_${e[0]}`);
+        return obj;
+      }, {}),
+      barModes: Object.entries(CONST.TOKEN_DISPLAY_MODES).reduce((obj, e) => {
+        obj[e[1]] = game.i18n.localize(`TOKEN.DISPLAY_${e[0]}`);
+        return obj;
+      }, {}),
+      barAttributes: {
+        '': `${game.i18n.localize('None')}`,
+        ...trackedAttrs.bar.reduce((obj, path) => {
+          obj[path.join('.')] = path.join('.');
+          return obj;
+        }, {})
+      },
+      ring: {
+        effects: Object.entries(CONFIG.Token.ring.ringClass.effects).reduce((obj, [name, value]) => {
+          const loc = CONFIG.Token.ring.effects[name];
+          if (name === 'DISABLED' || name === 'ENABLED' || !loc) return obj;
+          obj[name] = game.i18n.localize(loc);
+          return obj;
+        }, {})
+      }
+    };
 
     // Check if cached data is available to avoid re-fetching
     if (cacheManager.isCacheValid()) {
@@ -146,8 +174,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         selectedAbilities: HeroMancer.selectedAbilities,
         remainingPoints,
         totalPoints,
-        playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')
-        // tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')
+        playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
+        tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
+        token: token
       };
     }
 
@@ -167,8 +196,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       selectedAbilities: HeroMancer.selectedAbilities,
       remainingPoints,
       totalPoints,
-      playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')
-      // tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')
+      playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
+      tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
+      token: token
     };
 
     const allDocs = [
@@ -694,6 +724,58 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     return equipment;
   }
 
+  static _transformTokenData(formData) {
+    try {
+      HM.log(3, 'Transform Token Data - Input:', formData);
+
+      const tokenData = {
+        texture: {
+          src: formData['token-art'] || formData['character-art'] || 'icons/svg/mystery-man.svg',
+          scaleX: 1,
+          scaleY: 1
+        },
+        displayName: parseInt(formData.displayName),
+        displayBars: parseInt(formData.displayBars),
+        bar1: {
+          attribute: formData['bar1.attribute'] || null
+        },
+        bar2: {
+          attribute: formData['bar2.attribute'] || null
+        },
+        ring: {
+          enabled: formData['ring.enabled'] || false,
+          colors: {
+            ring: formData['ring.color'] || null,
+            background: formData.backgroundColor || null
+          },
+          effects: this._calculateRingEffects(formData['ring.effects'])
+        },
+        sight: { enabled: true },
+        disposition: CONST.TOKEN_DISPOSITIONS.FRIENDLY,
+        actorLink: true
+      };
+
+      HM.log(3, 'Token Data Created:', tokenData);
+      return tokenData;
+    } catch (error) {
+      HM.log(1, 'Error in _transformTokenData:', error);
+      return CONFIG.Actor.documentClass.prototype.prototypeToken;
+    }
+  }
+
+  static _calculateRingEffects(effectsArray) {
+    const TRE = CONFIG.Token.ring.ringClass.effects;
+    let effects = TRE.ENABLED;
+
+    if (!effectsArray?.length) return TRE.DISABLED;
+
+    effectsArray.forEach((effect) => {
+      if (effect && TRE[effect]) effects |= TRE[effect];
+    });
+
+    return effects;
+  }
+
   /* Function for handling form data collection, logging the results, and adding items to the actor. */
   static async formHandler(event, form, formData) {
     HM.log(3, 'FORMHANDLER:', { event: event, form: form, formData: formData });
@@ -782,18 +864,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     let actorData = {
       name: actorName,
       img: formData.object['character-art'],
-      prototypeToken: {
-        texture: {
-          src: formData.object['token-art']
-        }
-      },
+      prototypeToken: HeroMancer._transformTokenData(formData.object),
       type: 'character',
       system: {
         abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }])),
         details: {
           age: formData.object.age || '',
           alignment: formData.object.alignment || '',
-          appearance: formData.object.description || '',
+          appearance: formData.object.appearance || '',
           bond: formData.object.bonds || '',
           eyes: formData.object.eyes || '',
           faith: formData.object.faith || '',

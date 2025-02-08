@@ -30,15 +30,15 @@ export function registerSettings() {
     requiresReload: true
   });
 
-  // game.settings.register(HM.CONFIG.ID, 'enableTokenCustomization', {
-  //   name: 'hm.settings.token-customization.name',
-  //   hint: 'hm.settings.token-customization.hint',
-  //   default: false,
-  //   type: Boolean,
-  //   scope: 'world',
-  //   config: true,
-  //   requiresReload: true
-  // });
+  game.settings.register(HM.CONFIG.ID, 'enableTokenCustomization', {
+    name: 'hm.settings.token-customization.name',
+    hint: 'hm.settings.token-customization.hint',
+    default: false,
+    type: Boolean,
+    scope: 'world',
+    config: true,
+    requiresReload: true
+  });
 
   game.settings.registerMenu(HM.CONFIG.ID, 'customCompendiumMenu', {
     name: 'hm.settings.custom-compendiums.menu.name',

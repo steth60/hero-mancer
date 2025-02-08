@@ -126,38 +126,6 @@ Hooks.on('init', () => {
   CONFIG.Item.compendiumIndexFields = ['system.type.value', 'system.properties', 'system.identifier', 'system.description.value', 'type', 'name', '_id', 'uuid', 'pack'];
 });
 
-/* Hooks.once('setup', () => {
-  if (!game.dnd5e?.applications?.CompendiumBrowser) return;
-
-  const originalFetch = game.dnd5e.applications.CompendiumBrowser.fetch;
-  game.dnd5e.applications.CompendiumBrowser.fetch = async function (documentClass, options = {}) {
-    options.filters = Array.isArray(options.filters) ? options.filters : [];
-
-    const enabledPrefixes = new Set();
-    ['classPacks', 'racePacks', 'backgroundPacks'].forEach((setting) => {
-      const packs = game.settings.get(HM.CONFIG.ID, setting);
-      const packList = Array.isArray(packs) ? packs : [packs];
-      packList.forEach((pack) => {
-        if (pack) {
-          const prefix = pack.split('.')[0];
-          enabledPrefixes.add(prefix);
-        }
-      });
-    });
-
-    options.filters.additional = {
-      source: Object.fromEntries(
-        [...game.packs].map((pack) => {
-          const prefix = pack.collection.split('.')[0];
-          return [pack.collection, enabledPrefixes.has(prefix) ? 1 : -1];
-        })
-      )
-    };
-
-    return originalFetch.call(this, documentClass, options);
-  };
-}); */
-
 Hooks.once('ready', async () => {
   if (!game.settings.get(HM.CONFIG.ID, 'enable')) return;
   for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
@@ -189,4 +157,9 @@ Hooks.once('ready', async () => {
 Hooks.on('renderActorDirectory', () => {
   HtmlManipulator.registerButton();
   HM.log(3, 'Injecting button into Actor Directory');
+});
+
+Hooks.on('error', (location, error, data) => {
+  if (location !== 'TextEditor.enrichHTML') return;
+  HM.log(2, 'HERO MANCER: HTML Enricher Error: This error is not game-breaking, it can be safely ignored for now.', error.message);
 });

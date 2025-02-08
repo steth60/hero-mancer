@@ -11,20 +11,21 @@
       <label for='background-dropdown'>{{localize 'hm.app.background.select-label'}}</label>
 
       <!-- Background Dropdown -->
-      <select id='background-dropdown' name='background' data-dtype='String' aria-describedby='background-description' aria-label='{{localize "hm.app.background.select-label"}}'>
+      <select id='background-dropdown' name='background' data-dtype='String' aria-describedby='background-description'
+        aria-label='{{localize "hm.app.background.select-label"}}'>
         <option value=''>{{localize 'hm.app.background.select-placeholder'}}</option>
 
         {{#each backgroundDocs}}
-          <optgroup label='{{this.packName}}'>
-            <!-- Each option for a background -->
-            {{#each this.docs}}
-              <option value='{{this.id}} ({{this.packId}})'>
-                {{this.name}}
-              </option>
-            {{/each}}
-          </optgroup>
+        <optgroup label='{{this.packName}}'>
+          <!-- Each option for a background -->
+          {{#each this.docs}}
+          <option value='{{this.id}} ({{this.packId}})'>
+            {{this.name}}
+          </option>
+          {{/each}}
+        </optgroup>
         {{else}}
-          <option>{{localize 'hm.app.background.none'}}</option>
+        <option>{{localize 'hm.app.background.none'}}</option>
         {{/each}}
       </select>
     </div>

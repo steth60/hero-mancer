@@ -1,11 +1,16 @@
 {
   "id": "hero-mancer",
   "title": "Hero Mancer",
-  "description": "Hero Mancer: The one stop shop for creating your heroes in D&D 5e.",
+  "description": "The one stop shop for creating your heroes in D&D 5e.",
   "version": "",
+  "bugs": "https://github.com/Sayshal/hero-mancer/issues",
+  "changelog": "https://github.com/Sayshal/hero-mancer/releases",
+  "license": "https://github.com/Sayshal/hero-mancer?tab=MIT-1-ov-file",
+  "readme": "https://github.com/Sayshal/hero-mancer?tab=readme-ov-file",
   "authors": [
     {
       "name": "Tyler",
+      "discord": "Tyler",
       "url": "https://github.com/Sayshal",
       "flags": {}
     }
@@ -15,7 +20,14 @@
     "minimum": "12.331",
     "verified": "12.331"
   },
+  "download": "",
   "esmodules": ["scripts/app/HeroMancer.js", "scripts/hero-mancer.js", "scripts/settings.js"],
+  "flags": {
+    "hotReload": {
+      "extensions": ["css", "html", "hbs", "json"],
+      "paths": ["styles", "lang", "templates"]
+    }
+  },
   "languages": [
     {
       "lang": "en",
@@ -23,6 +35,7 @@
       "path": "lang/en.json"
     }
   ],
+  "manifest": "",
   "relationships": {
     "systems": [
       {
@@ -37,13 +50,5 @@
     ]
   },
   "styles": ["styles/hero-mancer.css"],
-  "url": "https://github.com/Sayshal/hero-mancer",
-  "manifest": "",
-  "download": "",
-  "flags": {
-    "hotReload": {
-      "extensions": ["css", "html", "hbs", "json"],
-      "paths": ["styles", "lang", "templates"]
-    }
-  }
+  "url": "https://github.com/Sayshal/hero-mancer"
 }

@@ -21,6 +21,7 @@ export class Listeners {
     this.initializeEquipmentListeners();
     this.initializeCharacterListeners();
     this.initializeRollMethodListener(html);
+    this.initializeTokenCustomizationListeners();
   }
 
   /**
@@ -292,6 +293,37 @@ export class Listeners {
       } else {
         HM.log(3, 'App instance not found for re-render');
       }
+    });
+  }
+
+  static initializeTokenCustomizationListeners() {
+    const ringEnabled = document.querySelector('[name="ring.enabled"]');
+    const ringOptions = document.querySelectorAll('.customization-row:has([name="ring.color"]), .customization-row:has([name="backgroundColor"]), .customization-row.ring-effects');
+
+    // Initial state
+    ringOptions.forEach(function (option) {
+      option.style.display = ringEnabled?.checked ? 'flex' : 'none';
+    });
+
+    // Reset and toggle on change
+    ringEnabled?.addEventListener('change', function (event) {
+      if (!event.currentTarget.checked) {
+        // Reset color picker values
+        const ringColor = document.querySelector('[name="ring.color"]');
+        if (ringColor) ringColor.value = '';
+
+        const bgColor = document.querySelector('[name="backgroundColor"]');
+        if (bgColor) bgColor.value = '';
+
+        // Uncheck all ring effect checkboxes
+        document.querySelectorAll('[name="ring.effects"]').forEach(function (checkbox) {
+          checkbox.checked = false;
+        });
+      }
+
+      ringOptions.forEach(function (option) {
+        option.style.display = event.currentTarget.checked ? 'flex' : 'none';
+      });
     });
   }
 }
