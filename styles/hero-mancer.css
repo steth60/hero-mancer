@@ -600,6 +600,7 @@
   display: flex;
   flex-direction: column;
   margin-bottom: 1.25rem;
+  max-width: 100%;
 }
 
 .equipment-item label,
@@ -962,4 +963,12 @@
   width: calc(100% - 120px);
   margin-left: 0;
   padding-left: 0.313rem;
+}
+
+/* Add max-width and text overflow handling for equipment dropdowns */
+.application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select {
+  max-width: 100%; /* Ensure it doesn't overflow container */
+  text-overflow: ellipsis; /* Add ellipsis for overflow */
+  overflow: hidden; /* Hide overflow */
+  white-space: nowrap; /* Prevent wrapping */
 }

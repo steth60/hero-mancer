@@ -17,6 +17,7 @@ export class TableManager {
   static async initializeTablesForBackground(background) {
     if (!background) {
       HM.log(2, 'No background provided for table initialization');
+      TableManager.updateUIForMissingTables(null);
       return;
     }
 
@@ -24,17 +25,18 @@ export class TableManager {
     this.currentTables.delete(background.id);
 
     try {
-      // Find all RollTable UUIDs in the description
       const description = background.system.description.value;
       const uuidPattern = /@UUID\[Compendium\.(.*?)\.(.*?)\.RollTable\.(.*?)\]/g;
       const matches = [...description.matchAll(uuidPattern)];
 
       if (!matches.length) {
-        HM.log(2, 'No RollTable UUIDs found in background description');
+        HM.log(3, 'No RollTable UUIDs found in background description, hiding UI elements.');
+        TableManager.updateUIForMissingTables(null);
         return;
       }
 
-      // Load each table from its UUID
+      // Load each table and track which types we found
+      const foundTableTypes = new Set();
       const tables = await Promise.all(
         matches.map(async (match) => {
           const uuid = `Compendium.${match[1]}.${match[2]}.RollTable.${match[3]}`;
@@ -44,6 +46,15 @@ export class TableManager {
               HM.log(2, `Could not load table with UUID: ${uuid}`);
               return null;
             }
+
+            // Check table type based on name
+            const tableName = table.name.toLowerCase();
+            this.tableTypes.forEach((type) => {
+              if (tableName.includes(type.toLowerCase()) || (type === 'Personality Traits' && tableName.includes('personality'))) {
+                foundTableTypes.add(type);
+              }
+            });
+
             HM.log(3, 'Loaded table:', table);
             return table;
           } catch (error) {
@@ -64,14 +75,39 @@ export class TableManager {
         }
         this.currentTables.set(background.id, validTables);
         HM.log(3, 'Tables initialized and stored for background:', background.id);
-      } else {
-        HM.log(2, 'No valid tables could be loaded');
       }
+
+      // Update UI based on which table types were found
+      TableManager.updateUIForMissingTables(foundTableTypes);
     } catch (error) {
       HM.log(1, 'Error initializing tables for background:', error);
+      TableManager.updateUIForMissingTables(null);
     }
   }
 
+  static updateUIForMissingTables(foundTableTypes) {
+    const typeToFieldMap = {
+      'Personality Traits': 'traits',
+      'Ideals': 'ideals',
+      'Bonds': 'bonds',
+      'Flaws': 'flaws'
+    };
+
+    Object.entries(typeToFieldMap).forEach(([tableType, fieldName]) => {
+      const container = document.querySelector(`.personality-group textarea[name="${fieldName}"]`);
+      const rollButton = document.querySelector(`.personality-group button[data-table="${fieldName}"]`);
+
+      if (container && rollButton) {
+        const hasTable = foundTableTypes?.has(tableType);
+
+        // Update placeholder text
+        container.placeholder = game.i18n.localize(hasTable ? `hm.app.finalize.${fieldName}-placeholder` : `hm.app.finalize.${fieldName}-placeholder-alt`);
+
+        // Show/hide roll button
+        rollButton.style.display = hasTable ? 'block' : 'none';
+      }
+    });
+  }
   static async rollForCharacteristic(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
     HM.log(3, 'Found tables for background:', tables);

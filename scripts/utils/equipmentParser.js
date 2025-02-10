@@ -1150,7 +1150,7 @@ export class EquipmentParser {
    * @param {HTMLElement} itemContainer Container element
    * @returns {HTMLElement|null} Modified container or null if invalid
    */
-  renderFocusItem(item, itemContainer) {
+  async renderFocusItem(item, itemContainer) {
     if (!item?.key) {
       HM.log(1, 'Invalid focus item:', item);
       return null;
@@ -1169,11 +1169,32 @@ export class EquipmentParser {
     const select = document.createElement('select');
     select.id = `${item.key}-focus`;
 
-    Object.entries(focusConfig.itemIds).forEach(([focusName, itemId]) => {
-      const uuid = itemId.uuid || EquipmentParser.itemUuidMap.get(itemId);
+    const itemPacks = game.settings.get(HM.CONFIG.ID, 'itemPacks');
+
+    for (const [focusName, itemId] of Object.entries(focusConfig.itemIds)) {
+      let uuid = itemId.uuid || EquipmentParser.itemUuidMap.get(itemId);
+
       if (!uuid) {
-        HM.log(2, `No UUID mapping found for focus item: ${itemId}`);
-        return;
+        HM.log(3, `UUID lookup failed for ${focusName}, attempting name match`);
+
+        for (const packId of itemPacks) {
+          const pack = game.packs.get(packId);
+          if (!pack) continue;
+
+          const index = await pack.getIndex();
+          const matchingItem = index.find((i) => i.name.toLowerCase() === focusName.toLowerCase());
+
+          if (matchingItem) {
+            uuid = matchingItem.uuid;
+            HM.log(3, `Found matching item by name: ${matchingItem.name}`);
+            break;
+          }
+        }
+
+        if (!uuid) {
+          HM.log(2, `No matching item found for focus: ${focusName}`);
+          continue;
+        }
       }
 
       const option = document.createElement('option');
@@ -1185,7 +1206,12 @@ export class EquipmentParser {
       }
 
       select.appendChild(option);
-    });
+    }
+
+    if (select.options.length === 0) {
+      HM.log(2, `No valid focus items found for type: ${focusType}`);
+      return null;
+    }
 
     const label = document.createElement('h4');
     label.htmlFor = select.id;
