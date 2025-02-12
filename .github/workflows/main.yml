@@ -24,12 +24,20 @@ jobs:
         run: |
           version_data=($(node .github/workflows/get-version.js))
           
-          version="${version_data[0]}"
-          compat_min="${version_data[1]}"
-          compat_verified="${version_data[2]}"
-          compat_max="${version_data[3]}"
+          for item in "${version_data[@]}"; do
+            echo "Processing: $item"
+          done
+          
+          version=$(echo "${version_data[0]}" | sed 's/VERSION://')
+          compat_min=$(echo "${version_data[1]}" | sed 's/COMPAT_MIN://')
+          compat_verified=$(echo "${version_data[2]}" | sed 's/COMPAT_VERIFIED://')
+          compat_max=$(echo "${version_data[3]}" | sed 's/COMPAT_MAX://')
           
           echo "Extracted version: $version"
+          echo "Extracted Minimum Compatibility: $compat_min"
+          echo "Extracted Verified Compatibility: $compat_verified"
+          echo "Extracted Maximum Compatibility: $compat_max"
+          
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "compat_min=$compat_min" >> $GITHUB_OUTPUT
           echo "compat_verified=$compat_verified" >> $GITHUB_OUTPUT
