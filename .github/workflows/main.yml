@@ -48,7 +48,7 @@ jobs:
           echo "release-notes-discord=$DISCORD_NOTES" >> $GITHUB_OUTPUT
 
       - name: Update module.json with Version
-        run: node .github/workflows/update-module.js ${{ steps.get-version.outputs.version }}
+        run: node .github/workflows/update-module.js "${{ steps.get-version.outputs.version }}"
 
       - name: Zip Files
         run: |

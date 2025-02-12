@@ -1,14 +1,25 @@
 const fs = require('fs');
 const path = require('path');
 
+console.log('Full process.argv:', process.argv);
+
 const version = process.argv[2];
 
+console.log('Extracted version:', version);
+
 if (!version) {
-  console.error('No version specified', process);
+  console.error('No version specified');
+  console.error('Process details:', {
+    cwd: process.cwd(),
+    argv: process.argv,
+    env: process.env
+  });
   process.exit(1);
 }
 
 const moduleJsonPath = path.join(__dirname, '../../module.json');
+
+console.log('Module JSON path:', moduleJsonPath);
 
 fs.readFile(moduleJsonPath, 'utf8', (err, data) => {
   if (err) {
