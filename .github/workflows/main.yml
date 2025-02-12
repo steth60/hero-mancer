@@ -22,13 +22,15 @@ jobs:
       - name: Get Version and Compatibility Info
         id: get-version
         run: |
-          summary=$(git log -1 --pretty=%s)
-          version=$(echo "$summary" | grep -o -E '[v]?[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 | sed 's/^v//')
+          version=$(node -p "require('./module.json').version")
+          compat_min=$(node -p "require('./module.json').compatibility.minimum")
+          compat_verified=$(node -p "require('./module.json').compatibility.verified")
+          compat_max=$(node -p "require('./module.json').compatibility.maximum")
+          
           echo "version=$version" >> $GITHUB_OUTPUT
-          echo "compat_min=$(echo "$module_info" | jq -r '.compatibility.minimum')" >> $GITHUB_OUTPUT
-          echo "compat_verified=$(echo "$module_info" | jq -r '.compatibility.verified')" >> $GITHUB_OUTPUT
-          echo "compat_max=$(echo "$module_info" | jq -r '.compatibility.maximum')" >> $GITHUB_OUTPUT
-          echo "Extracted version: $version"
+          echo "compat_min=$compat_min" >> $GITHUB_OUTPUT
+          echo "compat_verified=$compat_verified" >> $GITHUB_OUTPUT
+          echo "compat_max=$compat_max" >> $GITHUB_OUTPUT
 
       - name: Set Release Notes
         id: set-release-notes
@@ -83,6 +85,8 @@ jobs:
             }
           }
           EOF
+          
+          cat payload.json  # Debug: Print the payload
           
           curl -X POST "https://api.foundryvtt.com/_api/packages/release_version" \
             -H "Content-Type: application/json" \
