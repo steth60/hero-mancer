@@ -1298,7 +1298,11 @@ export class EquipmentParser {
    * @throws {Error} If wealth option rendering fails
    */
   async renderClassWealthOption(classId, sectionContainer) {
-    if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') return;
+    if (foundry.utils.isNewerVersion('4.0.0', game.system.version)) {
+      return;
+    } else if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
+      return;
+    }
 
     try {
       const classDoc = await this.findItemInCompendiums(classId);

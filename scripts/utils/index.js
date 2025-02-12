@@ -7,7 +7,7 @@ export { CacheManager } from './cacheManagement.js';
 export { DocumentService } from './documentService.js';
 
 /** Controls dropdown behavior and updates */
-export { DropdownHandler } from './dropdownHandler.js';
+export { DropdownHandler, EventBus } from './dropdownHandler.js';
 
 /** Parses and manages equipment data */
 export { EquipmentParser } from './equipmentParser.js';

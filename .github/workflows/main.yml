@@ -8,6 +8,9 @@ on:
       - '.gitattributes'
       - '.gitignore'
 
+env:
+  REPO_URL: https://github.com/${{ github.repository }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,37 +19,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get Version from Commit Message
+      - name: Get Version and Compatibility Info
         id: get-version
         run: |
           summary=$(git log -1 --pretty=%s)
           version=$(echo "$summary" | grep -o -E '[v]?[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 | sed 's/^v//')
           echo "version=$version" >> $GITHUB_OUTPUT
+          echo "compat_min=$(echo "$module_info" | jq -r '.compatibility.minimum')" >> $GITHUB_OUTPUT
+          echo "compat_verified=$(echo "$module_info" | jq -r '.compatibility.verified')" >> $GITHUB_OUTPUT
+          echo "compat_max=$(echo "$module_info" | jq -r '.compatibility.maximum')" >> $GITHUB_OUTPUT
           echo "Extracted version: $version"
 
-      - name: Set Release Notes from Commit Description
-        id: set-release-notes-github
+      - name: Set Release Notes
+        id: set-release-notes
         run: |
           release_notes=$(git log -1 --pretty=%B | grep '^-' | sed 's/^ //')
-          echo "release-notes-github<<EOF" >> $GITHUB_ENV
-          echo "$release_notes" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$release_notes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           echo "$release_notes" > release_notes.txt
 
       - name: Format Release Notes for Discord
         id: format-release-notes-discord
         run: |
           DISCORD_NOTES=$(awk '{printf "%s\\n", $0}' release_notes.txt | sed 's/\\n$//')
-          echo "::set-output name=release-notes-discord::$DISCORD_NOTES"
+          echo "release-notes-discord=$DISCORD_NOTES" >> $GITHUB_OUTPUT
 
       - name: Update module.json with Version
         run: node .github/workflows/update-module.js ${{ steps.get-version.outputs.version }}
 
       - name: Zip Files
-        working-directory: ./
         run: |
-          zip -r ./module.zip ./ -x "README.md" "CHANGELOG.md" "LICENSE" "TODO.md" ".gitattributes" ".gitignore" "tour-assets/*" "release_notes.txt" ".git/" ".github/"
-
+          zip -r ./module.zip ./ -x @.gitignore
 
       - name: Create Release
         id: create-release
@@ -56,51 +60,50 @@ jobs:
           name: Release ${{ steps.get-version.outputs.version }}
           draft: false
           prerelease: false
-          body: ${{ env.release-notes-github }}
+          body: ${{ steps.set-release-notes.outputs.release_notes }}
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: './module.zip, ./module.json'
           tag: ${{ steps.get-version.outputs.version }}
 
       - name: Release Foundry Package
         run: |
-          REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
-          curl -X POST "https://api.foundryvtt.com/_api/packages/release_version" \
-          -H "Content-Type: application/json" \
-          -H "Authorization: ${{ secrets.FOUNDRY_API_TOKEN }}" \
-          -d '{
-            "id": "'"hero-mancer"'",
+          cat << EOF > payload.json
+          {
+            "id": "hero-mancer",
             "release": {
-              "version": "'"${{ steps.get-version.outputs.version }}"'",
-              "manifest": "'"${REPO_URL}/releases/latest/download/module.json"'",
-              "download": "'"${REPO_URL}/releases/download/${{ steps.get-version.outputs.version }}/module.zip"'",
-              "notes": "'"${REPO_URL}/releases/tag/${{ steps.get-version.outputs.version }}"'",
+              "version": "${{ steps.get-version.outputs.version }}",
+              "manifest": "${{ env.REPO_URL }}/releases/download/${{ steps.get-version.outputs.version }}/module.json",
+              "download": "${{ env.REPO_URL }}/releases/download/${{ steps.get-version.outputs.version }}/module.zip",
+              "notes": "${{ env.REPO_URL }}/releases/tag/${{ steps.get-version.outputs.version }}",
               "compatibility": {
-                "minimum": "'"12.331"'",
-                "verified": "'"12.331"'",
-                "maximum": "'"12.999"'"
+                "minimum": "${{ steps.get-version.outputs.compat_min }}",
+                "verified": "${{ steps.get-version.outputs.compat_verified }}",
+                "maximum": "${{ steps.get-version.outputs.compat_max }}"
               }
             }
-          }'
+          }
+          EOF
+          
+          curl -X POST "https://api.foundryvtt.com/_api/packages/release_version" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: ${{ secrets.FOUNDRY_API_TOKEN }}" \
+            -d @payload.json
 
       - name: Post to Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
           VERSION="${{ steps.get-version.outputs.version }}"
           RELEASE_NOTES="${{ steps.format-release-notes-discord.outputs.release-notes-discord }}"
-
-          # Format the release notes to handle newlines correctly
-          CLEAN_RELEASE_NOTES=$(echo -e "$RELEASE_NOTES")
           
           # Create JSON payload with fields for version, links, and release notes
           JSON_PAYLOAD=$(jq -n \
             --arg title "Hero Mancer Release" \
             --arg version "$VERSION" \
             --arg foundry_url "https://foundryvtt.com/packages/hero-mancer" \
-            --arg release_url "$REPO_URL/releases/download/$VERSION/module.json" \
-            --arg download_url "$REPO_URL/releases/download/$VERSION/module.zip" \
-            --arg release_notes "$CLEAN_RELEASE_NOTES" \
+            --arg release_url "${{ env.REPO_URL }}/releases/download/$VERSION/module.json" \
+            --arg download_url "${{ env.REPO_URL }}/releases/download/$VERSION/module.zip" \
+            --arg release_notes "$RELEASE_NOTES" \
             '{embeds: [{
               title: $title,
               fields: [
@@ -114,7 +117,6 @@ jobs:
               ]
             }]}')
 
-          # Post to Discord
           curl -H "Content-Type: application/json" \
                -d "$JSON_PAYLOAD" \
                $DISCORD_WEBHOOK

@@ -24,20 +24,26 @@ const MODES = {
  * Event bus for pub/sub pattern
  * @namespace
  */
-const EventBus = {
+export const EventBus = {
   /** @type {Map<string, Set<Function>>} */
   listeners: new Map(),
+
+  /** @type {Map<string, Map<Function, object>>} */
+  listenerSources: new Map(),
 
   /**
    * Subscribe to an event
    * @param {string} event Event name
    * @param {Function} callback Callback function
+   * @param {object} source Source object for callback
    */
-  on(event, callback) {
+  on(event, callback, source) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
+      this.listenerSources.set(event, new Map());
     }
     this.listeners.get(event).add(callback);
+    this.listenerSources.get(event).set(callback, source);
   },
 
   /**
@@ -59,7 +65,31 @@ const EventBus = {
   off(event, callback) {
     if (this.listeners.has(event)) {
       this.listeners.get(event).delete(callback);
+      this.listenerSources.get(event)?.delete(callback);
     }
+  },
+
+  /**
+   * Remove all listeners from a specific source
+   * @param {object} source Source object to remove listeners from
+   */
+  removeAllFromSource(source) {
+    this.listenerSources.forEach((sourceMap, event) => {
+      sourceMap.forEach((listenerSource, callback) => {
+        if (listenerSource === source) {
+          this.listeners.get(event)?.delete(callback);
+          sourceMap.delete(callback);
+        }
+      });
+    });
+  },
+
+  /**
+   * Clear all listeners and sources
+   */
+  clearAll() {
+    this.listeners.clear();
+    this.listenerSources.clear();
   }
 };
 
@@ -134,15 +164,52 @@ export class DropdownHandler {
   static async initializeDropdown({ type, html, context }) {
     const dropdown = this.getDropdownElement(html, type);
     if (!dropdown) return;
+    HM.log(3, `Initializing dropdown for ${type}`);
 
-    EventBus.on('description-update', ({ elementId, content }) => {
+    // Clean up existing listeners
+    if (dropdown._descriptionUpdateHandler) {
+      EventBus.off('description-update', dropdown._descriptionUpdateHandler);
+    }
+    if (dropdown._changeHandler) {
+      dropdown.removeEventListener('change', dropdown._changeHandler);
+    }
+
+    // Create new handlers - bind to keep proper scope
+    dropdown._descriptionUpdateHandler = function ({ elementId, content }) {
       const element = html.querySelector(elementId);
       if (element) {
         element.innerHTML = content;
       }
-    });
+    };
 
-    dropdown.addEventListener('change', (event) => this.handleDropdownChange(event, type, html, context));
+    // Bind the handler directly to avoid closure issues
+    dropdown._changeHandler = this.handleDropdownChange.bind(this, type, html, context);
+
+    // Add new listeners
+    EventBus.on('description-update', dropdown._descriptionUpdateHandler);
+    dropdown.addEventListener('change', (event) => {
+      requestAnimationFrame(() => dropdown._changeHandler(event));
+    });
+  }
+
+  /**
+   * Cleans up event listeners for a dropdown
+   * @param {HTMLElement} dropdown The dropdown element to clean up
+   * @private
+   */
+  static cleanupDropdown(dropdown) {
+    if (!dropdown) return;
+
+    if (dropdown._descriptionUpdateHandler) {
+      EventBus.off('description-update', dropdown._descriptionUpdateHandler);
+      EventBus.removeAllFromSource(dropdown);
+      dropdown._descriptionUpdateHandler = null;
+    }
+
+    if (dropdown._changeHandler) {
+      dropdown.removeEventListener('change', dropdown._changeHandler);
+      dropdown._changeHandler = null;
+    }
   }
 
   /**
@@ -166,7 +233,7 @@ export class DropdownHandler {
    * @param {HTMLElement} html Parent element
    * @param {object} context Application context
    */
-  static async handleDropdownChange(event, type, html, context) {
+  static async handleDropdownChange(type, html, context, event) {
     const selectedValue = event.target.value;
     const selectedId = selectedValue.replace(/\s?\(.*?\)/, '');
 

@@ -1,4 +1,5 @@
 import { HM } from '../hero-mancer.js';
+import { EventBus } from './dropdownHandler.js';
 
 export class SavedOptions {
   static FLAG = 'saved-options';
@@ -11,8 +12,9 @@ export class SavedOptions {
   }
 
   static async loadOptions() {
+    HM.log(3, 'Loading saved options');
     const data = await game.user.getFlag(HM.CONFIG.ID, this.FLAG);
-    HM.log(3, 'LOAD: Retrieved flag data:', data);
+    HM.log(3, 'Loaded flag data:', data);
     return data || {};
   }
 

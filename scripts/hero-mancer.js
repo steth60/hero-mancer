@@ -2,7 +2,6 @@ import { HtmlManipulator, DocumentService, CacheManager, EquipmentParser } from 
 import { registerSettings } from './settings.js';
 import { CustomCompendiums } from './app/CustomCompendiums.js';
 import { DiceRolling } from './app/DiceRolling.js';
-import { HeroMancer } from './app/HeroMancer.js';
 
 /* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
 export class HM {
@@ -136,9 +135,6 @@ Hooks.once('ready', async () => {
     HM.log(3, 'Elkan Detected: Compatibility auto-enabled.');
   }
   await HM.prepareDocuments();
-
-  // Initialize HeroMancer
-  HM.heroMancer = new HeroMancer();
 
   // Load compendium selections
   CustomCompendiums.classPacks = game.settings.get('hero-mancer', 'classPacks');

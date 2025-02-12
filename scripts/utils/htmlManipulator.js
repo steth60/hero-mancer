@@ -1,4 +1,5 @@
 import { HM } from '../hero-mancer.js';
+import { HeroMancer } from '../app/HeroMancer.js';
 
 /**
  * Handles DOM manipulation for the HeroMancer UI elements
@@ -13,6 +14,9 @@ export class HtmlManipulator {
    * @throws {Error} If required DOM elements are not found
    */
   static registerButton() {
+    // First clean up any existing button state but keep the button reference
+    this.cleanupButton();
+
     const headerActions = document.querySelector('section[class*="actors-sidebar"] header[class*="directory-header"] div[class*="header-actions"]');
     if (!headerActions) {
       throw new Error('Header actions element not found');
@@ -67,11 +71,42 @@ export class HtmlManipulator {
    * Adds click event listener to the button
    * @private
    */
+  // In htmlManipulator.js
   static addButtonListener() {
-    const clickHandler = () => HM.heroMancer.render(true);
-    this.button?.addEventListener('click', clickHandler);
+    const clickHandler = () => {
+      HM.log(3, 'Button clicked - direct handler');
 
-    // Store the handler for potential cleanup
-    this.button.clickHandler = clickHandler;
+      if (HM.heroMancer) {
+        HM.log(3, 'Cleaning up existing instance');
+        HM.heroMancer.close();
+        HM.heroMancer = null;
+      }
+
+      HM.log(3, 'Creating new instance');
+      HM.heroMancer = new HeroMancer();
+      HM.heroMancer.render(true);
+    };
+
+    if (this.button) {
+      HM.log(3, 'Adding click listener to button');
+      this.button.addEventListener('click', clickHandler);
+      this.button.clickHandler = clickHandler;
+    } else {
+      HM.log(3, 'Button element not found');
+    }
+  }
+
+  static cleanup() {
+    this.cleanupButton();
+    if (this.button) {
+      this.addButtonListener();
+    }
+  }
+
+  static cleanupButton() {
+    if (this.button?.clickHandler) {
+      this.button.removeEventListener('click', this.button.clickHandler);
+      this.button.clickHandler = null;
+    }
   }
 }

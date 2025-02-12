@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 import { HM } from '../hero-mancer.js';
-import { CacheManager, DropdownHandler, EquipmentParser, Listeners, StatRoller, SavedOptions, SummaryManager } from '../utils/index.js';
+import { CacheManager, DropdownHandler, EquipmentParser, Listeners, StatRoller, SavedOptions, SummaryManager, EventBus, HtmlManipulator } from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -343,48 +343,53 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @protected
    */
   async _onRender(context, options) {
-    const html = this.element;
-    HM.log(3, 'RESTORE: Root element:', html);
+    if (this._isRendering) return;
 
-    const savedOptions = await SavedOptions.loadOptions();
+    try {
+      this._isRendering = true;
+      await HeroMancer.cleanup(this);
+      EventBus.clearAll();
+      const html = this.element;
 
-    // Initialize all UI components in sequence
-    DropdownHandler.initializeDropdown({ type: 'class', html, context });
-    DropdownHandler.initializeDropdown({ type: 'race', html, context });
-    DropdownHandler.initializeDropdown({ type: 'background', html, context });
+      const savedOptions = await SavedOptions.loadOptions();
 
-    // Initialize remaining listeners after dropdowns
-    SummaryManager.initializeSummaryListeners();
-    Listeners.initializeListeners(html, context, HeroMancer.selectedAbilities);
+      // Initialize UI components
+      DropdownHandler.initializeDropdown({ type: 'class', html, context });
+      DropdownHandler.initializeDropdown({ type: 'race', html, context });
+      DropdownHandler.initializeDropdown({ type: 'background', html, context });
 
-    // Handle saved options restoration
-    if (Object.keys(savedOptions).length > 0) {
-      for (const [key, value] of Object.entries(savedOptions)) {
-        const selector = `[name="${key}"]`;
-        HM.log(3, `RESTORE: Looking for selector "${selector}" in:`, html);
-        const elem = html.querySelector(selector);
-        HM.log(3, `RESTORE: Found element for ${key}:`, elem);
+      SummaryManager.initializeSummaryListeners();
+      Listeners.initializeListeners(html, context, HeroMancer.selectedAbilities);
 
-        if (!elem) continue;
+      // Restore saved options
+      if (Object.keys(savedOptions).length > 0) {
+        for (const [key, value] of Object.entries(savedOptions)) {
+          const elem = html.querySelector(`[name="${key}"]`);
+          if (!elem) continue;
 
-        if (elem.type === 'checkbox') {
-          elem.checked = value;
-        } else if (elem.tagName === 'SELECT') {
-          elem.value = value;
-          elem.dispatchEvent(new Event('change'));
-          SummaryManager.updateClassRaceSummary();
-        } else {
-          elem.value = value;
+          if (elem.type === 'checkbox') {
+            elem.checked = value;
+          } else if (elem.tagName === 'SELECT') {
+            elem.value = value;
+          } else {
+            elem.value = value;
+          }
         }
+        requestAnimationFrame(() => {
+          SummaryManager.updateClassRaceSummary();
+        });
       }
+    } finally {
+      this._isRendering = false;
     }
   }
 
-  _onClose() {
+  async _onClose() {
     HM.log(3, 'Closing application.');
-    if (this._cleanup) {
-      this._cleanup();
-    }
+    await HeroMancer.cleanup(this);
+    EventBus.clearAll();
+    HtmlManipulator.cleanup();
+    HM.heroMancer = null; // Clear the instance
     super._onClose();
   }
 
@@ -436,6 +441,23 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static decreaseScore(event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
     Listeners.adjustScore(index, -1, HeroMancer.selectedAbilities);
+  }
+
+  static async cleanup(instance) {
+    const html = instance.element;
+    ['class', 'race', 'background'].forEach((type) => {
+      const dropdown = html?.querySelector(`#${type}-dropdown`);
+      if (dropdown) {
+        if (dropdown._descriptionUpdateHandler) {
+          EventBus.off('description-update', dropdown._descriptionUpdateHandler);
+        }
+        if (dropdown._changeHandler) {
+          dropdown.removeEventListener('change', dropdown._changeHandler);
+        }
+        dropdown._descriptionUpdateHandler = null;
+        dropdown._changeHandler = null;
+      }
+    });
   }
 
   /**
