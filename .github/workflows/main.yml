@@ -22,9 +22,17 @@ jobs:
       - name: Get Version
         id: get-version
         run: |
-          version=$(node -p "require('./module.json').version")
+          version_data=$(node .github/workflows/get-version.js)
+          version=$(echo "$version_data" | jq -r '.version')
+          compat_min=$(echo "$version_data" | jq -r '.compat_min')
+          compat_verified=$(echo "$version_data" | jq -r '.compat_verified')
+          compat_max=$(echo "$version_data" | jq -r '.compat_max')
+          
           echo "Extracted version: $version"
           echo "version=$version" >> $GITHUB_OUTPUT
+          echo "compat_min=$compat_min" >> $GITHUB_OUTPUT
+          echo "compat_verified=$compat_verified" >> $GITHUB_OUTPUT
+          echo "compat_max=$compat_max" >> $GITHUB_OUTPUT
 
       - name: Debug Version
         run: |
