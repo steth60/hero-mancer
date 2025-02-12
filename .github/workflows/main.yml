@@ -19,18 +19,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get Version and Compatibility Info
+      - name: Get Version
         id: get-version
         run: |
           version=$(node -p "require('./module.json').version")
-          compat_min=$(node -p "require('./module.json').compatibility.minimum")
-          compat_verified=$(node -p "require('./module.json').compatibility.verified")
-          compat_max=$(node -p "require('./module.json').compatibility.maximum")
-          
+          echo "Extracted version: $version"
           echo "version=$version" >> $GITHUB_OUTPUT
-          echo "compat_min=$compat_min" >> $GITHUB_OUTPUT
-          echo "compat_verified=$compat_verified" >> $GITHUB_OUTPUT
-          echo "compat_max=$compat_max" >> $GITHUB_OUTPUT
+
+      - name: Debug Version
+        run: |
+          echo "Version from previous step: ${{ steps.get-version.outputs.version }}"
+
+      - name: Update module.json with Version
+        run: |
+          if [ -z "${{ steps.get-version.outputs.version }}" ]; then
+            echo "Error: No version specified"
+            exit 1
+          fi
+          node .github/workflows/update-module.js "${{ steps.get-version.outputs.version }}"
 
       - name: Set Release Notes
         id: set-release-notes
@@ -46,9 +52,6 @@ jobs:
         run: |
           DISCORD_NOTES=$(awk '{printf "%s\\n", $0}' release_notes.txt | sed 's/\\n$//')
           echo "release-notes-discord=$DISCORD_NOTES" >> $GITHUB_OUTPUT
-
-      - name: Update module.json with Version
-        run: node .github/workflows/update-module.js "${{ steps.get-version.outputs.version }}"
 
       - name: Zip Files
         run: |

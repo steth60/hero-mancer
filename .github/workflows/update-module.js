@@ -5,9 +5,10 @@ console.log('Full process.argv:', process.argv);
 
 const version = process.argv[2];
 
-console.log('Extracted version:', version);
+console.log('Extracted version (raw):', version);
+console.log('Extracted version (trimmed):', version ? version.trim() : version);
 
-if (!version) {
+if (!version || version.trim() === '') {
   console.error('No version specified');
   console.error('Process details:', {
     cwd: process.cwd(),
