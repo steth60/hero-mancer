@@ -4,7 +4,7 @@ const path = require('path');
 const version = process.argv[2];
 
 if (!version) {
-  console.error('No version specified');
+  console.error('No version specified', process);
   process.exit(1);
 }
 
