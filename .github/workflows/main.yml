@@ -22,11 +22,12 @@ jobs:
       - name: Get Version
         id: get-version
         run: |
-          version_data=$(node .github/workflows/get-version.js)
-          version=$(echo "$version_data" | jq -r '.version')
-          compat_min=$(echo "$version_data" | jq -r '.compat_min')
-          compat_verified=$(echo "$version_data" | jq -r '.compat_verified')
-          compat_max=$(echo "$version_data" | jq -r '.compat_max')
+          version_data=($(node .github/workflows/get-version.js))
+          
+          version="${version_data[0]}"
+          compat_min="${version_data[1]}"
+          compat_verified="${version_data[2]}"
+          compat_max="${version_data[3]}"
           
           echo "Extracted version: $version"
           echo "version=$version" >> $GITHUB_OUTPUT
