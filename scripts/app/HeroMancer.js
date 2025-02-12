@@ -756,26 +756,30 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           scaleX: 1,
           scaleY: 1
         },
-        displayName: parseInt(formData.displayName),
-        displayBars: parseInt(formData.displayBars),
-        bar1: {
+        sight: { enabled: true },
+        disposition: CONST.TOKEN_DISPOSITIONS.FRIENDLY,
+        actorLink: true
+      };
+
+      // Only add token customization properties if enabled
+      if (game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')) {
+        tokenData.displayName = parseInt(formData.displayName);
+        tokenData.displayBars = parseInt(formData.displayBars);
+        tokenData.bar1 = {
           attribute: formData['bar1.attribute'] || null
-        },
-        bar2: {
+        };
+        tokenData.bar2 = {
           attribute: formData['bar2.attribute'] || null
-        },
-        ring: {
+        };
+        tokenData.ring = {
           enabled: formData['ring.enabled'] || false,
           colors: {
             ring: formData['ring.color'] || null,
             background: formData.backgroundColor || null
           },
           effects: this._calculateRingEffects(formData['ring.effects'])
-        },
-        sight: { enabled: true },
-        disposition: CONST.TOKEN_DISPOSITIONS.FRIENDLY,
-        actorLink: true
-      };
+        };
+      }
 
       HM.log(3, 'Token Data Created:', tokenData);
       return tokenData;
