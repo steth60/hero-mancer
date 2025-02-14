@@ -1,6 +1,17 @@
 /* eslint-disable indent */
 import { HM } from '../hero-mancer.js';
-import { CacheManager, DropdownHandler, EquipmentParser, Listeners, StatRoller, SavedOptions, SummaryManager, EventBus, HtmlManipulator } from '../utils/index.js';
+import {
+  CacheManager,
+  DropdownHandler,
+  EquipmentParser,
+  Listeners,
+  StatRoller,
+  SavedOptions,
+  SummaryManager,
+  EventBus,
+  HtmlManipulator,
+  CharacterArtPicker
+} from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -23,9 +34,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       rollStat: HeroMancer.rollStat,
       decreaseScore: HeroMancer.decreaseScore,
       increaseScore: HeroMancer.increaseScore,
-      selectCharacterArt: this.selectCharacterArt,
-      selectTokenArt: this.selectTokenArt,
-      selectPlayerAvatar: this.selectPlayerAvatar,
+      selectCharacterArt: CharacterArtPicker.selectCharacterArt,
+      selectTokenArt: CharacterArtPicker.selectTokenArt,
+      selectPlayerAvatar: CharacterArtPicker.selectPlayerAvatar,
       resetOptions: HeroMancer.resetOptions,
       switchToTab: HeroMancer.switchToTab
     },
@@ -458,75 +469,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         dropdown._changeHandler = null;
       }
     });
-  }
-
-  /**
-   * Action to open the FilePicker for selecting character art
-   * TODO: Convert FilePicker to AppV2 for V13 release (https://github.com/foundryvtt/foundryvtt/issues/11348)
-   * @param {PointerEvent} event The originating click event
-   * @param {HTMLElement} target The element that triggered the event
-   */
-  static async selectCharacterArt(event, target) {
-    const inputField = document.getElementById('character-art-path');
-    const currentPath = inputField.value || '/';
-    const portraitImg = document.querySelector('.character-portrait img');
-
-    const filepicker = new FilePicker({
-      type: 'image',
-      current: currentPath,
-      callback: (path) => {
-        inputField.value = path;
-        if (portraitImg) {
-          portraitImg.src = path;
-        }
-        if (document.getElementById('link-token-art').checked) {
-          document.getElementById('token-art-path').value = path;
-        }
-      }
-    });
-    filepicker.render(true);
-  }
-
-  static async selectTokenArt(event, target) {
-    const inputField = document.getElementById('token-art-path');
-    const currentPath = inputField.value || '/';
-
-    const filepicker = new FilePicker({
-      type: 'image',
-      current: currentPath,
-      callback: (path) => {
-        inputField.value = path;
-      }
-    });
-    filepicker.render(true);
-  }
-
-  static async selectPlayerAvatar(event, target) {
-    const inputField = document.getElementById('player-avatar-path');
-    const currentPath = inputField.value || '/';
-
-    const filepicker = new FilePicker({
-      type: 'image',
-      current: currentPath,
-      callback: (path) => {
-        inputField.value = path;
-      }
-    });
-    filepicker.render(true);
-  }
-
-  /** Method to toggle Token Art row based on checkbox state */
-  static _toggleTokenArtRow() {
-    HM.log(3, 'Starting toggle!');
-    const tokenArtRow = document.getElementById('token-art-row');
-    const isLinked = document.getElementById('link-token-art').checked;
-    tokenArtRow.style.display = isLinked ? 'none' : 'flex';
-    HM.log(3, 'Continuing toggle!');
-    // Clear Token Art path if linking is enabled
-    if (isLinked) {
-      document.getElementById('token-art-path').value = document.getElementById('character-art-path').value;
-      HM.log(3, 'Finishing toggle!');
-    }
   }
 
   static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {

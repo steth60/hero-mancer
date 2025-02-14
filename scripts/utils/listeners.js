@@ -1,4 +1,4 @@
-import { StatRoller, SummaryManager } from './index.js';
+import { StatRoller, SummaryManager, CharacterArtPicker } from './index.js';
 import { HeroMancer } from '../app/HeroMancer.js';
 import { DropdownHandler } from './dropdownHandler.js';
 import { EquipmentParser } from './equipmentParser.js';
@@ -149,7 +149,7 @@ export class Listeners {
    */
   static initializeCharacterListeners() {
     const tokenArtCheckbox = document.querySelector('#link-token-art');
-    tokenArtCheckbox?.addEventListener('change', HeroMancer._toggleTokenArtRow);
+    tokenArtCheckbox?.addEventListener('change', CharacterArtPicker._toggleTokenArtRow);
   }
 
   /**

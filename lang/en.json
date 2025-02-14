@@ -288,6 +288,10 @@
       "token-customization": {
         "hint": "Allow your players to set some default token settings usually reserved for the GM, such as display name status, dynamic token ring settings, and display bars.",
         "name": "Allow Token Customization"
+      },
+      "art-picker-root": {
+        "name": "Art Picker Root Directory",
+        "hint": "The root directory for the Character Art Picker"
       }
     },
     "unknown": "unknown {type}",

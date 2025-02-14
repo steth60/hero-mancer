@@ -1,7 +1,7 @@
 import { CustomCompendiums } from './app/CustomCompendiums.js';
 import { DiceRolling } from './app/DiceRolling.js';
 import { HM } from './hero-mancer.js';
-import { StatRoller } from './utils/index.js';
+import { StatRoller, CharacterArtPicker } from './utils/index.js';
 
 /**
  * Main registration function that initializes all module settings.
@@ -18,6 +18,19 @@ export function registerSettings() {
     scope: 'client',
     config: true,
     requiresReload: true
+  });
+
+  game.settings.register(HM.CONFIG.ID, 'artPickerRoot', {
+    name: 'hm.settings.art-picker-root.name',
+    hint: 'hm.settings.art-picker-root.hint',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: String,
+    default: '/',
+    onChange: (value) => {
+      CharacterArtPicker.setRootDirectory(value);
+    }
   });
 
   game.settings.register(HM.CONFIG.ID, 'enablePlayerCustomization', {

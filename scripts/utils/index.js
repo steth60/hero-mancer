@@ -3,6 +3,9 @@
 /** Manages caching functionality */
 export { CacheManager } from './cacheManagement.js';
 
+/** Handles filepicking for character, token, and player art */
+export { CharacterArtPicker } from './characterArtPicker.js';
+
 /** Handles document storage and retrieval */
 export { DocumentService } from './documentService.js';
 
