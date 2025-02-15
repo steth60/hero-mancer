@@ -267,12 +267,23 @@ export class StatRoller {
 
   /**
    * Calculates total points available for point buy
-   * @returns {number} Total points available
+   * @returns {number} Total points available. If a custom total is set in settings
+   * and differs from the default calculation (27 + extra points for additional abilities),
+   * returns just the custom total. Otherwise returns the default calculation.
    */
   static getTotalPoints() {
+    const customTotal = game.settings.get(HM.CONFIG.ID, 'customPointBuyTotal');
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     const extraPoints = Math.max(0, abilitiesCount - 6) * 3;
-    return 27 + extraPoints;
+    const defaultTotal = 27 + extraPoints;
+
+    // Only use customTotal if it's greater than 0 (indicating it was set)
+    // and different from the default calculation
+    if (customTotal > 0 && customTotal !== defaultTotal) {
+      return customTotal;
+    }
+
+    return defaultTotal;
   }
 
   /**

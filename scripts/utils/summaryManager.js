@@ -9,7 +9,7 @@ export class TableManager {
   static tableTypes = ['Personality Traits', 'Ideals', 'Bonds', 'Flaws'];
 
   static _extractTableIds(description) {
-    const uuidPattern = /@UUID\[Compendium\.dnd5e\.tables\.RollTable\.(.*?)\]/g;
+    const uuidPattern = /@UUID\[Compendium\.dnd5e\.tables\.RollTable\.(.*?)]/g;
     const matches = [...description.matchAll(uuidPattern)];
     return matches.map((match) => match[1]);
   }
@@ -26,7 +26,7 @@ export class TableManager {
 
     try {
       const description = background.system.description.value;
-      const uuidPattern = /@UUID\[Compendium\.(.*?)\.(.*?)\.RollTable\.(.*?)\]/g;
+      const uuidPattern = /@UUID\[Compendium\.(.*?)\.(.*?)\.RollTable\.(.*?)]/g;
       const matches = [...description.matchAll(uuidPattern)];
 
       if (!matches.length) {
@@ -108,6 +108,7 @@ export class TableManager {
       }
     });
   }
+
   static async rollForCharacteristic(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
     HM.log(3, 'Found tables for background:', tables);
@@ -331,7 +332,7 @@ export class SummaryManager {
     if (summary && selectedEquipment.length) {
       const randomEquipment = selectedEquipment.slice(0, 3);
       const formattedItems = randomEquipment.map((item) => {
-        const itemName = item.match(/\{([^}]+)\}/)[1];
+        const itemName = item.match(/{([^}]+)}/)[1];
         const article = /^[aeiou]/i.test(itemName) ? game.i18n.localize('hm.app.equipment.article-plural') : game.i18n.localize('hm.app.equipment.article');
         return `${article} ${item}`;
       });

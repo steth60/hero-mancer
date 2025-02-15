@@ -89,7 +89,7 @@ export class DocumentService {
     if (id.includes('players-handbook')) return game.i18n.localize('hm.app.document-service.phb'); // Shorthand for 2024 PHB
     if (id.includes('dnd5e')) return game.i18n.localize('hm.app.document-service.srd'); // Shorthand for SRD
     if (id.includes('dd')) return game.i18n.localize('hm.app.document-service.dndbeyond-importer'); // Shorthand for DDB
-    if (/[-_./]home[-_\s]?brew[-_./]/i.test(id)) return game.i18n.localize('hm.app.document-service.homebrew'); // Shorthand for Homebrew
+    if (/[./_-]home[\s_-]?brew[./_-]/i.test(id)) return game.i18n.localize('hm.app.document-service.homebrew'); // Shorthand for Homebrew
     if (game.modules.get('elkan5e')?.active) {
       if (id.includes('elkan5e')) return game.i18n.localize('hm.app.document-service.elkan5e'); // Shorthand for Elkan 5e
     }

@@ -155,6 +155,15 @@ export function registerSettings() {
     default: '4d6kh3'
   });
 
+  game.settings.register(HM.CONFIG.ID, 'customPointBuyTotal', {
+    name: 'hm.settings.custom-point-buy-total.name',
+    hint: 'hm.settings.custom-point-buy-total.hint',
+    scope: 'world',
+    config: false,
+    type: Number,
+    default: 0
+  });
+
   game.settings.register(HM.CONFIG.ID, 'chainedRolls', {
     name: 'hm.settings.chained-rolls.name',
     hint: 'hm.settings.chained-rolls.hint',

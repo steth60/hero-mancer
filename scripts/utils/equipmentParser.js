@@ -1066,7 +1066,7 @@ export class EquipmentParser {
 
       lookupOptions.forEach((weapon) => {
         const option = document.createElement('option');
-        option.value = weapon._source.key;
+        option.value = weapon._source?.key;
         option.innerHTML = weapon.name;
         select.appendChild(option);
       });

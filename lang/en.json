@@ -292,6 +292,10 @@
       "art-picker-root": {
         "name": "Art Picker Root Directory",
         "hint": "The root directory for the Character Art Picker"
+      },
+      "custom-point-buy-total": {
+        "name": "Custom Point Buy Total",
+        "hint": "Specify the point buy total if not using standard calculations."
       }
     },
     "unknown": "unknown {type}",

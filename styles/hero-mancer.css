@@ -437,6 +437,9 @@
 /* Multi-checkbox layout in popups */
 .hm-compendiums-popup-dialog multi-checkbox {
   display: block;
+  max-height: calc(50vh - 100px); /* Account for header and buttons */
+  overflow-y: auto;
+  padding-right: 0.5rem; /* Prevent content from touching scrollbar */
 }
 
 /* Checkbox label styling in multi-checkbox */
@@ -445,6 +448,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  padding: 0.25rem 0;
 }
 
 /* Checkbox input styling */
@@ -971,4 +975,10 @@
   text-overflow: ellipsis; /* Add ellipsis for overflow */
   overflow: hidden; /* Hide overflow */
   white-space: nowrap; /* Prevent wrapping */
+}
+
+/* Ensure the checkbox container is scrollable */
+.hm-compendiums-popup-dialog .dialog-content {
+  overflow: hidden; /* Prevent double scrollbars */
+  padding: 0.5rem;
 }

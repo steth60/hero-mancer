@@ -12,6 +12,7 @@ import {
   HtmlManipulator,
   CharacterArtPicker
 } from '../utils/index.js';
+
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -253,11 +254,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         break;
       case 'abilities':
         context.tab = context.tabs[partId];
-        const totalPoints = StatRoller.getTotalPoints();
-        const pointsSpent = StatRoller.calculatePointsSpent(HeroMancer.selectedAbilities);
-        const remainingPoints = totalPoints - pointsSpent;
-        context.totalPoints = totalPoints;
-        context.remainingPoints = remainingPoints;
+        context.totalPoints = StatRoller.getTotalPoints();
+        context.pointsSpent = StatRoller.calculatePointsSpent(HeroMancer.selectedAbilities);
+        context.remainingPoints = context.totalPoints - context.pointsSpent;
         break;
       case 'equipment':
         context.tab = context.tabs[partId];
@@ -810,7 +809,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     for (const key in formData.object) {
       HM.log(3, `ABILITIES: Inspecting key: ${key}`);
 
-      const abilityMatch = key.match(/^abilities\[(\w+)\]\.score$/) || key.match(/^abilities\[(\w+)\]$/);
+      const abilityMatch = key.match(/^abilities\[(\w+)]\.score$/) || key.match(/^abilities\[(\w+)]$/);
       if (abilityMatch) {
         HM.log(3, `ABILITIES: Key matches abilities pattern: ${key}`);
 

@@ -46,7 +46,8 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       customRollFormula: game.settings.get(HM.CONFIG.ID, 'customRollFormula'),
       chainedRolls: game.settings.get(HM.CONFIG.ID, 'chainedRolls'),
       rollDelay: game.settings.get(HM.CONFIG.ID, 'rollDelay'),
-      customStandardArray: game.settings.get(HM.CONFIG.ID, 'customStandardArray')
+      customStandardArray: game.settings.get(HM.CONFIG.ID, 'customStandardArray'),
+      customPointBuyTotal: game.settings.get(HM.CONFIG.ID, 'customPointBuyTotal')
     };
     HM.log(3, 'Context:', context);
     return context;
@@ -75,7 +76,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
         return false;
       }
 
-      const settings = ['customRollFormula', 'chainedRolls', 'rollDelay', 'customStandardArray'];
+      const settings = ['customRollFormula', 'chainedRolls', 'rollDelay', 'customStandardArray', 'customPointBuyTotal'];
       for (const setting of settings) {
         await game.settings.set(HM.CONFIG.ID, setting, formData.object[setting]);
       }
