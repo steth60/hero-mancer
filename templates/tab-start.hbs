@@ -62,6 +62,7 @@
     <div class="customization-row">
       <label for="displayName" class="label-15">{{localize "TOKEN.CharShowNameplate"}}</label>
       <select name="displayName" class="input-35">
+        <option value="">{{localize "hm.app.start.token-visibility-placeholder"}}</option>
         {{selectOptions token.displayModes selected=object.displayName}}
       </select>
     </div>
@@ -69,6 +70,7 @@
     <div class="customization-row">
       <label for="displayBars" class="label-15">{{localize "TOKEN.ResourceDisplay"}}</label>
       <select name="displayBars" class="input-35">
+        <option value="">{{localize "hm.app.start.token-visibility-placeholder"}}</option>
         {{selectOptions token.barModes selected=object.displayBars}}
       </select>
     </div>

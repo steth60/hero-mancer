@@ -35,12 +35,14 @@ export class CharacterArtPicker {
       callback: (path) => {
         HM.log(3, `FilePicker callback with path: ${path}`);
         inputField.value = path;
+        inputField.dispatchEvent(new Event('change', { bubbles: true }));
         const portraitImg = document.querySelector('.character-portrait img');
         if (portraitImg) {
           portraitImg.src = path;
         }
         if (document.getElementById('link-token-art').checked) {
           document.getElementById('token-art-path').value = path;
+          document.getElementById('token-art-path').dispatchEvent(new Event('change', { bubbles: true }));
         }
       }
     };
@@ -69,6 +71,7 @@ export class CharacterArtPicker {
       callback: (path) => {
         HM.log(3, `FilePicker callback with path: ${path}`);
         inputField.value = path;
+        inputField.dispatchEvent(new Event('change', { bubbles: true }));
       }
     };
 
@@ -96,6 +99,7 @@ export class CharacterArtPicker {
       callback: (path) => {
         HM.log(3, `FilePicker callback with path: ${path}`);
         inputField.value = path;
+        inputField.dispatchEvent(new Event('change', { bubbles: true }));
       }
     };
 
@@ -111,7 +115,9 @@ export class CharacterArtPicker {
     tokenArtRow.style.display = isLinked ? 'none' : 'flex';
 
     if (isLinked) {
-      document.getElementById('token-art-path').value = document.getElementById('character-art-path').value;
+      const tokenInput = document.getElementById('token-art-path');
+      tokenInput.value = document.getElementById('character-art-path').value;
+      tokenInput.dispatchEvent(new Event('change', { bubbles: true }));
       HM.log(3, 'Token art path updated due to linking');
     }
   }

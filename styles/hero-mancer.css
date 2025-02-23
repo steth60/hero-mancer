@@ -92,9 +92,12 @@
 
 /* .hm-app-header contains the content above navigation, currently just the app title Hero Mancer. */
 .hm-app-header {
+  --progress-percent: 0%;
+
   display: flex;
   position: relative;
   flex: 0 0 var(--hm-app-header-height, 100px);
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   margin-bottom: 1rem;
@@ -106,36 +109,55 @@
 
 .hm-app-header::before {
   opacity: 0.8;
+  z-index: -2;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  content: '';
+  background: url('../../../systems/dnd5e/ui/texture-gray2.webp') no-repeat center bottom / cover;
+  filter: grayscale(100%);
+}
+
+.hm-app-header::after {
+  background-blend-mode: overlay; /* Reduced opacity for softer color */
+  clip-path: inset(0 calc(100% - var(--progress-percent)) 0 0);
+  opacity: 0.4;
   z-index: -1;
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  content: ''; /* Adjust the opacity value here */
-  background: url('../../../systems/dnd5e/ui/texture-gray2.webp') no-repeat center bottom / cover; /* Ensure the background is below the content */
-}
-
-.hm-app-header::after {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 5px;
-  pointer-events: none; /* Match the parent border radius */
   content: '';
-  background-repeat: no-repeat;
-  background-size:
-    100% 10px,
-    100% 10px,
-    10px 100%,
-    10px 100%; /* Ensure the feather effect doesn’t block interactions */
+  background:
+    url('../../../systems/dnd5e/ui/texture-gray2.webp') no-repeat center bottom / cover,
+    linear-gradient(to right, var(--user-color), var(--user-color));
+  transition: clip-path 0.3s ease;
 }
 
 .hm-app-header h1 {
   margin: 0;
   border-bottom: unset;
+}
+
+.progress-overlay {
+  position: absolute;
+  bottom: 5px; /* Adjust as needed */
+  width: 100%;
+  text-align: center;
+}
+
+.wizard-progress-text {
+  opacity: 0.9;
+  color: #ffffff;
+  font-size: 0.9em;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
 }
 
 /* .hm-app-nav contains the navigation between tabs. */
@@ -438,8 +460,8 @@
 .hm-compendiums-popup-dialog multi-checkbox {
   display: block;
   max-height: calc(50vh - 100px); /* Account for header and buttons */
-  overflow-y: auto;
-  padding-right: 0.5rem; /* Prevent content from touching scrollbar */
+  padding-right: 0.5rem;
+  overflow-y: auto; /* Prevent content from touching scrollbar */
 }
 
 /* Checkbox label styling in multi-checkbox */
@@ -603,8 +625,8 @@
 .equipment-item {
   display: flex;
   flex-direction: column;
-  margin-bottom: 1.25rem;
   max-width: 100%;
+  margin-bottom: 1.25rem;
 }
 
 .equipment-item label,
@@ -972,13 +994,13 @@
 /* Add max-width and text overflow handling for equipment dropdowns */
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select {
   max-width: 100%; /* Ensure it doesn't overflow container */
-  text-overflow: ellipsis; /* Add ellipsis for overflow */
-  overflow: hidden; /* Hide overflow */
+  overflow: hidden; /* Add ellipsis for overflow */
+  text-overflow: ellipsis; /* Hide overflow */
   white-space: nowrap; /* Prevent wrapping */
 }
 
 /* Ensure the checkbox container is scrollable */
 .hm-compendiums-popup-dialog .dialog-content {
-  overflow: hidden; /* Prevent double scrollbars */
-  padding: 0.5rem;
+  padding: 0.5rem; /* Prevent double scrollbars */
+  overflow: hidden;
 }

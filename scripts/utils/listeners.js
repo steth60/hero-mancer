@@ -1,7 +1,5 @@
-import { StatRoller, SummaryManager, CharacterArtPicker } from './index.js';
+import { StatRoller, SummaryManager, CharacterArtPicker, DropdownHandler, EquipmentParser, SavedOptions } from './index.js';
 import { HeroMancer } from '../app/HeroMancer.js';
-import { DropdownHandler } from './dropdownHandler.js';
-import { EquipmentParser } from './equipmentParser.js';
 import { HM } from '../hero-mancer.js';
 
 /**
@@ -22,6 +20,8 @@ export class Listeners {
     this.initializeCharacterListeners();
     this.initializeRollMethodListener(html);
     this.initializeTokenCustomizationListeners();
+    this.initializePlayerCustomizationListeners();
+    this.restoreFormOptions(html);
   }
 
   /**
@@ -324,6 +324,47 @@ export class Listeners {
       ringOptions.forEach(function (option) {
         option.style.display = event.currentTarget.checked ? 'flex' : 'none';
       });
+    });
+  }
+
+  static initializePlayerCustomizationListeners() {
+    const colorInput = document.querySelector('color-picker[name="player-color"]');
+    if (!colorInput) return;
+
+    colorInput.addEventListener('change', (e) => {
+      const newColor = e.currentTarget.value || '#000000';
+
+      game.user.update({
+        color: newColor
+      });
+
+      const colorElements = document.querySelectorAll('.hm-player-color');
+      colorElements.forEach((el) => {
+        el.style.color = newColor;
+      });
+    });
+  }
+
+  static async restoreFormOptions(html) {
+    const savedOptions = await SavedOptions.loadOptions();
+    if (Object.keys(savedOptions).length === 0) return;
+
+    for (const [key, value] of Object.entries(savedOptions)) {
+      const elem = html.querySelector(`[name="${key}"]`);
+      if (!elem) continue;
+
+      if (elem.type === 'checkbox') {
+        elem.checked = value;
+      } else if (elem.tagName === 'SELECT') {
+        elem.value = value;
+      } else {
+        elem.value = value;
+      }
+    }
+
+    // Update summaries after restoring options
+    requestAnimationFrame(() => {
+      SummaryManager.updateClassRaceSummary();
     });
   }
 }

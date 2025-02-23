@@ -10,7 +10,8 @@ import {
   SummaryManager,
   EventBus,
   HtmlManipulator,
-  CharacterArtPicker
+  CharacterArtPicker,
+  ProgressBar
 } from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -121,7 +122,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       manualFormula: game.i18n.localize('hm.app.abilities.methods.manual')
     };
 
-    const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    let diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    HM.log(3, 'Dice Rolling Method:', diceRollingMethod);
+    if (!['standardArray', 'pointBuy', 'manualFormula'].includes(diceRollingMethod)) {
+      diceRollingMethod = 'standardArray'; // Default fallback
+      HM.log(2, 'Invalid dice rolling method, defaulting to standardArray');
+    }
+    HM.log(3, 'Dice Rolling Method:', diceRollingMethod);
+
     const standardArray =
       diceRollingMethod === 'standardArray' ? game.settings.get(HM.CONFIG.ID, 'customStandardArray').split(',').map(Number) : StatRoller.getStandardArray(extraAbilities);
 
@@ -263,14 +271,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         break;
       case 'finalize':
         context.tab = context.tabs[partId];
-        context.alignments = game.settings
-          .get(HM.CONFIG.ID, 'alignments')
-          ?.split(',')
-          .map((d) => d.trim()) || ['None'];
-        context.deities = game.settings
-          .get(HM.CONFIG.ID, 'deities')
-          ?.split(',')
-          .map((d) => d.trim()) || ['None'];
+        context.alignments =
+          game.settings
+            .get(HM.CONFIG.ID, 'alignments')
+            ?.split(',')
+            .map((d) => d.trim()) || [];
+        context.deities =
+          game.settings
+            .get(HM.CONFIG.ID, 'deities')
+            ?.split(',')
+            .map((d) => d.trim()) || [];
         break;
     }
     return context;
@@ -359,39 +369,35 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       this._isRendering = true;
       await HeroMancer.cleanup(this);
       EventBus.clearAll();
-      const html = this.element;
-
-      const savedOptions = await SavedOptions.loadOptions();
 
       // Initialize UI components
-      DropdownHandler.initializeDropdown({ type: 'class', html, context });
-      DropdownHandler.initializeDropdown({ type: 'race', html, context });
-      DropdownHandler.initializeDropdown({ type: 'background', html, context });
+      DropdownHandler.initializeDropdown({ type: 'class', html: this.element, context });
+      DropdownHandler.initializeDropdown({ type: 'race', html: this.element, context });
+      DropdownHandler.initializeDropdown({ type: 'background', html: this.element, context });
 
+      // Initialize all listeners and summaries
       SummaryManager.initializeSummaryListeners();
-      Listeners.initializeListeners(html, context, HeroMancer.selectedAbilities);
+      Listeners.initializeListeners(this.element, context, HeroMancer.selectedAbilities);
 
-      // Restore saved options
-      if (Object.keys(savedOptions).length > 0) {
-        for (const [key, value] of Object.entries(savedOptions)) {
-          const elem = html.querySelector(`[name="${key}"]`);
-          if (!elem) continue;
-
-          if (elem.type === 'checkbox') {
-            elem.checked = value;
-          } else if (elem.tagName === 'SELECT') {
-            elem.value = value;
-          } else {
-            elem.value = value;
-          }
-        }
-        requestAnimationFrame(() => {
-          SummaryManager.updateClassRaceSummary();
+      const rollMethodSelect = this.element.querySelector('#roll-method');
+      if (rollMethodSelect) {
+        rollMethodSelect.addEventListener('change', async (event) => {
+          await game.settings.set(HM.CONFIG.ID, 'diceRollingMethod', event.target.value);
+          this.render();
         });
       }
     } finally {
       this._isRendering = false;
     }
+  }
+
+  _onChangeForm(formConfig, event) {
+    super._onChangeForm(formConfig, event);
+
+    const form = event.currentTarget;
+    if (!form) return;
+    HM.log(3, 'All form elements:', form.elements);
+    this.completionPercentage = ProgressBar.updateProgress(this.element, form);
   }
 
   async _onClose() {

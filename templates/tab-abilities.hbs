@@ -4,7 +4,7 @@
 
     <div class="roll-method-selector">
       <label for="roll-method">{{localize 'hm.app.abilities.select-method'}}:</label>
-      <select id="roll-method" name="rollMethod">
+      <select id="roll-method">
         {{#if allowedMethods.standardArray}}
         <option value="standardArray" {{#if (eq diceRollMethod 'standardArray' )}}selected{{/if}}>
           {{localize 'hm.settings.dice-rolling-method.standard-array'}}

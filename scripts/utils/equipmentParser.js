@@ -1341,6 +1341,7 @@ export class EquipmentParser {
         const roll = new Roll(formula);
         await roll.evaluate();
         wealthInput.value = `${roll.total} gp`;
+        wealthInput.dispatchEvent(new Event('change', { bubbles: true }));
       });
 
       wealthCheckbox.addEventListener('change', (event) => {

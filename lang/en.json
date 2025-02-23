@@ -144,6 +144,7 @@
         "token-art-label": "Token Art",
         "token-art-placeholder": "Choose token art for your character",
         "token-same-as-character": "Use same image for token?",
+        "token-visibility-placeholder": "Choose display status",
         "tooltip": "Start your character creation"
       },
       "submit": "Submit",
@@ -183,6 +184,10 @@
         "hint": "Comma-separated list of alignments available for character creation.",
         "name": "Available Alignments"
       },
+      "art-picker-root": {
+        "hint": "The root directory for the Character Art Picker",
+        "name": "Art Picker Root Directory"
+      },
       "background-packs": {
         "name": "Background Packs"
       },
@@ -220,6 +225,10 @@
         "races-label": "Set Race Compendiums:",
         "saved": "{type} compendium settings have been saved.",
         "title": "Select your {type} compendiums!"
+      },
+      "custom-point-buy-total": {
+        "hint": "Specify the point buy total if not using standard calculations.",
+        "name": "Custom Point Buy Total"
       },
       "custom-roll-formula": {
         "hint": "Specify the roll formula for manual ability score generation. Default is '4d6kh3'.",
@@ -288,14 +297,6 @@
       "token-customization": {
         "hint": "Allow your players to set some default token settings usually reserved for the GM, such as display name status, dynamic token ring settings, and display bars.",
         "name": "Allow Token Customization"
-      },
-      "art-picker-root": {
-        "name": "Art Picker Root Directory",
-        "hint": "The root directory for the Character Art Picker"
-      },
-      "custom-point-buy-total": {
-        "name": "Custom Point Buy Total",
-        "hint": "Specify the point buy total if not using standard calculations."
       }
     },
     "unknown": "unknown {type}",

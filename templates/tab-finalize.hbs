@@ -26,6 +26,7 @@
         <div class='form-group'>
           <label>{{localize 'DND5E.Alignment'}}</label>
           <select name='alignment'>
+            <option value=''>{{localize 'None'}}</option>
             {{#each alignments}}
             <option value='{{this}}'>{{this}}</option>
             {{/each}}
@@ -34,6 +35,7 @@
         <div class='form-group'>
           <label>{{localize 'DND5E.Faith'}}</label>
           <select name='faith'>
+            <option value=''>{{localize 'None'}}</option>
             {{#each deities}}
             <option value='{{this}}'>{{this}}</option>
             {{/each}}
@@ -135,7 +137,7 @@
       <h3>{{localize 'hm.app.finalize.backstory'}}</h3>
       <div class='notes-grid'>
         <div class='notes-group'>
-          <prose-mirror name='backstory' value='{{localize "hm.app.finalize.backstory-placeholder"}}'>
+          <prose-mirror name='backstory' data-placeholder='{{localize "hm.app.finalize.backstory-placeholder"}}'>
           </prose-mirror>
         </div>
       </div>

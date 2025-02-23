@@ -190,6 +190,7 @@ export class SummaryManager {
     const backgroundDropdown = document.querySelector('#background-dropdown');
     const equipmentContainer = document.querySelector('#equipment-container');
     const abilityBlocks = document.querySelectorAll('.ability-block');
+    const proseMirror = document.querySelector('prose-mirror[name="backstory"]');
     this.initializePortrait();
     this.initializeRollButtons();
 
@@ -241,6 +242,24 @@ export class SummaryManager {
         otherInputs.forEach((input) => {
           input.addEventListener('change', () => this.updateAbilitiesSummary());
         });
+      });
+    }
+
+    /** There might be a better way of doing this... */
+    if (proseMirror) {
+      const observer = new MutationObserver((mutations) => {
+        const hasContent = proseMirror.innerHTML.trim() !== '';
+
+        if (hasContent) {
+          proseMirror.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+
+      observer.observe(proseMirror, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+        attributes: true
       });
     }
   }
@@ -465,6 +484,9 @@ export class SummaryManager {
 
         if (result) {
           textarea.value = textarea.value ? `${textarea.value} ${result}` : result;
+
+          // Trigger change event on textarea to update form data
+          textarea.dispatchEvent(new Event('change', { bubbles: true }));
 
           if (TableManager.isTableExhausted(backgroundId, tableType)) {
             button.disabled = true;

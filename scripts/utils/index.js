@@ -21,6 +21,9 @@ export { HtmlManipulator } from './htmlManipulator.js';
 /** Handles event listeners and callbacks */
 export { Listeners } from './listeners.js';
 
+/** Handles header progress bar in Hero Mancer */
+export { ProgressBar } from './progress.js';
+
 /** Manages saved data across sessions per-user. */
 export { SavedOptions } from './savedOptions.js';
 
