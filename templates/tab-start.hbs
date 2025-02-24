@@ -36,85 +36,86 @@
     </div>
 
     {{#if playerCustomizationEnabled}}
-    <hr />
-    <div class="customization-row" id="color-row">
-      <label for="player-color" class="label-15">{{localize 'hm.app.start.player-color'}}</label>
-      <color-picker name="player-color" class="input-35" value=""
-        placeholder="{{localize 'hm.app.start.player-color-placeholder'}}" />
-    </div>
-    <div class="customization-row" id="pronoun-row">
-      <label for="player-pronouns" class="label-15">{{localize 'hm.app.start.player-pronouns'}}</label>
-      <input type="text" name="player-pronouns" class="input-35"
-        placeholder="{{localize 'hm.app.start.player-pronouns-placeholder'}}" />
-    </div>
-    <div class="customization-row" id="avatar-row">
-      <label for="player-avatar-path" class="label-15">{{localize 'hm.app.start.player-avatar'}}</label>
-      <input id="player-avatar-path" type="text" name="player-avatar" class="art-input input-35" readonly
-        placeholder="{{localize 'hm.app.start.player-avatar-placeholder'}}" />
-      <button data-action="selectPlayerAvatar" type="button" class="select-button button-7">
-        {{localize 'hm.app.start.select-art'}}
-      </button>
-    </div>
+      <hr />
+      <div class="customization-row" id="color-row">
+        <label for="player-color" class="label-15">{{localize 'hm.app.start.player-color'}}</label>
+        <color-picker name="player-color" class="input-35" value=""
+          placeholder="{{localize 'hm.app.start.player-color-placeholder'}}" />
+      </div>
+      <div class="customization-row" id="pronoun-row">
+        <label for="player-pronouns" class="label-15">{{localize 'hm.app.start.player-pronouns'}}</label>
+        <input type="text" name="player-pronouns" class="input-35"
+          placeholder="{{localize 'hm.app.start.player-pronouns-placeholder'}}" />
+      </div>
+      <div class="customization-row" id="avatar-row">
+        <label for="player-avatar-path" class="label-15">{{localize 'hm.app.start.player-avatar'}}</label>
+        <input id="player-avatar-path" type="text" name="player-avatar" class="art-input input-35" readonly
+          placeholder="{{localize 'hm.app.start.player-avatar-placeholder'}}" />
+        <button data-action="selectPlayerAvatar" type="button" class="select-button button-7">
+          {{localize 'hm.app.start.select-art'}}
+        </button>
+      </div>
     {{/if}}
 
     {{#if tokenCustomizationEnabled}}
-    <hr />
-    <div class="customization-row">
-      <label for="displayName" class="label-15">{{localize "TOKEN.CharShowNameplate"}}</label>
-      <select name="displayName" class="input-35">
-        <option value="">{{localize "hm.app.start.token-visibility-placeholder"}}</option>
-        {{selectOptions token.displayModes selected=object.displayName}}
-      </select>
-    </div>
-
-    <div class="customization-row">
-      <label for="displayBars" class="label-15">{{localize "TOKEN.ResourceDisplay"}}</label>
-      <select name="displayBars" class="input-35">
-        <option value="">{{localize "hm.app.start.token-visibility-placeholder"}}</option>
-        {{selectOptions token.barModes selected=object.displayBars}}
-      </select>
-    </div>
-
-    <div class="customization-row">
-      <label for="bar1-attribute" class="label-15">{{localize "TOKEN.ResourceBar1A"}}</label>
-      <select name="bar1.attribute" class="input-35">
-        {{selectOptions token.barAttributes selected=object.bar1.attribute}}
-      </select>
-    </div>
-
-    <div class="customization-row">
-      <label for="bar2-attribute" class="label-15">{{localize "TOKEN.ResourceBar2A"}}</label>
-      <select name="bar2.attribute" class="input-35">
-        {{selectOptions token.barAttributes selected=object.bar2.attribute}}
-      </select>
-    </div>
-
-    <div class="customization-row">
-      <label class="label-15">{{localize "TOKEN.FIELDS.ring.enabled.label"}}</label>
-      <div class="checkbox-label label-43">
-        <input type="checkbox" name="ring.enabled" {{checked object.ring.enabled}} />
+      <hr />
+      <div class="customization-row">
+        <label for="displayName" class="label-15">{{localize "TOKEN.CharShowNameplate"}}</label>
+        <select name="displayName" class="input-35">
+          <option value="">{{localize "hm.app.start.token-visibility-placeholder"}}</option>
+          {{selectOptions token.displayModes selected=object.displayName}}
+        </select>
       </div>
-    </div>
 
-    <div class="customization-row">
-      <label for="ring-color" class="label-15">{{localize "TOKEN.FIELDS.ring.colors.ring.label"}}</label>
-      <color-picker name="ring.color" class="input-35" value="{{ object.ring.color }}" />
-    </div>
-
-    <div class="customization-row">
-      <label for="background-color" class="label-15">{{localize "DND5E.TokenRings.BackgroundColor"}}</label>
-      <color-picker name="backgroundColor" class="input-35" value="{{ object.backgroundColor }}" />
-    </div>
-
-    <div class="customization-row ring-effects">
-      <label class="label-15">Ring Effects</label>
-      {{#each token.ring.effects as |label key|}}
-      <div class="checkbox-label label-43">
-        <input type='checkbox' name='ring.effects' value='{{key}}' {{checked (lookup ../object.ring.effects key)}} />
-        {{ label }}
+      <div class="customization-row">
+        <label for="displayBars" class="label-15">{{localize "TOKEN.ResourceDisplay"}}</label>
+        <select name="displayBars" class="input-35">
+          <option value="">{{localize "hm.app.start.token-visibility-placeholder"}}</option>
+          {{selectOptions token.barModes selected=object.displayBars}}
+        </select>
       </div>
-      {{/each}}
-    </div>
+
+      <div class="customization-row">
+        <label for="bar1-attribute" class="label-15">{{localize "TOKEN.ResourceBar1A"}}</label>
+        <select name="bar1.attribute" class="input-35">
+          {{selectOptions token.barAttributes selected=object.bar1.attribute}}
+        </select>
+      </div>
+
+      <div class="customization-row">
+        <label for="bar2-attribute" class="label-15">{{localize "TOKEN.ResourceBar2A"}}</label>
+        <select name="bar2.attribute" class="input-35">
+          {{selectOptions token.barAttributes selected=object.bar2.attribute}}
+        </select>
+      </div>
+
+      <div class="customization-row">
+        <label class="label-15">{{localize "TOKEN.FIELDS.ring.enabled.label"}}</label>
+        <div class="checkbox-label label-43">
+          <input type="checkbox" name="ring.enabled" {{checked object.ring.enabled}} />
+        </div>
+      </div>
+
+      <div class="customization-row">
+        <label for="ring-color" class="label-15">{{localize "TOKEN.FIELDS.ring.colors.ring.label"}}</label>
+        <color-picker name="ring.color" class="input-35" value="{{ object.ring.color }}" />
+      </div>
+
+      <div class="customization-row">
+        <label for="background-color" class="label-15">{{localize "DND5E.TokenRings.BackgroundColor"}}</label>
+        <color-picker name="backgroundColor" class="input-35" value="{{ object.backgroundColor }}" />
+      </div>
+
+      <div class="customization-row ring-effects">
+        <label class="label-15">{{localize 'TOKEN.FIELDS.ring.effects.label'}}</label>
+        {{#each token.ring.effects as |label key|}}
+          <div class="checkbox-label label-43">
+            <input type='checkbox' name='ring.effects' value='{{key}}'
+              {{checked (lookup ../object.ring.effects key)}} />
+            {{ label }}
+          </div>
+        {{/each}}
+      </div>
     {{/if}}
   </fieldset>
 </div>

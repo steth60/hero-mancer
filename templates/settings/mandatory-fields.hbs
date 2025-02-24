@@ -1,0 +1,118 @@
+<form>
+  <div class="fields-container">
+    <!-- Start Tab Section -->
+    <div class="field-group">
+      <h3>{{localize "hm.settings.mandatory-fields.groups.start"}}</h3>
+      <div class="basic-fields">
+        <h4>{{localize "hm.settings.mandatory-fields.groups.basic"}}</h4>
+        {{#each fields.basic}}
+          <div class="form-group">
+            <label>
+              <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
+              {{this.label}}
+            </label>
+          </div>
+        {{/each}}
+      </div>
+
+      {{#if playerCustomizationEnabled}}
+        <div class="player-customization-fields">
+          <h4>{{localize "hm.settings.mandatory-fields.groups.player"}}</h4>
+          {{#each fields.player}}
+            <div class="form-group">
+              <label>
+                <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
+                {{this.label}}
+              </label>
+            </div>
+          {{/each}}
+        </div>
+      {{/if}}
+
+      {{#if tokenCustomizationEnabled}}
+        <div class="token-customization-fields">
+          <h4>{{localize "hm.settings.mandatory-fields.groups.token"}}</h4>
+          {{#each fields.token}}
+            <div class="form-group">
+              <label>
+                <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
+                {{this.label}}
+              </label>
+            </div>
+          {{/each}}
+        </div>
+      {{/if}}
+    </div>
+
+    <!-- Core Character Sections -->
+    <div class="field-group">
+      <h3>{{localize "hm.settings.mandatory-fields.groups.core"}}</h3>
+
+      {{#each fields.core}}
+        <div class="form-group">
+          <label>
+            <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
+            {{this.label}}
+          </label>
+        </div>
+      {{/each}}
+    </div>
+
+    <!-- Abilities Section -->
+    <div class="field-group">
+      <h3>{{localize "hm.settings.mandatory-fields.groups.abilities"}}</h3>
+      {{#each fields.abilities}}
+        <div class="form-group">
+          <label>
+            <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
+            {{this.label}}
+          </label>
+        </div>
+      {{/each}}
+    </div>
+
+    <!-- Character Details Section -->
+    <div class="field-group">
+      <h3>{{localize "hm.settings.mandatory-fields.groups.biography"}}</h3>
+
+      <!-- Details Fields -->
+      <div class="details-fields">
+        <h4>{{localize "hm.settings.mandatory-fields.groups.details"}}</h4>
+        {{#each fields.details}}
+          <div class="form-group">
+            <label>
+              <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
+              {{this.label}}
+            </label>
+          </div>
+        {{/each}}
+      </div>
+
+      <!-- Physical Fields -->
+      <div class="physical-fields">
+        <h4>{{localize "hm.settings.mandatory-fields.groups.physical"}}</h4>
+        {{#each fields.physical}}
+          <div class="form-group">
+            <label>
+              <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
+              {{this.label}}
+            </label>
+          </div>
+        {{/each}}
+      </div>
+
+      <!-- Personality Fields -->
+      <div class="personality-fields">
+        <h4>{{localize "hm.settings.mandatory-fields.groups.personality"}}</h4>
+        {{#each fields.personality}}
+          <div class="form-group">
+            <label>
+              <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
+              {{this.label}}
+            </label>
+          </div>
+        {{/each}}
+      </div>
+    </div>
+  </div>
+</form>

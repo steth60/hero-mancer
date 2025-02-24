@@ -1,4 +1,4 @@
-/** Services and utilities for Hero Mancer character creation and management */
+/** Services, applications, and utilities for Hero Mancer character creation and management */
 
 /** Manages caching functionality */
 export { CacheManager } from './cacheManagement.js';
@@ -6,11 +6,20 @@ export { CacheManager } from './cacheManagement.js';
 /** Handles filepicking for character, token, and player art */
 export { CharacterArtPicker } from './characterArtPicker.js';
 
+/** Application to allow compendium selection */
+export { CustomCompendiums } from '../app/CustomCompendiums.js';
+
+/** Applicaation to configure dice rolling options */
+export { DiceRolling } from '../app/DiceRolling.js';
+
 /** Handles document storage and retrieval */
 export { DocumentService } from './documentService.js';
 
 /** Controls dropdown behavior and updates */
 export { DropdownHandler, EventBus } from './dropdownHandler.js';
+
+/** Application for all Hero Mancer creation */
+export { HeroMancer } from '../app/HeroMancer.js';
 
 /** Parses and manages equipment data */
 export { EquipmentParser } from './equipmentParser.js';
@@ -20,6 +29,9 @@ export { HtmlManipulator } from './htmlManipulator.js';
 
 /** Handles event listeners and callbacks */
 export { Listeners } from './listeners.js';
+
+/** Handles mandatory fields settings */
+export { MandatoryFields } from '../app/MandatoryFields.js';
 
 /** Handles header progress bar in Hero Mancer */
 export { ProgressBar } from './progress.js';

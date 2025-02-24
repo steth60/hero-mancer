@@ -2,16 +2,17 @@
 import { HM } from '../hero-mancer.js';
 import {
   CacheManager,
+  CharacterArtPicker,
   DropdownHandler,
   EquipmentParser,
-  Listeners,
-  StatRoller,
-  SavedOptions,
-  SummaryManager,
   EventBus,
   HtmlManipulator,
-  CharacterArtPicker,
-  ProgressBar
+  Listeners,
+  MandatoryFields,
+  ProgressBar,
+  SavedOptions,
+  StatRoller,
+  SummaryManager
 } from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -130,8 +131,24 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     HM.log(3, 'Dice Rolling Method:', diceRollingMethod);
 
-    const standardArray =
-      diceRollingMethod === 'standardArray' ? game.settings.get(HM.CONFIG.ID, 'customStandardArray').split(',').map(Number) : StatRoller.getStandardArray(extraAbilities);
+    let standardArray;
+    if (diceRollingMethod === 'standardArray') {
+      const customArray = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
+      if (customArray) {
+        const parsedArray = customArray.split(',').map(Number);
+        // Check if the custom array has enough values for all abilities
+        if (parsedArray.length >= abilitiesCount) {
+          standardArray = parsedArray;
+        } else {
+          // If not enough values, use the StatRoller.getStandardArray with extraAbilities
+          standardArray = StatRoller.getStandardArray(extraAbilities);
+        }
+      } else {
+        standardArray = StatRoller.getStandardArray(extraAbilities);
+      }
+    } else {
+      standardArray = StatRoller.getStandardArray(extraAbilities);
+    }
 
     const totalPoints = StatRoller.getTotalPoints();
     const remainingPoints = Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
@@ -196,7 +213,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         totalPoints,
         playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
         tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
-        token: token
+        token: token,
+        mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
       };
     }
 
@@ -218,7 +236,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       totalPoints,
       playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
       tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
-      token: token
+      token: token,
+      mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
     };
 
     const allDocs = [
@@ -375,17 +394,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       DropdownHandler.initializeDropdown({ type: 'race', html: this.element, context });
       DropdownHandler.initializeDropdown({ type: 'background', html: this.element, context });
 
-      // Initialize all listeners and summaries
+      // Initialize non-validation listeners and summaries
       SummaryManager.initializeSummaryListeners();
       Listeners.initializeListeners(this.element, context, HeroMancer.selectedAbilities);
 
-      const rollMethodSelect = this.element.querySelector('#roll-method');
-      if (rollMethodSelect) {
-        rollMethodSelect.addEventListener('change', async (event) => {
-          await game.settings.set(HM.CONFIG.ID, 'diceRollingMethod', event.target.value);
-          this.render();
-        });
-      }
+      // Initial check of mandatory fields
+      HM.log(3, 'Performing initial mandatory field check');
+      await MandatoryFields.checkMandatoryFields(this.element);
+
+      // Now initialize form validation listeners after the initial check
+      Listeners.initializeFormValidationListeners(this.element);
     } finally {
       this._isRendering = false;
     }
@@ -477,220 +495,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
-    const equipment = [];
-    const equipmentContainer = event.srcElement.querySelector('#equipment-container');
-    if (!equipmentContainer) return equipment;
-
-    /**
-     * Searches for an item in the game's compendium packs by its UUID.
-     * @async
-     * @function findItemInPacks
-     * @param {string} itemId The UUID of the item to search for.
-     * @returns {Promise<object | null>} A promise that resolves to the full item document if found, or `null` if not found.
-     */
-    async function findItemInPacks(itemId) {
-      HM.log(3, `Searching for item ID: ${itemId}`);
-      const indexItem = fromUuidSync(itemId);
-      if (indexItem) {
-        const packId = indexItem.pack;
-        const pack = game.packs.get(packId);
-        if (pack) {
-          const fullItem = await pack.getDocument(indexItem._id);
-          HM.log(3, `Found full item ${itemId}`);
-          return fullItem;
-        }
-      }
-      HM.log(3, `Could not find item ${itemId} in any pack`);
-      return null;
-    }
-
-    /**
-     * Processes a container item by retrieving its full data from a compendium pack,
-     * populating it with its contents, and adding it to the equipment list.
-     * @async
-     * @function processContainerItem
-     * @param {object} containerItem The container item object to process.
-     * @param {string} containerItem.pack The ID of the compendium pack containing the container item.
-     * @param {string} containerItem._id The unique identifier of the container item in the pack.
-     * @param {number} quantity The quantity of the container item to set.
-     * @returns {Promise<void>} A promise that resolves when the container item has been processed.
-     *
-     * @throws Will log an error if there is an issue processing the container or its contents.
-     *
-     */
-    async function processContainerItem(containerItem, quantity) {
-      const packId = containerItem.pack;
-      const pack = game.packs.get(packId);
-
-      if (pack) {
-        const fullContainer = await pack.getDocument(containerItem._id);
-        if (fullContainer) {
-          /* Somewhere here, we should be setting fullContainer.system.contents to containerData */
-          /* so that when the container is in the sheet it has contents === to the objects of the contents inside. */
-          try {
-            const containerData = await CONFIG.Item.documentClass.createWithContents([fullContainer], {
-              keepId: true,
-              transformAll: async (doc) => {
-                const transformed = doc.toObject();
-                if (doc.id === fullContainer.id) {
-                  transformed.system = transformed.system || {};
-                  transformed.system.quantity = quantity;
-                  transformed.system.currency = fullContainer.system?.currency;
-                  transformed.system.equipped = true;
-                }
-                return transformed;
-              }
-            });
-
-            if (containerData?.length) {
-              equipment.push(...containerData);
-              HM.log(3, `Added container ${fullContainer.name} and its contents to equipment`);
-            }
-          } catch (error) {
-            HM.log(1, `Error processing container ${fullContainer.name}:`, error);
-          }
-        }
-      }
-    }
-
-    const equipmentSections = equipmentContainer.querySelectorAll('.equipment-choices > div');
-
-    for (const section of equipmentSections) {
-      // Check if we should process this section based on its class
-      if (section.classList.contains('class-equipment-section') && !options.includeClass) {
-        continue;
-      }
-      if (section.classList.contains('background-equipment-section') && !options.includeBackground) {
-        continue;
-      }
-
-      HM.log(3, 'Processing new section');
-
-      // Process dropdowns
-      const dropdowns = section.querySelectorAll('select');
-      HM.log(3, `Found ${dropdowns.length} dropdowns in section`);
-
-      for (const dropdown of dropdowns) {
-        const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
-        HM.log(3, `Processing dropdown ${dropdown.id} with value: ${value}`);
-
-        if (!value) {
-          HM.log(3, `No value for dropdown ${dropdown.id}, skipping`);
-          continue;
-        }
-
-        const item = await findItemInPacks(value);
-        if (item) {
-          const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
-          const optionText = selectedOption?.textContent || '';
-
-          const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
-          const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i);
-          const midQuantityMatch = optionText.match(/(.+?)\s+x(\d+)/i);
-
-          let quantity = 1;
-          if (startQuantityMatch) quantity = parseInt(startQuantityMatch[1]);
-          else if (endQuantityMatch) quantity = parseInt(endQuantityMatch[2]);
-          else if (midQuantityMatch) quantity = parseInt(midQuantityMatch[2]);
-
-          HM.log(3, `Detected quantity ${quantity} from option text: "${optionText}"`);
-
-          const itemData = item.toObject();
-          if (itemData.type === 'container') {
-            await processContainerItem(item, quantity);
-          } else {
-            equipment.push({
-              ...itemData,
-              system: {
-                ...itemData.system,
-                quantity: quantity,
-                equipped: true
-              }
-            });
-          }
-        }
-      }
-
-      // Process checkboxes
-      const checkboxes = section.querySelectorAll('input[type="checkbox"]');
-      HM.log(3, `Found checkboxes in section: ${checkboxes.length}`);
-
-      for (const checkbox of checkboxes) {
-        if (!checkbox.checked) continue;
-
-        // Get the actual label text
-        const labelElement = checkbox.parentElement;
-        const fullLabel = labelElement.textContent.trim();
-        HM.log(3, 'Processing checkbox with label:', fullLabel);
-
-        const itemIds = checkbox.id.split(',');
-        // Split on '+' and trim each part
-        const entries = fullLabel.split('+').map((entry) => entry.trim());
-
-        HM.log(3, 'Parsed label:', {
-          fullLabel,
-          entries
-        });
-
-        for (const itemId of itemIds) {
-          if (!itemId) continue;
-          HM.log(3, `Processing itemId: ${itemId}`);
-
-          const item = await findItemInPacks(itemId);
-          if (!item) {
-            HM.log(2, `Could not find item for ID: ${itemId}`);
-            continue;
-          }
-
-          HM.log(3, `Found item "${item.name}" (${itemId})`);
-
-          // Search all entries for this item's quantity
-          let quantity = 1;
-          HM.log(3, 'Looking for quantity in entries:', {
-            itemName: item.name,
-            entries,
-            entryTexts: entries.map((e) => `"${e}"`) // Show exact text with quotes
-          });
-
-          for (const entry of entries) {
-            const itemPattern = new RegExp(`(\\d+)\\s+${item.name}`, 'i');
-            const match = entry.match(itemPattern);
-            HM.log(3, `Checking entry "${entry}" against pattern "${itemPattern}"`);
-
-            if (match) {
-              quantity = parseInt(match[1]);
-              HM.log(3, `Found quantity ${quantity} for ${item.name}`);
-              break;
-            }
-          }
-
-          HM.log(3, 'Preparing to add item:', {
-            name: item.name,
-            quantity,
-            type: item.type,
-            entries
-          });
-
-          const itemData = item.toObject();
-          if (itemData.type === 'container') {
-            HM.log(3, `Processing container: ${item.name}`);
-            await processContainerItem(item, quantity);
-          } else {
-            equipment.push({
-              ...itemData,
-              system: {
-                ...itemData.system,
-                quantity: quantity,
-                equipped: true
-              }
-            });
-            HM.log(3, `Added item to equipment: ${item.name} (qty: ${quantity})`);
-          }
-        }
-      }
-    }
-
-    return equipment;
+    return EquipmentParser.collectEquipmentSelections(event, options);
   }
 
   static _transformTokenData(formData) {
@@ -751,6 +556,18 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */
   static async formHandler(event, form, formData) {
+    const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
+
+    // Check mandatory fields
+    const missingFields = mandatoryFields.filter((field) => {
+      const value = formData.object[field];
+      return !value || value.trim() === '';
+    });
+
+    if (missingFields.length > 0) {
+      ui.notifications.error(`Required fields missing: ${missingFields.join(', ')}`);
+      return;
+    }
     HM.log(3, 'FORMHANDLER:', { event: event, form: form, formData: formData });
     if (event.submitter?.dataset.action === 'saveOptions') {
       await SavedOptions.saveOptions(formData.object);
@@ -771,8 +588,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     });
 
     // Get class equipment (only if not using starting wealth)
-    const classEquipment = !useStartingWealth
-      ? await HeroMancer.collectEquipmentSelections(event, {
+    const classEquipment =
+      !useStartingWealth ?
+        await HeroMancer.collectEquipmentSelections(event, {
           includeClass: true,
           includeBackground: false
         })

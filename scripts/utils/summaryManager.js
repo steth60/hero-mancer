@@ -358,9 +358,7 @@ export class SummaryManager {
 
       const content = game.i18n.format('hm.app.equipment.summary', {
         items:
-          formattedItems.slice(0, -1).join(game.i18n.localize('hm.app.equipment.separator')) +
-          (formattedItems.length > 1 ? game.i18n.localize('hm.app.equipment.and') : '') +
-          formattedItems.slice(-1)
+          formattedItems.slice(0, -1).join(game.i18n.localize('hm.app.equipment.separator')) + (formattedItems.length > 1 ? game.i18n.localize('hm.app.equipment.and') : '') + formattedItems.slice(-1)
       });
       summary.innerHTML = await TextEditor.enrichHTML(content);
     }

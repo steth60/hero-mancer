@@ -151,13 +151,13 @@
 
 .wizard-progress-text {
   opacity: 0.9;
-  color: #ffffff;
+  color: hsl(0deg 0% 100%);
   font-size: 0.9em;
   text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000;
+    -1px -1px 0 hsl(0deg 0% 0%),
+    1px -1px 0 hsl(0deg 0% 0%),
+    -1px 1px 0 hsl(0deg 0% 0%),
+    1px 1px 0 hsl(0deg 0% 0%);
 }
 
 /* .hm-app-nav contains the navigation between tabs. */
@@ -479,9 +479,6 @@
   margin-left: 10px;
 }
 
-/* Media Queries for Smaller Screens */
-
-/* Screens between 1024px and 700px in height */
 @media (width <= 1024px) {
   .application.hm-app {
     width: 95%;
@@ -489,14 +486,12 @@
     max-height: 75vh;
   }
 
-  /* Allow nav items to wrap onto new lines on small screens */
   .application.hm-app .hm-app-nav {
     gap: 1rem;
     flex-wrap: wrap;
     justify-content: center;
   }
 
-  /* Ensure nav items are responsive */
   .application.hm-app .hm-app-nav a.item {
     flex-grow: 1;
     flex-shrink: 1;
@@ -504,7 +499,6 @@
     margin-bottom: 10px;
   }
 
-  /* Adjust input fields */
   .hm-app-tab-content fieldset input[type='text'],
   .hm-app-tab-content fieldset select {
     width: 80%;
@@ -512,39 +506,33 @@
     margin-left: 0;
   }
 
-  /* Footer buttons responsiveness */
   .hm-app-footer-actions {
     gap: 0.313rem;
     width: 100%;
   }
 }
 
-/* For very small screens (below 768px) */
 @media (width <= 768px) {
   .application.hm-app {
     width: 100%;
     max-height: 70vh;
   }
 
-  /* Stack footer buttons vertically */
   .hm-app-footer-actions {
     gap: 0.5rem;
     flex-direction: column;
     width: 100%;
   }
 
-  /* Adjust nav items */
   .application.hm-app .hm-app-nav a.item {
     padding: 0 0.313rem;
     font-size: var(--font-size-13);
   }
 
-  /* Reduce fieldset padding */
   .hm-app-tab-content fieldset {
     padding: 0.313rem;
   }
 
-  /* Full-width inputs for smaller screens */
   .hm-app-tab-content fieldset input[type='text'],
   .hm-app-tab-content fieldset select {
     width: 100%;
@@ -552,7 +540,7 @@
   }
 }
 
-/* Minimum width requirement for Foundry 
+/* Minimum width requirement for Foundry
 (700px <= width <= 1024px)
 */
 @media (700px <= width <= 1024px) {
@@ -562,14 +550,12 @@
     max-height: 80vh;
   }
 
-  /* Resize buttons and inputs */
   .hm-app-footer-actions button {
     padding: 0.25rem 0.5rem;
     font-size: var(--font-size-13);
   }
 }
 
-/* Set up the main container */
 .equipment-container {
   display: flex;
   flex-direction: column;
@@ -577,7 +563,6 @@
   background: var(--color-background-alt);
 }
 
-/* Flexbox on equipment-choices to create side-by-side columns */
 .equipment-choices {
   gap: 1.25rem;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -587,14 +572,13 @@
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select,
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices input[type='text'] {
-  width: fit-content; /* Allows the select to resize based on its content */
-  min-width: 140px; /* Optional: Set a minimum width for usability */
+  width: fit-content;
+  min-width: 140px;
   max-width: 100%;
   margin-right: 0;
   margin-left: 0;
 }
 
-/* Each section within equipment-choices behaves as a column */
 .class-equipment-section,
 .background-equipment-section {
   display: flex;
@@ -607,12 +591,11 @@
   box-shadow: 0 2px 4px hsla(0deg 0% 0% / 20%);
 }
 
-/* Style section headers and center them horizontally */
 .class-equipment-section h3,
 .background-equipment-section h3 {
   width: 100%;
-  margin-bottom: 10px; /* Center the header text */
-  text-align: center; /* Make sure header spans the full width of the container */
+  margin-bottom: 10px;
+  text-align: center;
 }
 
 .class-equipment-section h4,
@@ -621,7 +604,6 @@
   font-size: var(--font-size-20);
 }
 
-/* Style individual equipment items within sections */
 .equipment-item {
   display: flex;
   flex-direction: column;
@@ -635,7 +617,6 @@
   margin-top: 4px;
 }
 
-/* Container for each row */
 .hm-app .hm-app-tab-content .form-row,
 .hm-app .hm-app-tab-content .art-selection-row {
   display: flex;
@@ -647,7 +628,6 @@
   margin-bottom: unset;
 }
 
-/* Set fixed percentage widths for each column */
 .hm-app .hm-app-tab-content .label-15 {
   flex: 0 0 120px;
   margin-right: 5px;
@@ -655,7 +635,7 @@
 
 .hm-app .hm-app-tab-content .button-7 {
   flex: 0 0 auto;
-  width: auto; /* Ensures the button remains compact */
+  width: auto;
   white-space: nowrap;
 }
 
@@ -669,7 +649,6 @@
   white-space: nowrap;
 }
 
-/* Optional styling for consistency */
 .hm-app .hm-app-tab-content .checkbox-label {
   flex: 1;
   margin-left: 0.313rem;
@@ -690,7 +669,6 @@
   }
 }
 
-/* Headers */
 .equipment-choices h3 {
   margin: 0 0 1.5rem;
   padding-bottom: 0.75rem;
@@ -716,7 +694,6 @@
   margin: 0.2rem 0.5rem 0 0;
 }
 
-/* Wealth Options */
 .wealth-option-container {
   margin: 0 0 2rem;
   padding: 0.625rem;
@@ -743,7 +720,6 @@
   text-align: right;
 }
 
-/* Weapon Selection */
 .dual-weapon-selection {
   margin-top: 1rem;
 }
@@ -755,13 +731,11 @@
   font-size: var(--font-size-14);
 }
 
-/* Animation */
 .fa-dice-d6.rolling {
   color: hsl(0deg 100% 71%);
   animation: rollDice 0.5s ease-in-out;
 }
 
-/* Disabled States */
 .equipment-choices select:disabled,
 .equipment-choices input:disabled,
 .equipment-choices label.disabled {
@@ -776,7 +750,6 @@
   pointer-events: none;
 }
 
-/* Responsive */
 @media (width <= 768px) {
   .equipment-choices {
     grid-template-columns: 1fr;
@@ -807,7 +780,6 @@
   font-size: inherit;
 }
 
-/* Summary Section */
 .hm-app-tab-content .summary-section {
   gap: 0.625rem;
   grid-template-areas: 'portrait summary';
@@ -840,7 +812,6 @@
   padding: 0.625rem;
 }
 
-/* Section Headers */
 .hm-app-tab-content section {
   margin-top: 20px;
 }
@@ -850,7 +821,6 @@
   border-bottom: 1px solid hsl(0deg 0% 40%);
 }
 
-/* Character Details */
 .hm-app-tab-content .character-details-row {
   gap: 0.625rem;
   grid-template-columns: 1fr 1fr;
@@ -872,7 +842,6 @@
   min-width: 120px;
 }
 
-/* Physical Traits */
 .hm-app-tab-content .physical-traits-grid {
   gap: 0.625rem;
   grid-template-columns: repeat(7, 1fr);
@@ -893,7 +862,6 @@
   max-width: 65px;
 }
 
-/* Description */
 .hm-app-tab-content .description-group {
   margin-top: 10px;
 }
@@ -908,7 +876,6 @@
   resize: none;
 }
 
-/* Personal Characteristics */
 .hm-app-tab-content .personality-grid {
   gap: 0.625rem;
   display: grid;
@@ -927,7 +894,6 @@
   resize: none;
 }
 
-/* Notes Section */
 .hm-app-tab-content .notes-grid {
   gap: 0.625rem;
   display: grid;
@@ -938,7 +904,6 @@
   min-height: 260px;
 }
 
-/* Buttons */
 .hm-app-tab-content .personal-char-section button {
   gap: 0.094rem;
   display: flex;
@@ -991,16 +956,88 @@
   padding-left: 0.313rem;
 }
 
-/* Add max-width and text overflow handling for equipment dropdowns */
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select {
-  max-width: 100%; /* Ensure it doesn't overflow container */
-  overflow: hidden; /* Add ellipsis for overflow */
-  text-overflow: ellipsis; /* Hide overflow */
-  white-space: nowrap; /* Prevent wrapping */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Ensure the checkbox container is scrollable */
 .hm-compendiums-popup-dialog .dialog-content {
-  padding: 0.5rem; /* Prevent double scrollbars */
+  padding: 0.5rem;
   overflow: hidden;
+}
+
+.hm-mandatory-fields-popup {
+  gap: 0.625rem;
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  padding: 0.625rem;
+}
+
+.hm-mandatory-fields-popup .fields-container {
+  padding-right: 0.625rem;
+  overflow-y: auto;
+}
+
+.hm-mandatory-fields-popup .field-group {
+  padding: 0.625rem;
+  border-radius: 5px;
+}
+
+.hm-mandatory-fields-popup .field-group h3 {
+  padding-bottom: 0.313rem;
+  font-weight: bold;
+}
+
+.hm-mandatory-fields-popup .field-group h4 {
+  margin: 5px 0;
+  font-size: 1em;
+}
+
+.hm-mandatory-fields-popup .form-group {
+  margin: 5px 0;
+  padding-left: 0.625rem;
+}
+
+.hm-mandatory-fields-popup .form-group label {
+  line-height: unset;
+}
+
+.hm-mandatory-fields-popup label {
+  gap: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.hm-mandatory-fields-popup input[type='checkbox'] {
+  margin: 0;
+}
+
+/* Base styling for all form element containers that can have mandatory fields */
+.form-row > label,
+.art-selection-row > label,
+.customization-row > label,
+.ability-block > span.ability-label,
+.ability-block > label,
+.form-group > label,
+.trait-group > label,
+.personality-group > label,
+.description-group > label,
+.notes-group > label,
+.notes-section > h3 {
+  gap: 0.5rem;
+  display: flex;
+  position: relative;
+  align-items: center;
+}
+
+/* Special handling for notes section header when prose-mirror is mandatory */
+.notes-section:has(prose-mirror.mandatory-field) > h3 {
+  gap: 0.5rem;
+  display: flex;
+  position: relative;
+  align-items: center;
 }

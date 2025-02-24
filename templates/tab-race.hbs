@@ -4,7 +4,7 @@
     <p>{{localize 'hm.app.race.preamble'}}</p>
     <hr />
 
-    <div>
+    <div class="form-row">
       <!-- Label for the race dropdown -->
       <label for='race-dropdown'>{{localize 'hm.app.race.select-label'}}</label>
 
@@ -14,23 +14,23 @@
         <option value=''>{{localize 'hm.app.race.select-placeholder'}}</option>
 
         {{#each raceDocs}}
-        {{#if this.folderName}}
-        <optgroup label='{{this.folderName}}'>
-          {{#each this.docs}}
-          <option value='{{this.id}} ({{this.packId}})'>
-            {{this.name}}
-            ({{this.packName}})
-          </option>
-          {{/each}}
-        </optgroup>
+          {{#if this.folderName}}
+            <optgroup label='{{this.folderName}}'>
+              {{#each this.docs}}
+                <option value='{{this.id}} ({{this.packId}})'>
+                  {{this.name}}
+                  ({{this.packName}})
+                </option>
+              {{/each}}
+            </optgroup>
+          {{else}}
+            <option value='{{this.id}}'>
+              {{this.name}}
+              ({{this.packName}})
+            </option>
+          {{/if}}
         {{else}}
-        <option value='{{this.id}}'>
-          {{this.name}}
-          ({{this.packName}})
-        </option>
-        {{/if}}
-        {{else}}
-        <option>{{localize 'hm.app.race.none'}}</option>
+          <option>{{localize 'hm.app.race.none'}}</option>
         {{/each}}
       </select>
     </div>

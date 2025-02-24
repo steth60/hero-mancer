@@ -102,7 +102,7 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           VERSION="${{ steps.get-version.outputs.version }}"
-          RELEASE_NOTES=$(cat release_notes.txt | sed ':a;N;$!ba;s/\n/\\n/g')
+          RELEASE_NOTES=$(< release_notes.txt)
 
           JSON_PAYLOAD=$(jq -n \
             --arg title "Hero Mancer Release" \

@@ -1,7 +1,5 @@
-import { CustomCompendiums } from './app/CustomCompendiums.js';
-import { DiceRolling } from './app/DiceRolling.js';
 import { HM } from './hero-mancer.js';
-import { StatRoller, CharacterArtPicker } from './utils/index.js';
+import { CharacterArtPicker, CustomCompendiums, DiceRolling, MandatoryFields, StatRoller } from './utils/index.js';
 
 /**
  * Main registration function that initializes all module settings.
@@ -69,6 +67,15 @@ export function registerSettings() {
     icon: 'fa-solid fa-dice',
     label: 'hm.settings.configure-rolling',
     type: DiceRolling,
+    restricted: true
+  });
+
+  game.settings.registerMenu(HM.CONFIG.ID, 'mandatoryFieldsMenu', {
+    name: 'hm.settings.mandatory-fields.menu.name',
+    hint: 'hm.settings.mandatory-fields.menu.hint',
+    icon: 'fa-solid fa-list-check',
+    label: 'hm.settings.configure-mandatory',
+    type: MandatoryFields,
     restricted: true
   });
 
@@ -203,8 +210,7 @@ export function registerSettings() {
     scope: 'world',
     config: false,
     type: Array,
-    default: [],
-    requiresReload: true
+    default: []
   });
 
   game.settings.register(HM.CONFIG.ID, 'racePacks', {
@@ -212,8 +218,7 @@ export function registerSettings() {
     scope: 'world',
     config: false,
     type: Array,
-    default: [],
-    requiresReload: true
+    default: []
   });
 
   game.settings.register(HM.CONFIG.ID, 'backgroundPacks', {
@@ -221,8 +226,7 @@ export function registerSettings() {
     scope: 'world',
     config: false,
     type: Array,
-    default: [],
-    requiresReload: true
+    default: []
   });
 
   game.settings.register(HM.CONFIG.ID, 'itemPacks', {
@@ -230,15 +234,14 @@ export function registerSettings() {
     scope: 'world',
     config: false,
     type: Array,
-    default: [],
-    requiresReload: true
+    default: []
+  });
+
+  game.settings.register(HM.CONFIG.ID, 'mandatoryFields', {
+    name: 'hm.settings.mandatory-fields.name',
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: []
   });
 }
-
-Hooks.on('ready', async () => {
-  const customArraySetting = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
-  if (!customArraySetting || customArraySetting.trim() === '') {
-    await game.settings.set(HM.CONFIG.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
-    HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
-  }
-});

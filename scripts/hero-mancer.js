@@ -1,7 +1,5 @@
-import { HtmlManipulator, DocumentService, CacheManager, EquipmentParser } from './utils/index.js';
 import { registerSettings } from './settings.js';
-import { CustomCompendiums } from './app/CustomCompendiums.js';
-import { DiceRolling } from './app/DiceRolling.js';
+import { CacheManager, CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HtmlManipulator } from './utils/index.js';
 
 /* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
 export class HM {
@@ -26,7 +24,11 @@ export class HM {
 
     // Logging setup
     if (this.logLevel > 0) {
-      const logMessage = `Logging level set to ${this.logLevel === 1 ? 'Errors' : this.logLevel === 2 ? 'Warnings' : 'Verbose'}`;
+      const logMessage = `Logging level set to ${
+        this.logLevel === 1 ? 'Errors'
+        : this.logLevel === 2 ? 'Warnings'
+        : 'Verbose'
+      }`;
       HM.log(3, logMessage); // Log at verbose level
     }
   }
@@ -73,19 +75,13 @@ export class HM {
     HM.log(3, 'Preparing documents for Hero Mancer');
 
     try {
-      const [raceDocs, classDocs, backgroundDocs] = await Promise.all([
-        DocumentService.prepDocs('race'),
-        DocumentService.prepDocs('class'),
-        DocumentService.prepDocs('background')
-      ]).then((results) => results.map((r) => r.types));
+      const [raceDocs, classDocs, backgroundDocs] = await Promise.all([DocumentService.prepDocs('race'), DocumentService.prepDocs('class'), DocumentService.prepDocs('background')]).then((results) =>
+        results.map((r) => r.types)
+      );
 
       this.documents = { race: raceDocs, class: classDocs, background: backgroundDocs };
 
-      const allDocs = [
-        ...(raceDocs?.flatMap((folder) => folder.docs) || []),
-        ...(classDocs?.flatMap((pack) => pack.docs) || []),
-        ...(backgroundDocs?.flatMap((pack) => pack.docs) || [])
-      ];
+      const allDocs = [...(raceDocs?.flatMap((folder) => folder.docs) || []), ...(classDocs?.flatMap((pack) => pack.docs) || []), ...(backgroundDocs?.flatMap((pack) => pack.docs) || [])];
 
       await Promise.all(
         allDocs.map(async (doc) => {
@@ -148,6 +144,12 @@ Hooks.once('ready', async () => {
   });
 
   await EquipmentParser.initializeLookupItems();
+
+  const customArraySetting = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
+  if (!customArraySetting || customArraySetting.trim() === '') {
+    await game.settings.set(HM.CONFIG.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
+    HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
+  }
 });
 
 Hooks.on('renderActorDirectory', () => {

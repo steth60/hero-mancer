@@ -1,5 +1,4 @@
 import { HM } from '../hero-mancer.js';
-import { EventBus } from './dropdownHandler.js';
 
 export class SavedOptions {
   static FLAG = 'saved-options';

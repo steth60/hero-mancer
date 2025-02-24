@@ -1,5 +1,5 @@
 import { HM } from '../hero-mancer.js';
-import { SummaryManager } from './summaryManager.js';
+import { SummaryManager } from './index.js';
 
 const { DialogV2 } = foundry.applications.api;
 
@@ -108,8 +108,9 @@ export class StatRoller {
   static getRerollDialogContent() {
     // Only show the chain roll checkbox if chain rolls are enabled in settings
     const chainedRolls = game.settings.get(HM.CONFIG.ID, 'chainedRolls');
-    const chainRollCheckbox = chainedRolls
-      ? `
+    const chainRollCheckbox =
+      chainedRolls ?
+        `
     <div class="form-group">
       <label class="checkbox">
         <input type="checkbox" name="chainRoll" ${this.chainRollEnabled ? 'checked' : ''}>

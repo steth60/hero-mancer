@@ -1,6 +1,5 @@
-import { StatRoller, SummaryManager, CharacterArtPicker, DropdownHandler, EquipmentParser, SavedOptions } from './index.js';
-import { HeroMancer } from '../app/HeroMancer.js';
 import { HM } from '../hero-mancer.js';
+import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, MandatoryFields, SavedOptions, StatRoller, SummaryManager } from './index.js';
 
 /**
  * Manages event listeners and UI updates for the HeroMancer application.
@@ -14,7 +13,7 @@ export class Listeners {
    * @param {object} context The application context
    * @param {number[]} selectedAbilities Array of selected ability scores
    */
-  static initializeListeners(html, context, selectedAbilities) {
+  static async initializeListeners(html, context, selectedAbilities) {
     this.initializeAbilityListeners(context, selectedAbilities);
     this.initializeEquipmentListeners();
     this.initializeCharacterListeners();
@@ -289,7 +288,7 @@ export class Listeners {
       const app = HM.heroMancer;
       if (app) {
         HM.log(3, 'Triggering re-render');
-        app.render(true);
+        app.render({ parts: ['abilities'] });
       } else {
         HM.log(3, 'App instance not found for re-render');
       }
@@ -297,31 +296,42 @@ export class Listeners {
   }
 
   static initializeTokenCustomizationListeners() {
-    const ringEnabled = document.querySelector('[name="ring.enabled"]');
-    const ringOptions = document.querySelectorAll('.customization-row:has([name="ring.color"]), .customization-row:has([name="backgroundColor"]), .customization-row.ring-effects');
+    const ringEnabled = document.querySelector('input[name="ring.enabled"]');
+    const ringOptions = document.querySelectorAll(
+      ['.customization-row:has(color-picker[name="ring.color"])', '.customization-row:has(color-picker[name="backgroundColor"])', '.customization-row.ring-effects'].join(', ')
+    );
+
+    if (!ringEnabled || !ringOptions.length) {
+      HM.log(2, 'Token customization elements not found');
+      return;
+    }
 
     // Initial state
-    ringOptions.forEach(function (option) {
-      option.style.display = ringEnabled?.checked ? 'flex' : 'none';
+    HM.log(3, 'Setting initial token ring states');
+    ringOptions.forEach((option) => {
+      option.style.display = ringEnabled.checked ? 'flex' : 'none';
     });
 
     // Reset and toggle on change
-    ringEnabled?.addEventListener('change', function (event) {
+    ringEnabled.addEventListener('change', (event) => {
+      HM.log(3, 'Ring enabled changed:', event.currentTarget.checked);
+
       if (!event.currentTarget.checked) {
-        // Reset color picker values
-        const ringColor = document.querySelector('[name="ring.color"]');
-        if (ringColor) ringColor.value = '';
+        // Reset color pickers
+        document.querySelectorAll('color-picker[name="ring.color"], color-picker[name="backgroundColor"]').forEach((picker) => {
+          picker.value = '';
+          picker.dispatchEvent(new Event('change', { bubbles: true }));
+        });
 
-        const bgColor = document.querySelector('[name="backgroundColor"]');
-        if (bgColor) bgColor.value = '';
-
-        // Uncheck all ring effect checkboxes
-        document.querySelectorAll('[name="ring.effects"]').forEach(function (checkbox) {
+        // Reset ring effect checkboxes
+        document.querySelectorAll('input[name="ring.effects"]').forEach((checkbox) => {
           checkbox.checked = false;
+          checkbox.dispatchEvent(new Event('change', { bubbles: true }));
         });
       }
 
-      ringOptions.forEach(function (option) {
+      // Toggle visibility
+      ringOptions.forEach((option) => {
         option.style.display = event.currentTarget.checked ? 'flex' : 'none';
       });
     });
@@ -365,6 +375,74 @@ export class Listeners {
     // Update summaries after restoring options
     requestAnimationFrame(() => {
       SummaryManager.updateClassRaceSummary();
+    });
+  }
+
+  /**
+   * Initialize form validation listeners for mandatory fields
+   * @param {HTMLElement} html The root element containing form fields
+   */
+  static initializeFormValidationListeners(html) {
+    // Add change listeners for all relevant input types
+    const formElements = html.querySelectorAll('input, select, textarea, color-picker');
+    formElements.forEach((element) => {
+      // Remove previous listeners to avoid duplication
+      if (element._mandatoryFieldChangeHandler) {
+        element.removeEventListener('change', element._mandatoryFieldChangeHandler);
+      }
+      if (element._mandatoryFieldInputHandler) {
+        element.removeEventListener('input', element._mandatoryFieldInputHandler);
+      }
+
+      // Create and store the handler references
+      element._mandatoryFieldChangeHandler = async (event) => {
+        HM.log(3, `Field changed: ${element.name || element.id}`, {
+          type: element.type || element.tagName.toLowerCase(),
+          value: element.value,
+          checked: element.checked
+        });
+        await MandatoryFields.checkMandatoryFields(html);
+      };
+
+      element.addEventListener('change', element._mandatoryFieldChangeHandler);
+
+      // Add input listener for real-time validation
+      if (element.tagName.toLowerCase() === 'input' || element.tagName.toLowerCase() === 'textarea') {
+        element._mandatoryFieldInputHandler = async (event) => {
+          HM.log(3, `Field input: ${element.name || element.id}`, {
+            type: element.type || element.tagName.toLowerCase(),
+            value: element.value
+          });
+          await MandatoryFields.checkMandatoryFields(html);
+        };
+        element.addEventListener('input', element._mandatoryFieldInputHandler);
+      }
+    });
+
+    // Handle ProseMirror elements separately
+    const proseMirrorElements = html.querySelectorAll('prose-mirror');
+    proseMirrorElements.forEach((element) => {
+      // Clean up previous observer if exists
+      if (element._observer) {
+        element._observer.disconnect();
+      }
+
+      // Create handler for content changes
+      const changeHandler = async () => {
+        HM.log(3, `ProseMirror content changed: ${element.name || element.id}`);
+        await MandatoryFields.checkMandatoryFields(html);
+      };
+
+      // Use MutationObserver to detect content changes
+      element._observer = new MutationObserver(changeHandler);
+      const editorContent = element.querySelector('.editor-content.ProseMirror');
+      if (editorContent) {
+        element._observer.observe(editorContent, {
+          childList: true,
+          characterData: true,
+          subtree: true
+        });
+      }
     });
   }
 }

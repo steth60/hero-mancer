@@ -1,5 +1,5 @@
 import { HM } from '../hero-mancer.js';
-import { CacheManager } from '../utils/cacheManagement.js';
+import { CacheManager } from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 

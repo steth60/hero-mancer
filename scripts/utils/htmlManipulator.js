@@ -1,5 +1,5 @@
 import { HM } from '../hero-mancer.js';
-import { HeroMancer } from '../app/HeroMancer.js';
+import { HeroMancer } from './index.js';
 
 /**
  * Handles DOM manipulation for the HeroMancer UI elements

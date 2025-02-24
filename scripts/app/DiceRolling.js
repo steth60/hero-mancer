@@ -64,6 +64,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   static async formHandler(event, form, formData) {
+    const requiresWorldReload = true; // Settings changes require world reload
     try {
       const allowedMethods = {
         standardArray: form.elements.standardArray?.checked ?? false,
@@ -88,6 +89,8 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       if (formData.object.customStandardArray) {
         StatRoller.validateAndSetCustomStandardArray(formData.object.customStandardArray);
       }
+
+      this.constructor.reloadConfirm({ world: requiresWorldReload });
 
       ui.notifications.info('hm.settings.dice-rolling.saved', { localize: true });
       HM.log(3, 'Dice rolling settings saved');

@@ -43,10 +43,10 @@ export class ProgressBar {
     const currentBlue = Math.floor(startColor.blue + (progressPercentage / 100) * (endColor.blue - startColor.blue));
 
     const progressColor = `rgb(${currentRed}, ${currentGreen}, ${currentBlue})`;
-    const gradient = `linear-gradient(to right, 
-      ${progressColor} 0%, 
-      ${progressColor} ${progressPercentage}%, 
-      rgba(0, 0, 0, 0.5) ${progressPercentage}%, 
+    const gradient = `linear-gradient(to right,
+      ${progressColor} 0%,
+      ${progressColor} ${progressPercentage}%,
+      rgba(0, 0, 0, 0.5) ${progressPercentage}%,
       rgba(0, 0, 0, 0.5) 100%
     )`;
 
@@ -136,16 +136,26 @@ export class ProgressBar {
       }
 
       totalFields++;
+      let isFilled = false;
 
       if (input.type === 'checkbox') {
-        if (input.checked) filledCount++;
+        isFilled = input.checked;
       } else if (input.type === 'select-one') {
-        if (input.value) filledCount++;
+        isFilled = Boolean(input.value);
       } else {
-        if (this.#isFieldFilled(input.name, input.value, form)) {
-          filledCount++;
-        }
+        isFilled = this.#isFieldFilled(input.name, input.value, form);
       }
+
+      // Log field state
+      HM.log(3, 'Field status check:', {
+        name: input.name,
+        type: input.type || input.tagName.toLowerCase(),
+        value: input.value,
+        checked: input.checked,
+        isFilled: isFilled
+      });
+
+      if (isFilled) filledCount++;
     });
 
     // Process equipment container inputs
@@ -158,15 +168,31 @@ export class ProgressBar {
         }
 
         totalFields++;
+        let isFilled = false;
+
         if (input.type === 'checkbox') {
-          if (input.checked) filledCount++;
+          isFilled = input.checked;
         } else if (input.type === 'select-one') {
-          if (input.value) filledCount++;
+          isFilled = Boolean(input.value);
         }
+
+        // Log equipment field state
+        HM.log(3, 'Equipment field status:', {
+          name: input.name,
+          type: input.type,
+          value: input.value,
+          checked: input.checked,
+          isFilled: isFilled
+        });
+
+        if (isFilled) filledCount++;
       });
     }
 
-    HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${((filledCount / totalFields) * 100).toFixed(2)}%)`);
+    HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${((filledCount / totalFields) * 100).toFixed(2)}%)`, {
+      totalFields,
+      filledCount
+    });
 
     return [filledCount, totalFields];
   }
@@ -194,10 +220,13 @@ export class ProgressBar {
 
     // Handle ring effects field
     if (key === 'ring.effects') {
-      const cleanValue = String(value).replace(/,/g, '').trim();
-      const isFilled = cleanValue !== '';
-      HM.log(3, `Ring effects field - cleaned value: "${cleanValue}", filled: ${isFilled}`);
-      return isFilled;
+      const effectCheckboxes = form.querySelectorAll('input[name="ring.effects"]');
+      const anyChecked = Array.from(effectCheckboxes).some((checkbox) => checkbox.checked);
+      HM.log(3, `Ring effects field check - any checked: ${anyChecked}`, {
+        total: effectCheckboxes.length,
+        checked: Array.from(effectCheckboxes).filter((c) => c.checked).length
+      });
+      return anyChecked;
     }
 
     if (key === 'starting-wealth-amount') {
