@@ -78,8 +78,8 @@ jobs:
             "id": "hero-mancer",
             "release": {
               "version": "${{ steps.get-version.outputs.version }}",
-              "manifest": "${{ env.REPO_URL }}/releases/download/${{ steps.get-version.outputs.version }}/module.json",
-              "download": "${{ env.REPO_URL }}/releases/download/${{ steps.get-version.outputs.version }}/module.zip",
+              "manifest": "${{ env.REPO_URL }}/releases/latest/download/module.json",
+              "download": "${{ env.REPO_URL }}/releases/latest/download/module.zip",
               "notes": "${{ env.REPO_URL }}/releases/tag/${{ steps.get-version.outputs.version }}",
               "compatibility": {
                 "minimum": "${{ steps.get-version.outputs.compat_min }}",

@@ -1,7 +1,10 @@
 import { registerSettings } from './settings.js';
 import { CacheManager, CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HtmlManipulator } from './utils/index.js';
 
-/* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
+/**
+ * Main Hero Mancer class, define some statics that will be used everywhere in the module.
+ * @class
+ */
 export class HM {
   static CONFIG = {
     ID: 'hero-mancer',
@@ -88,6 +91,12 @@ export class HM {
           if (doc?.description) {
             try {
               doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
+
+              // Replace h3 with h2 tags for nicer styling.
+              doc.enrichedDescription = doc.enrichedDescription
+                .replace(/<h3/g, '<h2')
+                .replace(/<\/h3/g, '</h2')
+                .replace(/<\/ h3/g, '</ h2');
             } catch (error) {
               HM.log(1, `Failed to enrich description for '${doc.name}':`, error);
             }

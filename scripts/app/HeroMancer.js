@@ -240,23 +240,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
     };
 
-    const allDocs = [
-      ...(context.raceDocs?.flatMap((folder) => folder.docs) || []),
-      ...(context.classDocs?.flatMap((pack) => pack.docs) || []),
-      ...(context.backgroundDocs?.flatMap((pack) => pack.docs) || [])
-    ];
-    for (const doc of allDocs) {
-      if (doc?.description) {
-        try {
-          // Enrich description
-          HM.log(3, `Enriching description for '${doc.name}'...`, doc);
-          doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
-        } catch (error) {
-          HM.log(1, `${HM.CONFIG.ID} | Error enriching description or processing starting equipment for '${doc.name}':`, error);
-        }
-      }
-    }
-
     cacheManager.cacheDocuments({
       raceDocs: context.raceDocs,
       classDocs: context.classDocs,
@@ -293,12 +276,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         context.alignments =
           game.settings
             .get(HM.CONFIG.ID, 'alignments')
-            ?.split(',')
+            .split(',')
             .map((d) => d.trim()) || [];
         context.deities =
           game.settings
             .get(HM.CONFIG.ID, 'deities')
-            ?.split(',')
+            .split(',')
             .map((d) => d.trim()) || [];
         break;
     }
@@ -414,7 +397,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const form = event.currentTarget;
     if (!form) return;
-    HM.log(3, 'All form elements:', form.elements);
+    // HM.log(3, 'All form elements:', form.elements);
     this.completionPercentage = ProgressBar.updateProgress(this.element, form);
   }
 

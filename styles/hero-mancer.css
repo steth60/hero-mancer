@@ -134,7 +134,7 @@
   background:
     url('../../../systems/dnd5e/ui/texture-gray2.webp') no-repeat center bottom / cover,
     linear-gradient(to right, var(--user-color), var(--user-color));
-  transition: clip-path 0.3s ease;
+  transition: clip-path 0.8s ease;
 }
 
 .hm-app-header h1 {
