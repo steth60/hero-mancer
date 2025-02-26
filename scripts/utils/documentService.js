@@ -50,28 +50,31 @@ export class DocumentService {
 
     const validPacks = new Set();
 
-    for (const pack of packs) {
-      HM.log(3, 'Fetching documents from pack:', pack);
-      try {
-        const documents = await pack.getDocuments({ type });
+    // Process all packs in parallel for better performance
+    await Promise.all(
+      packs.map(async (pack) => {
+        HM.log(3, 'Fetching documents from pack:', pack);
+        try {
+          const documents = await pack.getDocuments({ type });
 
-        documents.forEach((doc) => {
-          if (!doc) return;
+          documents.forEach((doc) => {
+            if (!doc) return;
 
-          const packName = this.#determinePackName(pack.metadata.id);
-          validPacks.add({
-            doc,
-            packName,
-            packId: pack.metadata.id,
-            description: doc.system.description?.value || game.i18n.localize('hm.app.no-description'),
-            folderName: doc.folder?.name || null
+            const packName = this.#determinePackName(pack.metadata.id);
+            validPacks.add({
+              doc,
+              packName,
+              packId: pack.metadata.id,
+              description: doc.system.description?.value || game.i18n.localize('hm.app.no-description'),
+              folderName: doc.folder?.name || null
+            });
           });
-        });
-      } catch (error) {
-        HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}:`, error);
-        ui.notifications.error(game.i18n.format('hm.errors.failed-compendium-retrieval', { type: pack.metadata.label }));
-      }
-    }
+        } catch (error) {
+          HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}:`, error);
+          ui.notifications.error(game.i18n.format('hm.errors.failed-compendium-retrieval', { type: pack.metadata.label }));
+        }
+      })
+    );
 
     return {
       documents: this.#sortDocuments([...validPacks]),

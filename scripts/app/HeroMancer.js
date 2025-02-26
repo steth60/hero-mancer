@@ -112,46 +112,90 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   async _prepareContext(options) {
+    const cacheManager = new CacheManager();
+
+    // Check if cached data is available first - early return if valid
+    if (cacheManager.isCacheValid()) {
+      HM.log(3, 'Using cached documents and enriched descriptions');
+      const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
+      HeroMancer.selectedAbilities = Array(abilitiesCount).fill(8);
+
+      // Handle ELKAN compatibility
+      if (HM.COMPAT?.ELKAN) {
+        options.parts = options.parts.filter((part) => part !== 'equipment');
+      }
+
+      return {
+        raceDocs: HM.documents.race || cacheManager.getCachedDocs('race'),
+        classDocs: HM.documents.class || cacheManager.getCachedDocs('class'),
+        backgroundDocs: HM.documents.background || cacheManager.getCachedDocs('background'),
+        tabs: this._getTabs(options.parts),
+        abilities: this.#prepareAbilities(),
+        rollStat: this.rollStat,
+        rollMethods: this.#getRollMethods(),
+        diceRollMethod: this.#getDiceRollingMethod(),
+        allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
+        standardArray: this.#getStandardArray(),
+        selectedAbilities: HeroMancer.selectedAbilities,
+        remainingPoints: Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities),
+        totalPoints: StatRoller.getTotalPoints(),
+        playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
+        tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
+        token: this.#getTokenConfig(),
+        mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
+      };
+    }
+
+    // Inform user that data is loading
+    ui.notifications.info('hm.actortab-button.loading', { localize: true });
+
+    // Initialize abilities and related data
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     HeroMancer.selectedAbilities = Array(abilitiesCount).fill(8);
-    const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
 
-    // Add available roll methods
-    const rollMethods = {
-      pointBuy: game.i18n.localize('hm.app.abilities.methods.pointBuy'),
-      standardArray: game.i18n.localize('hm.app.abilities.methods.standardArray'),
-      manualFormula: game.i18n.localize('hm.app.abilities.methods.manual')
+    // Handle ELKAN compatibility
+    if (HM.COMPAT?.ELKAN) {
+      options.parts = options.parts.filter((part) => part !== 'equipment');
+    }
+
+    // Prepare context with all required data
+    const context = {
+      raceDocs: HM.documents.race || cacheManager.getCachedDocs('race'),
+      classDocs: HM.documents.class || cacheManager.getCachedDocs('class'),
+      backgroundDocs: HM.documents.background || cacheManager.getCachedDocs('background'),
+      tabs: this._getTabs(options.parts),
+      abilities: this.#prepareAbilities(),
+      rollStat: this.rollStat,
+      rollMethods: this.#getRollMethods(),
+      diceRollMethod: this.#getDiceRollingMethod(),
+      allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
+      standardArray: this.#getStandardArray(),
+      selectedAbilities: HeroMancer.selectedAbilities,
+      remainingPoints: Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities),
+      totalPoints: StatRoller.getTotalPoints(),
+      playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
+      tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
+      token: this.#getTokenConfig(),
+      mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
     };
 
-    let diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
-    HM.log(3, 'Dice Rolling Method:', diceRollingMethod);
-    if (!['standardArray', 'pointBuy', 'manualFormula'].includes(diceRollingMethod)) {
-      diceRollingMethod = 'standardArray'; // Default fallback
-      HM.log(2, 'Invalid dice rolling method, defaulting to standardArray');
-    }
-    HM.log(3, 'Dice Rolling Method:', diceRollingMethod);
+    // Cache the documents for future use
+    cacheManager.cacheDocuments({
+      raceDocs: context.raceDocs,
+      classDocs: context.classDocs,
+      backgroundDocs: context.backgroundDocs
+    });
 
-    let standardArray;
-    if (diceRollingMethod === 'standardArray') {
-      const customArray = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
-      if (customArray) {
-        const parsedArray = customArray.split(',').map(Number);
-        // Check if the custom array has enough values for all abilities
-        if (parsedArray.length >= abilitiesCount) {
-          standardArray = parsedArray;
-        } else {
-          // If not enough values, use the StatRoller.getStandardArray with extraAbilities
-          standardArray = StatRoller.getStandardArray(extraAbilities);
-        }
-      } else {
-        standardArray = StatRoller.getStandardArray(extraAbilities);
-      }
-    } else {
-      standardArray = StatRoller.getStandardArray(extraAbilities);
-    }
+    HM.log(3, 'Documents registered and enriched, caching results');
+    return context;
+  }
 
-    const totalPoints = StatRoller.getTotalPoints();
-    const remainingPoints = Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities);
+  /**
+   * Prepares ability scores data for the context
+   * @returns {Array} Array of ability data objects
+   * @private
+   */
+  #prepareAbilities() {
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
       key,
       abbreviation: value.abbreviation.toUpperCase(),
@@ -160,15 +204,72 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }));
 
     HM.log(3, 'ABILITIES:', abilities);
+    return abilities;
+  }
 
-    const cacheManager = new CacheManager();
+  /**
+   * Gets available roll methods
+   * @returns {Object} Object with roll method localizations
+   * @private
+   */
+  #getRollMethods() {
+    return {
+      pointBuy: game.i18n.localize('hm.app.abilities.methods.pointBuy'),
+      standardArray: game.i18n.localize('hm.app.abilities.methods.standardArray'),
+      manualFormula: game.i18n.localize('hm.app.abilities.methods.manual')
+    };
+  }
 
-    if (HM.COMPAT?.ELKAN) {
-      options.parts = options.parts.filter((part) => part !== 'equipment');
+  /**
+   * Gets and validates the current dice rolling method
+   * @returns {string} The validated dice rolling method
+   * @private
+   */
+  #getDiceRollingMethod() {
+    let diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    HM.log(3, 'Dice Rolling Method:', diceRollingMethod);
+
+    if (!['standardArray', 'pointBuy', 'manualFormula'].includes(diceRollingMethod)) {
+      diceRollingMethod = 'standardArray'; // Default fallback
+      HM.log(2, 'Invalid dice rolling method, defaulting to standardArray');
     }
 
+    return diceRollingMethod;
+  }
+
+  /**
+   * Gets the standard array for ability scores
+   * @returns {Array} Array of ability score values
+   * @private
+   */
+  #getStandardArray() {
+    const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
+    const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
+    const diceRollingMethod = this.#getDiceRollingMethod();
+
+    if (diceRollingMethod === 'standardArray') {
+      const customArray = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
+      if (customArray) {
+        const parsedArray = customArray.split(',').map(Number);
+        // Check if the custom array has enough values for all abilities
+        if (parsedArray.length >= abilitiesCount) {
+          return parsedArray;
+        }
+      }
+    }
+
+    return StatRoller.getStandardArray(extraAbilities);
+  }
+
+  /**
+   * Gets token configuration data
+   * @returns {Object} Token configuration object
+   * @private
+   */
+  #getTokenConfig() {
     const trackedAttrs = TokenDocument.implementation._getConfiguredTrackedAttributes('character');
-    const token = {
+
+    return {
       displayModes: Object.entries(CONST.TOKEN_DISPLAY_MODES).reduce((obj, e) => {
         obj[e[1]] = game.i18n.localize(`TOKEN.DISPLAY_${e[0]}`);
         return obj;
@@ -193,62 +294,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         }, {})
       }
     };
-
-    // Check if cached data is available to avoid re-fetching
-    if (cacheManager.isCacheValid()) {
-      HM.log(3, 'Documents cached and descriptions enriched!');
-      return {
-        raceDocs: HM.documents.race || cacheManager.getCachedDocs('race'),
-        classDocs: HM.documents.class || cacheManager.getCachedDocs('class'),
-        backgroundDocs: HM.documents.background || cacheManager.getCachedDocs('background'),
-        tabs: this._getTabs(options.parts),
-        abilities,
-        rollStat: this.rollStat,
-        rollMethods,
-        diceRollMethod: diceRollingMethod,
-        allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
-        standardArray: standardArray,
-        selectedAbilities: HeroMancer.selectedAbilities,
-        remainingPoints,
-        totalPoints,
-        playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
-        tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
-        token: token,
-        mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
-      };
-    }
-
-    ui.notifications.info('hm.actortab-button.loading', { localize: true });
-
-    const context = {
-      raceDocs: HM.documents.race || cacheManager.getCachedRaceDocs(),
-      classDocs: HM.documents.class || cacheManager.getCachedClassDocs(),
-      backgroundDocs: HM.documents.background || cacheManager.getCachedBackgroundDocs(),
-      tabs: this._getTabs(options.parts),
-      abilities,
-      rollStat: this.rollStat,
-      rollMethods,
-      diceRollMethod: diceRollingMethod,
-      allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
-      standardArray: standardArray,
-      selectedAbilities: HeroMancer.selectedAbilities,
-      remainingPoints,
-      totalPoints,
-      playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
-      tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
-      token: token,
-      mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
-    };
-
-    cacheManager.cacheDocuments({
-      raceDocs: context.raceDocs,
-      classDocs: context.classDocs,
-      backgroundDocs: context.backgroundDocs
-    });
-
-    HM.log(3, 'Documents registered and enriched, caching results.');
-    HM.log(3, 'Tabs Data:', this.tabsData);
-    return context;
   }
 
   /** @override */
@@ -738,16 +783,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       // Update some user stuff
       if (game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')) {
-        game.user.update({
+        await game.user.update({
           color: formData.object['player-color'],
           pronouns: formData.object['player-pronouns'],
           avatar: formData.object['player-avatar']
         });
       }
-      game.user.update({ character: actor.id });
+      await game.user.update({ character: actor.id });
     } catch (error) {
       HM.log(1, 'Error during character creation:', error);
     }
+
     /**
      * Processes a list of items for advancement for a given actor.
      * @async
@@ -805,9 +851,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
          * Recursively processes advancements for each item in the list.
          * @function doAdvancement
          * @param {number} [itemIndex=0] The index of the current item being processed.
-         * @returns {void} Initiates the advancement process for the items.
+         * @returns {Promise<void>} A promise that resolves when processing is complete.
          */
-        function doAdvancement(itemIndex = 0) {
+        async function doAdvancement(itemIndex = 0) {
           if (itemIndex >= items.length) {
             HM.log(
               3,
@@ -821,37 +867,45 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
           HM.log(3, `Processing ${items[itemIndex].name}`);
 
-          Hooks.once('dnd5e.advancementManagerComplete', () => {
-            HM.log(3, `Completed ${items[itemIndex].name}`);
+          return new Promise((resolve) => {
+            Hooks.once('dnd5e.advancementManagerComplete', async () => {
+              HM.log(3, `Completed ${items[itemIndex].name}`);
 
-            setTimeout(async () => {
+              // Use await with Promise-based setTimeout instead of mixing
+              await new Promise((resolve) => setTimeout(resolve, HeroMancer.ADVANCEMENT_DELAY.transitionDelay));
+
               currentManager = null;
 
               if (itemIndex + 1 < items.length) {
                 try {
                   currentManager = await createAdvancementManager(items[itemIndex + 1]);
                   currentManager.render(true);
+                  await doAdvancement(itemIndex + 1);
+                  resolve();
                 } catch (error) {
                   HM.log(1, `Error creating manager for ${items[itemIndex + 1].name}:`, error);
                   newActor.sheet.render(true);
-                  return;
+                  resolve();
                 }
+              } else {
+                newActor.sheet.render(true);
+                resolve();
               }
-              doAdvancement(itemIndex + 1);
-            }, HeroMancer.ADVANCEMENT_DELAY.transitionDelay);
-          });
+            });
 
-          if (itemIndex === 0) {
-            currentManager.render(true);
-          }
+            if (itemIndex === 0) {
+              currentManager.render(true);
+            }
+          });
         }
 
-        doAdvancement();
+        await doAdvancement();
       } catch (error) {
         HM.log(1, 'Error in advancement process:', error);
         if (currentManager) await currentManager.close();
         newActor.sheet.render(true);
       }
+
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),
         content: SummaryManager.getSummaryForChat(),

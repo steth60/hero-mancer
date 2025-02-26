@@ -62,29 +62,30 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     }
 
     const validPacks = new Set();
-    const indexPromises = game.packs.map(async (pack) => {
-      try {
-        if (pack.metadata.type === 'Item') {
-          const index = await pack.getIndex();
 
-          if (type === 'item') {
-            const validDocs = index.filter((doc) => !this.EXCLUDED_TYPES.includes(doc.type));
-            if (validDocs.length > 0) {
-              validPacks.add({
-                packName: pack.metadata.label,
-                packId: pack.metadata.id,
-                type: pack.metadata.type
-              });
-            }
-          } else {
-            const typeDocuments = index.filter((doc) => doc.type === type);
-            if (typeDocuments.length > 0) {
-              validPacks.add({
-                packName: pack.metadata.label,
-                packId: pack.metadata.id,
-                type: pack.metadata.type
-              });
-            }
+    const indexPromises = game.packs.map(async (pack) => {
+      if (pack.metadata.type !== 'Item') return;
+
+      try {
+        const index = await pack.getIndex();
+
+        if (type === 'item') {
+          const validDocs = index.filter((doc) => !this.EXCLUDED_TYPES.includes(doc.type));
+          if (validDocs.length > 0) {
+            validPacks.add({
+              packName: pack.metadata.label,
+              packId: pack.metadata.id,
+              type: pack.metadata.type
+            });
+          }
+        } else {
+          const typeDocuments = index.filter((doc) => doc.type === type);
+          if (typeDocuments.length > 0) {
+            validPacks.add({
+              packName: pack.metadata.label,
+              packId: pack.metadata.id,
+              type: pack.metadata.type
+            });
           }
         }
       } catch (error) {

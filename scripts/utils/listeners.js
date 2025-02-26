@@ -76,37 +76,64 @@ export class Listeners {
     const classDropdown = document.querySelector('#class-dropdown');
     const backgroundDropdown = document.querySelector('#background-dropdown');
 
+    // Create a new instance for this render cycle
     const equipment = new EquipmentParser(classDropdown?.value, backgroundDropdown?.value);
 
+    // First remove any existing listeners to prevent duplicates
+    if (classDropdown?._equipmentChangeHandler) {
+      classDropdown.removeEventListener('change', classDropdown._equipmentChangeHandler);
+    }
+
+    if (backgroundDropdown?._equipmentChangeHandler) {
+      backgroundDropdown.removeEventListener('change', backgroundDropdown._equipmentChangeHandler);
+    }
+
     if (equipmentContainer) {
+      // Clear any existing content
+      equipmentContainer.innerHTML = '';
+
       equipment
         .renderEquipmentChoices()
         .then((choices) => equipmentContainer.appendChild(choices))
         .catch((error) => HM.log(1, 'Error rendering equipment choices:', error));
     }
 
-    classDropdown?.addEventListener('change', async (event) => {
-      const selectedValue = event.target.value;
-      HM.CONFIG.SELECT_STORAGE.class = {
-        selectedValue,
-        selectedId: selectedValue.split(' ')[0]
-      };
-      equipment.classId = HM.CONFIG.SELECT_STORAGE.class.selectedId;
-      await this.updateEquipmentSection(equipment, equipmentContainer, 'class');
-    });
+    // Create and store new handler functions
+    if (classDropdown) {
+      classDropdown._equipmentChangeHandler = async (event) => {
+        const selectedValue = event.target.value;
+        HM.CONFIG.SELECT_STORAGE.class = {
+          selectedValue,
+          selectedId: selectedValue.split(' ')[0]
+        };
 
-    backgroundDropdown?.addEventListener('change', async (event) => {
-      const selectedValue = event.target.value;
-      HM.CONFIG.SELECT_STORAGE.background = {
-        selectedValue,
-        selectedId: selectedValue.split(' ')[0]
-      };
-      equipment.backgroundId = HM.CONFIG.SELECT_STORAGE.background.selectedId;
-      await this.updateEquipmentSection(equipment, equipmentContainer, 'background');
-      SummaryManager.updateBackgroundSummary(event.target);
+        // Create a new parser for this update
+        const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
 
-      await SummaryManager.handleBackgroundChange(HM.CONFIG.SELECT_STORAGE.background);
-    });
+        await this.updateEquipmentSection(updateEquipment, equipmentContainer, 'class');
+      };
+
+      classDropdown.addEventListener('change', classDropdown._equipmentChangeHandler);
+    }
+
+    if (backgroundDropdown) {
+      backgroundDropdown._equipmentChangeHandler = async (event) => {
+        const selectedValue = event.target.value;
+        HM.CONFIG.SELECT_STORAGE.background = {
+          selectedValue,
+          selectedId: selectedValue.split(' ')[0]
+        };
+
+        // Create a new parser for this update
+        const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
+
+        await this.updateEquipmentSection(updateEquipment, equipmentContainer, 'background');
+        SummaryManager.updateBackgroundSummary(event.target);
+        await SummaryManager.handleBackgroundChange(HM.CONFIG.SELECT_STORAGE.background);
+      };
+
+      backgroundDropdown.addEventListener('change', backgroundDropdown._equipmentChangeHandler);
+    }
   }
 
   /**

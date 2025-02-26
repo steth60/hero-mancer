@@ -97,8 +97,8 @@ export class HtmlManipulator {
   }
 
   static cleanup() {
-    this.cleanupButton();
     if (this.button) {
+      this.cleanupButton();
       this.addButtonListener();
     }
   }

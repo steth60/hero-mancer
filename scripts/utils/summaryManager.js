@@ -66,13 +66,17 @@ export class TableManager {
 
       const validTables = tables.filter((table) => table !== null);
       if (validTables.length) {
-        for (const table of validTables) {
-          try {
-            await table.resetResults();
-          } catch (error) {
-            HM.log(1, `Error resetting table ${table.id}:`, error);
-          }
-        }
+        // Process all table resets in parallel
+        await Promise.all(
+          validTables.map(async (table) => {
+            try {
+              await table.resetResults();
+            } catch (error) {
+              HM.log(1, `Error resetting table ${table.id}:`, error);
+            }
+          })
+        );
+
         this.currentTables.set(background.id, validTables);
         HM.log(3, 'Tables initialized and stored for background:', background.id);
       }
@@ -503,12 +507,16 @@ export class SummaryManager {
     const cleanPackId = packId.slice(0, -1);
     const uuid = `Compendium.${cleanPackId}.Item.${itemId}`;
 
-    const background = await fromUuid(uuid);
-    if (background) {
-      await TableManager.initializeTablesForBackground(background);
+    try {
+      const background = await fromUuid(uuid);
+      if (background) {
+        await TableManager.initializeTablesForBackground(background);
 
-      const rollButtons = document.querySelectorAll('.roll-btn');
-      rollButtons.forEach((button) => (button.disabled = false));
+        const rollButtons = document.querySelectorAll('.roll-btn');
+        rollButtons.forEach((button) => (button.disabled = false));
+      }
+    } catch (error) {
+      HM.log(1, `Error loading background with UUID ${uuid}:`, error);
     }
   }
 

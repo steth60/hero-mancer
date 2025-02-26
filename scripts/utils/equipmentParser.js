@@ -157,8 +157,14 @@ export class EquipmentParser {
    * @throws {Error} If rendering fails
    */
   async renderEquipmentChoices(type = null) {
-    EquipmentParser.renderedItems = new Set();
-    EquipmentParser.combinedItemIds = new Set();
+    // Clear the rendered items set at the beginning of the rendering process
+    // Only if we're rendering all types or if it's the first time rendering any type
+    if (!type || !this._renderInProgress) {
+      this._renderInProgress = true;
+      EquipmentParser.renderedItems = new Set();
+      EquipmentParser.combinedItemIds = new Set();
+    }
+
     this.equipmentData = null;
 
     await EquipmentParser.initializeLookupItems();
@@ -179,46 +185,68 @@ export class EquipmentParser {
 
     const typesToRender = type ? [type] : Object.keys(this.equipmentData);
 
-    for (const currentType of typesToRender) {
-      const items = this.equipmentData[currentType] || [];
+    try {
+      // Process each type sequentially to avoid race conditions
+      for (const currentType of typesToRender) {
+        const items = this.equipmentData[currentType] || [];
 
-      // Check if the section for this type already exists, otherwise create it
-      let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
-      if (sectionContainer) {
-        HM.log(3, `${currentType}-equipment-section already exists. Clearing and reusing.`);
-        HM.log(3, 'Existing container:', sectionContainer);
-        sectionContainer.innerHTML = ''; // Clear existing content if section exists
-      } else {
-        sectionContainer = document.createElement('div');
-        sectionContainer.classList.add(`${currentType}-equipment-section`);
-        container.appendChild(sectionContainer);
-      }
+        // Check if the section for this type already exists, otherwise create it
+        let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
+        if (sectionContainer) {
+          HM.log(3, `${currentType}-equipment-section already exists. Clearing and reusing.`);
+          HM.log(3, 'Existing container:', sectionContainer);
+          sectionContainer.innerHTML = ''; // Clear existing content if section exists
+        } else {
+          sectionContainer = document.createElement('div');
+          sectionContainer.classList.add(`${currentType}-equipment-section`);
+          container.appendChild(sectionContainer);
+        }
 
-      // Get the localized placeholder text for the current type
-      const placeholderText = game.i18n.localize(`hm.app.${currentType}.select-placeholder`);
-      const dropdown = document.querySelector(`#${currentType}-dropdown`);
-      const dropdownText = dropdown.selectedOptions[0].innerHTML;
-      const isPlaceholder = dropdownText === placeholderText;
+        // Get the localized placeholder text for the current type
+        const placeholderText = game.i18n.localize(`hm.app.${currentType}.select-placeholder`);
+        const dropdown = document.querySelector(`#${currentType}-dropdown`);
+        const dropdownText = dropdown.selectedOptions[0].innerHTML;
+        const isPlaceholder = dropdownText === placeholderText;
 
-      // Add a header for the section based on whether it's a placeholder
-      const header = document.createElement('h3');
-      /** TODO: Make this localization friendly. */
-      header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
-      sectionContainer.appendChild(header);
-      if (currentType === 'class' && this.classId) {
-        await this.renderClassWealthOption(this.classId, sectionContainer);
-      }
-      for (const item of items) {
-        const itemDoc = await fromUuidSync(item.key);
-        HM.log(3, 'PROCESSING ITEM DEBUG:', { item: item, itemDoc: itemDoc });
-        item.name = itemDoc?.name || item.key;
-        const itemElement = await this.createEquipmentElement(item);
+        // Add a header for the section based on whether it's a placeholder
+        const header = document.createElement('h3');
+        header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
+        sectionContainer.appendChild(header);
 
-        if (itemElement) {
-          sectionContainer.appendChild(itemElement);
+        if (currentType === 'class' && this.classId) {
+          await this.renderClassWealthOption(this.classId, sectionContainer);
+        }
+
+        // Track items processed for this section to avoid duplicates
+        const processedItems = new Set();
+
+        for (const item of items) {
+          // Skip if this item has already been processed for this section
+          if (processedItems.has(item._id || item.key)) {
+            HM.log(3, `Skipping duplicate item in current render cycle: ${item.key || item._id}`);
+            continue;
+          }
+
+          processedItems.add(item._id || item.key);
+
+          const itemDoc = await fromUuidSync(item.key);
+          HM.log(3, 'PROCESSING ITEM DEBUG:', { item: item, itemDoc: itemDoc });
+          item.name = itemDoc?.name || item.key;
+
+          const itemElement = await this.createEquipmentElement(item);
+
+          if (itemElement) {
+            sectionContainer.appendChild(itemElement);
+          }
         }
       }
+    } finally {
+      // Clear the render in progress flag when we're done
+      if (!type) {
+        this._renderInProgress = false;
+      }
     }
+
     return container;
   }
 
@@ -257,7 +285,17 @@ export class EquipmentParser {
 
       if (item.key) {
         try {
-          const itemDoc = await fromUuidSync(item.key);
+          let itemDoc = await fromUuidSync(item.key);
+
+          // If fromUuidSync fails to return a document, try regular fromUuid
+          if (!itemDoc) {
+            try {
+              itemDoc = await fromUuid(item.key);
+            } catch (err) {
+              HM.log(1, `Error getting document for item ${item._source?.key}: ${err.message}`);
+            }
+          }
+
           if (itemDoc) {
             labelElement.innerHTML = item.label || `${item.count || ''} ${itemDoc.name}`;
             shouldAddLabel = true;
@@ -267,11 +305,12 @@ export class EquipmentParser {
             shouldAddLabel = true;
           }
         } catch (error) {
-          HM.log(1, `Error getting label for item ${item._source.key}: ${error.message}`, { item: item, labelElement: labelElement });
+          HM.log(1, `Error getting label for item ${item._source?.key}: ${error.message}`, { item: item, labelElement: labelElement });
           labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
           shouldAddLabel = true;
         }
       }
+
       if (shouldAddLabel) {
         itemContainer.appendChild(labelElement);
       }
@@ -288,7 +327,7 @@ export class EquipmentParser {
     let result;
     switch (item.type) {
       case 'OR':
-        HM.log(3, `DEBUG: Rendering OR block for item: ${item._source.key}`, { item: item });
+        HM.log(3, `DEBUG: Rendering OR block for item: ${item._source?.key}`, { item: item });
         result = await this.renderOrBlock(item, itemContainer);
         break;
       case 'AND':
@@ -298,11 +337,11 @@ export class EquipmentParser {
         }
         break;
       case 'linked':
-        HM.log(3, `DEBUG: Rendering linked item: ${item._source.key}`, { item: item });
+        HM.log(3, `DEBUG: Rendering linked item: ${item._source?.key}`, { item: item });
         result = await this.renderLinkedItem(item, itemContainer);
         break;
       case 'focus':
-        HM.log(3, `DEBUG: Rendering focus item: ${item._source.key}`, { item: item });
+        HM.log(3, `DEBUG: Rendering focus item: ${item._source?.key}`, { item: item });
         result = await this.renderFocusItem(item, itemContainer);
         break;
       default:
@@ -1547,37 +1586,35 @@ export class EquipmentParser {
      *
      */
     async function processContainerItem(containerItem, quantity) {
-      const packId = containerItem.pack;
-      const pack = game.packs.get(packId);
+      try {
+        const packId = containerItem.pack;
+        const pack = game.packs.get(packId);
 
-      if (pack) {
+        if (!pack) return;
+
         const fullContainer = await pack.getDocument(containerItem._id);
-        if (fullContainer) {
-          /* Somewhere here, we should be setting fullContainer.system.contents to containerData */
-          /* so that when the container is in the sheet it has contents === to the objects of the contents inside. */
-          try {
-            const containerData = await CONFIG.Item.documentClass.createWithContents([fullContainer], {
-              keepId: true,
-              transformAll: async (doc) => {
-                const transformed = doc.toObject();
-                if (doc.id === fullContainer.id) {
-                  transformed.system = transformed.system || {};
-                  transformed.system.quantity = quantity;
-                  transformed.system.currency = fullContainer.system?.currency;
-                  transformed.system.equipped = true;
-                }
-                return transformed;
-              }
-            });
+        if (!fullContainer) return;
 
-            if (containerData?.length) {
-              equipment.push(...containerData);
-              HM.log(3, `Added container ${fullContainer.name} and its contents to equipment`);
+        const containerData = await CONFIG.Item.documentClass.createWithContents([fullContainer], {
+          keepId: true,
+          transformAll: async (doc) => {
+            const transformed = doc.toObject();
+            if (doc.id === fullContainer.id) {
+              transformed.system = transformed.system || {};
+              transformed.system.quantity = quantity;
+              transformed.system.currency = fullContainer.system?.currency;
+              transformed.system.equipped = true;
             }
-          } catch (error) {
-            HM.log(1, `Error processing container ${fullContainer.name}:`, error);
+            return transformed;
           }
+        });
+
+        if (containerData?.length) {
+          equipment.push(...containerData);
+          HM.log(3, `Added container ${fullContainer.name} and its contents to equipment`);
         }
+      } catch (error) {
+        HM.log(1, `Error processing container ${containerItem._id}:`, error);
       }
     }
 
