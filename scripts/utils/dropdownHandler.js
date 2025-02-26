@@ -295,16 +295,31 @@ export class DropdownHandler {
         throw new Error('Invalid input parameters');
       }
 
+      // Collect all dropdown updates first, then apply them in a batch
+      const dropdownUpdates = [];
+
       switch (mode) {
         case MODES.POINT_BUY:
-          this.handlePointBuyMode(abilityDropdowns, selectedAbilities, totalPoints);
+          this.handlePointBuyMode(abilityDropdowns, selectedAbilities, totalPoints, dropdownUpdates);
           break;
         case MODES.MANUAL_FORMULA:
-          this.handleManualFormulaMode(abilityDropdowns, selectedAbilities);
+          this.handleManualFormulaMode(abilityDropdowns, selectedAbilities, dropdownUpdates);
           break;
         default:
           throw new Error(`Unsupported mode: ${mode}`);
       }
+
+      // Apply all updates in one batch
+      requestAnimationFrame(() => {
+        dropdownUpdates.forEach((update) => update());
+
+        if (mode === MODES.POINT_BUY) {
+          const pointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
+          const remainingPoints = totalPoints - pointsSpent;
+          EventBus.emit('points-update', remainingPoints);
+          Listeners.updateRemainingPointsDisplay(remainingPoints);
+        }
+      });
     } catch (error) {
       HM.log(1, `Error in updateAbilityDropdowns: ${error.message}`);
     }
@@ -316,17 +331,18 @@ export class DropdownHandler {
    * @param {number[]} selectedAbilities Selected ability scores
    * @param {number} totalPoints Total available points
    */
-  static handlePointBuyMode(abilityDropdowns, selectedAbilities, totalPoints) {
+  static handlePointBuyMode(abilityDropdowns, selectedAbilities, totalPoints, dropdownUpdates) {
     const pointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
     const remainingPoints = totalPoints - pointsSpent;
 
     abilityDropdowns.forEach((dropdown) => {
       const currentValue = parseInt(dropdown.value, 10) || ABILITY_SCORES.DEFAULT;
-      this.updateDropdownOptions(dropdown, currentValue, remainingPoints);
-    });
 
-    EventBus.emit('points-update', remainingPoints);
-    Listeners.updateRemainingPointsDisplay(remainingPoints);
+      // Add the update to our batch rather than executing immediately
+      dropdownUpdates.push(() => {
+        this.updateDropdownOptions(dropdown, currentValue, remainingPoints);
+      });
+    });
   }
 
   /**
@@ -352,14 +368,18 @@ export class DropdownHandler {
    * @param {NodeList} abilityDropdowns Ability dropdown elements
    * @param {number[]} selectedAbilities Selected ability scores
    */
-  static handleManualFormulaMode(abilityDropdowns, selectedAbilities) {
+  static handleManualFormulaMode(abilityDropdowns, selectedAbilities, dropdownUpdates) {
     const selectedValues = new Set(selectedAbilities);
 
     abilityDropdowns.forEach((dropdown) => {
       const currentValue = dropdown.value;
-      dropdown.querySelectorAll('option').forEach((option) => {
-        const optionValue = option.value;
-        option.disabled = selectedValues.has(optionValue) && optionValue !== currentValue && parseInt(optionValue, 10) >= ABILITY_SCORES.MIN;
+
+      // Add the update to our batch rather than executing immediately
+      dropdownUpdates.push(() => {
+        dropdown.querySelectorAll('option').forEach((option) => {
+          const optionValue = option.value;
+          option.disabled = selectedValues.has(optionValue) && optionValue !== currentValue && parseInt(optionValue, 10) >= ABILITY_SCORES.MIN;
+        });
       });
     });
   }

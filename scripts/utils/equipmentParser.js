@@ -157,8 +157,6 @@ export class EquipmentParser {
    * @throws {Error} If rendering fails
    */
   async renderEquipmentChoices(type = null) {
-    // Clear the rendered items set at the beginning of the rendering process
-    // Only if we're rendering all types or if it's the first time rendering any type
     if (!type || !this._renderInProgress) {
       this._renderInProgress = true;
       EquipmentParser.renderedItems = new Set();
@@ -186,16 +184,28 @@ export class EquipmentParser {
     const typesToRender = type ? [type] : Object.keys(this.equipmentData);
 
     try {
-      // Process each type sequentially to avoid race conditions
       for (const currentType of typesToRender) {
         const items = this.equipmentData[currentType] || [];
 
-        // Check if the section for this type already exists, otherwise create it
+        // Pre-fetch all item documents in parallel
+        const itemDocs = await Promise.all(
+          items.map(async (item) => {
+            if (!item.key) return { item, doc: null };
+            try {
+              const doc = await fromUuidSync(item.key);
+              return { item, doc };
+            } catch (error) {
+              HM.log(2, `Error pre-fetching item document for ${item.key}:`, error);
+              return { item, doc: null };
+            }
+          })
+        );
+
+        // Create section container
         let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
         if (sectionContainer) {
           HM.log(3, `${currentType}-equipment-section already exists. Clearing and reusing.`);
-          HM.log(3, 'Existing container:', sectionContainer);
-          sectionContainer.innerHTML = ''; // Clear existing content if section exists
+          sectionContainer.innerHTML = '';
         } else {
           sectionContainer = document.createElement('div');
           sectionContainer.classList.add(`${currentType}-equipment-section`);
@@ -208,7 +218,7 @@ export class EquipmentParser {
         const dropdownText = dropdown.selectedOptions[0].innerHTML;
         const isPlaceholder = dropdownText === placeholderText;
 
-        // Add a header for the section based on whether it's a placeholder
+        // Add a header for the section
         const header = document.createElement('h3');
         header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
         sectionContainer.appendChild(header);
@@ -217,21 +227,18 @@ export class EquipmentParser {
           await this.renderClassWealthOption(this.classId, sectionContainer);
         }
 
-        // Track items processed for this section to avoid duplicates
+        // Process all items with their pre-fetched documents
         const processedItems = new Set();
 
-        for (const item of items) {
-          // Skip if this item has already been processed for this section
+        for (const { item, doc } of itemDocs) {
           if (processedItems.has(item._id || item.key)) {
-            HM.log(3, `Skipping duplicate item in current render cycle: ${item.key || item._id}`);
             continue;
           }
 
           processedItems.add(item._id || item.key);
 
-          const itemDoc = await fromUuidSync(item.key);
-          HM.log(3, 'PROCESSING ITEM DEBUG:', { item: item, itemDoc: itemDoc });
-          item.name = itemDoc?.name || item.key;
+          // Update item with document info
+          item.name = doc?.name || item.key;
 
           const itemElement = await this.createEquipmentElement(item);
 
@@ -241,7 +248,6 @@ export class EquipmentParser {
         }
       }
     } finally {
-      // Clear the render in progress flag when we're done
       if (!type) {
         this._renderInProgress = false;
       }
@@ -1439,6 +1445,7 @@ export class EquipmentParser {
       const allItems = await this.collectAllItems(selectedPacks);
       if (!allItems?.length) {
         HM.log(1, 'No items collected from compendiums');
+        return;
       }
 
       const categories = {
@@ -1452,14 +1459,27 @@ export class EquipmentParser {
         focus: new Set()
       };
 
-      let categorizedCount = 0;
-      for (const item of allItems) {
-        const type = item.system?.type?.value || item.type;
-        if (categories[type]) {
-          categories[type].add(item);
-          categorizedCount++;
-        }
+      // Process in chunks to avoid overwhelming the event loop
+      const CHUNK_SIZE = 200;
+      const chunks = [];
+
+      for (let i = 0; i < allItems.length; i += CHUNK_SIZE) {
+        chunks.push(allItems.slice(i, i + CHUNK_SIZE));
       }
+
+      let categorizedCount = 0;
+
+      await Promise.all(
+        chunks.map(async (chunk) => {
+          chunk.forEach((item) => {
+            const type = item.system?.type?.value || item.type;
+            if (categories[type]) {
+              categories[type].add(item);
+              categorizedCount++;
+            }
+          });
+        })
+      );
 
       Object.assign(this, categories);
       this.lookupItems = {
@@ -1486,7 +1506,6 @@ export class EquipmentParser {
    */
   static async collectAllItems(selectedPacks) {
     const startTime = performance.now();
-    const items = [];
     const packs = selectedPacks.map((id) => game.packs.get(id)).filter((p) => p?.documentName === 'Item');
     const focusItemIds = new Set();
 
@@ -1499,35 +1518,54 @@ export class EquipmentParser {
 
     try {
       const packIndices = await Promise.all(packs.map((pack) => pack.getIndex()));
-      let processedCount = 0;
-      let skippedCount = 0;
 
-      for (const index of packIndices) {
-        for (const item of index) {
-          const isMagic = Array.isArray(item.system?.properties) && item.system.properties.includes('mgc');
+      // Process all items from all packs in parallel
+      const itemProcessingResults = await Promise.all(
+        packIndices.map(async (index) => {
+          const packItems = [];
+          let processedCount = 0;
+          let skippedCount = 0;
 
-          this.itemUuidMap.set(item._id, item.uuid);
-          processedCount++;
+          for (const item of index) {
+            const isMagic = Array.isArray(item.system?.properties) && item.system.properties.includes('mgc');
 
-          if (item.system?.identifier === 'unarmed-strike' || isMagic) {
-            skippedCount++;
-            continue;
+            this.itemUuidMap.set(item._id, item.uuid);
+            processedCount++;
+
+            if (item.system?.identifier === 'unarmed-strike' || isMagic) {
+              skippedCount++;
+              continue;
+            }
+
+            if (focusItemIds.has(item._id)) {
+              item.system.type.value = 'focus';
+            }
+
+            packItems.push(item);
           }
 
-          if (focusItemIds.has(item._id)) {
-            item.system.type.value = 'focus';
-          }
+          return { packItems, processedCount, skippedCount };
+        })
+      );
 
-          items.push(item);
-        }
+      // Combine results
+      const items = [];
+      let totalProcessed = 0;
+      let totalSkipped = 0;
+
+      for (const result of itemProcessingResults) {
+        items.push(...result.packItems);
+        totalProcessed += result.processedCount;
+        totalSkipped += result.skippedCount;
       }
 
       const endTime = performance.now();
-      HM.log(3, `Items collected in ${(endTime - startTime).toFixed(2)}ms. Processed: ${processedCount}, Included: ${items.length}, Skipped: ${skippedCount}`);
+      HM.log(3, `Items collected in ${(endTime - startTime).toFixed(2)}ms. Processed: ${totalProcessed}, Included: ${items.length}, Skipped: ${totalSkipped}`);
       return items;
     } catch (error) {
       const endTime = performance.now();
       HM.log(1, `Item collection failed after ${(endTime - startTime).toFixed(2)}ms:`, error);
+      return [];
     }
   }
 
@@ -1548,212 +1586,195 @@ export class EquipmentParser {
     const equipmentContainer = event.srcElement.querySelector('#equipment-container');
     if (!equipmentContainer) return equipment;
 
-    /**
-     * Searches for an item in the game's compendium packs by its UUID.
-     * @async
-     * @function findItemInPacks
-     * @param {string} itemId The UUID of the item to search for.
-     * @returns {Promise<object | null>} A promise that resolves to the full item document if found, or `null` if not found.
-     */
     async function findItemInPacks(itemId) {
+      if (!itemId) return null;
+
       HM.log(3, `Searching for item ID: ${itemId}`);
-      const indexItem = fromUuidSync(itemId);
-      if (indexItem) {
-        const packId = indexItem.pack;
-        const pack = game.packs.get(packId);
-        if (pack) {
-          const fullItem = await pack.getDocument(indexItem._id);
-          HM.log(3, `Found full item ${itemId}`);
-          return fullItem;
+      try {
+        const indexItem = fromUuidSync(itemId);
+        if (indexItem) {
+          const packId = indexItem.pack;
+          const pack = game.packs.get(packId);
+          if (pack) {
+            const fullItem = await pack.getDocument(indexItem._id);
+            HM.log(3, `Found full item ${itemId}`);
+            return fullItem;
+          }
         }
+        HM.log(3, `Could not find item ${itemId} in any pack`);
+        return null;
+      } catch (error) {
+        HM.log(2, `Error finding item ${itemId}:`, error);
+        return null;
       }
-      HM.log(3, `Could not find item ${itemId} in any pack`);
-      return null;
     }
 
-    /**
-     * Processes a container item by retrieving its full data from a compendium pack,
-     * populating it with its contents, and adding it to the equipment list.
-     * @async
-     * @function processContainerItem
-     * @param {object} containerItem The container item object to process.
-     * @param {string} containerItem.pack The ID of the compendium pack containing the container item.
-     * @param {string} containerItem._id The unique identifier of the container item in the pack.
-     * @param {number} quantity The quantity of the container item to set.
-     * @returns {Promise<void>} A promise that resolves when the container item has been processed.
-     *
-     * @throws Will log an error if there is an issue processing the container or its contents.
-     *
-     */
     async function processContainerItem(containerItem, quantity) {
+      if (!containerItem) return;
+
       try {
         const packId = containerItem.pack;
         const pack = game.packs.get(packId);
 
-        if (!pack) return;
+        if (pack) {
+          const fullContainer = await pack.getDocument(containerItem._id);
+          if (fullContainer) {
+            const containerData = await CONFIG.Item.documentClass.createWithContents([fullContainer], {
+              keepId: true,
+              transformAll: async (doc) => {
+                const transformed = doc.toObject();
+                if (doc.id === fullContainer.id) {
+                  transformed.system = transformed.system || {};
+                  transformed.system.quantity = quantity;
+                  transformed.system.currency = fullContainer.system?.currency;
+                  transformed.system.equipped = true;
+                }
+                return transformed;
+              }
+            });
 
-        const fullContainer = await pack.getDocument(containerItem._id);
-        if (!fullContainer) return;
-
-        const containerData = await CONFIG.Item.documentClass.createWithContents([fullContainer], {
-          keepId: true,
-          transformAll: async (doc) => {
-            const transformed = doc.toObject();
-            if (doc.id === fullContainer.id) {
-              transformed.system = transformed.system || {};
-              transformed.system.quantity = quantity;
-              transformed.system.currency = fullContainer.system?.currency;
-              transformed.system.equipped = true;
+            if (containerData?.length) {
+              equipment.push(...containerData);
+              HM.log(3, `Added container ${fullContainer.name} and its contents to equipment`);
             }
-            return transformed;
           }
-        });
-
-        if (containerData?.length) {
-          equipment.push(...containerData);
-          HM.log(3, `Added container ${fullContainer.name} and its contents to equipment`);
         }
       } catch (error) {
-        HM.log(1, `Error processing container ${containerItem._id}:`, error);
+        HM.log(1, `Error processing container ${containerItem?.name || containerItem?._id}:`, error);
       }
     }
 
-    const equipmentSections = equipmentContainer.querySelectorAll('.equipment-choices > div');
-
-    for (const section of equipmentSections) {
-      // Check if we should process this section based on its class
+    // Get all appropriate sections based on options
+    const equipmentSections = Array.from(equipmentContainer.querySelectorAll('.equipment-choices > div')).filter((section) => {
       if (section.classList.contains('class-equipment-section') && !options.includeClass) {
-        continue;
+        return false;
       }
       if (section.classList.contains('background-equipment-section') && !options.includeBackground) {
-        continue;
+        return false;
       }
+      return true;
+    });
 
-      HM.log(3, 'Processing new section');
+    // Process all sections in parallel
+    await Promise.all(
+      equipmentSections.map(async (section) => {
+        HM.log(3, 'Processing section:', section.className);
 
-      // Process dropdowns
-      const dropdowns = section.querySelectorAll('select');
-      HM.log(3, `Found ${dropdowns.length} dropdowns in section`);
+        // Process dropdowns in parallel
+        const dropdowns = Array.from(section.querySelectorAll('select'));
+        HM.log(3, `Found ${dropdowns.length} dropdowns in section`);
 
-      for (const dropdown of dropdowns) {
-        const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
-        HM.log(3, `Processing dropdown ${dropdown.id} with value: ${value}`);
+        const dropdownPromises = dropdowns.map(async (dropdown) => {
+          const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
+          if (!value) return;
 
-        if (!value) {
-          HM.log(3, `No value for dropdown ${dropdown.id}, skipping`);
-          continue;
-        }
+          try {
+            const item = await findItemInPacks(value);
+            if (!item) return;
 
-        const item = await findItemInPacks(value);
-        if (item) {
-          const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
-          const optionText = selectedOption?.textContent || '';
+            const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
+            const optionText = selectedOption?.textContent || '';
 
-          const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
-          const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i);
-          const midQuantityMatch = optionText.match(/(.+?)\s+x(\d+)/i);
+            const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
+            const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i);
+            const midQuantityMatch = optionText.match(/(.+?)\s+x(\d+)/i);
 
-          let quantity = 1;
-          if (startQuantityMatch) quantity = parseInt(startQuantityMatch[1]);
-          else if (endQuantityMatch) quantity = parseInt(endQuantityMatch[2]);
-          else if (midQuantityMatch) quantity = parseInt(midQuantityMatch[2]);
+            let quantity = 1;
+            if (startQuantityMatch) quantity = parseInt(startQuantityMatch[1]);
+            else if (endQuantityMatch) quantity = parseInt(endQuantityMatch[2]);
+            else if (midQuantityMatch) quantity = parseInt(midQuantityMatch[2]);
 
-          HM.log(3, `Detected quantity ${quantity} from option text: "${optionText}"`);
+            HM.log(3, `Detected quantity ${quantity} from option text: "${optionText}"`);
 
-          const itemData = item.toObject();
-          if (itemData.type === 'container') {
-            await processContainerItem(item, quantity);
-          } else {
-            equipment.push({
-              ...itemData,
-              system: {
-                ...itemData.system,
-                quantity: quantity,
-                equipped: true
-              }
-            });
+            const itemData = item.toObject();
+            if (itemData.type === 'container') {
+              return processContainerItem(item, quantity);
+            } else {
+              equipment.push({
+                ...itemData,
+                system: {
+                  ...itemData.system,
+                  quantity: quantity,
+                  equipped: true
+                }
+              });
+            }
+          } catch (error) {
+            HM.log(2, `Error processing dropdown ${dropdown.id}:`, error);
           }
-        }
-      }
-
-      // Process checkboxes
-      const checkboxes = section.querySelectorAll('input[type="checkbox"]');
-      HM.log(3, `Found checkboxes in section: ${checkboxes.length}`);
-
-      for (const checkbox of checkboxes) {
-        if (!checkbox.checked) continue;
-
-        // Get the actual label text
-        const labelElement = checkbox.parentElement;
-        const fullLabel = labelElement.textContent.trim();
-        HM.log(3, 'Processing checkbox with label:', fullLabel);
-
-        const itemIds = checkbox.id.split(',');
-        // Split on '+' and trim each part
-        const entries = fullLabel.split('+').map((entry) => entry.trim());
-
-        HM.log(3, 'Parsed label:', {
-          fullLabel,
-          entries
         });
 
-        for (const itemId of itemIds) {
-          if (!itemId) continue;
-          HM.log(3, `Processing itemId: ${itemId}`);
+        await Promise.all(dropdownPromises);
 
-          const item = await findItemInPacks(itemId);
-          if (!item) {
-            HM.log(2, `Could not find item for ID: ${itemId}`);
-            continue;
-          }
+        // Process checkboxes in parallel
+        const checkboxes = Array.from(section.querySelectorAll('input[type="checkbox"]')).filter((cb) => cb.checked);
+        HM.log(3, `Found ${checkboxes.length} checked checkboxes in section`);
 
-          HM.log(3, `Found item "${item.name}" (${itemId})`);
+        const checkboxPromises = checkboxes.map(async (checkbox) => {
+          try {
+            // Get the actual label text
+            const labelElement = checkbox.parentElement;
+            const fullLabel = labelElement.textContent.trim();
+            HM.log(3, 'Processing checkbox with label:', fullLabel);
 
-          // Search all entries for this item's quantity
-          let quantity = 1;
-          HM.log(3, 'Looking for quantity in entries:', {
-            itemName: item.name,
-            entries,
-            entryTexts: entries.map((e) => `"${e}"`) // Show exact text with quotes
-          });
+            const itemIds = checkbox.id.split(',').filter((id) => id);
+            // Split on '+' and trim each part
+            const entries = fullLabel.split('+').map((entry) => entry.trim());
 
-          for (const entry of entries) {
-            const itemPattern = new RegExp(`(\\d+)\\s+${item.name}`, 'i');
-            const match = entry.match(itemPattern);
-            HM.log(3, `Checking entry "${entry}" against pattern "${itemPattern}"`);
+            // Fetch all items in parallel
+            const items = await Promise.all(
+              itemIds.map(async (itemId) => {
+                return {
+                  itemId,
+                  item: await findItemInPacks(itemId)
+                };
+              })
+            );
 
-            if (match) {
-              quantity = parseInt(match[1]);
-              HM.log(3, `Found quantity ${quantity} for ${item.name}`);
-              break;
-            }
-          }
-
-          HM.log(3, 'Preparing to add item:', {
-            name: item.name,
-            quantity,
-            type: item.type,
-            entries
-          });
-
-          const itemData = item.toObject();
-          if (itemData.type === 'container') {
-            HM.log(3, `Processing container: ${item.name}`);
-            await processContainerItem(item, quantity);
-          } else {
-            equipment.push({
-              ...itemData,
-              system: {
-                ...itemData.system,
-                quantity: quantity,
-                equipped: true
+            // Process each found item
+            for (const { itemId, item } of items) {
+              if (!item) {
+                HM.log(2, `Could not find item for ID: ${itemId}`);
+                continue;
               }
-            });
-            HM.log(3, `Added item to equipment: ${item.name} (qty: ${quantity})`);
+
+              // Search all entries for this item's quantity
+              let quantity = 1;
+
+              for (const entry of entries) {
+                const itemPattern = new RegExp(`(\\d+)\\s+${item.name}`, 'i');
+                const match = entry.match(itemPattern);
+
+                if (match) {
+                  quantity = parseInt(match[1]);
+                  HM.log(3, `Found quantity ${quantity} for ${item.name}`);
+                  break;
+                }
+              }
+
+              const itemData = item.toObject();
+              if (itemData.type === 'container') {
+                await processContainerItem(item, quantity);
+              } else {
+                equipment.push({
+                  ...itemData,
+                  system: {
+                    ...itemData.system,
+                    quantity: quantity,
+                    equipped: true
+                  }
+                });
+                HM.log(3, `Added item to equipment: ${item.name} (qty: ${quantity})`);
+              }
+            }
+          } catch (error) {
+            HM.log(2, 'Error processing checkbox:', error);
           }
-        }
-      }
-    }
+        });
+
+        await Promise.all(checkboxPromises);
+      })
+    );
 
     return equipment;
   }
