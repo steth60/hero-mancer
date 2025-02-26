@@ -99,17 +99,20 @@ export class ProgressBar {
 
       HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${percentage.toFixed(2)}%)`);
 
-      // Update progress bar
-      const hmHeader = element.querySelector('.hm-app-header');
-      if (hmHeader) {
-        hmHeader.style.setProperty('--progress-percent', `${percentage}%`);
-      }
+      // Batch DOM updates
+      requestAnimationFrame(() => {
+        // Update progress bar
+        const hmHeader = element.querySelector('.hm-app-header');
+        if (hmHeader) {
+          hmHeader.style.setProperty('--progress-percent', `${percentage}%`);
+        }
 
-      // Update progress text
-      const progressText = element.querySelector('.wizard-progress-text');
-      if (progressText) {
-        progressText.textContent = `${Math.round(percentage)}%`;
-      }
+        // Update progress text
+        const progressText = element.querySelector('.wizard-progress-text');
+        if (progressText) {
+          progressText.textContent = `${Math.round(percentage)}%`;
+        }
+      });
 
       return percentage;
     } catch (err) {

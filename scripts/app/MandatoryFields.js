@@ -172,161 +172,192 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
       return true;
     }
 
-    // Helper function to find label for an element
-    const findLabel = (element) => {
-      HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
-      if (element.localName === 'prose-mirror') {
-        HM.log(3, 'Finding label for ProseMirror element:', { element: element });
-        let h3Element = element.closest('.notes-section')?.querySelector('h3');
-        HM.log(3, 'Found h3 element:', { h3Element: h3Element });
-        return h3Element;
-      }
+    // Collect all DOM updates
+    const mandatoryIndicatorUpdates = [];
+    const fieldCompletionUpdates = [];
 
-      return element
-        .closest('.form-row, .art-selection-row, .customization-row, .ability-block, .form-group, .trait-group, .personality-group, .description-group, .notes-group')
-        ?.querySelector('label, span.ability-label');
-    };
-
-    // Helper function to add indicator to a label/span
-    const addIndicator = (labelElement, isComplete = false) => {
-      // Remove existing indicator if any
-      const existingIcon = labelElement.querySelector('.mandatory-indicator');
-      if (existingIcon) {
-        // Only remove if the state changed
-        const currentIsComplete = existingIcon.classList.contains('fa-circle-check');
-        if (currentIsComplete === isComplete) {
-          return; // No change needed
-        }
-        existingIcon.remove();
-      }
-
-      // Create new indicator
-      const icon = document.createElement('i');
-      if (isComplete) {
-        icon.className = 'fa-duotone fa-solid fa-circle-check mandatory-indicator';
-        icon.style.color = 'hsl(122deg 39% 49%)';
-        icon.style.textShadow = '0 0 8px hsla(122deg, 39%, 49%, 50%)';
-      } else {
-        icon.className = 'fa-duotone fa-solid fa-diamond-exclamation mandatory-indicator';
-        icon.style.color = 'hsl(0deg 100% 71%)';
-        icon.style.textShadow = '0 0 8px hsla(0deg, 100%, 71%, 50%)';
-      }
-      labelElement.prepend(icon);
-    };
-
-    // Handle mandatory field indicators
+    // First pass: collect all field elements and mark as mandatory
+    const fieldElements = new Map();
     mandatoryFields.forEach((field) => {
       const element = form.querySelector(`[name="${field}"]`);
       if (!element) return;
 
-      element.classList.add('mandatory-field');
+      fieldElements.set(field, element);
 
+      // Add mandatory class if not already present
+      if (!element.classList.contains('mandatory-field')) {
+        mandatoryIndicatorUpdates.push(() => element.classList.add('mandatory-field'));
+      }
+
+      // Setup indicator on label
       if (field.startsWith('abilities[')) {
         const abilityBlock = element.closest('.ability-block');
         const label = abilityBlock?.querySelector('.ability-label') || abilityBlock?.querySelector('label');
-        if (label) addIndicator(label);
+        if (label) {
+          mandatoryIndicatorUpdates.push(() => this.addIndicator(label, false));
+        }
       } else {
-        const label = findLabel(element);
-        if (label) addIndicator(label);
+        const label = this.findLabel(element);
+        if (label) {
+          mandatoryIndicatorUpdates.push(() => this.addIndicator(label, false));
+        }
       }
     });
 
-    // Check each mandatory field
-    const missingFields = mandatoryFields.filter((field) => {
-      const element = form.querySelector(`[name="${field}"]`);
-      if (!element) {
-        HM.log(2, `Could not find element for mandatory field: ${field}`);
-        return false;
-      }
+    // Apply initial mandatory field marking
+    if (mandatoryIndicatorUpdates.length > 0) {
+      requestAnimationFrame(() => {
+        mandatoryIndicatorUpdates.forEach((update) => update());
+      });
+    }
 
+    // Second pass: check field completion status
+    const missingFields = [];
+    fieldElements.forEach((element, field) => {
       let isComplete = false;
 
       if (field.startsWith('abilities[')) {
+        // Ability field check (retaining original logic)
         const abilityBlock = element.closest('.ability-block');
-        if (abilityBlock) {
-          // Standard Array - single dropdown
-          if (element.classList.contains('ability-dropdown') && !abilityBlock.classList.contains('point-buy')) {
-            isComplete = element.value && element.value !== '';
-          }
-          // Point Buy - hidden input with control buttons
-          else if (element.type === 'hidden' && abilityBlock.classList.contains('point-buy')) {
-            const score = parseInt(element.value);
-            isComplete = !isNaN(score) && score >= 8;
-          }
-          // Manual - dropdown + number input
-          else {
-            const dropdown = abilityBlock.querySelector('.ability-dropdown');
-            const scoreInput = abilityBlock.querySelector('.ability-score');
-            isComplete = dropdown?.value && scoreInput?.value && dropdown.value !== '' && scoreInput.value !== '';
-          }
+        isComplete = this.checkAbilityCompletion(element, abilityBlock);
 
-          // Update ability block indicator
-          const label = abilityBlock.querySelector('.ability-label') || abilityBlock.querySelector('label');
-          if (label) addIndicator(label, isComplete);
+        // Update UI
+        const label = abilityBlock.querySelector('.ability-label') || abilityBlock.querySelector('label');
+        if (label) {
+          fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
         }
       } else {
-        const type = element?.localName || element?.type || '';
-        const value = element?.value;
-        const checked = element?.checked;
-        const emptyStates = ['', '<p></p>', '<p><br></p>', '<p><br class="ProseMirror-trailingBreak"></p>'];
-        const proseMirrorValue = value || '';
-        const editorContent = element.querySelector('.editor-content.ProseMirror')?.innerHTML || '';
+        // Regular field check (retaining original logic)
+        isComplete = this.checkRegularFieldCompletion(field, element, form);
 
-        HM.log(3, 'Checking mandatory fields:', { element: element, type: type, value: value, checked: checked });
-
-        switch (type) {
-          case 'checkbox':
-            isComplete = checked;
-            break;
-          case 'text':
-          case 'textarea':
-            isComplete = value && value.trim() !== '';
-            break;
-          case 'color-picker':
-            isComplete = value && value !== '#000000';
-            break;
-          case 'select-one':
-            isComplete = value && value !== '';
-            break;
-          case 'prose-mirror':
-            isComplete = !emptyStates.includes(proseMirrorValue) && proseMirrorValue.trim() !== '' && !emptyStates.includes(editorContent) && editorContent.trim() !== '';
-            HM.log(3, 'Checking prose-mirror content:', {
-              value: proseMirrorValue,
-              editorContent: editorContent,
-              isComplete: isComplete
-            });
-            break;
-          default:
-            isComplete = value && value.trim() !== '';
-            break;
+        // Update UI
+        const label = this.findLabel(element);
+        if (label) {
+          fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
         }
-
-        // Update regular field indicator
-        const label = findLabel(element);
-        if (label) addIndicator(label, isComplete);
       }
 
-      element.classList.toggle('complete', isComplete);
-      return !isComplete;
+      fieldCompletionUpdates.push(() => element.classList.toggle('complete', isComplete));
+
+      if (!isComplete) {
+        missingFields.push(field);
+      }
     });
 
-    const isValid = missingFields.length === 0;
-    HM.log(3, `Form validation result: ${isValid}`, {
-      missingFields,
-      submitButtonDisabled: !isValid
+    // Apply all field completion updates at once
+    requestAnimationFrame(() => {
+      fieldCompletionUpdates.forEach((update) => update());
+
+      // Update submit button state
+      const isValid = missingFields.length === 0;
+      submitButton.disabled = !isValid;
+
+      if (!isValid) {
+        submitButton['data-tooltip'] = game.i18n.format('hm.errors.missing-mandatory-fields', {
+          fields: missingFields.join(', ')
+        });
+      } else {
+        submitButton.title = game.i18n.localize('hm.app.save-description');
+      }
     });
 
-    submitButton.disabled = !isValid;
+    return missingFields.length === 0;
+  }
 
-    if (!isValid) {
-      submitButton['data-tooltip'] = game.i18n.format('hm.errors.missing-mandatory-fields', {
-        fields: missingFields.join(', ')
-      });
-    } else {
-      submitButton.title = game.i18n.localize('hm.app.save-description');
+  // Helper methods to extract logic
+  static checkAbilityCompletion(element, abilityBlock) {
+    if (!abilityBlock) return false;
+
+    // Standard Array - single dropdown
+    if (element.classList.contains('ability-dropdown') && !abilityBlock.classList.contains('point-buy')) {
+      return element.value && element.value !== '';
+    }
+    // Point Buy - hidden input with control buttons
+    else if (element.type === 'hidden' && abilityBlock.classList.contains('point-buy')) {
+      const score = parseInt(element.value);
+      return !isNaN(score) && score >= 8;
+    }
+    // Manual - dropdown + number input
+    else {
+      const dropdown = abilityBlock.querySelector('.ability-dropdown');
+      const scoreInput = abilityBlock.querySelector('.ability-score');
+      return dropdown?.value && scoreInput?.value && dropdown.value !== '' && scoreInput.value !== '';
+    }
+  }
+
+  static checkRegularFieldCompletion(field, element, form) {
+    if (!element) return false;
+
+    const type = element?.localName || element?.type || '';
+    const value = element?.value;
+    const checked = element?.checked;
+    const emptyStates = ['', '<p></p>', '<p><br></p>', '<p><br class="ProseMirror-trailingBreak"></p>'];
+    const proseMirrorValue = value || '';
+    const editorContent = element.querySelector('.editor-content.ProseMirror')?.innerHTML || '';
+    const isComplete = !emptyStates.includes(proseMirrorValue) && proseMirrorValue.trim() !== '' && !emptyStates.includes(editorContent) && editorContent.trim() !== '';
+
+    HM.log(3, 'Checking mandatory fields:', { element: element, type: type, value: value, checked: checked });
+
+    switch (type) {
+      case 'checkbox':
+        return checked;
+      case 'text':
+      case 'textarea':
+        return value && value.trim() !== '';
+      case 'color-picker':
+        return value && value !== '#000000';
+      case 'select-one':
+        return value && value !== '';
+      case 'prose-mirror':
+        HM.log(3, 'Checking prose-mirror content:', {
+          value: proseMirrorValue,
+          editorContent: editorContent,
+          isComplete: isComplete
+        });
+        return isComplete;
+      default:
+        return value && value.trim() !== '';
+    }
+  }
+
+  static findLabel(element) {
+    HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
+    if (element.localName === 'prose-mirror') {
+      HM.log(3, 'Finding label for ProseMirror element:', { element: element });
+      let h3Element = element.closest('.notes-section')?.querySelector('h3');
+      HM.log(3, 'Found h3 element:', { h3Element: h3Element });
+      return h3Element;
     }
 
-    return isValid;
+    return element
+      .closest('.form-row, .art-selection-row, .customization-row, .ability-block, .form-group, .trait-group, .personality-group, .description-group, .notes-group')
+      ?.querySelector('label, span.ability-label');
+  }
+
+  static addIndicator(labelElement, isComplete = false) {
+    // Remove existing indicator if any
+    const existingIcon = labelElement.querySelector('.mandatory-indicator');
+    if (existingIcon) {
+      // Only remove if the state changed
+      const currentIsComplete = existingIcon.classList.contains('fa-circle-check');
+      if (currentIsComplete === isComplete) {
+        return; // No change needed
+      }
+      existingIcon.remove();
+    }
+
+    // Create new indicator
+    const icon = document.createElement('i');
+    if (isComplete) {
+      icon.className = 'fa-duotone fa-solid fa-circle-check mandatory-indicator';
+      icon.style.color = 'hsl(122deg 39% 49%)';
+      icon.style.textShadow = '0 0 8px hsla(122deg, 39%, 49%, 50%)';
+    } else {
+      icon.className = 'fa-duotone fa-solid fa-diamond-exclamation mandatory-indicator';
+      icon.style.color = 'hsl(0deg 100% 71%)';
+      icon.style.textShadow = '0 0 8px hsla(0deg, 100%, 71%, 50%)';
+    }
+    labelElement.prepend(icon);
   }
 
   static async reloadConfirm({ world = false } = {}) {

@@ -97,20 +97,33 @@ export class TableManager {
       'Flaws': 'flaws'
     };
 
+    // Collect all DOM updates
+    const updates = [];
+
     Object.entries(typeToFieldMap).forEach(([tableType, fieldName]) => {
       const container = document.querySelector(`.personality-group textarea[name="${fieldName}"]`);
       const rollButton = document.querySelector(`.personality-group button[data-table="${fieldName}"]`);
 
       if (container && rollButton) {
         const hasTable = foundTableTypes?.has(tableType);
+        const newPlaceholder = game.i18n.localize(hasTable ? `hm.app.finalize.${fieldName}-placeholder` : `hm.app.finalize.${fieldName}-placeholder-alt`);
+        const newDisplay = hasTable ? 'block' : 'none';
 
-        // Update placeholder text
-        container.placeholder = game.i18n.localize(hasTable ? `hm.app.finalize.${fieldName}-placeholder` : `hm.app.finalize.${fieldName}-placeholder-alt`);
+        // Only queue updates if values are changing
+        if (container.placeholder !== newPlaceholder) {
+          updates.push(() => (container.placeholder = newPlaceholder));
+        }
 
-        // Show/hide roll button
-        rollButton.style.display = hasTable ? 'block' : 'none';
+        if (rollButton.style.display !== newDisplay) {
+          updates.push(() => (rollButton.style.display = newDisplay));
+        }
       }
     });
+
+    // Apply all updates at once
+    if (updates.length) {
+      requestAnimationFrame(() => updates.forEach((update) => update()));
+    }
   }
 
   static async rollForCharacteristic(backgroundId, characteristicType) {
@@ -453,12 +466,21 @@ export class SummaryManager {
     HM.log(3, 'Found roll buttons:', rollButtons);
     HM.log(3, 'Found background select:', backgroundSelect);
 
-    rollButtons.forEach((button) => (button.disabled = true));
+    // Batch disable all buttons initially
+    if (rollButtons.length) {
+      requestAnimationFrame(() => {
+        rollButtons.forEach((button) => (button.disabled = true));
+      });
+    }
 
     backgroundSelect?.addEventListener('change', (event) => {
       const backgroundId = event.target.value.split(' (')[0];
       HM.log(3, 'Background changed to:', backgroundId);
-      rollButtons.forEach((button) => (button.disabled = !backgroundId));
+
+      // Batch button updates
+      requestAnimationFrame(() => {
+        rollButtons.forEach((button) => (button.disabled = !backgroundId));
+      });
     });
 
     rollButtons.forEach((button) => {

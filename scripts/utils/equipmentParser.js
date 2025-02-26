@@ -283,6 +283,8 @@ export class EquipmentParser {
     const itemContainer = document.createElement('div');
     itemContainer.classList.add('equipment-item');
 
+    const fragment = document.createDocumentFragment();
+
     if (!item.group) {
       const labelElement = document.createElement('h4');
       labelElement.classList.add('parent-label');
@@ -318,9 +320,12 @@ export class EquipmentParser {
       }
 
       if (shouldAddLabel) {
-        itemContainer.appendChild(labelElement);
+        fragment.appendChild(labelElement);
       }
     }
+
+    // Add the fragment to the container at the end
+    itemContainer.appendChild(fragment);
 
     // First check if this is part of an OR choice
     if (item.group) {

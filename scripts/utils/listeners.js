@@ -41,17 +41,27 @@ export class Listeners {
           selectedValues[index] = selectedValue;
           const scoreInput = event.target.parentElement.querySelector('.ability-score');
 
-          // Both dropdown and input should reference the selected ability
-          event.target.setAttribute('name', `abilities[${selectedValue}]`);
-          scoreInput.setAttribute('name', `abilities[${selectedValue}].score`);
+          // Batch DOM updates
+          requestAnimationFrame(() => {
+            // Update attributes
+            event.target.setAttribute('name', `abilities[${selectedValue}]`);
+            scoreInput.setAttribute('name', `abilities[${selectedValue}].score`);
 
-          // Existing code for disabling options
-          abilityDropdowns.forEach((otherDropdown, otherIndex) => {
-            Array.from(otherDropdown.options).forEach((option) => {
-              if (option.value && option.value !== '') {
-                option.disabled = selectedValues.includes(option.value) && selectedValues[otherIndex] !== option.value;
-              }
+            // Batch option updates
+            const updates = [];
+            abilityDropdowns.forEach((otherDropdown, otherIndex) => {
+              Array.from(otherDropdown.options).forEach((option) => {
+                if (option.value && option.value !== '') {
+                  const shouldDisable = selectedValues.includes(option.value) && selectedValues[otherIndex] !== option.value;
+                  if (option.disabled !== shouldDisable) {
+                    updates.push(() => (option.disabled = shouldDisable));
+                  }
+                }
+              });
             });
+
+            // Apply all updates in one batch
+            updates.forEach((update) => update());
           });
         } else {
           // Handle point buy/standard array cases
@@ -62,9 +72,12 @@ export class Listeners {
     });
 
     if (diceRollingMethod === 'pointBuy') {
-      this.updateRemainingPointsDisplay(context.remainingPoints);
-      this.updatePlusButtonState(selectedAbilities, context.remainingPoints);
-      this.updateMinusButtonState(selectedAbilities);
+      // Batch these updates together
+      requestAnimationFrame(() => {
+        this.updateRemainingPointsDisplay(context.remainingPoints);
+        this.updatePlusButtonState(selectedAbilities, context.remainingPoints);
+        this.updateMinusButtonState(selectedAbilities);
+      });
     }
   }
 
@@ -252,17 +265,29 @@ export class Listeners {
    * @param {number} remainingPoints Points available to spend
    */
   static updatePlusButtonState(selectedAbilities, remainingPoints) {
+    // Create a document fragment for batch processing
+    const updates = [];
+
     document.querySelectorAll('.plus-button').forEach((button, index) => {
       const currentScore = selectedAbilities[index];
       const pointCostForNextIncrease = StatRoller.getPointCost(currentScore + 1) - StatRoller.getPointCost(currentScore);
+      const shouldDisable = currentScore >= 15 || remainingPoints < pointCostForNextIncrease;
 
-      button.disabled = currentScore >= 15 || remainingPoints < pointCostForNextIncrease;
+      // Only update if the state actually changes
+      if (button.disabled !== shouldDisable) {
+        updates.push(() => (button.disabled = shouldDisable));
+      }
 
       const inputElement = document.getElementById(`ability-${index}-input`);
-      if (inputElement) {
-        inputElement.value = currentScore;
+      if (inputElement && inputElement.value !== String(currentScore)) {
+        updates.push(() => (inputElement.value = currentScore));
       }
     });
+
+    // Apply all updates in one batch
+    if (updates.length) {
+      requestAnimationFrame(() => updates.forEach((update) => update()));
+    }
   }
 
   /**
@@ -270,15 +295,27 @@ export class Listeners {
    * @param {number[]} selectedAbilities Array of current ability scores
    */
   static updateMinusButtonState(selectedAbilities) {
+    const updates = [];
+
     document.querySelectorAll('.minus-button').forEach((button, index) => {
       const currentScore = selectedAbilities[index];
-      button.disabled = currentScore <= 8;
+      const shouldDisable = currentScore <= 8;
+
+      // Only update if the state actually changes
+      if (button.disabled !== shouldDisable) {
+        updates.push(() => (button.disabled = shouldDisable));
+      }
 
       const inputElement = document.getElementById(`ability-${index}-input`);
-      if (inputElement) {
-        inputElement.value = currentScore;
+      if (inputElement && inputElement.value !== String(currentScore)) {
+        updates.push(() => (inputElement.value = currentScore));
       }
     });
+
+    // Apply all updates in one batch
+    if (updates.length) {
+      requestAnimationFrame(() => updates.forEach((update) => update()));
+    }
   }
 
   static initializeRollMethodListener(html) {
