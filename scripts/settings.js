@@ -27,7 +27,7 @@ export function registerSettings() {
     type: String,
     default: '/',
     onChange: (value) => {
-      CharacterArtPicker.setRootDirectory(value);
+      CharacterArtPicker.rootDirectory = value;
     }
   });
 

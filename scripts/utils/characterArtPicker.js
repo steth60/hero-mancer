@@ -2,27 +2,39 @@ import { HM } from '../hero-mancer.js';
 
 export class CharacterArtPicker {
   /* -------------------------------------------- */
-  /*  Static Public Methods                       */
+  /*  Static Getters & Setters                    */
   /* -------------------------------------------- */
 
-  static getRootDirectory() {
+  /**
+   * Gets the root directory for art selection
+   * @returns {string} The configured root directory path
+   */
+  static get rootDirectory() {
     return game.settings.get(HM.CONFIG.ID, 'artPickerRoot');
   }
 
-  static setRootDirectory(path) {
-    HM.log(3, `CharacterArtPicker.setRootDirectory called with path: ${path}`);
+  /**
+   * Sets the root directory for art selection
+   * @param {string} path - The path to set as root directory
+   */
+  static set rootDirectory(path) {
+    HM.log(3, `CharacterArtPicker.rootDirectory setter called with path: ${path}`);
     if (!path) {
-      HM.log(2, 'Attempted to set ROOT_DIRECTORY to empty path');
+      HM.log(2, 'Attempted to set rootDirectory to empty path');
       return;
     }
     // Update the game setting instead of a static property
     game.settings.set(HM.CONFIG.ID, 'artPickerRoot', path);
-    HM.log(3, `ROOT_DIRECTORY setting updated to: ${path}`);
+    HM.log(3, `rootDirectory setting updated to: ${path}`);
   }
 
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
   static async selectCharacterArt(event, target) {
-    const rootDir = CharacterArtPicker.getRootDirectory();
-    HM.log(3, `CharacterArtPicker.selectCharacterArt using ROOT_DIRECTORY: ${rootDir}`);
+    const rootDir = CharacterArtPicker.rootDirectory;
+    HM.log(3, `CharacterArtPicker.selectCharacterArt using rootDirectory: ${rootDir}`);
 
     const inputField = document.getElementById('character-art-path');
     const currentPath = inputField.value || rootDir;
@@ -57,8 +69,8 @@ export class CharacterArtPicker {
   }
 
   static async selectTokenArt(event, target) {
-    const rootDir = CharacterArtPicker.getRootDirectory();
-    HM.log(3, `CharacterArtPicker.selectTokenArt using ROOT_DIRECTORY: ${rootDir}`);
+    const rootDir = CharacterArtPicker.rootDirectory;
+    HM.log(3, `CharacterArtPicker.selectTokenArt using rootDirectory: ${rootDir}`);
 
     const inputField = document.getElementById('token-art-path');
     const currentPath = inputField.value || rootDir;
@@ -85,8 +97,8 @@ export class CharacterArtPicker {
   }
 
   static async selectPlayerAvatar(event, target) {
-    const rootDir = CharacterArtPicker.getRootDirectory();
-    HM.log(3, `CharacterArtPicker.selectPlayerAvatar using ROOT_DIRECTORY: ${rootDir}`);
+    const rootDir = CharacterArtPicker.rootDirectory;
+    HM.log(3, `CharacterArtPicker.selectPlayerAvatar using rootDirectory: ${rootDir}`);
 
     const inputField = document.getElementById('player-avatar-path');
     const currentPath = inputField.value || rootDir;
