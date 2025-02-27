@@ -3,6 +3,10 @@ import { HM } from '../hero-mancer.js';
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   static DEFAULT_OPTIONS = {
     id: 'hero-mancer-settings-mandatory-fields',
     classes: ['hm-app'],
@@ -22,10 +26,6 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   };
 
-  get title() {
-    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.mandatory-fields.menu.name')}`;
-  }
-
   static PARTS = {
     form: {
       template: 'modules/hero-mancer/templates/settings/mandatory-fields.hbs',
@@ -38,6 +38,18 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
       classes: ['hm-mandatory-footer']
     }
   };
+
+  /* -------------------------------------------- */
+  /*  Getters                                     */
+  /* -------------------------------------------- */
+
+  get title() {
+    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.mandatory-fields.menu.name')}`;
+  }
+
+  /* -------------------------------------------- */
+  /*  Protected Methods                           */
+  /* -------------------------------------------- */
 
   async _prepareContext(options) {
     // Get all valid form fields
@@ -72,30 +84,9 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     };
   }
 
-  static async formHandler(event, form, formData) {
-    const requiresWorldReload = true; // Settings changes require world reload
-    try {
-      HM.log(3, 'Raw form data:', formData);
-
-      // Get all checkboxes from the form
-      const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-      const mandatoryFields = Array.from(checkboxes)
-        .filter((checkbox) => checkbox.checked)
-        .map((checkbox) => checkbox.name);
-
-      HM.log(3, 'Selected mandatory fields:', mandatoryFields);
-
-      // Save to settings
-      await game.settings.set(HM.CONFIG.ID, 'mandatoryFields', mandatoryFields);
-
-      this.constructor.reloadConfirm({ world: requiresWorldReload });
-
-      ui.notifications.info('hm.settings.mandatory-fields.saved', { localize: true });
-    } catch (error) {
-      HM.log(1, 'Error in MandatoryFields formHandler:', error);
-      ui.notifications.error('hm.settings.mandatory-fields.error-saving', { localize: true });
-    }
-  }
+  /* -------------------------------------------- */
+  /*  Public Methods                              */
+  /* -------------------------------------------- */
 
   async getAllFormFields() {
     const abilityFields = Object.entries(CONFIG.DND5E.abilities).map(([key, ability]) => ({
@@ -159,6 +150,35 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
         { key: 'backstory', label: `${game.i18n.localize('hm.app.finalize.backstory')}`, default: false }
       ]
     };
+  }
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
+  static async formHandler(event, form, formData) {
+    const requiresWorldReload = true; // Settings changes require world reload
+    try {
+      HM.log(3, 'Raw form data:', formData);
+
+      // Get all checkboxes from the form
+      const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+      const mandatoryFields = Array.from(checkboxes)
+        .filter((checkbox) => checkbox.checked)
+        .map((checkbox) => checkbox.name);
+
+      HM.log(3, 'Selected mandatory fields:', mandatoryFields);
+
+      // Save to settings
+      await game.settings.set(HM.CONFIG.ID, 'mandatoryFields', mandatoryFields);
+
+      this.constructor.reloadConfirm({ world: requiresWorldReload });
+
+      ui.notifications.info('hm.settings.mandatory-fields.saved', { localize: true });
+    } catch (error) {
+      HM.log(1, 'Error in MandatoryFields formHandler:', error);
+      ui.notifications.error('hm.settings.mandatory-fields.error-saving', { localize: true });
+    }
   }
 
   static async checkMandatoryFields(form) {
@@ -264,7 +284,6 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     return missingFields.length === 0;
   }
 
-  // Helper methods to extract logic
   static checkAbilityCompletion(element, abilityBlock) {
     if (!abilityBlock) return false;
 

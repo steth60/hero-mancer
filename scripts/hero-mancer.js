@@ -6,6 +6,10 @@ import { CacheManager, CustomCompendiums, DiceRolling, DocumentService, Equipmen
  * @class
  */
 export class HM {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   static CONFIG = {
     ID: 'hero-mancer',
     TITLE: 'Hero Mancer',
@@ -19,6 +23,10 @@ export class HM {
   };
 
   static logLevel = 0;
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   static init() {
     this.initSettings();
@@ -118,12 +126,15 @@ export class HM {
   }
 }
 
-// Add SELECT_STORAGE after class definition
 HM.CONFIG.SELECT_STORAGE = {
   class: { selectedValue: '', selectedId: '' },
   race: { selectedValue: '', selectedId: '' },
   background: { selectedValue: '', selectedId: '' }
 };
+
+/* -------------------------------------------- */
+/*  Hooks                                       */
+/* -------------------------------------------- */
 
 Hooks.on('init', () => {
   HM.init();

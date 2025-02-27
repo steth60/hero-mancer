@@ -4,6 +4,10 @@ import { StatRoller } from '../utils/index.js';
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   static DEFAULT_OPTIONS = {
     id: 'hero-mancer-settings-dice-rolling',
     classes: ['hm-app'],
@@ -23,10 +27,6 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   };
 
-  get title() {
-    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.dice-rolling.menu.name')}`;
-  }
-
   static PARTS = {
     form: {
       template: 'modules/hero-mancer/templates/settings/dice-rolling.hbs',
@@ -39,6 +39,18 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       classes: ['hm-compendiums-footer']
     }
   };
+
+  /* -------------------------------------------- */
+  /*  Getters                                     */
+  /* -------------------------------------------- */
+
+  get title() {
+    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.dice-rolling.menu.name')}`;
+  }
+
+  /* -------------------------------------------- */
+  /*  Protected Methods                           */
+  /* -------------------------------------------- */
 
   async _prepareContext(options) {
     const context = {
@@ -62,6 +74,10 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       output.textContent = `${e.target.value}ms`;
     });
   }
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   static async formHandler(event, form, formData) {
     const requiresWorldReload = true; // Settings changes require world reload

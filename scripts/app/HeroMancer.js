@@ -18,9 +18,9 @@ import {
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
-  constructor(options = {}) {
-    super(options);
-  }
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
 
   static selectedAbilities = [];
 
@@ -54,11 +54,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       resizable: false
     }
   };
-
-  /* Getter to set the title of the application. */
-  get title() {
-    return `${HM.CONFIG.TITLE} | ${game.user.name}`;
-  }
 
   /** @override */
   static PARTS = {
@@ -109,6 +104,32 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     renderTimeout: 5000, // Max time to wait for render
     retryAttempts: 3 // Number of retry attempts for failed managers
   };
+
+  /* -------------------------------------------- */
+  /*  Instance Properties                         */
+  /* -------------------------------------------- */
+
+  #isRendering;
+
+  /* -------------------------------------------- */
+  /*  Constructor                                 */
+  /* -------------------------------------------- */
+
+  constructor(options = {}) {
+    super(options);
+  }
+
+  /* -------------------------------------------- */
+  /*  Getters & Setters                           */
+  /* -------------------------------------------- */
+
+  get title() {
+    return `${HM.CONFIG.TITLE} | ${game.user.name}`;
+  }
+
+  /* -------------------------------------------- */
+  /*  Protected Methods                           */
+  /* -------------------------------------------- */
 
   /** @override */
   async _prepareContext(options) {
@@ -188,112 +209,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     HM.log(3, 'Documents registered and enriched, caching results');
     return context;
-  }
-
-  /**
-   * Prepares ability scores data for the context
-   * @returns {Array} Array of ability data objects
-   * @private
-   */
-  #prepareAbilities() {
-    const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
-      key,
-      abbreviation: value.abbreviation.toUpperCase(),
-      fullKey: value.fullKey.toUpperCase(),
-      currentScore: 8
-    }));
-
-    HM.log(3, 'ABILITIES:', abilities);
-    return abilities;
-  }
-
-  /**
-   * Gets available roll methods
-   * @returns {Object} Object with roll method localizations
-   * @private
-   */
-  #getRollMethods() {
-    return {
-      pointBuy: game.i18n.localize('hm.app.abilities.methods.pointBuy'),
-      standardArray: game.i18n.localize('hm.app.abilities.methods.standardArray'),
-      manualFormula: game.i18n.localize('hm.app.abilities.methods.manual')
-    };
-  }
-
-  /**
-   * Gets and validates the current dice rolling method
-   * @returns {string} The validated dice rolling method
-   * @private
-   */
-  #getDiceRollingMethod() {
-    let diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
-    HM.log(3, 'Dice Rolling Method:', diceRollingMethod);
-
-    if (!['standardArray', 'pointBuy', 'manualFormula'].includes(diceRollingMethod)) {
-      diceRollingMethod = 'standardArray'; // Default fallback
-      HM.log(2, 'Invalid dice rolling method, defaulting to standardArray');
-    }
-
-    return diceRollingMethod;
-  }
-
-  /**
-   * Gets the standard array for ability scores
-   * @returns {Array} Array of ability score values
-   * @private
-   */
-  #getStandardArray() {
-    const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
-    const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
-    const diceRollingMethod = this.#getDiceRollingMethod();
-
-    if (diceRollingMethod === 'standardArray') {
-      const customArray = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
-      if (customArray) {
-        const parsedArray = customArray.split(',').map(Number);
-        // Check if the custom array has enough values for all abilities
-        if (parsedArray.length >= abilitiesCount) {
-          return parsedArray;
-        }
-      }
-    }
-
-    return StatRoller.getStandardArray(extraAbilities);
-  }
-
-  /**
-   * Gets token configuration data
-   * @returns {Object} Token configuration object
-   * @private
-   */
-  #getTokenConfig() {
-    const trackedAttrs = TokenDocument.implementation._getConfiguredTrackedAttributes('character');
-
-    return {
-      displayModes: Object.entries(CONST.TOKEN_DISPLAY_MODES).reduce((obj, e) => {
-        obj[e[1]] = game.i18n.localize(`TOKEN.DISPLAY_${e[0]}`);
-        return obj;
-      }, {}),
-      barModes: Object.entries(CONST.TOKEN_DISPLAY_MODES).reduce((obj, e) => {
-        obj[e[1]] = game.i18n.localize(`TOKEN.DISPLAY_${e[0]}`);
-        return obj;
-      }, {}),
-      barAttributes: {
-        '': `${game.i18n.localize('None')}`,
-        ...trackedAttrs.bar.reduce((obj, path) => {
-          obj[path.join('.')] = path.join('.');
-          return obj;
-        }, {})
-      },
-      ring: {
-        effects: Object.entries(CONFIG.Token.ring.ringClass.effects).reduce((obj, [name, value]) => {
-          const loc = CONFIG.Token.ring.effects[name];
-          if (name === 'DISABLED' || name === 'ENABLED' || !loc) return obj;
-          obj[name] = game.i18n.localize(loc);
-          return obj;
-        }, {})
-      }
-    };
   }
 
   /** @override */
@@ -410,10 +325,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @protected
    */
   async _onRender(context, options) {
-    if (this._isRendering) return;
+    if (this.#isRendering) return;
 
     try {
-      this._isRendering = true;
+      this.#isRendering = true;
       await HeroMancer.cleanup(this);
       EventBus.clearAll();
 
@@ -433,7 +348,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       // Now initialize form validation listeners after the initial check
       Listeners.initializeFormValidationListeners(this.element);
     } finally {
-      this._isRendering = false;
+      this.#isRendering = false;
     }
   }
 
@@ -454,6 +369,120 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.heroMancer = null; // Clear the instance
     super._onClose();
   }
+
+  /* -------------------------------------------- */
+  /*  Private Instance Methods                    */
+  /* -------------------------------------------- */
+
+  /**
+   * Prepares ability scores data for the context
+   * @returns {Array} Array of ability data objects
+   * @private
+   */
+  #prepareAbilities() {
+    const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
+      key,
+      abbreviation: value.abbreviation.toUpperCase(),
+      fullKey: value.fullKey.toUpperCase(),
+      currentScore: 8
+    }));
+
+    HM.log(3, 'ABILITIES:', abilities);
+    return abilities;
+  }
+
+  /**
+   * Gets available roll methods
+   * @returns {Object} Object with roll method localizations
+   * @private
+   */
+  #getRollMethods() {
+    return {
+      pointBuy: game.i18n.localize('hm.app.abilities.methods.pointBuy'),
+      standardArray: game.i18n.localize('hm.app.abilities.methods.standardArray'),
+      manualFormula: game.i18n.localize('hm.app.abilities.methods.manual')
+    };
+  }
+
+  /**
+   * Gets and validates the current dice rolling method
+   * @returns {string} The validated dice rolling method
+   * @private
+   */
+  #getDiceRollingMethod() {
+    let diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    HM.log(3, 'Dice Rolling Method:', diceRollingMethod);
+
+    if (!['standardArray', 'pointBuy', 'manualFormula'].includes(diceRollingMethod)) {
+      diceRollingMethod = 'standardArray'; // Default fallback
+      HM.log(2, 'Invalid dice rolling method, defaulting to standardArray');
+    }
+
+    return diceRollingMethod;
+  }
+
+  /**
+   * Gets the standard array for ability scores
+   * @returns {Array} Array of ability score values
+   * @private
+   */
+  #getStandardArray() {
+    const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
+    const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
+    const diceRollingMethod = this.#getDiceRollingMethod();
+
+    if (diceRollingMethod === 'standardArray') {
+      const customArray = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
+      if (customArray) {
+        const parsedArray = customArray.split(',').map(Number);
+        // Check if the custom array has enough values for all abilities
+        if (parsedArray.length >= abilitiesCount) {
+          return parsedArray;
+        }
+      }
+    }
+
+    return StatRoller.getStandardArray(extraAbilities);
+  }
+
+  /**
+   * Gets token configuration data
+   * @returns {Object} Token configuration object
+   * @private
+   */
+  #getTokenConfig() {
+    const trackedAttrs = TokenDocument.implementation._getConfiguredTrackedAttributes('character');
+
+    return {
+      displayModes: Object.entries(CONST.TOKEN_DISPLAY_MODES).reduce((obj, e) => {
+        obj[e[1]] = game.i18n.localize(`TOKEN.DISPLAY_${e[0]}`);
+        return obj;
+      }, {}),
+      barModes: Object.entries(CONST.TOKEN_DISPLAY_MODES).reduce((obj, e) => {
+        obj[e[1]] = game.i18n.localize(`TOKEN.DISPLAY_${e[0]}`);
+        return obj;
+      }, {}),
+      barAttributes: {
+        '': `${game.i18n.localize('None')}`,
+        ...trackedAttrs.bar.reduce((obj, path) => {
+          obj[path.join('.')] = path.join('.');
+          return obj;
+        }, {})
+      },
+      ring: {
+        effects: Object.entries(CONFIG.Token.ring.ringClass.effects).reduce((obj, [name, value]) => {
+          const loc = CONFIG.Token.ring.effects[name];
+          if (name === 'DISABLED' || name === 'ENABLED' || !loc) return obj;
+          obj[name] = game.i18n.localize(loc);
+          return obj;
+        }, {})
+      }
+    };
+  }
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   static async resetOptions(event, target) {
     HM.log(3, 'Resetting options.', { event: event, target: target });
@@ -524,62 +553,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
     return EquipmentParser.collectEquipmentSelections(event, options);
-  }
-
-  static _transformTokenData(formData) {
-    try {
-      HM.log(3, 'Transform Token Data - Input:', formData);
-
-      const tokenData = {
-        texture: {
-          src: formData['token-art'] || formData['character-art'] || 'icons/svg/mystery-man.svg',
-          scaleX: 1,
-          scaleY: 1
-        },
-        sight: { enabled: true },
-        disposition: CONST.TOKEN_DISPOSITIONS.FRIENDLY,
-        actorLink: true
-      };
-
-      // Only add token customization properties if enabled
-      if (game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')) {
-        tokenData.displayName = parseInt(formData.displayName);
-        tokenData.displayBars = parseInt(formData.displayBars);
-        tokenData.bar1 = {
-          attribute: formData['bar1.attribute'] || null
-        };
-        tokenData.bar2 = {
-          attribute: formData['bar2.attribute'] || null
-        };
-        tokenData.ring = {
-          enabled: formData['ring.enabled'] || false,
-          colors: {
-            ring: formData['ring.color'] || null,
-            background: formData.backgroundColor || null
-          },
-          effects: this._calculateRingEffects(formData['ring.effects'])
-        };
-      }
-
-      HM.log(3, 'Token Data Created:', tokenData);
-      return tokenData;
-    } catch (error) {
-      HM.log(1, 'Error in _transformTokenData:', error);
-      return CONFIG.Actor.documentClass.prototype.prototypeToken;
-    }
-  }
-
-  static _calculateRingEffects(effectsArray) {
-    const TRE = CONFIG.Token.ring.ringClass.effects;
-    let effects = TRE.ENABLED;
-
-    if (!effectsArray?.length) return TRE.DISABLED;
-
-    effectsArray.forEach((effect) => {
-      if (effect && TRE[effect]) effects |= TRE[effect];
-    });
-
-    return effects;
   }
 
   /* Function for handling form data collection, logging the results, and adding items to the actor. */
@@ -683,7 +656,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     let actorData = {
       name: actorName,
       img: formData.object['character-art'],
-      prototypeToken: HeroMancer._transformTokenData(formData.object),
+      prototypeToken: HeroMancer.#transformTokenData(formData.object),
       type: 'character',
       system: {
         abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }])),
@@ -916,5 +889,65 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         }
       });
     }
+  }
+
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
+
+  static #transformTokenData(formData) {
+    try {
+      HM.log(3, 'Transform Token Data - Input:', formData);
+
+      const tokenData = {
+        texture: {
+          src: formData['token-art'] || formData['character-art'] || 'icons/svg/mystery-man.svg',
+          scaleX: 1,
+          scaleY: 1
+        },
+        sight: { enabled: true },
+        disposition: CONST.TOKEN_DISPOSITIONS.FRIENDLY,
+        actorLink: true
+      };
+
+      // Only add token customization properties if enabled
+      if (game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')) {
+        tokenData.displayName = parseInt(formData.displayName);
+        tokenData.displayBars = parseInt(formData.displayBars);
+        tokenData.bar1 = {
+          attribute: formData['bar1.attribute'] || null
+        };
+        tokenData.bar2 = {
+          attribute: formData['bar2.attribute'] || null
+        };
+        tokenData.ring = {
+          enabled: formData['ring.enabled'] || false,
+          colors: {
+            ring: formData['ring.color'] || null,
+            background: formData.backgroundColor || null
+          },
+          effects: this.#calculateRingEffects(formData['ring.effects'])
+        };
+      }
+
+      HM.log(3, 'Token Data Created:', tokenData);
+      return tokenData;
+    } catch (error) {
+      HM.log(1, 'Error in #transformTokenData:', error);
+      return CONFIG.Actor.documentClass.prototype.prototypeToken;
+    }
+  }
+
+  static #calculateRingEffects(effectsArray) {
+    const TRE = CONFIG.Token.ring.ringClass.effects;
+    let effects = TRE.ENABLED;
+
+    if (!effectsArray?.length) return TRE.DISABLED;
+
+    effectsArray.forEach((effect) => {
+      if (effect && TRE[effect]) effects |= TRE[effect];
+    });
+
+    return effects;
   }
 }

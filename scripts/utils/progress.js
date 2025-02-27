@@ -5,6 +5,10 @@ import { HM } from '../hero-mancer.js';
  * @class
  */
 export class ProgressBar {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
   /**
    * Updates the header progress bar and title
    * @param {HTMLElement} element - The application element
@@ -24,48 +28,6 @@ export class ProgressBar {
 
     // Update title text
     this.#updateHeaderTitle(headerElement, progressPercentage);
-  }
-
-  /**
-   * Updates the header gradient based on progress
-   * @param {HTMLElement} headerElement - The header element
-   * @param {number} progressPercentage - Current progress percentage
-   * @private
-   */
-  static #updateHeaderGradient(headerElement, progressPercentage) {
-    // Starting color: rgb(69, 99, 181) - blue
-    // End color: rgb(75, 181, blue: 69) - green
-    const startColor = { red: 69, green: 99, blue: 181 };
-    const endColor = { red: 75, green: 181, blue: 69 };
-
-    const currentRed = Math.floor(startColor.red + (progressPercentage / 100) * (endColor.red - startColor.red));
-    const currentGreen = Math.floor(startColor.green + (progressPercentage / 100) * (endColor.green - startColor.green));
-    const currentBlue = Math.floor(startColor.blue + (progressPercentage / 100) * (endColor.blue - startColor.blue));
-
-    const progressColor = `rgb(${currentRed}, ${currentGreen}, ${currentBlue})`;
-    const gradient = `linear-gradient(to right,
-      ${progressColor} 0%,
-      ${progressColor} ${progressPercentage}%,
-      rgba(0, 0, 0, 0.5) ${progressPercentage}%,
-      rgba(0, 0, 0, 0.5) 100%
-    )`;
-
-    headerElement.style.background = gradient;
-  }
-
-  /**
-   * Updates the header title with progress percentage
-   * @param {HTMLElement} headerElement - The header element
-   * @param {number} progressPercentage - Current progress percentage
-   * @private
-   */
-  static #updateHeaderTitle(headerElement, progressPercentage) {
-    const titleElement = headerElement.querySelector('.window-title');
-    if (!titleElement) return;
-
-    const originalTitle = titleElement.dataset.baseTitle || titleElement.textContent;
-    titleElement.dataset.baseTitle = originalTitle;
-    titleElement.textContent = `${originalTitle} (${Math.round(progressPercentage)}% Complete)`;
   }
 
   /**
@@ -119,6 +81,52 @@ export class ProgressBar {
       HM.log(1, 'Error processing form progress:', err);
       return 0;
     }
+  }
+
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
+
+  /**
+   * Updates the header gradient based on progress
+   * @param {HTMLElement} headerElement - The header element
+   * @param {number} progressPercentage - Current progress percentage
+   * @private
+   */
+  static #updateHeaderGradient(headerElement, progressPercentage) {
+    // Starting color: rgb(69, 99, 181) - blue
+    // End color: rgb(75, 181, blue: 69) - green
+    const startColor = { red: 69, green: 99, blue: 181 };
+    const endColor = { red: 75, green: 181, blue: 69 };
+
+    const currentRed = Math.floor(startColor.red + (progressPercentage / 100) * (endColor.red - startColor.red));
+    const currentGreen = Math.floor(startColor.green + (progressPercentage / 100) * (endColor.green - startColor.green));
+    const currentBlue = Math.floor(startColor.blue + (progressPercentage / 100) * (endColor.blue - startColor.blue));
+
+    const progressColor = `rgb(${currentRed}, ${currentGreen}, ${currentBlue})`;
+    const gradient = `linear-gradient(to right,
+      ${progressColor} 0%,
+      ${progressColor} ${progressPercentage}%,
+      rgba(0, 0, 0, 0.5) ${progressPercentage}%,
+      rgba(0, 0, 0, 0.5) 100%
+    )`;
+
+    headerElement.style.background = gradient;
+  }
+
+  /**
+   * Updates the header title with progress percentage
+   * @param {HTMLElement} headerElement - The header element
+   * @param {number} progressPercentage - Current progress percentage
+   * @private
+   */
+  static #updateHeaderTitle(headerElement, progressPercentage) {
+    const titleElement = headerElement.querySelector('.window-title');
+    if (!titleElement) return;
+
+    const originalTitle = titleElement.dataset.baseTitle || titleElement.textContent;
+    titleElement.dataset.baseTitle = originalTitle;
+    titleElement.textContent = `${originalTitle} (${Math.round(progressPercentage)}% Complete)`;
   }
 
   /**

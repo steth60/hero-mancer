@@ -1,6 +1,10 @@
 import { HM } from '../hero-mancer.js';
 
 export class CharacterArtPicker {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
   static getRootDirectory() {
     return game.settings.get(HM.CONFIG.ID, 'artPickerRoot');
   }
@@ -107,6 +111,10 @@ export class CharacterArtPicker {
     const filepicker = new FilePicker(pickerConfig);
     filepicker.render(true);
   }
+
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
 
   static _toggleTokenArtRow() {
     HM.log(3, 'Toggle token art row');

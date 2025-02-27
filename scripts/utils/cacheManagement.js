@@ -3,7 +3,15 @@
  * @class
  */
 export class CacheManager {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   static #instance;
+
+  /* -------------------------------------------- */
+  /*  Instance Properties                         */
+  /* -------------------------------------------- */
 
   #raceDocs;
 
@@ -11,12 +19,20 @@ export class CacheManager {
 
   #backgroundDocs;
 
+  /* -------------------------------------------- */
+  /*  Constructor                                 */
+  /* -------------------------------------------- */
+
   constructor() {
     if (CacheManager.#instance) {
       return CacheManager.#instance;
     }
     CacheManager.#instance = this;
   }
+
+  /* -------------------------------------------- */
+  /*  Public Methods                              */
+  /* -------------------------------------------- */
 
   /**
    * Stores documents in cache

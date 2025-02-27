@@ -2,17 +2,20 @@ import { HM } from '../hero-mancer.js';
 
 /**
  * Manages RollTable interactions for character backgrounds and characteristics.
+ * @class
  */
 export class TableManager {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   static currentTables = new Map();
 
   static tableTypes = ['Personality Traits', 'Ideals', 'Bonds', 'Flaws'];
 
-  static _extractTableIds(description) {
-    const uuidPattern = /@UUID\[Compendium\.dnd5e\.tables\.RollTable\.(.*?)]/g;
-    const matches = [...description.matchAll(uuidPattern)];
-    return matches.map((match) => match[1]);
-  }
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   static async initializeTablesForBackground(background) {
     if (!background) {
@@ -195,12 +198,27 @@ export class TableManager {
       console.error('Error resetting tables:', error);
     }
   }
+
+  /* -------------------------------------------- */
+  /*  Static Protected Methods                    */
+  /* -------------------------------------------- */
+
+  static _extractTableIds(description) {
+    const uuidPattern = /@UUID\[Compendium\.dnd5e\.tables\.RollTable\.(.*?)]/g;
+    const matches = [...description.matchAll(uuidPattern)];
+    return matches.map((match) => match[1]);
+  }
 }
 
 /**
  * Manages summary updates and UI interactions for the character creation process.
+ * @class
  */
 export class SummaryManager {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
   static initializeSummaryListeners() {
     const raceDropdown = document.querySelector('#race-dropdown');
     const classDropdown = document.querySelector('#class-dropdown');

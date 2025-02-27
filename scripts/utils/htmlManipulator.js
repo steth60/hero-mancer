@@ -6,8 +6,16 @@ import { HeroMancer } from './index.js';
  * @class
  */
 export class HtmlManipulator {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   /** @type {HTMLButtonElement|null} Reference to the created button */
   static button = null;
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   /**
    * Registers the HeroMancer button in the Actors tab header
@@ -31,6 +39,10 @@ export class HtmlManipulator {
 
     this.addButtonListener();
   }
+
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
 
   /**
    * Creates the HeroMancer button element

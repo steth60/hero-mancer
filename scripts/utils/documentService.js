@@ -6,6 +6,10 @@ import { DropdownHandler } from './index.js';
  * @class
  */
 export class DocumentService {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
   /**
    * Fetches and prepares documents based on the specified type for dropdown use
    * @async
@@ -31,6 +35,10 @@ export class DocumentService {
       };
     }
   }
+
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
 
   /**
    * Fetches documents from compendiums based on type

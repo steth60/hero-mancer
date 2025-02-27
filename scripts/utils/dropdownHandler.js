@@ -25,11 +25,19 @@ const MODES = {
  * @namespace
  */
 export const EventBus = {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   /** @type {Map<string, Set<Function>>} */
   listeners: new Map(),
 
   /** @type {Map<string, Map<Function, object>>} */
   listenerSources: new Map(),
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   /**
    * Subscribe to an event
@@ -98,8 +106,16 @@ export const EventBus = {
  * @class
  */
 class DocumentCache {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   /** @type {Map<string, Array>} */
   static cache = new Map();
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   /**
    * Generate cache key from context and documents key

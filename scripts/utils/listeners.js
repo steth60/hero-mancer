@@ -7,6 +7,10 @@ import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, Manda
  * @class
  */
 export class Listeners {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
   /**
    * Initializes all listeners for the application
    * @param {HTMLElement} html The root element to attach listeners to
@@ -123,7 +127,7 @@ export class Listeners {
         // Create a new parser for this update
         const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
 
-        await this.updateEquipmentSection(updateEquipment, equipmentContainer, 'class');
+        await this.#updateEquipmentSection(updateEquipment, equipmentContainer, 'class');
       };
 
       classDropdown.addEventListener('change', classDropdown._equipmentChangeHandler);
@@ -140,7 +144,7 @@ export class Listeners {
         // Create a new parser for this update
         const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
 
-        await this.updateEquipmentSection(updateEquipment, equipmentContainer, 'background');
+        await this.#updateEquipmentSection(updateEquipment, equipmentContainer, 'background');
         SummaryManager.updateBackgroundSummary(event.target);
         await SummaryManager.handleBackgroundChange(HM.CONFIG.SELECT_STORAGE.background);
       };
@@ -150,172 +154,11 @@ export class Listeners {
   }
 
   /**
-   * Updates equipment section UI based on class or background changes
-   * @param {EquipmentParser} equipment The equipment parser instance
-   * @param {HTMLElement} container The container element for equipment choices
-   * @param {'class'|'background'} type The type of equipment section to update
-   * @returns {Promise<void>}
-   */
-  static async updateEquipmentSection(equipment, container, type) {
-    try {
-      // Reset rendered flags on all items before updating
-      if (EquipmentParser.lookupItems) {
-        Object.values(EquipmentParser.lookupItems).forEach((itemSet) => {
-          itemSet.forEach((item) => {
-            delete item.rendered;
-            delete item.isSpecialCase;
-            delete item.specialGrouping;
-          });
-        });
-      }
-
-      const updatedChoices = await equipment.renderEquipmentChoices(type);
-      const sectionClass = `${type}-equipment-section`;
-      const existingSection = container.querySelector(`.${sectionClass}`);
-
-      if (existingSection) {
-        existingSection.replaceWith(updatedChoices.querySelector(`.${sectionClass}`));
-      } else {
-        container.appendChild(updatedChoices.querySelector(`.${sectionClass}`));
-      }
-    } catch (error) {
-      HM.log(1, `Error updating ${type} equipment choices:`, error);
-    }
-  }
-
-  /**
    * Initializes character-related listeners including token art and portrait updates
    */
   static initializeCharacterListeners() {
     const tokenArtCheckbox = document.querySelector('#link-token-art');
     tokenArtCheckbox?.addEventListener('change', CharacterArtPicker._toggleTokenArtRow);
-  }
-
-  /**
-   * Updates the display of remaining points in the abilities tab
-   * @param {number} remainingPoints The number of points remaining to spend
-   */
-  static updateRemainingPointsDisplay(remainingPoints) {
-    const abilitiesTab = document.querySelector(".tab[data-tab='abilities']");
-    if (!abilitiesTab?.classList.contains('active')) return;
-
-    const remainingPointsElement = document.getElementById('remaining-points');
-    const totalPoints = StatRoller.getTotalPoints();
-
-    if (remainingPointsElement) {
-      remainingPointsElement.innerHTML = remainingPoints;
-      this.#updatePointsColor(remainingPointsElement, remainingPoints, totalPoints);
-    }
-  }
-
-  /**
-   * Updates the color of the remaining points display based on percentage remaining
-   * @param {HTMLElement} element The element to update
-   * @param {number} remainingPoints Current remaining points
-   * @param {number} totalPoints Total available points
-   * @private
-   */
-  static #updatePointsColor(element, remainingPoints, totalPoints) {
-    if (!element) return;
-
-    const percentage = (remainingPoints / totalPoints) * 100;
-    const hue = Math.max(0, Math.min(120, (percentage * 120) / 100));
-    element.style.color = `hsl(${hue}, 100%, 35%)`;
-  }
-
-  /**
-   * Adjusts ability score up or down within valid range and point limits
-   * @param {number} index The index of the ability score to adjust
-   * @param {number} change The amount to change the score by (positive or negative)
-   * @param {number[]} selectedAbilities Array of current ability scores
-   */
-  static adjustScore(index, change, selectedAbilities) {
-    if (!Array.isArray(selectedAbilities)) {
-      HM.log(2, 'selectedAbilities must be an array');
-      return;
-    }
-    const abilityScoreElement = document.getElementById(`ability-score-${index}`);
-    const currentScore = parseInt(abilityScoreElement.innerHTML, 10);
-    const newScore = Math.min(15, Math.max(8, currentScore + change));
-
-    const totalPoints = StatRoller.getTotalPoints();
-    const pointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
-
-    if (change > 0 && pointsSpent + StatRoller.getPointCost(newScore) - StatRoller.getPointCost(currentScore) > totalPoints) {
-      HM.log(2, 'Not enough points remaining to increase this score.');
-      return;
-    }
-
-    if (newScore !== currentScore) {
-      abilityScoreElement.innerHTML = newScore;
-      selectedAbilities[index] = newScore;
-
-      const updatedPointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
-      const remainingPoints = totalPoints - updatedPointsSpent;
-
-      this.updateRemainingPointsDisplay(remainingPoints);
-      this.updatePlusButtonState(selectedAbilities, remainingPoints);
-      this.updateMinusButtonState(selectedAbilities);
-    }
-  }
-
-  /**
-   * Updates the state of plus buttons based on available points and maximum scores
-   * @param {number[]} selectedAbilities Array of current ability scores
-   * @param {number} remainingPoints Points available to spend
-   */
-  static updatePlusButtonState(selectedAbilities, remainingPoints) {
-    // Create a document fragment for batch processing
-    const updates = [];
-
-    document.querySelectorAll('.plus-button').forEach((button, index) => {
-      const currentScore = selectedAbilities[index];
-      const pointCostForNextIncrease = StatRoller.getPointCost(currentScore + 1) - StatRoller.getPointCost(currentScore);
-      const shouldDisable = currentScore >= 15 || remainingPoints < pointCostForNextIncrease;
-
-      // Only update if the state actually changes
-      if (button.disabled !== shouldDisable) {
-        updates.push(() => (button.disabled = shouldDisable));
-      }
-
-      const inputElement = document.getElementById(`ability-${index}-input`);
-      if (inputElement && inputElement.value !== String(currentScore)) {
-        updates.push(() => (inputElement.value = currentScore));
-      }
-    });
-
-    // Apply all updates in one batch
-    if (updates.length) {
-      requestAnimationFrame(() => updates.forEach((update) => update()));
-    }
-  }
-
-  /**
-   * Updates the state of minus buttons based on minimum allowed scores
-   * @param {number[]} selectedAbilities Array of current ability scores
-   */
-  static updateMinusButtonState(selectedAbilities) {
-    const updates = [];
-
-    document.querySelectorAll('.minus-button').forEach((button, index) => {
-      const currentScore = selectedAbilities[index];
-      const shouldDisable = currentScore <= 8;
-
-      // Only update if the state actually changes
-      if (button.disabled !== shouldDisable) {
-        updates.push(() => (button.disabled = shouldDisable));
-      }
-
-      const inputElement = document.getElementById(`ability-${index}-input`);
-      if (inputElement && inputElement.value !== String(currentScore)) {
-        updates.push(() => (inputElement.value = currentScore));
-      }
-    });
-
-    // Apply all updates in one batch
-    if (updates.length) {
-      requestAnimationFrame(() => updates.forEach((update) => update()));
-    }
   }
 
   static initializeRollMethodListener(html) {
@@ -419,29 +262,6 @@ export class Listeners {
     });
   }
 
-  static async restoreFormOptions(html) {
-    const savedOptions = await SavedOptions.loadOptions();
-    if (Object.keys(savedOptions).length === 0) return;
-
-    for (const [key, value] of Object.entries(savedOptions)) {
-      const elem = html.querySelector(`[name="${key}"]`);
-      if (!elem) continue;
-
-      if (elem.type === 'checkbox') {
-        elem.checked = value;
-      } else if (elem.tagName === 'SELECT') {
-        elem.value = value;
-      } else {
-        elem.value = value;
-      }
-    }
-
-    // Update summaries after restoring options
-    requestAnimationFrame(() => {
-      SummaryManager.updateClassRaceSummary();
-    });
-  }
-
   /**
    * Initialize form validation listeners for mandatory fields
    * @param {HTMLElement} html The root element containing form fields
@@ -508,5 +328,193 @@ export class Listeners {
         });
       }
     });
+  }
+
+  static async restoreFormOptions(html) {
+    const savedOptions = await SavedOptions.loadOptions();
+    if (Object.keys(savedOptions).length === 0) return;
+
+    for (const [key, value] of Object.entries(savedOptions)) {
+      const elem = html.querySelector(`[name="${key}"]`);
+      if (!elem) continue;
+
+      if (elem.type === 'checkbox') {
+        elem.checked = value;
+      } else if (elem.tagName === 'SELECT') {
+        elem.value = value;
+      } else {
+        elem.value = value;
+      }
+    }
+
+    // Update summaries after restoring options
+    requestAnimationFrame(() => {
+      SummaryManager.updateClassRaceSummary();
+    });
+  }
+
+  /**
+   * Updates the display of remaining points in the abilities tab
+   * @param {number} remainingPoints The number of points remaining to spend
+   */
+  static updateRemainingPointsDisplay(remainingPoints) {
+    const abilitiesTab = document.querySelector(".tab[data-tab='abilities']");
+    if (!abilitiesTab?.classList.contains('active')) return;
+
+    const remainingPointsElement = document.getElementById('remaining-points');
+    const totalPoints = StatRoller.getTotalPoints();
+
+    if (remainingPointsElement) {
+      remainingPointsElement.innerHTML = remainingPoints;
+      this.#updatePointsColor(remainingPointsElement, remainingPoints, totalPoints);
+    }
+  }
+
+  /**
+   * Adjusts ability score up or down within valid range and point limits
+   * @param {number} index The index of the ability score to adjust
+   * @param {number} change The amount to change the score by (positive or negative)
+   * @param {number[]} selectedAbilities Array of current ability scores
+   */
+  static adjustScore(index, change, selectedAbilities) {
+    if (!Array.isArray(selectedAbilities)) {
+      HM.log(2, 'selectedAbilities must be an array');
+      return;
+    }
+    const abilityScoreElement = document.getElementById(`ability-score-${index}`);
+    const currentScore = parseInt(abilityScoreElement.innerHTML, 10);
+    const newScore = Math.min(15, Math.max(8, currentScore + change));
+
+    const totalPoints = StatRoller.getTotalPoints();
+    const pointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
+
+    if (change > 0 && pointsSpent + StatRoller.getPointCost(newScore) - StatRoller.getPointCost(currentScore) > totalPoints) {
+      HM.log(2, 'Not enough points remaining to increase this score.');
+      return;
+    }
+
+    if (newScore !== currentScore) {
+      abilityScoreElement.innerHTML = newScore;
+      selectedAbilities[index] = newScore;
+
+      const updatedPointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
+      const remainingPoints = totalPoints - updatedPointsSpent;
+
+      this.updateRemainingPointsDisplay(remainingPoints);
+      this.updatePlusButtonState(selectedAbilities, remainingPoints);
+      this.updateMinusButtonState(selectedAbilities);
+    }
+  }
+
+  /**
+   * Updates the state of plus buttons based on available points and maximum scores
+   * @param {number[]} selectedAbilities Array of current ability scores
+   * @param {number} remainingPoints Points available to spend
+   */
+  static updatePlusButtonState(selectedAbilities, remainingPoints) {
+    // Create a document fragment for batch processing
+    const updates = [];
+
+    document.querySelectorAll('.plus-button').forEach((button, index) => {
+      const currentScore = selectedAbilities[index];
+      const pointCostForNextIncrease = StatRoller.getPointCost(currentScore + 1) - StatRoller.getPointCost(currentScore);
+      const shouldDisable = currentScore >= 15 || remainingPoints < pointCostForNextIncrease;
+
+      // Only update if the state actually changes
+      if (button.disabled !== shouldDisable) {
+        updates.push(() => (button.disabled = shouldDisable));
+      }
+
+      const inputElement = document.getElementById(`ability-${index}-input`);
+      if (inputElement && inputElement.value !== String(currentScore)) {
+        updates.push(() => (inputElement.value = currentScore));
+      }
+    });
+
+    // Apply all updates in one batch
+    if (updates.length) {
+      requestAnimationFrame(() => updates.forEach((update) => update()));
+    }
+  }
+
+  /**
+   * Updates the state of minus buttons based on minimum allowed scores
+   * @param {number[]} selectedAbilities Array of current ability scores
+   */
+  static updateMinusButtonState(selectedAbilities) {
+    const updates = [];
+
+    document.querySelectorAll('.minus-button').forEach((button, index) => {
+      const currentScore = selectedAbilities[index];
+      const shouldDisable = currentScore <= 8;
+
+      // Only update if the state actually changes
+      if (button.disabled !== shouldDisable) {
+        updates.push(() => (button.disabled = shouldDisable));
+      }
+
+      const inputElement = document.getElementById(`ability-${index}-input`);
+      if (inputElement && inputElement.value !== String(currentScore)) {
+        updates.push(() => (inputElement.value = currentScore));
+      }
+    });
+
+    // Apply all updates in one batch
+    if (updates.length) {
+      requestAnimationFrame(() => updates.forEach((update) => update()));
+    }
+  }
+
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
+
+  /**
+   * Updates equipment section UI based on class or background changes
+   * @param {EquipmentParser} equipment The equipment parser instance
+   * @param {HTMLElement} container The container element for equipment choices
+   * @param {'class'|'background'} type The type of equipment section to update
+   * @returns {Promise<void>}
+   */
+  static async #updateEquipmentSection(equipment, container, type) {
+    try {
+      // Reset rendered flags on all items before updating
+      if (EquipmentParser.lookupItems) {
+        Object.values(EquipmentParser.lookupItems).forEach((itemSet) => {
+          itemSet.forEach((item) => {
+            delete item.rendered;
+            delete item.isSpecialCase;
+            delete item.specialGrouping;
+          });
+        });
+      }
+
+      const updatedChoices = await equipment.renderEquipmentChoices(type);
+      const sectionClass = `${type}-equipment-section`;
+      const existingSection = container.querySelector(`.${sectionClass}`);
+
+      if (existingSection) {
+        existingSection.replaceWith(updatedChoices.querySelector(`.${sectionClass}`));
+      } else {
+        container.appendChild(updatedChoices.querySelector(`.${sectionClass}`));
+      }
+    } catch (error) {
+      HM.log(1, `Error updating ${type} equipment choices:`, error);
+    }
+  }
+
+  /**
+   * Updates the color of the remaining points display based on percentage remaining
+   * @param {HTMLElement} element The element to update
+   * @param {number} remainingPoints Current remaining points
+   * @param {number} totalPoints Total available points
+   * @private
+   */
+  static #updatePointsColor(element, remainingPoints, totalPoints) {
+    if (!element) return;
+
+    const percentage = (remainingPoints / totalPoints) * 100;
+    const hue = Math.max(0, Math.min(120, (percentage * 120) / 100));
+    element.style.color = `hsl(${hue}, 100%, 35%)`;
   }
 }

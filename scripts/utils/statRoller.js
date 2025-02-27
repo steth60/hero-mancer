@@ -8,11 +8,19 @@ const { DialogV2 } = foundry.applications.api;
  * @class
  */
 export class StatRoller {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   /** @type {boolean} Indicates if chain rolling is enabled for the current session */
   static chainRollEnabled = false;
 
   /** @type {boolean} Tracks if rolling is currently in progress */
   static isRolling = false;
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   /**
    * Initiates the stat rolling process
@@ -31,7 +39,7 @@ export class StatRoller {
       const hasExistingValue = !this.chainRollEnabled && input?.value?.trim() !== '';
 
       if (hasExistingValue) {
-        await this.showRerollDialog(rollFormula, chainedRolls, index, input);
+        await this.#showRerollDialog(rollFormula, chainedRolls, index, input);
       } else if (chainedRolls) {
         await this.rollAllStats(rollFormula);
       } else {
@@ -74,94 +82,6 @@ export class StatRoller {
    */
   static hasExistingValues() {
     return Array.from(document.querySelectorAll('.ability-score')).some((input) => input.value?.trim() !== '');
-  }
-
-  /**
-   * Shows the reroll confirmation dialog
-   * @param {string} rollFormula The formula to use for rolling
-   * @param {boolean} chainedRolls Whether chained rolls are enabled
-   * @param {string} index The ability block index
-   * @param {HTMLElement} input The ability score input element
-   * @returns {Promise<void>}
-   */
-  static async showRerollDialog(rollFormula, chainedRolls, index, input) {
-    const dialog = new DialogV2({
-      window: {
-        title: game.i18n.localize('hm.dialogs.reroll.title'),
-        icon: 'fas fa-dice-d6'
-      },
-      content: this.getRerollDialogContent(),
-      classes: ['hm-reroll-dialog'],
-      buttons: this.getRerollDialogButtons(rollFormula, chainedRolls, index, input),
-      rejectClose: false,
-      modal: true,
-      position: { width: 400 }
-    });
-
-    dialog.render(true);
-  }
-
-  /**
-   * Gets the content for the reroll dialog
-   * @returns {string} The HTML content for the dialog
-   */
-  static getRerollDialogContent() {
-    // Only show the chain roll checkbox if chain rolls are enabled in settings
-    const chainedRolls = game.settings.get(HM.CONFIG.ID, 'chainedRolls');
-    const chainRollCheckbox =
-      chainedRolls ?
-        `
-    <div class="form-group">
-      <label class="checkbox">
-        <input type="checkbox" name="chainRoll" ${this.chainRollEnabled ? 'checked' : ''}>
-        ${game.i18n.localize('hm.dialogs.reroll.chain-roll-label')}
-      </label>
-    </div>
-  `
-      : '';
-
-    return `
-    <form class="dialog-form">
-      <p>${game.i18n.localize('hm.dialogs.reroll.content')}</p>
-      ${chainRollCheckbox}
-    </form>
-  `;
-  }
-
-  /**
-   * Gets the button configuration for the reroll dialog
-   * @param {string} rollFormula The formula to use for rolling
-   * @param {boolean} chainedRolls Whether chained rolls are enabled
-   * @param {string} index The ability block index
-   * @param {HTMLElement} input The ability score input element
-   * @returns {object[]} The button configurations
-   */
-  static getRerollDialogButtons(rollFormula, chainedRolls, index, input) {
-    return [
-      {
-        action: 'confirm',
-        label: game.i18n.localize('hm.dialogs.reroll.confirm'),
-        icon: 'fas fa-check',
-        default: true,
-        async callback(event, button, dialog) {
-          const chainRollCheckbox = button.form.elements.chainRoll;
-          StatRoller.chainRollEnabled = chainRollCheckbox?.checked ?? false;
-
-          dialog.close();
-
-          if (StatRoller.chainRollEnabled && chainedRolls) {
-            await StatRoller.rollAllStats(rollFormula);
-          } else {
-            await StatRoller.performSingleRoll(rollFormula, index, input);
-          }
-        }
-      },
-      {
-        action: 'cancel',
-        label: game.i18n.localize('hm.dialogs.reroll.cancel'),
-        icon: 'fas fa-times'
-      }
-    ];
   }
 
   /**
@@ -304,5 +224,97 @@ export class StatRoller {
    */
   static calculatePointsSpent(scores) {
     return scores.reduce((total, score) => total + this.getPointCost(score), 0);
+  }
+
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
+
+  /**
+   * Shows the reroll confirmation dialog
+   * @param {string} rollFormula The formula to use for rolling
+   * @param {boolean} chainedRolls Whether chained rolls are enabled
+   * @param {string} index The ability block index
+   * @param {HTMLElement} input The ability score input element
+   * @returns {Promise<void>}
+   */
+  static async #showRerollDialog(rollFormula, chainedRolls, index, input) {
+    const dialog = new DialogV2({
+      window: {
+        title: game.i18n.localize('hm.dialogs.reroll.title'),
+        icon: 'fas fa-dice-d6'
+      },
+      content: this.#getRerollDialogContent(),
+      classes: ['hm-reroll-dialog'],
+      buttons: this.#getRerollDialogButtons(rollFormula, chainedRolls, index, input),
+      rejectClose: false,
+      modal: true,
+      position: { width: 400 }
+    });
+
+    dialog.render(true);
+  }
+
+  /**
+   * Gets the content for the reroll dialog
+   * @returns {string} The HTML content for the dialog
+   */
+  static #getRerollDialogContent() {
+    // Only show the chain roll checkbox if chain rolls are enabled in settings
+    const chainedRolls = game.settings.get(HM.CONFIG.ID, 'chainedRolls');
+    const chainRollCheckbox =
+      chainedRolls ?
+        `
+    <div class="form-group">
+      <label class="checkbox">
+        <input type="checkbox" name="chainRoll" ${this.chainRollEnabled ? 'checked' : ''}>
+        ${game.i18n.localize('hm.dialogs.reroll.chain-roll-label')}
+      </label>
+    </div>
+  `
+      : '';
+
+    return `
+    <form class="dialog-form">
+      <p>${game.i18n.localize('hm.dialogs.reroll.content')}</p>
+      ${chainRollCheckbox}
+    </form>
+  `;
+  }
+
+  /**
+   * Gets the button configuration for the reroll dialog
+   * @param {string} rollFormula The formula to use for rolling
+   * @param {boolean} chainedRolls Whether chained rolls are enabled
+   * @param {string} index The ability block index
+   * @param {HTMLElement} input The ability score input element
+   * @returns {object[]} The button configurations
+   */
+  static #getRerollDialogButtons(rollFormula, chainedRolls, index, input) {
+    return [
+      {
+        action: 'confirm',
+        label: game.i18n.localize('hm.dialogs.reroll.confirm'),
+        icon: 'fas fa-check',
+        default: true,
+        async callback(event, button, dialog) {
+          const chainRollCheckbox = button.form.elements.chainRoll;
+          StatRoller.chainRollEnabled = chainRollCheckbox?.checked ?? false;
+
+          dialog.close();
+
+          if (StatRoller.chainRollEnabled && chainedRolls) {
+            await StatRoller.rollAllStats(rollFormula);
+          } else {
+            await StatRoller.performSingleRoll(rollFormula, index, input);
+          }
+        }
+      },
+      {
+        action: 'cancel',
+        label: game.i18n.localize('hm.dialogs.reroll.cancel'),
+        icon: 'fas fa-times'
+      }
+    ];
   }
 }
