@@ -185,12 +185,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
     const submitButton = form.querySelector('.hm-app-footer-submit');
 
-    HM.log(3, 'Checking mandatory fields:', mandatoryFields);
-
-    if (!submitButton || !mandatoryFields.length) {
-      HM.log(3, 'No submit button or mandatory fields found');
-      return true;
-    }
+    if (!submitButton || !mandatoryFields.length) return true;
 
     // Collect all DOM updates
     const mandatoryIndicatorUpdates = [];
@@ -237,20 +232,15 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
       let isComplete = false;
 
       if (field.startsWith('abilities[')) {
-        // Ability field check (retaining original logic)
         const abilityBlock = element.closest('.ability-block');
         isComplete = this.checkAbilityCompletion(element, abilityBlock);
 
-        // Update UI
         const label = abilityBlock.querySelector('.ability-label') || abilityBlock.querySelector('label');
         if (label) {
           fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
         }
       } else {
-        // Regular field check (retaining original logic)
         isComplete = this.checkRegularFieldCompletion(field, element, form);
-
-        // Update UI
         const label = this.findLabel(element);
         if (label) {
           fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
