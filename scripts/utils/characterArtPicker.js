@@ -128,7 +128,7 @@ export class CharacterArtPicker {
   /*  Static Private Methods                      */
   /* -------------------------------------------- */
 
-  static _toggleTokenArtRow() {
+  static _toggleTokenArtRowVisibility() {
     HM.log(3, 'Toggle token art row');
     const tokenArtRow = document.getElementById('token-art-row');
     const isLinked = document.getElementById('link-token-art').checked;

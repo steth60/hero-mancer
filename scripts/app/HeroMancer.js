@@ -4,12 +4,12 @@ import {
   CharacterArtPicker,
   DropdownHandler,
   EquipmentParser,
-  EventBus,
+  EventDispatcher,
   HM,
   HtmlManipulator,
   Listeners,
   MandatoryFields,
-  ObserverRegistry,
+  MutationObserverRegistry,
   ProgressBar,
   SavedOptions,
   StatRoller,
@@ -157,12 +157,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       classDocs: HM.documents.class || [],
       backgroundDocs: HM.documents.background || [],
       tabs: this._getTabs(options.parts),
-      abilities: this.#prepareAbilities(),
+      abilities: this.#buildAbilitiesContext(),
       rollStat: this.rollStat,
       rollMethods: this.#getRollMethods(),
       diceRollMethod: diceRollMethod,
       allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
-      standardArray: this.#getStandardArray(diceRollMethod),
+      standardArray: this.#getStandardArrayValues(diceRollMethod),
       selectedAbilities: HeroMancer.selectedAbilities,
       remainingPoints: Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities),
       totalPoints: StatRoller.getTotalPoints(),
@@ -192,7 +192,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         case 'abilities':
           context.tab = context.tabs[partId];
           context.totalPoints = StatRoller.getTotalPoints();
-          context.pointsSpent = StatRoller.calculatePointsSpent(HeroMancer.selectedAbilities);
+          context.pointsSpent = StatRoller.calculateTotalPointsSpent(HeroMancer.selectedAbilities);
           context.remainingPoints = context.totalPoints - context.pointsSpent;
           break;
         case 'equipment':
@@ -334,8 +334,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     try {
       this.#isRendering = true;
-      await HeroMancer.cleanup(this);
-      EventBus.clearAll();
+      await HeroMancer.cleanupEventListeners(this);
+      EventDispatcher.clearAll();
 
       // Initialize UI components
       DropdownHandler.initializeDropdown({ type: 'class', html: this.element, context });
@@ -363,14 +363,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const form = event.currentTarget;
     if (!form) return;
     // HM.log(3, 'All form elements:', form.elements);
-    this.completionPercentage = ProgressBar.updateProgress(this.element, form);
+    this.completionPercentage = ProgressBar.calculateAndUpdateProgress(this.element, form);
   }
 
   async _onClose() {
     HM.log(3, 'Closing application.');
-    await HeroMancer.cleanup(this);
-    EventBus.clearAll();
-    HtmlManipulator.cleanup();
+    await HeroMancer.cleanupEventListeners(this);
+    EventDispatcher.clearAll();
+    HtmlManipulator.removeButtonEventListenersReferences();
     HM.heroMancer = null; // Clear the instance
     super._onClose();
   }
@@ -384,7 +384,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @returns {Array} Array of ability data objects
    * @private
    */
-  #prepareAbilities() {
+  #buildAbilitiesContext() {
     const abilities = Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
       key,
       abbreviation: value.abbreviation.toUpperCase(),
@@ -449,7 +449,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @returns {Array} Array of ability score values
    * @private
    */
-  #getStandardArray(diceRollingMethod) {
+  #getStandardArrayValues(diceRollingMethod) {
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
 
@@ -559,17 +559,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /* Logic for rolling stats and updating input fields */
   static async rollStat(event, form) {
     HM.log(3, 'Rolling stats using user-defined formula.');
-    await StatRoller.roller(form); // Use the utility function
+    await StatRoller.rollAbilityScore(form); // Use the utility function
   }
 
   static increaseScore(event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
-    Listeners.adjustScore(index, 1, HeroMancer.selectedAbilities);
+    Listeners.changeAbilityScoreValue(index, 1, HeroMancer.selectedAbilities);
   }
 
   static decreaseScore(event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
-    Listeners.adjustScore(index, -1, HeroMancer.selectedAbilities);
+    Listeners.changeAbilityScoreValue(index, -1, HeroMancer.selectedAbilities);
   }
 
   /**
@@ -578,7 +578,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @returns {Promise<void>}
    * @static
    */
-  static async cleanup(instance) {
+  static async cleanupEventListeners(instance) {
     try {
       const html = instance.element;
       if (!html) {
@@ -598,7 +598,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           if (dropdown) {
             // Clean up description handlers
             if (dropdown._descriptionUpdateHandler) {
-              EventBus.off('description-update', dropdown._descriptionUpdateHandler);
+              EventDispatcher.off('description-update', dropdown._descriptionUpdateHandler);
               dropdown._descriptionUpdateHandler = null;
             }
 
@@ -772,17 +772,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       }
 
       try {
-        ObserverRegistry.unregisterByPrefix('heromancer-');
+        MutationObserverRegistry.unregisterByPrefix('heromancer-');
       } catch (error) {
         HM.log(1, 'Error unregistering observers:', error);
-        cleanupIssues.push('ObserverRegistry');
+        cleanupIssues.push('MutationObserverRegistry');
       }
 
       try {
-        EventBus.clearAll();
+        EventDispatcher.clearAll();
       } catch (error) {
-        HM.log(1, 'Error clearing EventBus:', error);
-        cleanupIssues.push('EventBus');
+        HM.log(1, 'Error clearing EventDispatcher:', error);
+        cleanupIssues.push('EventDispatcher');
       }
 
       if (cleanupIssues.length > 0) {
@@ -837,7 +837,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       // Check if using starting wealth
       const useStartingWealth = formData.object['use-starting-wealth'];
-      const startingWealth = useStartingWealth ? await EquipmentParser.processStartingWealth(formData.object) : null;
+      const startingWealth = useStartingWealth ? await EquipmentParser.convertWealthStringToCurrency(formData.object) : null;
 
       // Get background equipment (always collected)
       const backgroundEquipment = await HeroMancer.collectEquipmentSelections(event, {
@@ -1198,7 +1198,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         try {
           await ChatMessage.create({
             speaker: ChatMessage.getSpeaker(),
-            content: SummaryManager.getSummaryForChat(),
+            content: SummaryManager.generateCharacterSummaryChatMessage(),
             flags: {
               'hero-mancer': {
                 type: 'character-summary'

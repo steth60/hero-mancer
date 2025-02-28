@@ -23,7 +23,7 @@ const MODES = {
  * Event bus for pub/sub pattern
  * @namespace
  */
-export const EventBus = {
+export const EventDispatcher = {
   /* -------------------------------------------- */
   /*  Static Properties                           */
   /* -------------------------------------------- */
@@ -186,7 +186,7 @@ export class DropdownHandler {
    * @returns {Promise<void>}
    */
   static async initializeDropdown({ type, html, context }) {
-    const dropdown = this.getDropdownElement(html, type);
+    const dropdown = this.findDropdownElementByType(html, type);
     if (!dropdown) {
       HM.log(2, `Dropdown for ${type} not found.`);
       return;
@@ -197,7 +197,7 @@ export class DropdownHandler {
     try {
       // Clean up existing listeners
       if (dropdown._descriptionUpdateHandler) {
-        EventBus.off('description-update', dropdown._descriptionUpdateHandler);
+        EventDispatcher.off('description-update', dropdown._descriptionUpdateHandler);
       }
       if (dropdown._changeHandler) {
         dropdown.removeEventListener('change', dropdown._changeHandler);
@@ -219,7 +219,7 @@ export class DropdownHandler {
       dropdown._changeHandler = this.handleDropdownChange.bind(this, type, html, context);
 
       // Add new listeners
-      EventBus.on('description-update', dropdown._descriptionUpdateHandler);
+      EventDispatcher.on('description-update', dropdown._descriptionUpdateHandler);
       dropdown.addEventListener('change', (event) => {
         try {
           requestAnimationFrame(() => dropdown._changeHandler(event));
@@ -238,7 +238,7 @@ export class DropdownHandler {
    * @param {string} type Dropdown type
    * @returns {HTMLElement|null} Dropdown element if found
    */
-  static getDropdownElement(html, type) {
+  static findDropdownElementByType(html, type) {
     const dropdown = html.querySelector(`#${type}-dropdown`);
     if (!dropdown) {
       HM.log(1, `Dropdown for ${type} not found.`);
@@ -280,7 +280,7 @@ export class DropdownHandler {
    */
   static async updateDescription(type, selectedId, html, context) {
     try {
-      const docs = this.getDocuments(context, `${type}Docs`);
+      const docs = this.getDocumentsFromCacheOrContextFromCacheOrContext(context, `${type}Docs`);
       if (!docs) {
         HM.log(2, `No ${type} documents found for description update`);
         return;
@@ -289,7 +289,7 @@ export class DropdownHandler {
       const selectedDoc = docs.find((doc) => doc.id === selectedId);
       const content = selectedDoc?.enrichedDescription || '';
 
-      EventBus.emit('description-update', {
+      EventDispatcher.emit('description-update', {
         elementId: `#${type}-description`,
         content: content || game.i18n.localize('hm.app.no-description')
       });
@@ -297,7 +297,7 @@ export class DropdownHandler {
       HM.log(1, `Error updating description for ${type}:`, error);
 
       // Emit a fallback error message
-      EventBus.emit('description-update', {
+      EventDispatcher.emit('description-update', {
         elementId: `#${type}-description`,
         content: game.i18n.localize('hm.app.no-description')
       });
@@ -310,7 +310,7 @@ export class DropdownHandler {
    * @param {string} documentsKey Key for document collection
    * @returns {Array|null} Array of documents if found
    */
-  static getDocuments(context, documentsKey) {
+  static getDocumentsFromCacheOrContextFromCacheOrContext(context, documentsKey) {
     if (DocumentCache.has(context, documentsKey)) {
       return DocumentCache.get(context, documentsKey);
     }
@@ -332,7 +332,7 @@ export class DropdownHandler {
    * @param {number} totalPoints Total points allowed for Point Buy
    * @param {string} mode Dice rolling method ('pointBuy', 'manualFormula')
    */
-  static updateAbilityDropdowns(abilityDropdowns, selectedAbilities, totalPoints, mode) {
+  static refreshAbilityDropdownsState(abilityDropdowns, selectedAbilities, totalPoints, mode) {
     try {
       if (!Array.isArray(selectedAbilities) || !Number.isInteger(totalPoints)) {
         throw new Error('Invalid input parameters');
@@ -343,7 +343,7 @@ export class DropdownHandler {
 
       switch (mode) {
         case MODES.POINT_BUY:
-          this.handlePointBuyMode(abilityDropdowns, selectedAbilities, totalPoints, dropdownUpdates);
+          this.processPointBuyDropdownUpdates(abilityDropdowns, selectedAbilities, totalPoints, dropdownUpdates);
           break;
         case MODES.MANUAL_FORMULA:
           this.handleManualFormulaMode(abilityDropdowns, selectedAbilities, dropdownUpdates);
@@ -357,14 +357,14 @@ export class DropdownHandler {
         dropdownUpdates.forEach((update) => update());
 
         if (mode === MODES.POINT_BUY) {
-          const pointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
+          const pointsSpent = StatRoller.calculateTotalPointsSpent(selectedAbilities);
           const remainingPoints = totalPoints - pointsSpent;
-          EventBus.emit('points-update', remainingPoints);
+          EventDispatcher.emit('points-update', remainingPoints);
           Listeners.updateRemainingPointsDisplay(remainingPoints);
         }
       });
     } catch (error) {
-      HM.log(1, `Error in updateAbilityDropdowns: ${error.message}`);
+      HM.log(1, `Error in refreshAbilityDropdownsState: ${error.message}`);
     }
   }
 
@@ -374,8 +374,8 @@ export class DropdownHandler {
    * @param {number[]} selectedAbilities Selected ability scores
    * @param {number} totalPoints Total available points
    */
-  static handlePointBuyMode(abilityDropdowns, selectedAbilities, totalPoints, dropdownUpdates) {
-    const pointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
+  static processPointBuyDropdownUpdates(abilityDropdowns, selectedAbilities, totalPoints, dropdownUpdates) {
+    const pointsSpent = StatRoller.calculateTotalPointsSpent(selectedAbilities);
     const remainingPoints = totalPoints - pointsSpent;
 
     abilityDropdowns.forEach((dropdown) => {
@@ -383,7 +383,7 @@ export class DropdownHandler {
 
       // Add the update to our batch rather than executing immediately
       dropdownUpdates.push(() => {
-        this.updateDropdownOptions(dropdown, currentValue, remainingPoints);
+        this.updateDropdownSelectionAvailability(dropdown, currentValue, remainingPoints);
       });
     });
   }
@@ -394,13 +394,13 @@ export class DropdownHandler {
    * @param {number} currentValue Current selected value
    * @param {number} remainingPoints Remaining points
    */
-  static updateDropdownOptions(dropdown, currentValue, remainingPoints) {
+  static updateDropdownSelectionAvailability(dropdown, currentValue, remainingPoints) {
     dropdown.querySelectorAll('option').forEach((option) => {
       const optionValue = parseInt(option.value, 10);
       if (optionValue < ABILITY_SCORES.MIN || optionValue > ABILITY_SCORES.MAX) return;
 
-      const optionCost = StatRoller.getPointCost(optionValue);
-      const canAffordOption = optionCost <= remainingPoints + StatRoller.getPointCost(currentValue);
+      const optionCost = StatRoller.getPointBuyCostForScore(optionValue);
+      const canAffordOption = optionCost <= remainingPoints + StatRoller.getPointBuyCostForScore(currentValue);
 
       option.disabled = !canAffordOption && optionValue !== currentValue;
     });

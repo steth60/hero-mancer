@@ -82,13 +82,15 @@ export class HM {
    * @throws {Error} If document preparation fails
    * @async
    */
-  static async prepareDocuments() {
+  static async loadAndEnrichDocuments() {
     HM.log(3, 'Preparing documents for Hero Mancer');
 
     try {
-      const [raceDocs, classDocs, backgroundDocs] = await Promise.all([DocumentService.prepDocs('race'), DocumentService.prepDocs('class'), DocumentService.prepDocs('background')]).then((results) =>
-        results.map((r) => r.types)
-      );
+      const [raceDocs, classDocs, backgroundDocs] = await Promise.all([
+        DocumentService.prepareDocumentsByType('race'),
+        DocumentService.prepareDocumentsByType('class'),
+        DocumentService.prepareDocumentsByType('background')
+      ]).then((results) => results.map((r) => r.types));
 
       this.documents = { race: raceDocs, class: classDocs, background: backgroundDocs };
 
@@ -119,7 +121,7 @@ export class HM {
     }
   }
 
-  static updateSelection(type, selection) {
+  static updateStoredSelection(type, selection) {
     this.CONFIG.SELECT_STORAGE[type] = selection;
   }
 }
@@ -148,7 +150,7 @@ Hooks.once('ready', async () => {
     HM.COMPAT = { ELKAN: true };
     HM.log(3, 'Elkan Detected: Compatibility auto-enabled.');
   }
-  await HM.prepareDocuments();
+  await HM.loadAndEnrichDocuments();
 
   // Load compendium selections
   CustomCompendiums.classPacks = game.settings.get(HM.CONFIG.ID, 'classPacks');

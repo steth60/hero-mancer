@@ -52,11 +52,11 @@ export class ProgressBar {
    * @param {HTMLElement} element - The application element
    * @param {FormData} formData - The form data
    */
-  static updateProgress(element, form) {
+  static calculateAndUpdateProgress(element, form) {
     if (!element || !form) return;
 
     try {
-      const [filledCount, totalFields] = this.#processFormData(form);
+      const [filledCount, totalFields] = this.#calculateCompletionFromForm(form);
       const percentage = (filledCount / totalFields) * 100;
 
       HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${percentage.toFixed(2)}%)`);
@@ -135,7 +135,7 @@ export class ProgressBar {
    * @returns {[number, number]} - Array containing [filledFields, totalFields]
    * @private
    */
-  static #processFormData(form) {
+  static #calculateCompletionFromForm(form) {
     let totalFields = 0;
     let filledCount = 0;
 
@@ -154,7 +154,7 @@ export class ProgressBar {
       } else if (input.type === 'select-one') {
         isFilled = Boolean(input.value);
       } else {
-        isFilled = this.#isFieldFilled(input.name, input.value, form);
+        isFilled = this.#isFormFieldPopulated(input.name, input.value, form);
       }
 
       // Log field state
@@ -216,7 +216,7 @@ export class ProgressBar {
    * @returns {boolean} - Whether the field is considered filled
    * @private
    */
-  static #isFieldFilled(key, value, form) {
+  static #isFormFieldPopulated(key, value, form) {
     // Handle starting wealth toggle first
     if (key === 'use-starting-wealth') {
       return true; // Always count this as filled since it's a boolean toggle
@@ -224,7 +224,7 @@ export class ProgressBar {
 
     // Handle abilities fields
     if (key.match(/^abilities\[.*]$/)) {
-      const isFilled = this.#isAbilityFieldFilled(value, form);
+      const isFilled = this.#isAbilityScoreFieldPopulated(value, form);
       HM.log(3, `Ability field "${key}" filled: ${isFilled}`);
       return isFilled;
     }
@@ -261,7 +261,7 @@ export class ProgressBar {
    * @returns {boolean} - Whether the ability field is considered filled
    * @private
    */
-  static #isAbilityFieldFilled(value, form) {
+  static #isAbilityScoreFieldPopulated(value, form) {
     const rollMethodSelect = form.querySelector('#roll-method');
     const isPointBuy = rollMethodSelect?.value === 'pointBuy';
 

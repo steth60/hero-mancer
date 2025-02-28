@@ -48,7 +48,7 @@ export class EquipmentParser {
     this.classId = HM.CONFIG.SELECT_STORAGE.class.selectedId;
     this.backgroundId = HM.CONFIG.SELECT_STORAGE.background.selectedId;
     this.proficiencies = new Set();
-    EquipmentParser.initializeContentCache();
+    EquipmentParser.preloadCompendiumIndices();
   }
 
   /* -------------------------------------------- */
@@ -74,7 +74,7 @@ export class EquipmentParser {
    * @param {string} itemId Item ID to search for
    * @returns {Promise<Item|null>} Found item document or null
    */
-  async findItemInCompendiums(itemId) {
+  async findItemDocumentById(itemId) {
     const selectedPacks = await EquipmentParser.getSelectedItemPacks();
     for (const packId of selectedPacks) {
       const pack = game.packs.get(packId);
@@ -92,7 +92,7 @@ export class EquipmentParser {
    * @param {Array<object>} advancements Array of advancement configurations
    * @returns {Promise<Set<string>>} Set of granted proficiency strings
    */
-  async getProficiencies(advancements) {
+  async extractProficienciesFromAdvancements(advancements) {
     const proficiencies = new Set();
 
     for (const advancement of advancements) {
@@ -122,10 +122,10 @@ export class EquipmentParser {
       return [];
     }
 
-    const doc = await this.findItemInCompendiums(selectedId);
+    const doc = await this.findItemDocumentById(selectedId);
 
     if (doc) {
-      this.proficiencies = await this.getProficiencies(doc.system.advancement || []);
+      this.proficiencies = await this.extractProficienciesFromAdvancements(doc.system.advancement || []);
     } else {
       HM.log(2, `No document found for type ${type} with selectedId ${selectedId}`, { doc: doc });
     }
@@ -148,7 +148,7 @@ export class EquipmentParser {
     }
 
     try {
-      const classDoc = await this.findItemInCompendiums(classId);
+      const classDoc = await this.findItemDocumentById(classId);
       if (!classDoc || !classDoc.system.wealth) return;
 
       const wealthContainer = document.createElement('div');
@@ -229,7 +229,7 @@ export class EquipmentParser {
    * @returns {Promise<HTMLElement>} Container element with rendered equipment choices
    * @throws {Error} If rendering fails
    */
-  async renderEquipmentChoices(type = null) {
+  async generateEquipmentSelectionUI(type = null) {
     if (!type || !this._renderInProgress) {
       this._renderInProgress = true;
       EquipmentParser.renderedItems = new Set();
@@ -322,7 +322,7 @@ export class EquipmentParser {
             }
 
             try {
-              const itemElement = await this.#createEquipmentElement(item);
+              const itemElement = await this.#buildEquipmentUIElement(item);
               if (itemElement) {
                 sectionContainer.appendChild(itemElement);
               }
@@ -380,13 +380,13 @@ export class EquipmentParser {
    * @param {object} item Equipment item data
    * @returns {Promise<HTMLElement|null>} Equipment element or null if skipped/invalid
    */
-  async #createEquipmentElement(item) {
+  async #buildEquipmentUIElement(item) {
     if (!item) {
-      HM.log(2, 'Null or undefined item passed to #createEquipmentElement');
+      HM.log(2, 'Null or undefined item passed to #buildEquipmentUIElement');
       return null;
     }
 
-    if (this.#isItemRendered(item)) {
+    if (this.#hasItemBeenRendered(item)) {
       HM.log(3, `DEBUG: Skipping already rendered item: ${item._source?.key}`, { item: item });
       return null;
     }
@@ -511,7 +511,7 @@ export class EquipmentParser {
    * @param {object} item Equipment item
    * @returns {string|null} Linked item ID
    */
-  #findLinkedItemId(item) {
+  #extractLinkedItemId(item) {
     const linkedItem = item.children.find((child) => child.type === 'linked');
     return linkedItem ? linkedItem._source.key : null;
   }
@@ -549,7 +549,7 @@ export class EquipmentParser {
    * @param {object} item Item to check
    * @returns {boolean} True if item ID exists in renderedItems
    */
-  #isItemRendered(item) {
+  #hasItemBeenRendered(item) {
     return EquipmentParser.renderedItems.has(item._id);
   }
 
@@ -841,7 +841,7 @@ export class EquipmentParser {
       return null;
     }
 
-    if (this.#shouldRenderAsDropdown(item)) return null;
+    if (this.#shouldItemUseDropdownDisplay(item)) return null;
 
     const focusType = item.key;
     const focusConfig = CONFIG.DND5E.focusTypes[focusType];
@@ -977,7 +977,7 @@ export class EquipmentParser {
       HM.log(3, 'Skipping item in combinedItems:', item._source.key);
       return null;
     }
-    if (this.#shouldRenderAsDropdown(item)) {
+    if (this.#shouldItemUseDropdownDisplay(item)) {
       HM.log(3, 'Skipping item that should be dropdown:', item._source.key);
       return null;
     }
@@ -1213,7 +1213,7 @@ export class EquipmentParser {
       itemContainer.appendChild(dropdownContainer);
 
       select.addEventListener('change', async (event) => {
-        const isWeaponSelection = event.target.value !== this.#findLinkedItemId(item);
+        const isWeaponSelection = event.target.value !== this.#extractLinkedItemId(item);
         secondLabel.style.display = isWeaponSelection ? 'block' : 'none';
         secondSelect.style.display = isWeaponSelection ? 'block' : 'none';
 
@@ -1301,7 +1301,7 @@ export class EquipmentParser {
    * @param {object} item Equipment item
    * @returns {boolean} True if should render as dropdown
    */
-  #shouldRenderAsDropdown(item) {
+  #shouldItemUseDropdownDisplay(item) {
     HM.log(3, `Checking dropdown render for ${item._id}: type=${item.type}, group=${item.group}`);
 
     // Check for items that are part of an OR block
@@ -1559,7 +1559,7 @@ export class EquipmentParser {
    * @async
    * @throws {Error} If pack index loading fails
    */
-  static async initializeContentCache() {
+  static async preloadCompendiumIndices() {
     const selectedPacks = await this.getSelectedItemPacks();
     const packs = selectedPacks.map((id) => game.packs.get(id)).filter((p) => p?.documentName === 'Item');
     await Promise.all(packs.map((p) => p.getIndex({ fields: ['system.contents', 'uuid'] })));
@@ -1642,7 +1642,7 @@ export class EquipmentParser {
    * @param {object} formData Form data containing wealth options
    * @returns {object|null} Currency amounts or null if invalid
    */
-  static async processStartingWealth(formData) {
+  static async convertWealthStringToCurrency(formData) {
     if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
       HM.log(3, 'USING MODERN RULES - NO STARTING WEALTH');
       return null;

@@ -212,7 +212,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
           mandatoryIndicatorUpdates.push(() => this.addIndicator(label, false));
         }
       } else {
-        const label = this.findLabel(element);
+        const label = this.findAssociatedLabel(element);
         if (label) {
           mandatoryIndicatorUpdates.push(() => this.addIndicator(label, false));
         }
@@ -233,15 +233,15 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
 
       if (field.startsWith('abilities[')) {
         const abilityBlock = element.closest('.ability-block');
-        isComplete = this.checkAbilityCompletion(element, abilityBlock);
+        isComplete = this.isAbilityFieldComplete(element, abilityBlock);
 
         const label = abilityBlock.querySelector('.ability-label') || abilityBlock.querySelector('label');
         if (label) {
           fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
         }
       } else {
-        isComplete = this.checkRegularFieldCompletion(field, element, form);
-        const label = this.findLabel(element);
+        isComplete = this.isFormFieldComplete(field, element, form);
+        const label = this.findAssociatedLabel(element);
         if (label) {
           fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
         }
@@ -274,7 +274,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     return missingFields.length === 0;
   }
 
-  static checkAbilityCompletion(element, abilityBlock) {
+  static isAbilityFieldComplete(element, abilityBlock) {
     if (!abilityBlock) return false;
 
     // Standard Array - single dropdown
@@ -294,7 +294,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  static checkRegularFieldCompletion(field, element, form) {
+  static isFormFieldComplete(field, element, form) {
     if (!element) return false;
 
     const type = element?.localName || element?.type || '';
@@ -329,7 +329,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  static findLabel(element) {
+  static findAssociatedLabel(element) {
     HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
     if (element.localName === 'prose-mirror') {
       HM.log(3, 'Finding label for ProseMirror element:', { element: element });

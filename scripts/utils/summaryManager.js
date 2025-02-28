@@ -1,4 +1,4 @@
-import { HM, ObserverRegistry } from './index.js';
+import { HM, MutationObserverRegistry } from './index.js';
 
 /**
  * Manages RollTable interactions for character backgrounds and characteristics.
@@ -17,10 +17,10 @@ export class TableManager {
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
 
-  static async initializeTablesForBackground(background) {
+  static async loadRollTablesForBackground(background) {
     if (!background) {
       HM.log(2, 'No background provided for table initialization');
-      TableManager.updateUIForMissingTables(null);
+      TableManager.updateRollButtonsAvailability(null);
       return;
     }
 
@@ -34,7 +34,7 @@ export class TableManager {
 
       if (!matches.length) {
         HM.log(3, 'No RollTable UUIDs found in background description, hiding UI elements.');
-        TableManager.updateUIForMissingTables(null);
+        TableManager.updateRollButtonsAvailability(null);
         return;
       }
 
@@ -85,14 +85,14 @@ export class TableManager {
       }
 
       // Update UI based on which table types were found
-      TableManager.updateUIForMissingTables(foundTableTypes);
+      TableManager.updateRollButtonsAvailability(foundTableTypes);
     } catch (error) {
       HM.log(1, 'Error initializing tables for background:', error);
-      TableManager.updateUIForMissingTables(null);
+      TableManager.updateRollButtonsAvailability(null);
     }
   }
 
-  static updateUIForMissingTables(foundTableTypes) {
+  static updateRollButtonsAvailability(foundTableTypes) {
     const typeToFieldMap = {
       'Personality Traits': 'traits',
       'Ideals': 'ideals',
@@ -129,7 +129,7 @@ export class TableManager {
     }
   }
 
-  static async rollForCharacteristic(backgroundId, characteristicType) {
+  static async rollOnBackgroundCharacteristicTable(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
     HM.log(3, 'Found tables for background:', tables);
 
@@ -172,7 +172,7 @@ export class TableManager {
     }
   }
 
-  static isTableExhausted(backgroundId, characteristicType) {
+  static areAllTableResultsDrawn(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
     if (!tables) return true;
 
@@ -203,7 +203,7 @@ export class TableManager {
   /*  Static Protected Methods                    */
   /* -------------------------------------------- */
 
-  static _extractTableIds(description) {
+  static _parseTableUuidsFromDescription(description) {
     const uuidPattern = /@UUID\[Compendium\.dnd5e\.tables\.RollTable\.(.*?)]/g;
     const matches = [...description.matchAll(uuidPattern)];
     return matches.map((match) => match[1]);
@@ -265,16 +265,16 @@ export class SummaryManager {
     }
 
     if (equipmentContainer) {
-      // Register equipment container observer with ObserverRegistry
-      ObserverRegistry.register('summary-equipment', equipmentContainer, { childList: true, subtree: true }, () => this.updateEquipmentSummary());
+      // Register equipment container observer with MutationObserverRegistry
+      MutationObserverRegistry.register('summary-equipment', equipmentContainer, { childList: true, subtree: true }, () => this.updateEquipmentSummary());
     }
 
     if (abilityBlocks) {
       abilityBlocks.forEach((block, index) => {
         const currentScore = block.querySelector('.current-score');
         if (currentScore) {
-          // Register ability score observer with ObserverRegistry
-          ObserverRegistry.register(`summary-ability-${index}`, currentScore, { childList: true, characterData: true, subtree: true }, () => this.updateAbilitiesSummary());
+          // Register ability score observer with MutationObserverRegistry
+          MutationObserverRegistry.register(`summary-ability-${index}`, currentScore, { childList: true, characterData: true, subtree: true }, () => this.updateAbilitiesSummary());
         }
 
         const otherInputs = block.querySelectorAll('.ability-dropdown, .ability-score');
@@ -286,8 +286,8 @@ export class SummaryManager {
     }
 
     if (proseMirror) {
-      // Register proseMirror observer with ObserverRegistry
-      ObserverRegistry.register('summary-backstory', proseMirror, { childList: true, characterData: true, subtree: true, attributes: true }, (mutations) => {
+      // Register proseMirror observer with MutationObserverRegistry
+      MutationObserverRegistry.register('summary-backstory', proseMirror, { childList: true, characterData: true, subtree: true, attributes: true }, (mutations) => {
         const hasContent = proseMirror.innerHTML.trim() !== '';
         if (hasContent) {
           proseMirror.dispatchEvent(new Event('change', { bubbles: true }));
@@ -518,7 +518,7 @@ export class SummaryManager {
           return;
         }
 
-        const result = await TableManager.rollForCharacteristic(backgroundId, tableType);
+        const result = await TableManager.rollOnBackgroundCharacteristicTable(backgroundId, tableType);
         HM.log(3, 'Roll result:', result);
 
         if (result) {
@@ -527,7 +527,7 @@ export class SummaryManager {
           // Trigger change event on textarea to update form data
           textarea.dispatchEvent(new Event('change', { bubbles: true }));
 
-          if (TableManager.isTableExhausted(backgroundId, tableType)) {
+          if (TableManager.areAllTableResultsDrawn(backgroundId, tableType)) {
             button.disabled = true;
           }
         }
@@ -535,7 +535,7 @@ export class SummaryManager {
     });
   }
 
-  static async handleBackgroundChange(selectedBackground) {
+  static async processBackgroundSelectionChange(selectedBackground) {
     if (!selectedBackground?.selectedValue) {
       return;
     }
@@ -547,7 +547,7 @@ export class SummaryManager {
     try {
       const background = await fromUuid(uuid);
       if (background) {
-        await TableManager.initializeTablesForBackground(background);
+        await TableManager.loadRollTablesForBackground(background);
 
         const rollButtons = document.querySelectorAll('.roll-btn');
         rollButtons.forEach((button) => (button.disabled = false));
@@ -557,7 +557,7 @@ export class SummaryManager {
     }
   }
 
-  static getSummaryForChat() {
+  static generateCharacterSummaryChatMessage() {
     const characterName = document.querySelector('#character-name')?.value || game.user.name;
 
     const summaries = {
@@ -599,7 +599,7 @@ export class SummaryManager {
    * @static
    */
   static cleanup() {
-    ObserverRegistry.unregisterByPrefix('summary-');
+    MutationObserverRegistry.unregisterByPrefix('summary-');
     document.querySelectorAll('#race-dropdown, #class-dropdown, #background-dropdown').forEach((dropdown) => {
       if (dropdown._summaryChangeHandler) {
         dropdown.removeEventListener('change', dropdown._summaryChangeHandler);

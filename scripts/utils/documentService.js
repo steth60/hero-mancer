@@ -16,13 +16,13 @@ export class DocumentService {
    * @throws {Error} If type is invalid or document retrieval fails
    * @returns {Promise<{types: Array, dropdownHtml: string}>}
    */
-  static async prepDocs(type) {
+  static async prepareDocumentsByType(type) {
     try {
       HM.log(3, `Starting prepDocs for type: ${type}`);
 
-      const data = await this.#fetchDocuments(type);
+      const data = await this.#fetchTypeDocumentsFromCompendiums(type);
       const groupingField = type === 'race' ? 'folderName' : 'packName';
-      const sortedUniqueFolders = this.#groupAndSortDocuments(data.documents, groupingField);
+      const sortedUniqueFolders = this.#organizeDocumentsIntoGroups(data.documents, groupingField);
       const dropdownHtml = DropdownHandler.generateDropdownHTML(sortedUniqueFolders, groupingField);
 
       return { types: sortedUniqueFolders, dropdownHtml };
@@ -48,7 +48,7 @@ export class DocumentService {
    * @throws {Error} If type is invalid or retrieval fails
    * @returns {Promise<{documents: Array, uniqueFolders: Array}>}
    */
-  static async #fetchDocuments(type) {
+  static async #fetchTypeDocumentsFromCompendiums(type) {
     if (!['race', 'class', 'background', 'species'].includes(type)) {
       throw new Error('Invalid document type');
     }
@@ -94,7 +94,7 @@ export class DocumentService {
     }
 
     return {
-      documents: this.#sortDocuments([...validPacks]),
+      documents: this.#sortDocumentsByNameAndPack([...validPacks]),
       uniqueFolders: []
     };
   }
@@ -123,7 +123,7 @@ export class DocumentService {
    * @param {Array} documents Documents to sort
    * @returns {Array}
    */
-  static #sortDocuments(documents) {
+  static #sortDocumentsByNameAndPack(documents) {
     return documents
       .map(({ doc, packName, packId, description, folderName }) => ({
         id: doc.id,
@@ -146,7 +146,7 @@ export class DocumentService {
    * @param {'folderName'|'packName'} key Key to group by
    * @returns {Array} Sorted array of grouped documents
    */
-  static #groupAndSortDocuments(documents, key) {
+  static #organizeDocumentsIntoGroups(documents, key) {
     const uniqueMap = new Map();
 
     documents.forEach(({ id, name, description, packName, packId, folderName }) => {

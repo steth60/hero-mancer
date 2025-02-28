@@ -5,7 +5,7 @@ import { HM } from '../utils/index.js';
  * to ensure proper tracking and cleanup
  * @class
  */
-export class ObserverRegistry {
+export class MutationObserverRegistry {
   /* -------------------------------------------- */
   /*  Static Properties                           */
   /* -------------------------------------------- */

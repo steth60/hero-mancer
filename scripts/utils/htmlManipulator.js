@@ -22,7 +22,7 @@ export class HtmlManipulator {
    */
   static registerButton() {
     // First clean up any existing button state but keep the button reference
-    this.cleanupButton();
+    this.removeButtonEventListeners();
 
     const headerActions = document.querySelector('section[class*="actors-sidebar"] header[class*="directory-header"] div[class*="header-actions"]');
     if (!headerActions) {
@@ -107,14 +107,14 @@ export class HtmlManipulator {
     }
   }
 
-  static cleanup() {
+  static cleanupButtonReferences() {
     if (this.button) {
-      this.cleanupButton();
+      this.removeButtonEventListeners();
       this.addButtonListener();
     }
   }
 
-  static cleanupButton() {
+  static removeButtonEventListeners() {
     if (this.button?.clickHandler) {
       this.button.removeEventListener('click', this.button.clickHandler);
       this.button.clickHandler = null;

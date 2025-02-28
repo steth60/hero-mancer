@@ -13,7 +13,7 @@ export { DiceRolling } from '../app/DiceRolling.js';
 export { DocumentService } from './documentService.js';
 
 /** Controls dropdown behavior and updates */
-export { DropdownHandler, EventBus } from './dropdownHandler.js';
+export { DropdownHandler, EventDispatcher } from './dropdownHandler.js';
 
 /** Application for all Hero Mancer creation */
 export { HeroMancer } from '../app/HeroMancer.js';
@@ -34,7 +34,7 @@ export { Listeners } from './listeners.js';
 export { MandatoryFields } from '../app/MandatoryFields.js';
 
 /** Manages MutationObserver instances */
-export { ObserverRegistry } from './observerRegistry.js';
+export { MutationObserverRegistry } from './observerRegistry.js';
 
 /** Handles header progress bar in Hero Mancer */
 export { ProgressBar } from './progress.js';

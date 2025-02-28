@@ -27,14 +27,14 @@ export class StatRoller {
    * @throws {Error} If form validation fails or rolling encounters an error
    * @returns {Promise<void>}
    */
-  static async roller(form) {
+  static async rollAbilityScore(form) {
     if (this.isRolling) {
       HM.log(2, 'Rolling already in progress, please wait');
       return;
     }
 
     try {
-      const rollFormula = await this.getRollFormula();
+      const rollFormula = await this.getAbilityScoreRollFormula();
       const chainedRolls = await game.settings.get(HM.CONFIG.ID, 'chainedRolls');
       const index = form.getAttribute('data-index');
       const input = this.getAbilityInput(index);
@@ -43,11 +43,11 @@ export class StatRoller {
       const hasExistingValue = !this.chainRollEnabled && input?.value?.trim() !== '';
 
       if (hasExistingValue) {
-        await this.#showRerollDialog(rollFormula, chainedRolls, index, input);
+        await this.#promptForAbilityScoreReroll(rollFormula, chainedRolls, index, input);
       } else if (chainedRolls) {
         await this.rollAllStats(rollFormula);
       } else {
-        await this.performSingleRoll(rollFormula, index, input);
+        await this.rollSingleAbilityScore(rollFormula, index, input);
       }
     } catch (error) {
       HM.log(1, 'Error while rolling stat:', error);
@@ -60,7 +60,7 @@ export class StatRoller {
    * Gets the roll formula from settings or sets default
    * @returns {Promise<string>} The roll formula to use
    */
-  static async getRollFormula() {
+  static async getAbilityScoreRollFormula() {
     let formula = game.settings.get(HM.CONFIG.ID, 'customRollFormula');
     if (!formula?.trim()) {
       formula = '4d6kh3';
@@ -95,7 +95,7 @@ export class StatRoller {
    * @param {HTMLElement} input The ability score input element
    * @returns {Promise<void>}
    */
-  static async performSingleRoll(rollFormula, index, input) {
+  static async rollSingleAbilityScore(rollFormula, index, input) {
     try {
       const roll = new Roll(rollFormula);
       await roll.evaluate();
@@ -229,7 +229,7 @@ export class StatRoller {
    * @param {number} score The ability score (8-15)
    * @returns {number} Point cost for the score
    */
-  static getPointCost(score) {
+  static getPointBuyCostForScore(score) {
     const costs = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
     return costs[score] ?? 0;
   }
@@ -239,8 +239,8 @@ export class StatRoller {
    * @param {number[]} scores Array of selected ability scores
    * @returns {number} Total points spent
    */
-  static calculatePointsSpent(scores) {
-    return scores.reduce((total, score) => total + this.getPointCost(score), 0);
+  static calculateTotalPointsSpent(scores) {
+    return scores.reduce((total, score) => total + this.getPointBuyCostForScore(score), 0);
   }
 
   /* -------------------------------------------- */
@@ -255,7 +255,7 @@ export class StatRoller {
    * @param {HTMLElement} input The ability score input element
    * @returns {Promise<void>}
    */
-  static async #showRerollDialog(rollFormula, chainedRolls, index, input) {
+  static async #promptForAbilityScoreReroll(rollFormula, chainedRolls, index, input) {
     const dialog = new DialogV2({
       window: {
         title: game.i18n.localize('hm.dialogs.reroll.title'),
@@ -323,7 +323,7 @@ export class StatRoller {
           if (StatRoller.chainRollEnabled && chainedRolls) {
             await StatRoller.rollAllStats(rollFormula);
           } else {
-            await StatRoller.performSingleRoll(rollFormula, index, input);
+            await StatRoller.rollSingleAbilityScore(rollFormula, index, input);
           }
         }
       },

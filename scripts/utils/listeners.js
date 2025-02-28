@@ -1,4 +1,4 @@
-import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, HM, MandatoryFields, ObserverRegistry, SavedOptions, StatRoller, SummaryManager } from './index.js';
+import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, HM, MandatoryFields, MutationObserverRegistry, SavedOptions, StatRoller, SummaryManager } from './index.js';
 
 /**
  * Manages event listeners and UI updates for the HeroMancer application.
@@ -38,48 +38,36 @@ export class Listeners {
     const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
 
     abilityDropdowns.forEach((dropdown, index) => {
-      if (dropdown._abilityChangeHandler) {
-        dropdown.removeEventListener('change', dropdown._abilityChangeHandler);
-      }
-      dropdown._abilityChangeHandler = (event) => {
+      dropdown.addEventListener('change', (event) => {
         if (diceRollingMethod === 'manualFormula') {
           const selectedValue = event.target.value;
           selectedValues[index] = selectedValue;
           const scoreInput = event.target.parentElement.querySelector('.ability-score');
 
-          requestAnimationFrame(() => {
-            event.target.setAttribute('name', `abilities[${selectedValue}]`);
-            scoreInput.setAttribute('name', `abilities[${selectedValue}].score`);
+          // Both dropdown and input should reference the selected ability
+          event.target.setAttribute('name', `abilities[${selectedValue}]`);
+          scoreInput.setAttribute('name', `abilities[${selectedValue}].score`);
 
-            const updates = [];
-            abilityDropdowns.forEach((otherDropdown, otherIndex) => {
-              Array.from(otherDropdown.options).forEach((option) => {
-                if (option.value && option.value !== '') {
-                  const shouldDisable = selectedValues.includes(option.value) && selectedValues[otherIndex] !== option.value;
-                  if (option.disabled !== shouldDisable) {
-                    updates.push(() => (option.disabled = shouldDisable));
-                  }
-                }
-              });
+          // Existing code for disabling options
+          abilityDropdowns.forEach((otherDropdown, otherIndex) => {
+            Array.from(otherDropdown.options).forEach((option) => {
+              if (option.value && option.value !== '') {
+                option.disabled = selectedValues.includes(option.value) && selectedValues[otherIndex] !== option.value;
+              }
             });
-
-            updates.forEach((update) => update());
           });
         } else {
+          // Handle point buy/standard array cases
           selectedValues[index] = event.target.value || '';
           DropdownHandler.updateAbilityDropdowns(abilityDropdowns, selectedValues, totalPoints, diceRollingMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
         }
-      };
-      dropdown.addEventListener('change', dropdown._abilityChangeHandler);
+      });
     });
 
     if (diceRollingMethod === 'pointBuy') {
-      // Batch these updates together
-      requestAnimationFrame(() => {
-        this.updateRemainingPointsDisplay(context.remainingPoints);
-        this.updatePlusButtonState(selectedAbilities, context.remainingPoints);
-        this.updateMinusButtonState(selectedAbilities);
-      });
+      this.updateRemainingPointsDisplay(context.remainingPoints);
+      this.updatePlusButtonState(selectedAbilities, context.remainingPoints);
+      this.updateMinusButtonState(selectedAbilities);
     }
   }
 
@@ -99,7 +87,7 @@ export class Listeners {
       equipmentContainer.innerHTML = '';
 
       equipment
-        .renderEquipmentChoices()
+        .generateEquipmentSelectionUI()
         .then((choices) => equipmentContainer.appendChild(choices))
         .catch((error) => HM.log(1, 'Error rendering equipment choices:', error));
     }
@@ -121,7 +109,7 @@ export class Listeners {
         // Create a new parser for this update
         const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
 
-        await this.#updateEquipmentSection(updateEquipment, equipmentContainer, 'class');
+        await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'class');
       };
 
       classDropdown.addEventListener('change', classDropdown._equipmentChangeHandler);
@@ -143,9 +131,9 @@ export class Listeners {
         // Create a new parser for this update
         const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
 
-        await this.#updateEquipmentSection(updateEquipment, equipmentContainer, 'background');
+        await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'background');
         SummaryManager.updateBackgroundSummary(event.target);
-        await SummaryManager.handleBackgroundChange(HM.CONFIG.SELECT_STORAGE.background);
+        await SummaryManager.processBackgroundSelectionChange(HM.CONFIG.SELECT_STORAGE.background);
       };
 
       backgroundDropdown.addEventListener('change', backgroundDropdown._equipmentChangeHandler);
@@ -157,7 +145,7 @@ export class Listeners {
    */
   static initializeCharacterListeners() {
     const tokenArtCheckbox = document.querySelector('#link-token-art');
-    tokenArtCheckbox?.addEventListener('change', CharacterArtPicker._toggleTokenArtRow);
+    tokenArtCheckbox?.addEventListener('change', CharacterArtPicker._toggleTokenArtRowVisibility);
   }
 
   static initializeRollMethodListener(html) {
@@ -298,7 +286,7 @@ export class Listeners {
     proseMirrorElements.forEach((element, index) => {
       // Clean up previous observer if exists
       const observerId = `heromancer-prose-${element.name || index}`;
-      ObserverRegistry.unregister(observerId);
+      MutationObserverRegistry.unregister(observerId);
 
       // Create handler for content changes
       const changeHandler = async () => {
@@ -308,7 +296,7 @@ export class Listeners {
 
       const editorContent = element.querySelector('.editor-content.ProseMirror');
       if (editorContent) {
-        ObserverRegistry.register(observerId, editorContent, { childList: true, characterData: true, subtree: true }, changeHandler);
+        MutationObserverRegistry.register(observerId, editorContent, { childList: true, characterData: true, subtree: true }, changeHandler);
       }
     });
   }
@@ -359,7 +347,7 @@ export class Listeners {
    * @param {number} change The amount to change the score by (positive or negative)
    * @param {number[]} selectedAbilities Array of current ability scores
    */
-  static adjustScore(index, change, selectedAbilities) {
+  static changeAbilityScoreValue(index, change, selectedAbilities) {
     if (!Array.isArray(selectedAbilities)) {
       HM.log(2, 'selectedAbilities must be an array');
       return;
@@ -369,9 +357,9 @@ export class Listeners {
     const newScore = Math.min(15, Math.max(8, currentScore + change));
 
     const totalPoints = StatRoller.getTotalPoints();
-    const pointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
+    const pointsSpent = StatRoller.calculateTotalPointsSpent(selectedAbilities);
 
-    if (change > 0 && pointsSpent + StatRoller.getPointCost(newScore) - StatRoller.getPointCost(currentScore) > totalPoints) {
+    if (change > 0 && pointsSpent + StatRoller.getPointBuyCostForScore(newScore) - StatRoller.getPointBuyCostForScore(currentScore) > totalPoints) {
       HM.log(2, 'Not enough points remaining to increase this score.');
       return;
     }
@@ -380,7 +368,7 @@ export class Listeners {
       abilityScoreElement.innerHTML = newScore;
       selectedAbilities[index] = newScore;
 
-      const updatedPointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
+      const updatedPointsSpent = StatRoller.calculateTotalPointsSpent(selectedAbilities);
       const remainingPoints = totalPoints - updatedPointsSpent;
 
       this.updateRemainingPointsDisplay(remainingPoints);
@@ -400,7 +388,7 @@ export class Listeners {
 
     document.querySelectorAll('.plus-button').forEach((button, index) => {
       const currentScore = selectedAbilities[index];
-      const pointCostForNextIncrease = StatRoller.getPointCost(currentScore + 1) - StatRoller.getPointCost(currentScore);
+      const pointCostForNextIncrease = StatRoller.getPointBuyCostForScore(currentScore + 1) - StatRoller.getPointBuyCostForScore(currentScore);
       const shouldDisable = currentScore >= 15 || remainingPoints < pointCostForNextIncrease;
 
       // Only update if the state actually changes
@@ -459,7 +447,7 @@ export class Listeners {
    * @param {'class'|'background'} type The type of equipment section to update
    * @returns {Promise<void>}
    */
-  static async #updateEquipmentSection(equipment, container, type) {
+  static async #refreshEquipmentSectionUI(equipment, container, type) {
     try {
       // Reset rendered flags on all items before updating
       if (EquipmentParser.lookupItems) {
@@ -472,7 +460,7 @@ export class Listeners {
         });
       }
 
-      const updatedChoices = await equipment.renderEquipmentChoices(type);
+      const updatedChoices = await equipment.generateEquipmentSelectionUI(type);
       const sectionClass = `${type}-equipment-section`;
       const existingSection = container.querySelector(`.${sectionClass}`);
 
