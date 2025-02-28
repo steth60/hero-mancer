@@ -29,6 +29,11 @@ export class StatRoller {
    * @returns {Promise<void>}
    */
   static async roller(form) {
+    if (this.isRolling) {
+      HM.log(2, 'Rolling already in progress, please wait');
+      return;
+    }
+
     try {
       const rollFormula = await this.getRollFormula();
       const chainedRolls = await game.settings.get(HM.CONFIG.ID, 'chainedRolls');
@@ -46,9 +51,9 @@ export class StatRoller {
         await this.performSingleRoll(rollFormula, index, input);
       }
     } catch (error) {
-      HM.log(3, 'Error while rolling stat:', error, 'error');
+      HM.log(1, 'Error while rolling stat:', error);
+      ui.notifications.error('hm.errors.roll-failed', { localize: true });
       this.isRolling = false;
-      throw error;
     }
   }
 
@@ -92,16 +97,21 @@ export class StatRoller {
    * @returns {Promise<void>}
    */
   static async performSingleRoll(rollFormula, index, input) {
-    const roll = new Roll(rollFormula);
-    await roll.evaluate();
-    HM.log(3, 'Roll result:', roll.total);
+    try {
+      const roll = new Roll(rollFormula);
+      await roll.evaluate();
+      HM.log(3, 'Roll result:', roll.total);
 
-    if (input) {
-      input.value = roll.total;
-      input.focus();
-      HM.log(3, `Updated input value for ability index ${index} with roll total:`, roll.total);
-    } else {
-      HM.log(3, `No input field found for ability index ${index}.`, 'error');
+      if (input) {
+        input.value = roll.total;
+        input.focus();
+        HM.log(3, `Updated input value for ability index ${index} with roll total:`, roll.total);
+      } else {
+        HM.log(2, `No input field found for ability index ${index}.`);
+      }
+    } catch (error) {
+      HM.log(1, `Failed to roll ${rollFormula}:`, error);
+      ui.notifications.error('hm.errors.roll-failed', { localize: true });
     }
   }
 
@@ -118,28 +128,36 @@ export class StatRoller {
     try {
       for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
-        const roll = new Roll(rollFormula);
-        await roll.evaluate();
+        try {
+          const roll = new Roll(rollFormula);
+          await roll.evaluate();
 
-        const input = block.querySelector('.ability-score');
-        if (input) {
-          input.value = roll.total;
-          input.focus();
+          const input = block.querySelector('.ability-score');
+          if (input) {
+            input.value = roll.total;
+            input.focus();
 
-          const diceIcon = block.querySelector('.fa-dice-d6');
-          if (diceIcon) {
-            diceIcon.classList.add('rolling');
-            setTimeout(() => diceIcon.classList.remove('rolling'), delay - 100);
+            const diceIcon = block.querySelector('.fa-dice-d6');
+            if (diceIcon) {
+              diceIcon.classList.add('rolling');
+              setTimeout(() => diceIcon.classList.remove('rolling'), delay - 100);
+            }
           }
-        }
 
-        if (i < blocks.length - 1) {
-          await new Promise((resolve) => {
-            setTimeout(resolve, delay);
-          });
+          if (i < blocks.length - 1) {
+            await new Promise((resolve) => {
+              setTimeout(resolve, delay);
+            });
+          }
+        } catch (error) {
+          HM.log(1, `Error rolling for ability ${i}:`, error);
+          // Continue with the next ability
         }
       }
       SummaryManager.updateAbilitiesSummary();
+    } catch (error) {
+      HM.log(1, 'Error in chain rolling:', error);
+      ui.notifications.error('hm.errors.roll-failed', { localize: true });
     } finally {
       this.isRolling = false;
     }

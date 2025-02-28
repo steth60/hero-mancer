@@ -29,9 +29,10 @@ export class DocumentService {
       return { types: sortedUniqueFolders, dropdownHtml };
     } catch (error) {
       HM.log(1, `Error: Failed to register ${type} documents`, error);
+
       return {
         types: [],
-        dropdownHtml: `<option value="">${game.i18n.localize(`hm.no-${type}-available`)}</option>`
+        dropdownHtml: `<option value="">${game.i18n.localize(`hm.app.${type}.none`)}</option>`
       };
     }
   }
@@ -57,6 +58,7 @@ export class DocumentService {
     const packs = selectedPacks.length > 0 ? game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id)) : game.packs.filter((pack) => pack.metadata.type === 'Item');
 
     const validPacks = new Set();
+    const failedPacks = [];
 
     // Process all packs in parallel for better performance
     await Promise.all(
@@ -79,10 +81,18 @@ export class DocumentService {
           });
         } catch (error) {
           HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}:`, error);
-          ui.notifications.error(game.i18n.format('hm.errors.failed-compendium-retrieval', { type: pack.metadata.label }));
+          failedPacks.push(pack.metadata.label);
         }
       })
     );
+
+    if (failedPacks.length > 0) {
+      ui.notifications.error(
+        game.i18n.format('hm.errors.failed-compendium-retrieval', {
+          type: failedPacks.join(', ')
+        })
+      );
+    }
 
     return {
       documents: this.#sortDocuments([...validPacks]),

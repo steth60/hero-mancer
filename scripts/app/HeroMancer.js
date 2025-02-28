@@ -662,342 +662,359 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     return EquipmentParser.collectEquipmentSelections(event, options);
   }
 
-  /* Function for handling form data collection, logging the results, and adding items to the actor. */
   static async formHandler(event, form, formData) {
-    const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
-
-    // Check mandatory fields
-    const missingFields = mandatoryFields.filter((field) => {
-      const value = formData.object[field];
-      return !value || value.trim() === '';
-    });
-
-    if (missingFields.length > 0) {
-      ui.notifications.error(`Required fields missing: ${missingFields.join(', ')}`);
-      return;
-    }
-    HM.log(3, 'FORMHANDLER:', { event: event, form: form, formData: formData });
-    if (event.submitter?.dataset.action === 'saveOptions') {
-      await SavedOptions.saveOptions(formData.object);
-      ui.notifications.info('hm.app.optionsSaved', { localize: true });
-      return;
-    }
-    HM.log(3, 'Processing form data...');
-    HM.log(3, formData);
-
-    // Check if using starting wealth
-    const useStartingWealth = formData.object['use-starting-wealth'];
-    const startingWealth = useStartingWealth ? await EquipmentParser.processStartingWealth(formData.object) : null;
-
-    // Get background equipment (always collected)
-    const backgroundEquipment = await HeroMancer.collectEquipmentSelections(event, {
-      includeClass: false,
-      includeBackground: true
-    });
-
-    // Get class equipment (only if not using starting wealth)
-    const classEquipment =
-      !useStartingWealth ?
-        await HeroMancer.collectEquipmentSelections(event, {
-          includeClass: true,
-          includeBackground: false
-        })
-      : [];
-
-    // Combine all equipment
-    const equipmentSelections = [...backgroundEquipment, ...classEquipment];
-    HM.log(3, 'Equipment selections:', equipmentSelections);
-
     try {
-      const validProperties = Object.keys(formData.object);
-      for (const property of validProperties) {
-        const value = formData.object[property];
-        if (value === null || value === undefined || value === '') {
-          HM.log(2, `Missing required field: ${property}`);
-        }
-      }
-    } catch (err) {
-      HM.log(1, err);
-    }
+      const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
 
-    // Extract itemId and packId from the formData
-    const extractIds = (itemString) => {
-      const regex = /^(.+?)\s\((.+)\)$/;
-      const match = itemString.match(regex);
-      return match ? { itemId: match[1], packId: match[2] } : null;
-    };
+      // Check mandatory fields
+      const missingFields = mandatoryFields.filter((field) => {
+        const value = formData.object[field];
+        return !value || value.trim() === '';
+      });
 
-    const backgroundData = extractIds(formData.object.background);
-    const raceData = extractIds(formData.object.race);
-    const classData = extractIds(formData.object.class);
-
-    HM.log(3, 'Extracted Item Data:', { backgroundData, raceData, classData });
-
-    // Extract abilities from formData with default 10
-    HM.log(3, 'ABILITIES: Initializing abilities object');
-    let abilities = {};
-
-    HM.log(3, 'ABILITIES: Starting to iterate over formData.object keys');
-    for (const key in formData.object) {
-      HM.log(3, `ABILITIES: Inspecting key: ${key}`);
-
-      const abilityMatch = key.match(/^abilities\[(\w+)]\.score$/) || key.match(/^abilities\[(\w+)]$/);
-      if (abilityMatch) {
-        HM.log(3, `ABILITIES: Key matches abilities pattern: ${key}`);
-
-        const abilityKey = abilityMatch[1];
-        HM.log(3, `ABILITIES: Extracted abilityKey: ${abilityKey}`);
-
-        abilities[abilityKey] = formData.object[key] || 10;
-        HM.log(3, `ABILITIES: Set abilities[${abilityKey}] to ${abilities[abilityKey]}`);
-      } else {
-        HM.log(3, `ABILITIES: Key does not match abilities pattern: ${key}`);
-      }
-    }
-    HM.log(3, 'ABILITIES: Finished processing formData.object keys');
-
-    HM.log(3, 'ABILITIES: Abilities extracted:', abilities);
-
-    // Create the new actor
-    let actorName = formData.object.name || game.user.name; // Handling for blank hero name.
-    let actorData = {
-      name: actorName,
-      img: formData.object['character-art'],
-      prototypeToken: HeroMancer.#transformTokenData(formData.object),
-      type: 'character',
-      system: {
-        abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }])),
-        details: {
-          age: formData.object.age || '',
-          alignment: formData.object.alignment || '',
-          appearance: formData.object.appearance || '',
-          bond: formData.object.bonds || '',
-          eyes: formData.object.eyes || '',
-          faith: formData.object.faith || '',
-          flaw: formData.object.flaws || '',
-          gender: formData.object.gender || '',
-          hair: formData.object.hair || '',
-          height: formData.object.height || '',
-          ideal: formData.object.ideals || '',
-          skin: formData.object.skin || '',
-          trait: formData.object.traits || '',
-          weight: formData.object.weight || '',
-          biography: {
-            value: formData.object.backstory || ''
-          }
-        }
-      }
-    };
-    ui.notifications.info('hm.actortab-button.creating', { localize: true });
-    let actor = await Actor.create(actorData);
-    let newActor = game.actors.getName(actorName);
-    HM.log(3, newActor);
-    HM.log(3, 'Created Actor:', actor);
-
-    // Declare the items outside the try block
-    let backgroundItem, raceItem, classItem;
-
-    try {
-      // Check if each required item is selected before fetching
-      if (!backgroundData?.packId || !backgroundData?.itemId) {
-        ui.notifications.warn('hm.errors.select-background', { localize: true });
-        return;
-      }
-      if (!raceData?.packId || !raceData?.itemId) {
-        ui.notifications.warn('hm.errors.select-race', { localize: true });
-        return;
-      }
-      if (!classData?.packId || !classData?.itemId) {
-        ui.notifications.warn('hm.errors.select-class', { localize: true });
+      if (missingFields.length > 0) {
+        ui.notifications.error(
+          game.i18n.format('hm.errors.missing-mandatory-fields', {
+            fields: missingFields.join(', ')
+          })
+        );
         return;
       }
 
-      // Fetch documents after confirming all selections are valid
-      backgroundItem = await game.packs.get(backgroundData.packId)?.getDocument(backgroundData.itemId);
-      raceItem = await game.packs.get(raceData.packId)?.getDocument(raceData.itemId);
-      classItem = await game.packs.get(classData.packId)?.getDocument(classData.itemId);
+      HM.log(3, 'FORMHANDLER:', { event: event, form: form, formData: formData });
 
-      // If any document fetch fails (e.g., item was removed from the compendium)
-      if (!backgroundItem) throw new Error(game.i18n.localize('hm.errors.no-background'));
-      if (!raceItem) throw new Error(game.i18n.localize('hm.errors.no-race'));
-      if (!classItem) throw new Error(game.i18n.localize('hm.errors.no-class'));
-    } catch (error) {
-      HM.log(1, error);
-      ui.notifications.error('hm.errors.fetch-fail', { localize: true });
-    }
-
-    if (!backgroundItem || !raceItem || !classItem) {
-      HM.log(1, 'Error: One or more items could not be fetched.');
-      return;
-    }
-
-    const equipmentItems = equipmentSelections.map((item) => {
-      // Item should already be in the correct format from collectEquipmentSelections
-      return {
-        ...item,
-        system: {
-          ...item.system,
-          // Preserve container reference if it exists
-          ...(item.container ? { container: item.container } : {})
-        }
-      };
-    });
-
-    try {
-      // First handle equipment and wealth
-      if (equipmentItems.length) {
-        await actor.createEmbeddedDocuments('Item', equipmentItems, { keepId: true });
-      }
-
-      if (startingWealth) {
-        await actor.update({
-          system: {
-            ...actor.system,
-            currency: startingWealth
-          }
-        });
-      }
-
-      // Then let advancement manager handle race/background
-      await processAdvancements([classItem, raceItem, backgroundItem], actor);
-
-      // Update some user stuff
-      if (game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')) {
-        await game.user.update({
-          color: formData.object['player-color'],
-          pronouns: formData.object['player-pronouns'],
-          avatar: formData.object['player-avatar']
-        });
-      }
-      await game.user.update({ character: actor.id });
-    } catch (error) {
-      HM.log(1, 'Error during character creation:', error);
-    }
-
-    /**
-     * Processes a list of items for advancement for a given actor.
-     * @async
-     * @function processAdvancements
-     * @param {Array<object>} items The items to be processed for advancement.
-     * @param {object} newActor The actor to which the advancements are applied.
-     * @returns {Promise<void>} Resolves when the advancement process is complete.
-     */
-    async function processAdvancements(items, newActor) {
-      if (!Array.isArray(items) || !items.length) {
-        HM.log(2, 'No items provided for advancement');
-        return;
-      }
-
-      HM.log(3, 'Creating advancement manager');
-      let currentManager;
-
-      /**
-       * Creates an advancement manager for a specific item with retries.
-       * @async
-       * @function createAdvancementManager
-       * @param {object} item The item for which the advancement manager is created.
-       * @param {number} [retryCount=0] The current retry attempt count.
-       * @returns {Promise<object>} Resolves with the created advancement manager.
-       * @throws {Error} If the manager creation fails after the allowed retries.
-       */
-      async function createAdvancementManager(item, retryCount = 0) {
+      // Process "Save for Later" action
+      if (event.submitter?.dataset.action === 'saveOptions') {
         try {
-          const manager = await Promise.race([
-            dnd5e.applications.advancement.AdvancementManager.forNewItem(newActor, item.toObject()),
-            new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('Manager creation timed out')), HeroMancer.ADVANCEMENT_DELAY.renderTimeout);
-            })
-          ]);
-          if (!manager) throw new Error('Failed to create manager');
-          return manager;
+          await SavedOptions.saveOptions(formData.object);
+          ui.notifications.info('hm.app.optionsSaved', { localize: true });
         } catch (error) {
-          if (retryCount < HeroMancer.ADVANCEMENT_DELAY.retryAttempts - 1) {
-            HM.log(2, `Retry ${retryCount + 1}/${HeroMancer.ADVANCEMENT_DELAY.retryAttempts} for ${item.name}`);
-            return createAdvancementManager(item, retryCount + 1);
-          }
-          throw error;
+          HM.log(1, 'Error saving options:', error);
+          ui.notifications.error('hm.errors.save-options-failed', { localize: true });
         }
+        return;
       }
+
+      HM.log(3, 'Processing form data...');
+      HM.log(3, formData);
+
+      // Check if using starting wealth
+      const useStartingWealth = formData.object['use-starting-wealth'];
+      const startingWealth = useStartingWealth ? await EquipmentParser.processStartingWealth(formData.object) : null;
+
+      // Get background equipment (always collected)
+      const backgroundEquipment = await HeroMancer.collectEquipmentSelections(event, {
+        includeClass: false,
+        includeBackground: true
+      });
+
+      // Get class equipment (only if not using starting wealth)
+      const classEquipment =
+        !useStartingWealth ?
+          await HeroMancer.collectEquipmentSelections(event, {
+            includeClass: true,
+            includeBackground: false
+          })
+        : [];
+
+      // Combine all equipment
+      const equipmentSelections = [...backgroundEquipment, ...classEquipment];
+      HM.log(3, 'Equipment selections:', equipmentSelections);
 
       try {
-        currentManager = await createAdvancementManager(items[0]);
-        HM.log(
-          3,
-          'Initial clone items:',
-          currentManager?.clone?.items?.contents?.map((i) => i.name)
-        );
-
-        /**
-         * Recursively processes advancements for each item in the list.
-         * @function doAdvancement
-         * @param {number} [itemIndex=0] The index of the current item being processed.
-         * @returns {Promise<void>} A promise that resolves when processing is complete.
-         */
-        async function doAdvancement(itemIndex = 0) {
-          if (itemIndex >= items.length) {
-            HM.log(
-              3,
-              'Final actor items:',
-              newActor.items.contents.map((i) => i.name)
-            );
-            currentManager?.close();
-            newActor.sheet.render(true);
-            return;
+        const validProperties = Object.keys(formData.object);
+        for (const property of validProperties) {
+          const value = formData.object[property];
+          if (value === null || value === undefined || value === '') {
+            HM.log(2, `Missing required field: ${property}`);
           }
+        }
+      } catch (err) {
+        HM.log(1, err);
+      }
 
-          HM.log(3, `Processing ${items[itemIndex].name}`);
+      // Extract itemId and packId from the formData
+      const extractIds = (itemString) => {
+        const regex = /^(.+?)\s\((.+)\)$/;
+        const match = itemString.match(regex);
+        return match ? { itemId: match[1], packId: match[2] } : null;
+      };
 
-          return new Promise((resolve) => {
-            Hooks.once('dnd5e.advancementManagerComplete', async () => {
-              HM.log(3, `Completed ${items[itemIndex].name}`);
+      const backgroundData = extractIds(formData.object.background);
+      const raceData = extractIds(formData.object.race);
+      const classData = extractIds(formData.object.class);
 
-              await new Promise((resolve) => {
-                setTimeout(() => {
-                  resolve();
-                }, HeroMancer.ADVANCEMENT_DELAY.transitionDelay);
-              });
+      HM.log(3, 'Extracted Item Data:', { backgroundData, raceData, classData });
 
-              currentManager = null;
+      // Extract abilities from formData with default 10
+      HM.log(3, 'ABILITIES: Initializing abilities object');
+      let abilities = {};
 
-              if (itemIndex + 1 < items.length) {
-                try {
-                  currentManager = await createAdvancementManager(items[itemIndex + 1]);
-                  currentManager.render(true);
-                  await doAdvancement(itemIndex + 1);
-                  resolve();
-                } catch (error) {
-                  HM.log(1, `Error creating manager for ${items[itemIndex + 1].name}:`, error);
-                  newActor.sheet.render(true);
-                  resolve();
-                }
-              } else {
-                newActor.sheet.render(true);
-                resolve();
-              }
-            });
+      HM.log(3, 'ABILITIES: Starting to iterate over formData.object keys');
+      for (const key in formData.object) {
+        HM.log(3, `ABILITIES: Inspecting key: ${key}`);
 
-            if (itemIndex === 0) {
-              currentManager.render(true);
+        const abilityMatch = key.match(/^abilities\[(\w+)]\.score$/) || key.match(/^abilities\[(\w+)]$/);
+        if (abilityMatch) {
+          HM.log(3, `ABILITIES: Key matches abilities pattern: ${key}`);
+
+          const abilityKey = abilityMatch[1];
+          HM.log(3, `ABILITIES: Extracted abilityKey: ${abilityKey}`);
+
+          abilities[abilityKey] = formData.object[key] || 10;
+          HM.log(3, `ABILITIES: Set abilities[${abilityKey}] to ${abilities[abilityKey]}`);
+        } else {
+          HM.log(3, `ABILITIES: Key does not match abilities pattern: ${key}`);
+        }
+      }
+      HM.log(3, 'ABILITIES: Finished processing formData.object keys');
+
+      HM.log(3, 'ABILITIES: Abilities extracted:', abilities);
+
+      // Create the new actor
+      let actorName = formData.object.name || game.user.name; // Handling for blank hero name.
+      let actorData = {
+        name: actorName,
+        img: formData.object['character-art'],
+        prototypeToken: HeroMancer.#transformTokenData(formData.object),
+        type: 'character',
+        system: {
+          abilities: Object.fromEntries(Object.entries(abilities).map(([key, value]) => [key, { value }])),
+          details: {
+            age: formData.object.age || '',
+            alignment: formData.object.alignment || '',
+            appearance: formData.object.appearance || '',
+            bond: formData.object.bonds || '',
+            eyes: formData.object.eyes || '',
+            faith: formData.object.faith || '',
+            flaw: formData.object.flaws || '',
+            gender: formData.object.gender || '',
+            hair: formData.object.hair || '',
+            height: formData.object.height || '',
+            ideal: formData.object.ideals || '',
+            skin: formData.object.skin || '',
+            trait: formData.object.traits || '',
+            weight: formData.object.weight || '',
+            biography: {
+              value: formData.object.backstory || ''
+            }
+          }
+        }
+      };
+      ui.notifications.info('hm.actortab-button.creating', { localize: true });
+      let actor = await Actor.create(actorData);
+      let newActor = game.actors.getName(actorName);
+      HM.log(3, newActor);
+      HM.log(3, 'Created Actor:', actor);
+
+      // Declare the items outside the try block
+      let backgroundItem, raceItem, classItem;
+
+      try {
+        // Check if each required item is selected before fetching
+        if (!backgroundData?.packId || !backgroundData?.itemId) {
+          ui.notifications.warn('hm.errors.select-background', { localize: true });
+          return;
+        }
+        if (!raceData?.packId || !raceData?.itemId) {
+          ui.notifications.warn('hm.errors.select-race', { localize: true });
+          return;
+        }
+        if (!classData?.packId || !classData?.itemId) {
+          ui.notifications.warn('hm.errors.select-class', { localize: true });
+          return;
+        }
+
+        // Fetch documents after confirming all selections are valid
+        backgroundItem = await game.packs.get(backgroundData.packId)?.getDocument(backgroundData.itemId);
+        raceItem = await game.packs.get(raceData.packId)?.getDocument(raceData.itemId);
+        classItem = await game.packs.get(classData.packId)?.getDocument(classData.itemId);
+
+        // If any document fetch fails (e.g., item was removed from the compendium)
+        if (!backgroundItem) throw new Error(game.i18n.localize('hm.errors.no-background'));
+        if (!raceItem) throw new Error(game.i18n.localize('hm.errors.no-race'));
+        if (!classItem) throw new Error(game.i18n.localize('hm.errors.no-class'));
+      } catch (error) {
+        HM.log(1, error);
+        ui.notifications.error('hm.errors.fetch-fail', { localize: true });
+      }
+
+      if (!backgroundItem || !raceItem || !classItem) {
+        HM.log(1, 'Error: One or more items could not be fetched.');
+        return;
+      }
+
+      const equipmentItems = equipmentSelections.map((item) => {
+        // Item should already be in the correct format from collectEquipmentSelections
+        return {
+          ...item,
+          system: {
+            ...item.system,
+            // Preserve container reference if it exists
+            ...(item.container ? { container: item.container } : {})
+          }
+        };
+      });
+
+      try {
+        // First handle equipment and wealth
+        if (equipmentItems.length) {
+          await actor.createEmbeddedDocuments('Item', equipmentItems, { keepId: true });
+        }
+
+        if (startingWealth) {
+          await actor.update({
+            system: {
+              ...actor.system,
+              currency: startingWealth
             }
           });
         }
 
-        await doAdvancement();
+        // Then let advancement manager handle race/background
+        await processAdvancements([classItem, raceItem, backgroundItem], actor);
+
+        // Update some user stuff
+        if (game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')) {
+          await game.user.update({
+            color: formData.object['player-color'],
+            pronouns: formData.object['player-pronouns'],
+            avatar: formData.object['player-avatar']
+          });
+        }
+        await game.user.update({ character: actor.id });
       } catch (error) {
-        HM.log(1, 'Error in advancement process:', error);
-        if (currentManager) await currentManager.close();
-        newActor.sheet.render(true);
+        HM.log(1, 'Error during character creation:', error);
       }
 
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker(),
-        content: SummaryManager.getSummaryForChat(),
-        flags: {
-          'hero-mancer': {
-            type: 'character-summary'
+      /**
+       * Processes a list of items for advancement for a given actor.
+       * @async
+       * @function processAdvancements
+       * @param {Array<object>} items The items to be processed for advancement.
+       * @param {object} newActor The actor to which the advancements are applied.
+       * @returns {Promise<void>} Resolves when the advancement process is complete.
+       */
+      async function processAdvancements(items, newActor) {
+        if (!Array.isArray(items) || !items.length) {
+          HM.log(2, 'No items provided for advancement');
+          return;
+        }
+
+        HM.log(3, 'Creating advancement manager');
+        let currentManager;
+
+        /**
+         * Creates an advancement manager for a specific item with retries.
+         * @async
+         * @function createAdvancementManager
+         * @param {object} item The item for which the advancement manager is created.
+         * @param {number} [retryCount=0] The current retry attempt count.
+         * @returns {Promise<object>} Resolves with the created advancement manager.
+         * @throws {Error} If the manager creation fails after the allowed retries.
+         */
+        async function createAdvancementManager(item, retryCount = 0) {
+          try {
+            const manager = await Promise.race([
+              dnd5e.applications.advancement.AdvancementManager.forNewItem(newActor, item.toObject()),
+              new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Manager creation timed out')), HeroMancer.ADVANCEMENT_DELAY.renderTimeout);
+              })
+            ]);
+            if (!manager) throw new Error('Failed to create manager');
+            return manager;
+          } catch (error) {
+            if (retryCount < HeroMancer.ADVANCEMENT_DELAY.retryAttempts - 1) {
+              HM.log(2, `Retry ${retryCount + 1}/${HeroMancer.ADVANCEMENT_DELAY.retryAttempts} for ${item.name}`);
+              return createAdvancementManager(item, retryCount + 1);
+            }
+            throw error;
           }
         }
-      });
+
+        try {
+          currentManager = await createAdvancementManager(items[0]);
+          HM.log(
+            3,
+            'Initial clone items:',
+            currentManager?.clone?.items?.contents?.map((i) => i.name)
+          );
+
+          /**
+           * Recursively processes advancements for each item in the list.
+           * @function doAdvancement
+           * @param {number} [itemIndex=0] The index of the current item being processed.
+           * @returns {Promise<void>} A promise that resolves when processing is complete.
+           */
+          async function doAdvancement(itemIndex = 0) {
+            if (itemIndex >= items.length) {
+              HM.log(
+                3,
+                'Final actor items:',
+                newActor.items.contents.map((i) => i.name)
+              );
+              currentManager?.close();
+              newActor.sheet.render(true);
+              return;
+            }
+
+            HM.log(3, `Processing ${items[itemIndex].name}`);
+
+            return new Promise((resolve) => {
+              Hooks.once('dnd5e.advancementManagerComplete', async () => {
+                HM.log(3, `Completed ${items[itemIndex].name}`);
+
+                await new Promise((resolve) => {
+                  setTimeout(() => {
+                    resolve();
+                  }, HeroMancer.ADVANCEMENT_DELAY.transitionDelay);
+                });
+
+                currentManager = null;
+
+                if (itemIndex + 1 < items.length) {
+                  try {
+                    currentManager = await createAdvancementManager(items[itemIndex + 1]);
+                    currentManager.render(true);
+                    await doAdvancement(itemIndex + 1);
+                    resolve();
+                  } catch (error) {
+                    HM.log(1, `Error creating manager for ${items[itemIndex + 1].name}:`, error);
+                    newActor.sheet.render(true);
+                    resolve();
+                  }
+                } else {
+                  newActor.sheet.render(true);
+                  resolve();
+                }
+              });
+
+              if (itemIndex === 0) {
+                currentManager.render(true);
+              }
+            });
+          }
+
+          await doAdvancement();
+        } catch (error) {
+          HM.log(1, 'Error in advancement process:', error);
+          if (currentManager) await currentManager.close();
+          newActor.sheet.render(true);
+        }
+
+        await ChatMessage.create({
+          speaker: ChatMessage.getSpeaker(),
+          content: SummaryManager.getSummaryForChat(),
+          flags: {
+            'hero-mancer': {
+              type: 'character-summary'
+            }
+          }
+        });
+      }
+    } catch (error) {
+      HM.log(1, 'Error in form submission:', error);
+      ui.notifications.error('hm.errors.form-submission', { localize: true });
     }
   }
 

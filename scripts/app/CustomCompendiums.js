@@ -161,7 +161,6 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     const requiresWorldReload = true; // Settings changes require world reload
 
     try {
-      // First collect the valid packs
       const packPromises = types.map((type) => CustomCompendiums.#collectValidPacks(type, false));
       const validPacks = await Promise.all(packPromises);
       const validPacksMap = new Map(types.map((type, index) => [type, validPacks[index]]));
@@ -169,8 +168,14 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       // Then update the settings
       const settingPromises = types.map((type) => {
         const packs = validPacksMap.get(type);
-        return CustomCompendiums.getSelectedPacksByType(type, packs).then((selectedPacks) => game.settings.set('hero-mancer', `${type}Packs`, selectedPacks));
+        return CustomCompendiums.getSelectedPacksByType(type, packs)
+          .then((selectedPacks) => game.settings.set('hero-mancer', `${type}Packs`, selectedPacks))
+          .catch((error) => {
+            HM.log(1, `Error getting selected packs for ${type}:`, error);
+            throw error;
+          });
       });
+
       await Promise.all(settingPromises);
 
       const cacheManager = new CacheManager();
@@ -178,7 +183,6 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       CustomCompendiums.#validPacksCache.clear();
 
       this.constructor.reloadConfirm({ world: requiresWorldReload });
-
       ui.notifications.info('hm.settings.custom-compendiums.form-saved', { localize: true });
       HM.log(3, 'Form submitted and settings saved');
     } catch (error) {
@@ -217,6 +221,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     }
 
     const validPacks = new Set();
+    const failures = [];
 
     const indexPromises = game.packs.map(async (pack) => {
       if (pack.metadata.type !== 'Item') return;
@@ -244,11 +249,17 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
           }
         }
       } catch (error) {
-        HM.log(2, `Failed to retrieve index from pack ${pack.metadata.label}: ${error}`);
+        HM.log(1, `Failed to retrieve index from pack ${pack.metadata.label}:`, error);
+        failures.push(pack.metadata.label);
       }
     });
 
     await Promise.all(indexPromises);
+
+    if (failures.length > 0) {
+      HM.log(2, `Failed to retrieve indices from ${failures.length} packs.`);
+    }
+
     return validPacks;
   }
 

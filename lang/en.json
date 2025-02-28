@@ -172,11 +172,13 @@
     },
     "errors": {
       "failed-compendium-retrieval": "Failed to retrieve documents from compendium pack: {type}",
-      "fetch-fail": "An error occurred while fetching selected items. Please try again.",
+      "form-submission": "There was an error submitting the form. Please try again.",
       "missing-mandatory-fields": "Required fields missing: {fields}",
       "no-background": "The selected background could not be found.",
       "no-class": "The selected class could not be found.",
       "no-race": "The selected race could not be found.",
+      "roll-failed": "Failed to roll ability score. Please try again.",
+      "save-options-failed": "Failed to save your options. Please try again.",
       "select-background": "Please select a background before submitting.",
       "select-class": "Please select a class before submitting.",
       "select-race": "Please select a race before submitting."
