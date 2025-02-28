@@ -1,4 +1,4 @@
-import { HM } from '../hero-mancer.js';
+import { HM } from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 

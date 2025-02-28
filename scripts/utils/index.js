@@ -21,6 +21,9 @@ export { DropdownHandler, EventBus } from './dropdownHandler.js';
 /** Application for all Hero Mancer creation */
 export { HeroMancer } from '../app/HeroMancer.js';
 
+/** Constants from hero-mancer.js application */
+export { HM } from '../hero-mancer.js';
+
 /** Parses and manages equipment data */
 export { EquipmentParser } from './equipmentParser.js';
 

@@ -1,11 +1,12 @@
 /* eslint-disable indent */
-import { HM } from '../hero-mancer.js';
+
 import {
   CacheManager,
   CharacterArtPicker,
   DropdownHandler,
   EquipmentParser,
   EventBus,
+  HM,
   HtmlManipulator,
   Listeners,
   MandatoryFields,

@@ -1,5 +1,4 @@
-import { HM } from '../hero-mancer.js';
-import { DropdownHandler } from './index.js';
+import { DropdownHandler, HM } from './index.js';
 
 /**
  * Service for managing game document preparation and processing

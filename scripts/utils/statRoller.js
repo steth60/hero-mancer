@@ -1,5 +1,4 @@
-import { HM } from '../hero-mancer.js';
-import { SummaryManager } from './index.js';
+import { HM, SummaryManager } from './index.js';
 
 const { DialogV2 } = foundry.applications.api;
 

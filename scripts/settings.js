@@ -1,5 +1,4 @@
-import { HM } from './hero-mancer.js';
-import { CharacterArtPicker, CustomCompendiums, DiceRolling, MandatoryFields, StatRoller } from './utils/index.js';
+import { CharacterArtPicker, CustomCompendiums, DiceRolling, HM, MandatoryFields, StatRoller } from './utils/index.js';
 
 /**
  * Main registration function that initializes all module settings.

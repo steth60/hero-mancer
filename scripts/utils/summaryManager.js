@@ -1,5 +1,4 @@
-import { HM } from '../hero-mancer.js';
-import { ObserverRegistry } from './index.js';
+import { HM, ObserverRegistry } from './index.js';
 
 /**
  * Manages RollTable interactions for character backgrounds and characteristics.

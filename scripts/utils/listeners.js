@@ -1,5 +1,4 @@
-import { HM } from '../hero-mancer.js';
-import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, MandatoryFields, ObserverRegistry, SavedOptions, StatRoller, SummaryManager } from './index.js';
+import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, HM, MandatoryFields, ObserverRegistry, SavedOptions, StatRoller, SummaryManager } from './index.js';
 
 /**
  * Manages event listeners and UI updates for the HeroMancer application.

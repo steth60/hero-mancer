@@ -1,5 +1,4 @@
-import { HM } from '../hero-mancer.js';
-import { Listeners, StatRoller } from './index.js';
+import { HM, Listeners, StatRoller } from './index.js';
 
 /**
  * Constants for ability score limits and validations

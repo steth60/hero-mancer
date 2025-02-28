@@ -1,4 +1,4 @@
-import { HM } from '../hero-mancer.js';
+import { HM } from '../utils/index.js';
 
 /**
  * Manages progress bar for Hero Mancer

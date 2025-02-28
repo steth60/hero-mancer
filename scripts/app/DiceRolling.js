@@ -1,5 +1,4 @@
-import { HM } from '../hero-mancer.js';
-import { StatRoller } from '../utils/index.js';
+import { HM, StatRoller } from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
