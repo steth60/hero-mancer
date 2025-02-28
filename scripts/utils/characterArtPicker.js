@@ -32,7 +32,7 @@ export class CharacterArtPicker {
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
 
-  static async selectCharacterArt(event, target) {
+  static async selectCharacterArt(_event, _target) {
     const rootDir = CharacterArtPicker.rootDirectory;
     HM.log(3, `CharacterArtPicker.selectCharacterArt using rootDirectory: ${rootDir}`);
 
@@ -68,7 +68,7 @@ export class CharacterArtPicker {
     filepicker.render(true);
   }
 
-  static async selectTokenArt(event, target) {
+  static async selectTokenArt(_event, _target) {
     const rootDir = CharacterArtPicker.rootDirectory;
     HM.log(3, `CharacterArtPicker.selectTokenArt using rootDirectory: ${rootDir}`);
 
@@ -96,7 +96,7 @@ export class CharacterArtPicker {
     filepicker.render(true);
   }
 
-  static async selectPlayerAvatar(event, target) {
+  static async selectPlayerAvatar(_event, _target) {
     const rootDir = CharacterArtPicker.rootDirectory;
     HM.log(3, `CharacterArtPicker.selectPlayerAvatar using rootDirectory: ${rootDir}`);
 

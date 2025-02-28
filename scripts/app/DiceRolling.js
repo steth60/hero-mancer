@@ -51,7 +51,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Protected Methods                           */
   /* -------------------------------------------- */
 
-  async _prepareContext(options) {
+  async _prepareContext(_options) {
     const context = {
       allowedMethods: await game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
       customRollFormula: game.settings.get(HM.CONFIG.ID, 'customRollFormula'),
@@ -64,7 +64,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
     return context;
   }
 
-  _onRender() {
+  _onRender(_context, _options) {
     const html = this.element;
     const slider = html.querySelector('input[type="range"]');
     const output = html.querySelector('.delay-value');
@@ -78,7 +78,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
 
-  static async formHandler(event, form, formData) {
+  static async formHandler(_event, form, formData) {
     const requiresWorldReload = true; // Settings changes require world reload
     try {
       const allowedMethods = {

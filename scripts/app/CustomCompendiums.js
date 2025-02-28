@@ -66,7 +66,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     return context;
   }
 
-  _onRender(context, options) {
+  _onRender(_context, _options) {
     HM.log(3, 'Rendering application with context and options.');
   }
 
@@ -155,7 +155,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     await game.settings.set('hero-mancer', `${type}Packs`, selectedValues);
   }
 
-  static async formHandler(event, form, formData) {
+  static async formHandler(_event, _form, _formData) {
     const types = ['class', 'race', 'background', 'item'];
     const requiresWorldReload = true; // Settings changes require world reload
 

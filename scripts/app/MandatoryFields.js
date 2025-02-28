@@ -51,7 +51,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Protected Methods                           */
   /* -------------------------------------------- */
 
-  async _prepareContext(options) {
+  async _prepareContext(_options) {
     // Get all valid form fields
     const fieldCategories = await this.getAllFormFields();
 
@@ -156,7 +156,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
 
-  static async formHandler(event, form, formData) {
+  static async formHandler(_event, form, formData) {
     const requiresWorldReload = true; // Settings changes require world reload
     try {
       HM.log(3, 'Raw form data:', formData);
@@ -294,7 +294,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  static isFormFieldComplete(field, element, form) {
+  static isFormFieldComplete(element) {
     if (!element) return false;
 
     const type = element?.localName || element?.type || '';

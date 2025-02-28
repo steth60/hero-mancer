@@ -259,7 +259,7 @@ export class DropdownHandler {
       const selectedId = selectedValue.replace(/\s?\(.*?\)/, '');
 
       HM.CONFIG.SELECT_STORAGE[type] = { selectedValue, selectedId };
-      await this.updateDescription(type, selectedId, html, context);
+      await this.updateDescription(type, selectedId, context);
     } catch (error) {
       HM.log(1, `Error handling dropdown change for ${type}:`, error);
 
@@ -278,7 +278,7 @@ export class DropdownHandler {
    * @param {HTMLElement} html Parent element
    * @param {object} context Application context
    */
-  static async updateDescription(type, selectedId, html, context) {
+  static async updateDescription(type, selectedId, context) {
     try {
       const docs = this.getDocumentsFromCacheOrContextFromCacheOrContext(context, `${type}Docs`);
       if (!docs) {

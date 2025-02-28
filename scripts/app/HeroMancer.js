@@ -329,7 +329,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @param {RenderOptions} options Provided render options
    * @protected
    */
-  async _onRender(context, options) {
+  async _onRender(context, _options) {
     if (this.#isRendering) return;
 
     try {
@@ -533,7 +533,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     ui.notifications.info('hm.app.optionsReset', { localize: true });
   }
 
-  static switchToTab(event, target) {
+  static switchToTab(_event, target) {
     try {
       const tabId = target.dataset.tab;
       HM.log(3, 'TAB ID:', tabId);
@@ -557,17 +557,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /* Logic for rolling stats and updating input fields */
-  static async rollStat(event, form) {
+  static async rollStat(_event, form) {
     HM.log(3, 'Rolling stats using user-defined formula.');
     await StatRoller.rollAbilityScore(form); // Use the utility function
   }
 
-  static increaseScore(event, form) {
+  static increaseScore(_event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
     Listeners.changeAbilityScoreValue(index, 1, HeroMancer.selectedAbilities);
   }
 
-  static decreaseScore(event, form) {
+  static decreaseScore(_event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
     Listeners.changeAbilityScoreValue(index, -1, HeroMancer.selectedAbilities);
   }
