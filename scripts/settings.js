@@ -146,8 +146,8 @@ export function registerSettings() {
     type: Object,
     default: {
       standardArray: true,
-      manual: true,
-      pointBuy: true
+      pointBuy: true,
+      manual: true
     }
   });
 

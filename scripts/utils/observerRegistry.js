@@ -90,11 +90,24 @@ export class ObserverRegistry {
    * @returns {number} Number of observers unregistered
    */
   static unregisterAll() {
-    const count = this.#registry.size;
-
     try {
-      this.#registry.forEach((observer) => observer.disconnect());
+      const count = this.#registry.size;
+
+      const disconnectErrors = [];
+      this.#registry.forEach((observer, key) => {
+        try {
+          observer.disconnect();
+        } catch (error) {
+          HM.log(1, `Error disconnecting observer ${key}:`, error);
+          disconnectErrors.push(key);
+        }
+      });
+
       this.#registry.clear();
+
+      if (disconnectErrors.length > 0) {
+        HM.log(1, `Encountered errors disconnecting ${disconnectErrors.length} observers: ${disconnectErrors.join(', ')}`);
+      }
 
       HM.log(3, `Unregistered all ${count} observers`);
       return count;

@@ -1,8 +1,5 @@
 /** Services, applications, and utilities for Hero Mancer character creation and management */
 
-/** Manages caching functionality */
-export { CacheManager } from './cacheManagement.js';
-
 /** Handles filepicking for character, token, and player art */
 export { CharacterArtPicker } from './characterArtPicker.js';
 

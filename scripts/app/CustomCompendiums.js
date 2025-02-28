@@ -1,4 +1,4 @@
-import { CacheManager, HM } from '../utils/index.js';
+import { HM } from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
@@ -167,21 +167,14 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       // Then update the settings
       const settingPromises = types.map((type) => {
         const packs = validPacksMap.get(type);
-        return CustomCompendiums.getSelectedPacksByType(type, packs)
-          .then((selectedPacks) => game.settings.set('hero-mancer', `${type}Packs`, selectedPacks))
-          .catch((error) => {
-            HM.log(1, `Error getting selected packs for ${type}:`, error);
-            throw error;
-          });
+        return CustomCompendiums.getSelectedPacksByType(type, packs).then((selectedPacks) => game.settings.set('hero-mancer', `${type}Packs`, selectedPacks));
       });
-
       await Promise.all(settingPromises);
 
-      const cacheManager = new CacheManager();
-      cacheManager.resetCache();
       CustomCompendiums.#validPacksCache.clear();
 
       this.constructor.reloadConfirm({ world: requiresWorldReload });
+
       ui.notifications.info('hm.settings.custom-compendiums.form-saved', { localize: true });
       HM.log(3, 'Form submitted and settings saved');
     } catch (error) {

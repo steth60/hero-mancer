@@ -95,8 +95,17 @@ export const EventBus = {
    * Clear all listeners and sources
    */
   clearAll() {
-    this.listeners.clear();
-    this.listenerSources.clear();
+    try {
+      const totalEvents = this.listeners.size;
+      const totalListeners = Array.from(this.listeners.values()).reduce((sum, listeners) => sum + listeners.size, 0);
+
+      HM.log(3, `Clearing ${totalListeners} listeners from ${totalEvents} events`);
+
+      this.listeners.clear();
+      this.listenerSources.clear();
+    } catch (error) {
+      HM.log(1, 'Error clearing event bus:', error);
+    }
   }
 };
 

@@ -1,5 +1,5 @@
 import { registerSettings } from './settings.js';
-import { CacheManager, CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HtmlManipulator } from './utils/index.js';
+import { CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HtmlManipulator } from './utils/index.js';
 
 /**
  * Main Hero Mancer class, define some statics that will be used everywhere in the module.
@@ -112,8 +112,6 @@ export class HM {
         })
       );
 
-      const cacheManager = new CacheManager();
-      cacheManager.cacheDocuments({ raceDocs, classDocs, backgroundDocs });
       HM.log(3, 'Document preparation complete');
     } catch (error) {
       HM.log(1, 'Failed to prepare documents:', error.message);
@@ -153,9 +151,9 @@ Hooks.once('ready', async () => {
   await HM.prepareDocuments();
 
   // Load compendium selections
-  CustomCompendiums.classPacks = game.settings.get('hero-mancer', 'classPacks');
-  CustomCompendiums.racePacks = game.settings.get('hero-mancer', 'racePacks');
-  CustomCompendiums.backgroundPacks = game.settings.get('hero-mancer', 'backgroundPacks');
+  CustomCompendiums.classPacks = game.settings.get(HM.CONFIG.ID, 'classPacks');
+  CustomCompendiums.racePacks = game.settings.get(HM.CONFIG.ID, 'racePacks');
+  CustomCompendiums.backgroundPacks = game.settings.get(HM.CONFIG.ID, 'backgroundPacks');
 
   HM.log(3, {
     classPacks: CustomCompendiums.classPacks,

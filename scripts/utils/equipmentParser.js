@@ -118,7 +118,7 @@ export class EquipmentParser {
     HM.log(3, `Fetching starting equipment for type: ${type}, selectedId: ${selectedId}`);
 
     if (!selectedId) {
-      HM.log(2, `No selection found for type: ${type}. Ignore this warning if first-render.`);
+      HM.log(3, `No selection found for type: ${type}. Ignore this warning if first-render.`);
       return [];
     }
 
@@ -475,6 +475,9 @@ export class EquipmentParser {
           case 'focus':
             HM.log(3, `DEBUG: Rendering focus item: ${item._source?.key}`, { item: item });
             result = await this.#renderFocusItem(item, itemContainer);
+            break;
+          case 'weapon':
+          case 'armor':
             break;
           default:
             HM.log(2, `Unsupported item type: ${item.type}`, { item: item });

@@ -1,7 +1,6 @@
 /* eslint-disable indent */
 
 import {
-  CacheManager,
   CharacterArtPicker,
   DropdownHandler,
   EquipmentParser,
@@ -136,42 +135,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   async _prepareContext(options) {
-    const cacheManager = new CacheManager();
-
-    // Check if cached data is available first - early return if valid
-    if (cacheManager.isCacheValid()) {
-      HM.log(3, 'Using cached documents and enriched descriptions');
-      const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
-      HeroMancer.selectedAbilities = Array(abilitiesCount).fill(8);
-
-      // Handle ELKAN compatibility
-      if (HM.COMPAT?.ELKAN) {
-        options.parts = options.parts.filter((part) => part !== 'equipment');
-      }
-
-      return {
-        raceDocs: HM.documents.race || cacheManager.getCachedDocs('race'),
-        classDocs: HM.documents.class || cacheManager.getCachedDocs('class'),
-        backgroundDocs: HM.documents.background || cacheManager.getCachedDocs('background'),
-        tabs: this._getTabs(options.parts),
-        abilities: this.#prepareAbilities(),
-        rollStat: this.rollStat,
-        rollMethods: this.#getRollMethods(),
-        diceRollMethod: this.#getDiceRollingMethod(),
-        allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
-        standardArray: this.#getStandardArray(),
-        selectedAbilities: HeroMancer.selectedAbilities,
-        remainingPoints: Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities),
-        totalPoints: StatRoller.getTotalPoints(),
-        playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
-        tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
-        token: this.#getTokenConfig(),
-        mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
-      };
+    if (!HM.documents.race || !HM.documents.class || !HM.documents.background) {
+      ui.notifications.info('hm.actortab-button.loading', { localize: true });
     }
-
-    // Inform user that data is loading
-    ui.notifications.info('hm.actortab-button.loading', { localize: true });
 
     // Initialize abilities and related data
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
@@ -182,18 +148,21 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       options.parts = options.parts.filter((part) => part !== 'equipment');
     }
 
+    // Get dice rolling method once and reuse it
+    const diceRollMethod = this.#getDiceRollingMethod();
+
     // Prepare context with all required data
-    const context = {
-      raceDocs: HM.documents.race || cacheManager.getCachedDocs('race'),
-      classDocs: HM.documents.class || cacheManager.getCachedDocs('class'),
-      backgroundDocs: HM.documents.background || cacheManager.getCachedDocs('background'),
+    return {
+      raceDocs: HM.documents.race || [],
+      classDocs: HM.documents.class || [],
+      backgroundDocs: HM.documents.background || [],
       tabs: this._getTabs(options.parts),
       abilities: this.#prepareAbilities(),
       rollStat: this.rollStat,
       rollMethods: this.#getRollMethods(),
-      diceRollMethod: this.#getDiceRollingMethod(),
+      diceRollMethod: diceRollMethod,
       allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
-      standardArray: this.#getStandardArray(),
+      standardArray: this.#getStandardArray(diceRollMethod),
       selectedAbilities: HeroMancer.selectedAbilities,
       remainingPoints: Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities),
       totalPoints: StatRoller.getTotalPoints(),
@@ -202,16 +171,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       token: this.#getTokenConfig(),
       mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
     };
-
-    // Cache the documents for future use
-    cacheManager.cacheDocuments({
-      raceDocs: context.raceDocs,
-      classDocs: context.classDocs,
-      backgroundDocs: context.backgroundDocs
-    });
-
-    HM.log(3, 'Documents registered and enriched, caching results');
-    return context;
   }
 
   /** @override */
@@ -220,6 +179,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       HM.log(3, 'Preparing part context', { partId, context });
 
       switch (partId) {
+        case 'header':
+        case 'tabs':
+        case 'footer':
+          break;
         case 'start':
         case 'background':
         case 'race':
@@ -453,11 +416,28 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   #getDiceRollingMethod() {
     let diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
-    HM.log(3, 'Dice Rolling Method:', diceRollingMethod);
+    HM.log(3, 'Initial dice rolling method:', diceRollingMethod);
 
-    if (!['standardArray', 'pointBuy', 'manualFormula'].includes(diceRollingMethod)) {
-      diceRollingMethod = 'standardArray'; // Default fallback
-      HM.log(2, 'Invalid dice rolling method, defaulting to standardArray');
+    // Get the allowed methods configuration
+    const allowedMethods = game.settings.get(HM.CONFIG.ID, 'allowedMethods');
+
+    // Map from setting keys to method names
+    const methodMapping = {
+      standardArray: 'standardArray',
+      pointBuy: 'pointBuy',
+      manual: 'manualFormula'
+    };
+
+    // Create array of allowed method names
+    const validMethods = Object.entries(allowedMethods)
+      .filter(([key, enabled]) => enabled)
+      .map(([key]) => methodMapping[key])
+      .filter(Boolean);
+
+    // If the current method isn't valid or isn't allowed, select the first allowed method
+    if (!diceRollingMethod || !validMethods.includes(diceRollingMethod)) {
+      diceRollingMethod = validMethods[0];
+      HM.log(3, `Selected ${diceRollingMethod} as the default dice rolling method`);
     }
 
     return diceRollingMethod;
@@ -465,15 +445,18 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /**
    * Gets the standard array for ability scores
+   * @param {string} [diceRollingMethod] - Optional pre-validated dice rolling method
    * @returns {Array} Array of ability score values
    * @private
    */
-  #getStandardArray() {
+  #getStandardArray(diceRollingMethod) {
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
-    const diceRollingMethod = this.#getDiceRollingMethod();
 
-    if (diceRollingMethod === 'standardArray') {
+    // Use provided method or get it if not provided
+    const method = diceRollingMethod || this.#getDiceRollingMethod();
+
+    if (method === 'standardArray') {
       const customArray = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
       if (customArray) {
         const parsedArray = customArray.split(',').map(Number);
@@ -596,119 +579,220 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @static
    */
   static async cleanup(instance) {
-    const html = instance.element;
-    if (!html) return;
-
-    HM.log(3, 'Starting comprehensive cleanup of HeroMancer instance');
-
-    ['class', 'race', 'background'].forEach((type) => {
-      const dropdown = html?.querySelector(`#${type}-dropdown`);
-      if (dropdown) {
-        // Clean up description handlers
-        if (dropdown._descriptionUpdateHandler) {
-          EventBus.off('description-update', dropdown._descriptionUpdateHandler);
-          dropdown._descriptionUpdateHandler = null;
-        }
-
-        // Clean up change handlers
-        if (dropdown._changeHandler) {
-          dropdown.removeEventListener('change', dropdown._changeHandler);
-          dropdown._changeHandler = null;
-        }
-
-        // Clean up equipment handlers
-        if (dropdown._equipmentChangeHandler) {
-          dropdown.removeEventListener('change', dropdown._equipmentChangeHandler);
-          dropdown._equipmentChangeHandler = null;
-        }
-
-        // Clean up summary handlers
-        if (dropdown._summaryChangeHandler) {
-          dropdown.removeEventListener('change', dropdown._summaryChangeHandler);
-          dropdown._summaryChangeHandler = null;
-        }
-
-        HM.log(3, `Cleaned up handlers for ${type} dropdown`);
+    try {
+      const html = instance.element;
+      if (!html) {
+        HM.log(3, 'No HTML element to clean up');
+        return;
       }
-    });
 
-    const abilityBlocks = html.querySelectorAll('.ability-block');
-    if (abilityBlocks && abilityBlocks.length > 0) {
-      abilityBlocks.forEach((block, index) => {
-        // Clean up dropdown handlers
-        const dropdown = block.querySelector('.ability-dropdown');
-        if (dropdown && dropdown._abilityChangeHandler) {
-          dropdown.removeEventListener('change', dropdown._abilityChangeHandler);
-          dropdown._abilityChangeHandler = null;
-        }
+      HM.log(3, 'Starting comprehensive cleanup of HeroMancer instance');
 
-        // Clean up score input handlers
-        const scoreInput = block.querySelector('.ability-score');
-        if (scoreInput && scoreInput._abilityChangeHandler) {
-          scoreInput.removeEventListener('change', scoreInput._abilityChangeHandler);
-          scoreInput._abilityChangeHandler = null;
-        }
+      // Track items that had cleanup issues
+      const cleanupIssues = [];
 
-        // Clean up any observers
-        const currentScore = block.querySelector('.current-score');
-        if (currentScore && currentScore._summaryObserver) {
-          currentScore._summaryObserver.disconnect();
-          currentScore._summaryObserver = null;
+      // Clean up dropdown handlers
+      ['class', 'race', 'background'].forEach((type) => {
+        try {
+          const dropdown = html?.querySelector(`#${type}-dropdown`);
+          if (dropdown) {
+            // Clean up description handlers
+            if (dropdown._descriptionUpdateHandler) {
+              EventBus.off('description-update', dropdown._descriptionUpdateHandler);
+              dropdown._descriptionUpdateHandler = null;
+            }
+
+            // Clean up change handlers
+            if (dropdown._changeHandler) {
+              dropdown.removeEventListener('change', dropdown._changeHandler);
+              dropdown._changeHandler = null;
+            }
+
+            // Clean up equipment handlers
+            if (dropdown._equipmentChangeHandler) {
+              dropdown.removeEventListener('change', dropdown._equipmentChangeHandler);
+              dropdown._equipmentChangeHandler = null;
+            }
+
+            // Clean up summary handlers
+            if (dropdown._summaryChangeHandler) {
+              dropdown.removeEventListener('change', dropdown._summaryChangeHandler);
+              dropdown._summaryChangeHandler = null;
+            }
+
+            HM.log(3, `Cleaned up handlers for ${type} dropdown`);
+          }
+        } catch (error) {
+          HM.log(1, `Error cleaning up ${type} dropdown:`, error);
+          cleanupIssues.push(`${type} dropdown`);
         }
       });
 
-      HM.log(3, 'Cleaned up ability block handlers and observers');
-    }
+      // Clean up ability blocks
+      try {
+        const abilityBlocks = html.querySelectorAll('.ability-block');
+        if (abilityBlocks && abilityBlocks.length > 0) {
+          abilityBlocks.forEach((block, index) => {
+            try {
+              // Clean up dropdown handlers
+              const dropdown = block.querySelector('.ability-dropdown');
+              if (dropdown && dropdown._abilityChangeHandler) {
+                dropdown.removeEventListener('change', dropdown._abilityChangeHandler);
+                dropdown._abilityChangeHandler = null;
+              }
 
-    const equipmentContainer = html.querySelector('#equipment-container');
-    if (equipmentContainer) {
-      if (equipmentContainer._summaryChangeHandler) {
-        equipmentContainer.removeEventListener('change', equipmentContainer._summaryChangeHandler);
-        equipmentContainer._summaryChangeHandler = null;
+              // Clean up score input handlers
+              const scoreInput = block.querySelector('.ability-score');
+              if (scoreInput && scoreInput._abilityChangeHandler) {
+                scoreInput.removeEventListener('change', scoreInput._abilityChangeHandler);
+                scoreInput._abilityChangeHandler = null;
+              }
+
+              // Clean up any observers
+              const currentScore = block.querySelector('.current-score');
+              if (currentScore && currentScore._summaryObserver) {
+                currentScore._summaryObserver.disconnect();
+                currentScore._summaryObserver = null;
+              }
+            } catch (error) {
+              HM.log(1, `Error cleaning up ability block ${index}:`, error);
+              cleanupIssues.push(`ability block ${index}`);
+            }
+          });
+
+          HM.log(3, 'Cleaned up ability block handlers and observers');
+        }
+      } catch (error) {
+        HM.log(1, 'Error cleaning up ability blocks:', error);
+        cleanupIssues.push('ability blocks');
       }
 
-      if (equipmentContainer._summaryObserver) {
-        equipmentContainer._summaryObserver.disconnect();
-        equipmentContainer._summaryObserver = null;
+      // Clean up equipment container
+      try {
+        const equipmentContainer = html.querySelector('#equipment-container');
+        if (equipmentContainer) {
+          if (equipmentContainer._summaryChangeHandler) {
+            equipmentContainer.removeEventListener('change', equipmentContainer._summaryChangeHandler);
+            equipmentContainer._summaryChangeHandler = null;
+          }
+
+          if (equipmentContainer._summaryObserver) {
+            equipmentContainer._summaryObserver.disconnect();
+            equipmentContainer._summaryObserver = null;
+          }
+
+          HM.log(3, 'Cleaned up equipment container handlers and observers');
+        }
+      } catch (error) {
+        HM.log(1, 'Error cleaning up equipment container:', error);
+        cleanupIssues.push('equipment container');
       }
 
-      HM.log(3, 'Cleaned up equipment container handlers and observers');
-    }
+      // Clean up prose mirror elements
+      try {
+        const proseMirrorElements = html.querySelectorAll('prose-mirror');
+        if (proseMirrorElements && proseMirrorElements.length > 0) {
+          proseMirrorElements.forEach((element, index) => {
+            try {
+              if (element._summaryObserver) {
+                element._summaryObserver.disconnect();
+                element._summaryObserver = null;
+              }
 
-    const proseMirrorElements = html.querySelectorAll('prose-mirror');
-    if (proseMirrorElements && proseMirrorElements.length > 0) {
-      proseMirrorElements.forEach((element) => {
-        if (element._summaryObserver) {
-          element._summaryObserver.disconnect();
-          element._summaryObserver = null;
+              if (element._observer) {
+                element._observer.disconnect();
+                element._observer = null;
+              }
+            } catch (error) {
+              HM.log(1, `Error cleaning up prose-mirror element ${index}:`, error);
+              cleanupIssues.push(`prose-mirror ${index}`);
+            }
+          });
+
+          HM.log(3, 'Cleaned up prose-mirror observers');
         }
+      } catch (error) {
+        HM.log(1, 'Error cleaning up prose-mirror elements:', error);
+        cleanupIssues.push('prose-mirror elements');
+      }
 
-        if (element._observer) {
-          element._observer.disconnect();
-          element._observer = null;
+      // Clean up roll buttons
+      try {
+        const rollButtons = html.querySelectorAll('.roll-btn');
+        if (rollButtons && rollButtons.length > 0) {
+          rollButtons.forEach((button, index) => {
+            try {
+              if (button._clickHandler) {
+                button.removeEventListener('click', button._clickHandler);
+                button._clickHandler = null;
+              }
+            } catch (error) {
+              HM.log(1, `Error cleaning up roll button ${index}:`, error);
+              cleanupIssues.push(`roll button ${index}`);
+            }
+          });
+
+          HM.log(3, 'Cleaned up roll button handlers');
         }
-      });
+      } catch (error) {
+        HM.log(1, 'Error cleaning up roll buttons:', error);
+        cleanupIssues.push('roll buttons');
+      }
 
-      HM.log(3, 'Cleaned up prose-mirror observers');
+      // Clean up form validation handlers
+      try {
+        const formElements = html.querySelectorAll('input, select, textarea');
+        formElements.forEach((element, index) => {
+          try {
+            if (element._mandatoryFieldChangeHandler) {
+              element.removeEventListener('change', element._mandatoryFieldChangeHandler);
+              element._mandatoryFieldChangeHandler = null;
+            }
+            if (element._mandatoryFieldInputHandler) {
+              element.removeEventListener('input', element._mandatoryFieldInputHandler);
+              element._mandatoryFieldInputHandler = null;
+            }
+          } catch (error) {
+            HM.log(1, `Error cleaning up form element ${index}:`, error);
+            cleanupIssues.push(`form element ${index}`);
+          }
+        });
+
+        HM.log(3, 'Cleaned up form validation handlers');
+      } catch (error) {
+        HM.log(1, 'Error cleaning up form validation handlers:', error);
+        cleanupIssues.push('form validation handlers');
+      }
+
+      try {
+        SummaryManager.cleanup();
+      } catch (error) {
+        HM.log(1, 'Error cleaning up SummaryManager:', error);
+        cleanupIssues.push('SummaryManager');
+      }
+
+      try {
+        ObserverRegistry.unregisterByPrefix('heromancer-');
+      } catch (error) {
+        HM.log(1, 'Error unregistering observers:', error);
+        cleanupIssues.push('ObserverRegistry');
+      }
+
+      try {
+        EventBus.clearAll();
+      } catch (error) {
+        HM.log(1, 'Error clearing EventBus:', error);
+        cleanupIssues.push('EventBus');
+      }
+
+      if (cleanupIssues.length > 0) {
+        HM.log(1, `HeroMancer cleanup completed with issues in: ${cleanupIssues.join(', ')}`);
+      } else {
+        HM.log(3, 'HeroMancer cleanup completed successfully');
+      }
+    } catch (error) {
+      HM.log(1, 'Critical error during HeroMancer cleanup:', error);
     }
-
-    const rollButtons = html.querySelectorAll('.roll-btn');
-    if (rollButtons && rollButtons.length > 0) {
-      rollButtons.forEach((button) => {
-        if (button._clickHandler) {
-          button.removeEventListener('click', button._clickHandler);
-          button._clickHandler = null;
-        }
-      });
-
-      HM.log(3, 'Cleaned up roll button handlers');
-    }
-
-    SummaryManager.cleanup();
-    ObserverRegistry.unregisterByPrefix('heromancer-');
-    EventBus.clearAll();
-
-    HM.log(3, 'HeroMancer cleanup completed successfully');
   }
 
   static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
@@ -1006,7 +1090,13 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
                 'Final actor items:',
                 newActor.items.contents.map((i) => i.name)
               );
-              currentManager?.close();
+
+              try {
+                if (currentManager) await currentManager.close();
+              } catch (error) {
+                HM.log(1, 'Error closing manager:', error);
+              }
+
               newActor.sheet.render(true);
               return;
             }
@@ -1014,7 +1104,45 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
             HM.log(3, `Processing ${items[itemIndex].name}`);
 
             return new Promise((resolve) => {
+              // Set up a timeout to handle stuck advancement process
+              const timeoutId = setTimeout(() => {
+                HM.log(1, `Advancement process timeout for ${items[itemIndex].name}`);
+                ui.notifications.warn(
+                  game.i18n.format('hm.warnings.advancement-timeout', {
+                    item: items[itemIndex].name
+                  })
+                );
+
+                // Try to move to next item
+                if (currentManager) {
+                  try {
+                    currentManager.close().catch((err) => HM.log(1, 'Error closing timed out manager:', err));
+                  } catch (error) {
+                    HM.log(1, 'Error closing timed out manager:', error);
+                  }
+                  currentManager = null;
+                }
+
+                if (itemIndex + 1 < items.length) {
+                  createAdvancementManager(items[itemIndex + 1])
+                    .then((manager) => {
+                      currentManager = manager;
+                      manager.render(true);
+                      doAdvancement(itemIndex + 1).then(resolve);
+                    })
+                    .catch((error) => {
+                      HM.log(1, `Error creating manager after timeout for ${items[itemIndex + 1].name}:`, error);
+                      newActor.sheet.render(true);
+                      resolve();
+                    });
+                } else {
+                  newActor.sheet.render(true);
+                  resolve();
+                }
+              }, HeroMancer.ADVANCEMENT_DELAY.renderTimeout * 2);
+
               Hooks.once('dnd5e.advancementManagerComplete', async () => {
+                clearTimeout(timeoutId);
                 HM.log(3, `Completed ${items[itemIndex].name}`);
 
                 await new Promise((resolve) => {
@@ -1033,6 +1161,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
                     resolve();
                   } catch (error) {
                     HM.log(1, `Error creating manager for ${items[itemIndex + 1].name}:`, error);
+                    ui.notifications.warn(
+                      game.i18n.format('hm.warnings.advancement-failed', {
+                        item: items[itemIndex + 1].name
+                      })
+                    );
                     newActor.sheet.render(true);
                     resolve();
                   }
@@ -1051,19 +1184,30 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           await doAdvancement();
         } catch (error) {
           HM.log(1, 'Error in advancement process:', error);
-          if (currentManager) await currentManager.close();
+          ui.notifications.error(game.i18n.localize('hm.errors.advancement-process'));
+          if (currentManager) {
+            try {
+              await currentManager.close();
+            } catch (closeError) {
+              HM.log(1, 'Error closing manager after error:', closeError);
+            }
+          }
           newActor.sheet.render(true);
         }
 
-        await ChatMessage.create({
-          speaker: ChatMessage.getSpeaker(),
-          content: SummaryManager.getSummaryForChat(),
-          flags: {
-            'hero-mancer': {
-              type: 'character-summary'
+        try {
+          await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker(),
+            content: SummaryManager.getSummaryForChat(),
+            flags: {
+              'hero-mancer': {
+                type: 'character-summary'
+              }
             }
-          }
-        });
+          });
+        } catch (error) {
+          HM.log(1, 'Error creating summary chat message:', error);
+        }
       }
     } catch (error) {
       HM.log(1, 'Error in form submission:', error);
