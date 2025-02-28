@@ -236,97 +236,138 @@ export class EquipmentParser {
       EquipmentParser.combinedItemIds = new Set();
     }
 
-    this.equipmentData = null;
-
-    await EquipmentParser.initializeLookupItems();
-    if (!EquipmentParser.lookupItems) {
-      HM.log(1, 'Failed to initialize lookup items');
-    }
-
-    await this.fetchEquipmentData();
-    if (!this.equipmentData) {
-      HM.log(1, 'Failed to fetch equipment data');
-    }
-
-    let container = document.querySelector('.equipment-choices');
-    if (!container) {
-      container = document.createElement('div');
-      container.classList.add('equipment-choices');
-    }
-
-    const typesToRender = type ? [type] : Object.keys(this.equipmentData);
-
     try {
-      for (const currentType of typesToRender) {
-        const items = this.equipmentData[currentType] || [];
+      this.equipmentData = null;
 
-        // Pre-fetch all item documents in parallel
-        const itemDocs = await Promise.all(
-          items.map(async (item) => {
-            if (!item.key) return { item, doc: null };
-            try {
-              const doc = await fromUuidSync(item.key);
-              return { item, doc };
-            } catch (error) {
-              HM.log(2, `Error pre-fetching item document for ${item.key}:`, error);
-              return { item, doc: null };
-            }
-          })
-        );
-
-        // Create section container
-        let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
-        if (sectionContainer) {
-          HM.log(3, `${currentType}-equipment-section already exists. Clearing and reusing.`);
-          sectionContainer.innerHTML = '';
-        } else {
-          sectionContainer = document.createElement('div');
-          sectionContainer.classList.add(`${currentType}-equipment-section`);
-          container.appendChild(sectionContainer);
-        }
-
-        // Get the localized placeholder text for the current type
-        const placeholderText = game.i18n.localize(`hm.app.${currentType}.select-placeholder`);
-        const dropdown = document.querySelector(`#${currentType}-dropdown`);
-        const dropdownText = dropdown.selectedOptions[0].innerHTML;
-        const isPlaceholder = dropdownText === placeholderText;
-
-        // Add a header for the section
-        const header = document.createElement('h3');
-        header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
-        sectionContainer.appendChild(header);
-
-        if (currentType === 'class' && this.classId) {
-          await this.renderClassWealthOption(this.classId, sectionContainer);
-        }
-
-        // Process all items with their pre-fetched documents
-        const processedItems = new Set();
-
-        for (const { item, doc } of itemDocs) {
-          if (processedItems.has(item._id || item.key)) {
-            continue;
-          }
-
-          processedItems.add(item._id || item.key);
-
-          // Update item with document info
-          item.name = doc?.name || item.key;
-
-          const itemElement = await this.#createEquipmentElement(item);
-
-          if (itemElement) {
-            sectionContainer.appendChild(itemElement);
-          }
-        }
+      await EquipmentParser.initializeLookupItems();
+      if (!EquipmentParser.lookupItems) {
+        HM.log(1, 'Failed to initialize lookup items');
       }
+
+      await this.fetchEquipmentData();
+      if (!this.equipmentData) {
+        HM.log(1, 'Failed to fetch equipment data');
+      }
+
+      let container = document.querySelector('.equipment-choices');
+      if (!container) {
+        container = document.createElement('div');
+        container.classList.add('equipment-choices');
+      }
+
+      const typesToRender = type ? [type] : Object.keys(this.equipmentData);
+
+      try {
+        for (const currentType of typesToRender) {
+          const items = this.equipmentData[currentType] || [];
+
+          // Pre-fetch all item documents in parallel
+          const itemDocs = await Promise.all(
+            items.map(async (item) => {
+              if (!item.key) return { item, doc: null };
+              try {
+                const doc = await fromUuidSync(item.key);
+                return { item, doc };
+              } catch (error) {
+                HM.log(2, `Error pre-fetching item document for ${item.key}:`, error);
+                return { item, doc: null };
+              }
+            })
+          );
+
+          // Create section container
+          let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
+          if (sectionContainer) {
+            HM.log(3, `${currentType}-equipment-section already exists. Clearing and reusing.`);
+            sectionContainer.innerHTML = '';
+          } else {
+            sectionContainer = document.createElement('div');
+            sectionContainer.classList.add(`${currentType}-equipment-section`);
+            container.appendChild(sectionContainer);
+          }
+
+          // Get the localized placeholder text for the current type
+          const placeholderText = game.i18n.localize(`hm.app.${currentType}.select-placeholder`);
+          const dropdown = document.querySelector(`#${currentType}-dropdown`);
+          const dropdownText = dropdown?.selectedOptions?.[0]?.innerHTML || currentType;
+          const isPlaceholder = dropdown && dropdownText === placeholderText;
+
+          // Add a header for the section
+          const header = document.createElement('h3');
+          header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
+          sectionContainer.appendChild(header);
+
+          if (currentType === 'class' && this.classId) {
+            await this.renderClassWealthOption(this.classId, sectionContainer).catch((error) => {
+              HM.log(1, `Error rendering wealth option: ${error.message}`);
+            });
+          }
+
+          // Process all items with their pre-fetched documents
+          const processedItems = new Set();
+          const failedItems = [];
+
+          for (const { item, doc } of itemDocs) {
+            if (!item || processedItems.has(item._id || item.key)) {
+              continue;
+            }
+
+            processedItems.add(item._id || item.key);
+
+            // Update item with document info
+            if (doc) {
+              item.name = doc.name;
+            } else if (item.key) {
+              item.name = item.key;
+            }
+
+            try {
+              const itemElement = await this.#createEquipmentElement(item);
+              if (itemElement) {
+                sectionContainer.appendChild(itemElement);
+              }
+            } catch (error) {
+              HM.log(1, `Failed to create equipment element for ${item.name || item.key}:`, error);
+              failedItems.push(item.name || item.key || 'unnamed item');
+            }
+          }
+
+          if (failedItems.length > 0) {
+            const errorMessage = document.createElement('div');
+            errorMessage.classList.add('equipment-error');
+            errorMessage.textContent = `Failed to load ${failedItems.length} equipment items.`;
+            sectionContainer.appendChild(errorMessage);
+          }
+        }
+      } catch (error) {
+        HM.log(1, 'Error processing equipment sections:', error);
+
+        // Create a fallback message
+        const errorMessage = document.createElement('div');
+        errorMessage.classList.add('error-message');
+        errorMessage.textContent = game.i18n.localize('hm.errors.equipment-rendering');
+        container.appendChild(errorMessage);
+      }
+
+      return container;
+    } catch (error) {
+      HM.log(1, 'Failed to render equipment choices:', error);
+
+      // Return a minimal fallback container
+      const fallbackContainer = document.createElement('div');
+      fallbackContainer.classList.add('equipment-choices', 'error-state');
+
+      const errorMessage = document.createElement('div');
+      errorMessage.classList.add('error-message');
+      errorMessage.innerHTML = `<p>${game.i18n.localize('hm.errors.equipment-rendering')}</p>`;
+      fallbackContainer.appendChild(errorMessage);
+
+      return fallbackContainer;
     } finally {
       if (!type) {
         this._renderInProgress = false;
       }
     }
-
-    return container;
   }
 
   /* -------------------------------------------- */
@@ -341,107 +382,125 @@ export class EquipmentParser {
    */
   async #createEquipmentElement(item) {
     if (!item) {
-      HM.log(1, 'Null or undefined item passed to #createEquipmentElement');
+      HM.log(2, 'Null or undefined item passed to #createEquipmentElement');
       return null;
     }
 
     if (this.#isItemRendered(item)) {
-      HM.log(3, `DEBUG: Skipping already rendered item: ${item._source.key}`, { item: item });
+      HM.log(3, `DEBUG: Skipping already rendered item: ${item._source?.key}`, { item: item });
       return null;
     }
 
-    HM.log(3, 'Creating equipment element:', {
-      type: item.type,
-      key: item.key,
-      _source: item._source,
-      children: item.children
-    });
+    try {
+      HM.log(3, 'Creating equipment element:', {
+        type: item.type,
+        key: item.key,
+        _source: item._source,
+        children: item.children
+      });
 
-    const itemContainer = document.createElement('div');
-    itemContainer.classList.add('equipment-item');
+      const itemContainer = document.createElement('div');
+      itemContainer.classList.add('equipment-item');
 
-    const fragment = document.createDocumentFragment();
+      const fragment = document.createDocumentFragment();
 
-    if (!item.group) {
-      const labelElement = document.createElement('h4');
-      labelElement.classList.add('parent-label');
+      if (!item.group) {
+        const labelElement = document.createElement('h4');
+        labelElement.classList.add('parent-label');
 
-      let shouldAddLabel = false;
+        let shouldAddLabel = false;
 
-      if (item.key) {
-        try {
-          let itemDoc = await fromUuidSync(item.key);
+        if (item.key) {
+          try {
+            let itemDoc = await fromUuidSync(item.key);
 
-          // If fromUuidSync fails to return a document, try regular fromUuid
-          if (!itemDoc) {
-            try {
-              itemDoc = await fromUuid(item.key);
-            } catch (err) {
-              HM.log(1, `Error getting document for item ${item._source?.key}: ${err.message}`);
+            // If fromUuidSync fails to return a document, try regular fromUuid
+            if (!itemDoc) {
+              try {
+                itemDoc = await fromUuid(item.key);
+              } catch (err) {
+                HM.log(1, `Error getting document for item ${item._source?.key}: ${err.message}`);
+              }
             }
-          }
 
-          if (itemDoc) {
-            labelElement.innerHTML = item.label || `${item.count || ''} ${itemDoc.name}`;
-            shouldAddLabel = true;
-          } else {
-            HM.log(2, `No document found for item key: ${item.key}`, { item: item, labelElement: labelElement });
+            if (itemDoc) {
+              labelElement.innerHTML = item.label || `${item.count || ''} ${itemDoc.name}`;
+              shouldAddLabel = true;
+            } else {
+              HM.log(2, `No document found for item key: ${item.key}`, { item, labelElement });
+              labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+              shouldAddLabel = true;
+            }
+          } catch (error) {
+            HM.log(1, `Error getting label for item ${item._source?.key}: ${error.message}`, { item, labelElement });
             labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
             shouldAddLabel = true;
           }
-        } catch (error) {
-          HM.log(1, `Error getting label for item ${item._source?.key}: ${error.message}`, { item: item, labelElement: labelElement });
-          labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
-          shouldAddLabel = true;
+        }
+
+        if (shouldAddLabel) {
+          fragment.appendChild(labelElement);
         }
       }
 
-      if (shouldAddLabel) {
-        fragment.appendChild(labelElement);
-      }
-    }
+      // Add the fragment to the container at the end
+      itemContainer.appendChild(fragment);
 
-    // Add the fragment to the container at the end
-    itemContainer.appendChild(fragment);
-
-    // First check if this is part of an OR choice
-    if (item.group) {
-      const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
-      if (parentItem?.type === 'OR') {
-        return null;
-      }
-    }
-
-    let result;
-    switch (item.type) {
-      case 'OR':
-        HM.log(3, `DEBUG: Rendering OR block for item: ${item._source?.key}`, { item: item });
-        result = await this.#renderOrBlock(item, itemContainer);
-        break;
-      case 'AND':
-        HM.log(3, `DEBUG: Rendering AND block for item: ${item._source?.key || item.type}`, { item: item });
-        if (!item.group || this.#isStandaloneAndBlock(item)) {
-          result = await this.#renderAndBlock(item, itemContainer);
+      // First check if this is part of an OR choice
+      if (item.group) {
+        const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
+        if (parentItem?.type === 'OR') {
+          return null;
         }
-        break;
-      case 'linked':
-        HM.log(3, `DEBUG: Rendering linked item: ${item._source?.key}`, { item: item });
-        result = await this.#renderLinkedItem(item, itemContainer);
-        break;
-      case 'focus':
-        HM.log(3, `DEBUG: Rendering focus item: ${item._source?.key}`, { item: item });
-        result = await this.#renderFocusItem(item, itemContainer);
-        break;
-      default:
-        HM.log(3, `Unsupported item type: ${item.type}`, { item: item });
-        return null;
-    }
+      }
 
-    if (result) {
-      EquipmentParser.renderedItems.add(item._id);
-    }
+      let result;
 
-    return result;
+      try {
+        switch (item.type) {
+          case 'OR':
+            HM.log(3, `DEBUG: Rendering OR block for item: ${item._source?.key}`, { item: item });
+            result = await this.#renderOrBlock(item, itemContainer);
+            break;
+          case 'AND':
+            HM.log(3, `DEBUG: Rendering AND block for item: ${item._source?.key || item.type}`, { item: item });
+            if (!item.group || this.#isStandaloneAndBlock(item)) {
+              result = await this.#renderAndBlock(item, itemContainer);
+            }
+            break;
+          case 'linked':
+            HM.log(3, `DEBUG: Rendering linked item: ${item._source?.key}`, { item: item });
+            result = await this.#renderLinkedItem(item, itemContainer);
+            break;
+          case 'focus':
+            HM.log(3, `DEBUG: Rendering focus item: ${item._source?.key}`, { item: item });
+            result = await this.#renderFocusItem(item, itemContainer);
+            break;
+          default:
+            HM.log(2, `Unsupported item type: ${item.type}`, { item: item });
+            return null;
+        }
+      } catch (error) {
+        HM.log(2, `Error rendering item ${item.type}:`, error);
+
+        // Create a simple fallback element
+        const errorElement = document.createElement('div');
+        errorElement.classList.add('equipment-item-error');
+        errorElement.textContent = game.i18n.localize('hm.app.equipment.unknown-choice');
+        itemContainer.appendChild(errorElement);
+
+        result = itemContainer;
+      }
+
+      if (result) {
+        EquipmentParser.renderedItems.add(item._id);
+      }
+
+      return result;
+    } catch (error) {
+      HM.log(1, 'Critical error creating equipment element:', error);
+      return null;
+    }
   }
 
   /**

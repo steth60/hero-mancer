@@ -215,39 +215,54 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   _preparePartContext(partId, context) {
-    HM.log(3, 'Preparing part context', { partId, context });
+    try {
+      HM.log(3, 'Preparing part context', { partId, context });
 
-    switch (partId) {
-      case 'start':
-      case 'background':
-      case 'race':
-      case 'class':
+      switch (partId) {
+        case 'start':
+        case 'background':
+        case 'race':
+        case 'class':
+          context.tab = context.tabs[partId];
+          break;
+        case 'abilities':
+          context.tab = context.tabs[partId];
+          context.totalPoints = StatRoller.getTotalPoints();
+          context.pointsSpent = StatRoller.calculatePointsSpent(HeroMancer.selectedAbilities);
+          context.remainingPoints = context.totalPoints - context.pointsSpent;
+          break;
+        case 'equipment':
+          context.tab = context.tabs[partId];
+          break;
+        case 'finalize':
+          context.tab = context.tabs[partId];
+          context.alignments =
+            game.settings
+              .get(HM.CONFIG.ID, 'alignments')
+              .split(',')
+              .map((d) => d.trim()) || [];
+          context.deities =
+            game.settings
+              .get(HM.CONFIG.ID, 'deities')
+              .split(',')
+              .map((d) => d.trim()) || [];
+          break;
+        default:
+          HM.log(2, `Unknown part ID: ${partId}`);
+          break;
+      }
+
+      return context;
+    } catch (error) {
+      HM.log(1, `Error preparing context for part ${partId}:`, error);
+
+      // Return original context as fallback
+      if (context.tabs && context.tabs[partId]) {
         context.tab = context.tabs[partId];
-        break;
-      case 'abilities':
-        context.tab = context.tabs[partId];
-        context.totalPoints = StatRoller.getTotalPoints();
-        context.pointsSpent = StatRoller.calculatePointsSpent(HeroMancer.selectedAbilities);
-        context.remainingPoints = context.totalPoints - context.pointsSpent;
-        break;
-      case 'equipment':
-        context.tab = context.tabs[partId];
-        break;
-      case 'finalize':
-        context.tab = context.tabs[partId];
-        context.alignments =
-          game.settings
-            .get(HM.CONFIG.ID, 'alignments')
-            .split(',')
-            .map((d) => d.trim()) || [];
-        context.deities =
-          game.settings
-            .get(HM.CONFIG.ID, 'deities')
-            .split(',')
-            .map((d) => d.trim()) || [];
-        break;
+      }
+
+      return context;
     }
-    return context;
   }
 
   /**
@@ -257,66 +272,90 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @protected
    */
   _getTabs(parts) {
-    const tabGroup = 'hero-mancer-tabs';
-    if (!this.tabGroups[tabGroup]) {
-      this.tabGroups[tabGroup] = 'start';
-    }
-
-    return parts.reduce((tabs, partId) => {
-      const tab = {
-        id: '',
-        label: `hm.app.tab-names.${partId}`,
-        group: tabGroup,
-        cssClass: '',
-        icon: ''
-      };
-      switch (partId) {
-        case 'header':
-        case 'tabs':
-          return tabs;
-        case 'start':
-          tab.id = 'start';
-          tab.label = `${game.i18n.localize('hm.app.tab-names.start')}`;
-          tab.icon = 'fa-solid fa-play-circle';
-          break;
-        case 'background':
-          tab.id = 'background';
-          tab.label = `${game.i18n.localize('hm.app.tab-names.background')}`;
-          tab.icon = 'fa-solid fa-scroll';
-          break;
-        case 'race':
-          tab.id = 'race';
-          tab.label = `${game.i18n.localize('hm.app.tab-names.race')}`;
-          tab.icon = 'fa-solid fa-feather-alt';
-          break;
-        case 'class':
-          tab.id = 'class';
-          tab.label = `${game.i18n.localize('hm.app.tab-names.class')}`;
-          tab.icon = 'fa-solid fa-chess-rook';
-          break;
-        case 'abilities':
-          tab.id = 'abilities';
-          tab.label = `${game.i18n.localize('hm.app.tab-names.abilities')}`;
-          tab.icon = 'fa-solid fa-fist-raised';
-          break;
-        case 'equipment':
-          if (HM.COMPAT?.ELKAN) break;
-          tab.id = 'equipment';
-          tab.label = `${game.i18n.localize('hm.app.tab-names.equipment')}`;
-          tab.icon = 'fa-solid fa-shield-halved';
-          break;
-        case 'finalize':
-          tab.id = 'finalize';
-          tab.label = `${game.i18n.localize('hm.app.tab-names.finalize')}`;
-          tab.icon = 'fa-solid fa-check-circle';
-          break;
-        case 'footer':
-          return tabs;
+    try {
+      const tabGroup = 'hero-mancer-tabs';
+      if (!this.tabGroups[tabGroup]) {
+        this.tabGroups[tabGroup] = 'start';
       }
-      if (this.tabGroups[tabGroup] === tab.id) tab.cssClass = 'active';
-      tabs[partId] = tab;
-      return tabs;
-    }, {});
+
+      return parts.reduce((tabs, partId) => {
+        const tab = {
+          id: '',
+          label: `hm.app.tab-names.${partId}`,
+          group: tabGroup,
+          cssClass: '',
+          icon: ''
+        };
+
+        try {
+          switch (partId) {
+            case 'header':
+            case 'tabs':
+              return tabs;
+            case 'start':
+              tab.id = 'start';
+              tab.label = `${game.i18n.localize('hm.app.tab-names.start')}`;
+              tab.icon = 'fa-solid fa-play-circle';
+              break;
+            case 'background':
+              tab.id = 'background';
+              tab.label = `${game.i18n.localize('hm.app.tab-names.background')}`;
+              tab.icon = 'fa-solid fa-scroll';
+              break;
+            case 'race':
+              tab.id = 'race';
+              tab.label = `${game.i18n.localize('hm.app.tab-names.race')}`;
+              tab.icon = 'fa-solid fa-feather-alt';
+              break;
+            case 'class':
+              tab.id = 'class';
+              tab.label = `${game.i18n.localize('hm.app.tab-names.class')}`;
+              tab.icon = 'fa-solid fa-chess-rook';
+              break;
+            case 'abilities':
+              tab.id = 'abilities';
+              tab.label = `${game.i18n.localize('hm.app.tab-names.abilities')}`;
+              tab.icon = 'fa-solid fa-fist-raised';
+              break;
+            case 'equipment':
+              if (HM.COMPAT?.ELKAN) break;
+              tab.id = 'equipment';
+              tab.label = `${game.i18n.localize('hm.app.tab-names.equipment')}`;
+              tab.icon = 'fa-solid fa-shield-halved';
+              break;
+            case 'finalize':
+              tab.id = 'finalize';
+              tab.label = `${game.i18n.localize('hm.app.tab-names.finalize')}`;
+              tab.icon = 'fa-solid fa-check-circle';
+              break;
+            case 'footer':
+              return tabs;
+            default:
+              HM.log(2, `Unknown part ID: ${partId}`);
+              return tabs;
+          }
+        } catch (error) {
+          HM.log(1, `Error processing tab ${partId}:`, error);
+        }
+
+        if (this.tabGroups[tabGroup] === tab.id) tab.cssClass = 'active';
+        if (tab.id) tabs[partId] = tab;
+        return tabs;
+      }, {});
+    } catch (error) {
+      HM.log(1, 'Error generating tabs:', error);
+
+      // Return minimal tabs as fallback
+      return {
+        start: {
+          id: 'start',
+          label: game.i18n.localize('hm.app.tab-names.start'),
+          group: 'hero-mancer-tabs',
+          cssClass: 'active',
+          icon: 'fa-solid fa-play-circle'
+        }
+      };
+    }
   }
 
   /**
@@ -511,13 +550,26 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   static switchToTab(event, target) {
-    const tabId = target.dataset.tab;
-    HM.log(3, 'TAB ID:', tabId);
-    if (!tabId) return;
-    const app = HM.heroMancer;
-    if (!app) return;
-    app.tabGroups['hero-mancer-tabs'] = tabId;
-    app.render(false);
+    try {
+      const tabId = target.dataset.tab;
+      HM.log(3, 'TAB ID:', tabId);
+
+      if (!tabId) {
+        HM.log(2, 'No tab ID found in target');
+        return;
+      }
+
+      const app = HM.heroMancer;
+      if (!app) {
+        HM.log(2, 'No active Hero Mancer instance found');
+        return;
+      }
+
+      app.tabGroups['hero-mancer-tabs'] = tabId;
+      app.render(false);
+    } catch (error) {
+      HM.log(1, 'Error switching tab:', error);
+    }
   }
 
   /* Logic for rolling stats and updating input fields */

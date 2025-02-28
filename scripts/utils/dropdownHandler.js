@@ -179,52 +179,48 @@ export class DropdownHandler {
    */
   static async initializeDropdown({ type, html, context }) {
     const dropdown = this.getDropdownElement(html, type);
-    if (!dropdown) return;
+    if (!dropdown) {
+      HM.log(2, `Dropdown for ${type} not found.`);
+      return;
+    }
+
     HM.log(3, `Initializing dropdown for ${type}`);
 
-    // Clean up existing listeners
-    if (dropdown._descriptionUpdateHandler) {
-      EventBus.off('description-update', dropdown._descriptionUpdateHandler);
-    }
-    if (dropdown._changeHandler) {
-      dropdown.removeEventListener('change', dropdown._changeHandler);
-    }
-
-    // Create new handlers - bind to keep proper scope
-    dropdown._descriptionUpdateHandler = function ({ elementId, content }) {
-      const element = html.querySelector(elementId);
-      if (element) {
-        element.innerHTML = content;
+    try {
+      // Clean up existing listeners
+      if (dropdown._descriptionUpdateHandler) {
+        EventBus.off('description-update', dropdown._descriptionUpdateHandler);
       }
-    };
+      if (dropdown._changeHandler) {
+        dropdown.removeEventListener('change', dropdown._changeHandler);
+      }
 
-    // Bind the handler directly to avoid closure issues
-    dropdown._changeHandler = this.handleDropdownChange.bind(this, type, html, context);
+      // Create new handlers - bind to keep proper scope
+      dropdown._descriptionUpdateHandler = function ({ elementId, content }) {
+        try {
+          const element = html.querySelector(elementId);
+          if (element) {
+            element.innerHTML = content;
+          }
+        } catch (error) {
+          HM.log(1, `Error updating description for ${elementId}:`, error);
+        }
+      };
 
-    // Add new listeners
-    EventBus.on('description-update', dropdown._descriptionUpdateHandler);
-    dropdown.addEventListener('change', (event) => {
-      requestAnimationFrame(() => dropdown._changeHandler(event));
-    });
-  }
+      // Bind the handler directly to avoid closure issues
+      dropdown._changeHandler = this.handleDropdownChange.bind(this, type, html, context);
 
-  /**
-   * Cleans up event listeners for a dropdown
-   * @param {HTMLElement} dropdown The dropdown element to clean up
-   * @private
-   */
-  static cleanupDropdown(dropdown) {
-    if (!dropdown) return;
-
-    if (dropdown._descriptionUpdateHandler) {
-      EventBus.off('description-update', dropdown._descriptionUpdateHandler);
-      EventBus.removeAllFromSource(dropdown);
-      dropdown._descriptionUpdateHandler = null;
-    }
-
-    if (dropdown._changeHandler) {
-      dropdown.removeEventListener('change', dropdown._changeHandler);
-      dropdown._changeHandler = null;
+      // Add new listeners
+      EventBus.on('description-update', dropdown._descriptionUpdateHandler);
+      dropdown.addEventListener('change', (event) => {
+        try {
+          requestAnimationFrame(() => dropdown._changeHandler(event));
+        } catch (error) {
+          HM.log(1, `Error in dropdown change handler for ${type}:`, error);
+        }
+      });
+    } catch (error) {
+      HM.log(1, `Failed to initialize dropdown for ${type}:`, error);
     }
   }
 
@@ -250,11 +246,21 @@ export class DropdownHandler {
    * @param {object} context Application context
    */
   static async handleDropdownChange(type, html, context, event) {
-    const selectedValue = event.target.value;
-    const selectedId = selectedValue.replace(/\s?\(.*?\)/, '');
+    try {
+      const selectedValue = event.target.value;
+      const selectedId = selectedValue.replace(/\s?\(.*?\)/, '');
 
-    HM.CONFIG.SELECT_STORAGE[type] = { selectedValue, selectedId };
-    await this.updateDescription(type, selectedId, html, context);
+      HM.CONFIG.SELECT_STORAGE[type] = { selectedValue, selectedId };
+      await this.updateDescription(type, selectedId, html, context);
+    } catch (error) {
+      HM.log(1, `Error handling dropdown change for ${type}:`, error);
+
+      // Clear description area on error
+      const descriptionElement = html.querySelector(`#${type}-description`);
+      if (descriptionElement) {
+        descriptionElement.innerHTML = game.i18n.localize('hm.app.no-description');
+      }
+    }
   }
 
   /**
@@ -265,16 +271,29 @@ export class DropdownHandler {
    * @param {object} context Application context
    */
   static async updateDescription(type, selectedId, html, context) {
-    const docs = this.getDocuments(context, `${type}Docs`);
-    if (!docs) return;
+    try {
+      const docs = this.getDocuments(context, `${type}Docs`);
+      if (!docs) {
+        HM.log(2, `No ${type} documents found for description update`);
+        return;
+      }
 
-    const selectedDoc = docs.find((doc) => doc.id === selectedId);
-    const content = selectedDoc?.enrichedDescription || '';
+      const selectedDoc = docs.find((doc) => doc.id === selectedId);
+      const content = selectedDoc?.enrichedDescription || '';
 
-    EventBus.emit('description-update', {
-      elementId: `#${type}-description`,
-      content
-    });
+      EventBus.emit('description-update', {
+        elementId: `#${type}-description`,
+        content: content || game.i18n.localize('hm.app.no-description')
+      });
+    } catch (error) {
+      HM.log(1, `Error updating description for ${type}:`, error);
+
+      // Emit a fallback error message
+      EventBus.emit('description-update', {
+        elementId: `#${type}-description`,
+        content: game.i18n.localize('hm.app.no-description')
+      });
+    }
   }
 
   /**
