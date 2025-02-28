@@ -33,6 +33,9 @@ export { Listeners } from './listeners.js';
 /** Handles mandatory fields settings */
 export { MandatoryFields } from '../app/MandatoryFields.js';
 
+/** Manages MutationObserver instances */
+export { ObserverRegistry } from './observerRegistry.js';
+
 /** Handles header progress bar in Hero Mancer */
 export { ProgressBar } from './progress.js';
 

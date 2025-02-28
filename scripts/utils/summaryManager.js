@@ -1,4 +1,5 @@
 import { HM } from '../hero-mancer.js';
+import { ObserverRegistry } from './index.js';
 
 /**
  * Manages RollTable interactions for character backgrounds and characteristics.
@@ -219,82 +220,79 @@ export class SummaryManager {
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
 
+  /**
+   * Initializes all summary-related event listeners and observers
+   * @static
+   */
   static initializeSummaryListeners() {
+    // Clean up existing listeners and observers first
+    this.cleanup();
+
     const raceDropdown = document.querySelector('#race-dropdown');
     const classDropdown = document.querySelector('#class-dropdown');
     const backgroundDropdown = document.querySelector('#background-dropdown');
     const equipmentContainer = document.querySelector('#equipment-container');
     const abilityBlocks = document.querySelectorAll('.ability-block');
     const proseMirror = document.querySelector('prose-mirror[name="backstory"]');
+
     this.initializePortrait();
     this.initializeRollButtons();
 
     HM.log(3, 'Found dropdowns:', { race: raceDropdown, class: classDropdown, background: backgroundDropdown });
 
     if (raceDropdown) {
-      raceDropdown.addEventListener('change', (event) => {
+      raceDropdown._summaryChangeHandler = (event) => {
         HM.log(3, 'Race dropdown changed:', event.target.value);
         this.updateClassRaceSummary();
         this.updateEquipmentSummary();
-      });
+      };
+      raceDropdown.addEventListener('change', raceDropdown._summaryChangeHandler);
     }
 
     if (classDropdown) {
-      classDropdown.addEventListener('change', (event) => {
+      classDropdown._summaryChangeHandler = (event) => {
         this.updateClassRaceSummary();
         this.updateEquipmentSummary();
-      });
+      };
+      classDropdown.addEventListener('change', classDropdown._summaryChangeHandler);
     }
 
     if (backgroundDropdown) {
-      backgroundDropdown.addEventListener('change', (event) => {
+      backgroundDropdown._summaryChangeHandler = (event) => {
         this.updateBackgroundSummary();
         this.updateEquipmentSummary();
-      });
+      };
+      backgroundDropdown.addEventListener('change', backgroundDropdown._summaryChangeHandler);
     }
 
     if (equipmentContainer) {
-      equipmentContainer.addEventListener('change', () => {
-        this.updateEquipmentSummary();
-      });
-      const observer = new MutationObserver(() => this.updateEquipmentSummary());
-      observer.observe(equipmentContainer, { childList: true, subtree: true });
+      // Register equipment container observer with ObserverRegistry
+      ObserverRegistry.register('summary-equipment', equipmentContainer, { childList: true, subtree: true }, () => this.updateEquipmentSummary());
     }
 
     if (abilityBlocks) {
-      abilityBlocks.forEach((block) => {
+      abilityBlocks.forEach((block, index) => {
         const currentScore = block.querySelector('.current-score');
         if (currentScore) {
-          const observer = new MutationObserver(() => this.updateAbilitiesSummary());
-          observer.observe(currentScore, {
-            childList: true,
-            characterData: true,
-            subtree: true
-          });
+          // Register ability score observer with ObserverRegistry
+          ObserverRegistry.register(`summary-ability-${index}`, currentScore, { childList: true, characterData: true, subtree: true }, () => this.updateAbilitiesSummary());
         }
 
         const otherInputs = block.querySelectorAll('.ability-dropdown, .ability-score');
         otherInputs.forEach((input) => {
-          input.addEventListener('change', () => this.updateAbilitiesSummary());
+          input._summarySummaryHandler = () => this.updateAbilitiesSummary();
+          input.addEventListener('change', input._summarySummaryHandler);
         });
       });
     }
 
-    /** There might be a better way of doing this... */
     if (proseMirror) {
-      const observer = new MutationObserver((mutations) => {
+      // Register proseMirror observer with ObserverRegistry
+      ObserverRegistry.register('summary-backstory', proseMirror, { childList: true, characterData: true, subtree: true, attributes: true }, (mutations) => {
         const hasContent = proseMirror.innerHTML.trim() !== '';
-
         if (hasContent) {
           proseMirror.dispatchEvent(new Event('change', { bubbles: true }));
         }
-      });
-
-      observer.observe(proseMirror, {
-        childList: true,
-        characterData: true,
-        subtree: true,
-        attributes: true
       });
     }
   }
@@ -595,5 +593,27 @@ export class SummaryManager {
     message += '</div>';
 
     return message;
+  }
+
+  /**
+   * Cleans up all event listeners and observers
+   * @static
+   */
+  static cleanup() {
+    ObserverRegistry.unregisterByPrefix('summary-');
+    document.querySelectorAll('#race-dropdown, #class-dropdown, #background-dropdown').forEach((dropdown) => {
+      if (dropdown._summaryChangeHandler) {
+        dropdown.removeEventListener('change', dropdown._summaryChangeHandler);
+        dropdown._summaryChangeHandler = null;
+      }
+    });
+    document.querySelectorAll('.ability-block .ability-dropdown, .ability-block .ability-score').forEach((input) => {
+      if (input._summarySummaryHandler) {
+        input.removeEventListener('change', input._summarySummaryHandler);
+        input._summarySummaryHandler = null;
+      }
+    });
+
+    HM.log(3, 'SummaryManager: cleaned up observers and event listeners');
   }
 }

@@ -9,6 +9,7 @@ import {
   HtmlManipulator,
   Listeners,
   MandatoryFields,
+  ObserverRegistry,
   ProgressBar,
   SavedOptions,
   StatRoller,
@@ -47,11 +48,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     position: {
       height: 'auto',
       width: 'auto',
-      top: '150'
+      top: '100'
     },
     window: {
       icon: 'fa-solid fa-egg',
-      resizable: false
+      resizable: false,
+      minimizable: true
     }
   };
 
@@ -534,21 +536,126 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     Listeners.adjustScore(index, -1, HeroMancer.selectedAbilities);
   }
 
+  /**
+   * Cleans up all event handlers and observers when a HeroMancer instance is closed
+   * @param {object} instance The HeroMancer instance being closed
+   * @returns {Promise<void>}
+   * @static
+   */
   static async cleanup(instance) {
     const html = instance.element;
+    if (!html) return;
+
+    HM.log(3, 'Starting comprehensive cleanup of HeroMancer instance');
+
     ['class', 'race', 'background'].forEach((type) => {
       const dropdown = html?.querySelector(`#${type}-dropdown`);
       if (dropdown) {
+        // Clean up description handlers
         if (dropdown._descriptionUpdateHandler) {
           EventBus.off('description-update', dropdown._descriptionUpdateHandler);
+          dropdown._descriptionUpdateHandler = null;
         }
+
+        // Clean up change handlers
         if (dropdown._changeHandler) {
           dropdown.removeEventListener('change', dropdown._changeHandler);
+          dropdown._changeHandler = null;
         }
-        dropdown._descriptionUpdateHandler = null;
-        dropdown._changeHandler = null;
+
+        // Clean up equipment handlers
+        if (dropdown._equipmentChangeHandler) {
+          dropdown.removeEventListener('change', dropdown._equipmentChangeHandler);
+          dropdown._equipmentChangeHandler = null;
+        }
+
+        // Clean up summary handlers
+        if (dropdown._summaryChangeHandler) {
+          dropdown.removeEventListener('change', dropdown._summaryChangeHandler);
+          dropdown._summaryChangeHandler = null;
+        }
+
+        HM.log(3, `Cleaned up handlers for ${type} dropdown`);
       }
     });
+
+    const abilityBlocks = html.querySelectorAll('.ability-block');
+    if (abilityBlocks && abilityBlocks.length > 0) {
+      abilityBlocks.forEach((block, index) => {
+        // Clean up dropdown handlers
+        const dropdown = block.querySelector('.ability-dropdown');
+        if (dropdown && dropdown._abilityChangeHandler) {
+          dropdown.removeEventListener('change', dropdown._abilityChangeHandler);
+          dropdown._abilityChangeHandler = null;
+        }
+
+        // Clean up score input handlers
+        const scoreInput = block.querySelector('.ability-score');
+        if (scoreInput && scoreInput._abilityChangeHandler) {
+          scoreInput.removeEventListener('change', scoreInput._abilityChangeHandler);
+          scoreInput._abilityChangeHandler = null;
+        }
+
+        // Clean up any observers
+        const currentScore = block.querySelector('.current-score');
+        if (currentScore && currentScore._summaryObserver) {
+          currentScore._summaryObserver.disconnect();
+          currentScore._summaryObserver = null;
+        }
+      });
+
+      HM.log(3, 'Cleaned up ability block handlers and observers');
+    }
+
+    const equipmentContainer = html.querySelector('#equipment-container');
+    if (equipmentContainer) {
+      if (equipmentContainer._summaryChangeHandler) {
+        equipmentContainer.removeEventListener('change', equipmentContainer._summaryChangeHandler);
+        equipmentContainer._summaryChangeHandler = null;
+      }
+
+      if (equipmentContainer._summaryObserver) {
+        equipmentContainer._summaryObserver.disconnect();
+        equipmentContainer._summaryObserver = null;
+      }
+
+      HM.log(3, 'Cleaned up equipment container handlers and observers');
+    }
+
+    const proseMirrorElements = html.querySelectorAll('prose-mirror');
+    if (proseMirrorElements && proseMirrorElements.length > 0) {
+      proseMirrorElements.forEach((element) => {
+        if (element._summaryObserver) {
+          element._summaryObserver.disconnect();
+          element._summaryObserver = null;
+        }
+
+        if (element._observer) {
+          element._observer.disconnect();
+          element._observer = null;
+        }
+      });
+
+      HM.log(3, 'Cleaned up prose-mirror observers');
+    }
+
+    const rollButtons = html.querySelectorAll('.roll-btn');
+    if (rollButtons && rollButtons.length > 0) {
+      rollButtons.forEach((button) => {
+        if (button._clickHandler) {
+          button.removeEventListener('click', button._clickHandler);
+          button._clickHandler = null;
+        }
+      });
+
+      HM.log(3, 'Cleaned up roll button handlers');
+    }
+
+    SummaryManager.cleanup();
+    ObserverRegistry.unregisterByPrefix('heromancer-');
+    EventBus.clearAll();
+
+    HM.log(3, 'HeroMancer cleanup completed successfully');
   }
 
   static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
@@ -844,8 +951,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
             Hooks.once('dnd5e.advancementManagerComplete', async () => {
               HM.log(3, `Completed ${items[itemIndex].name}`);
 
-              // Use await with Promise-based setTimeout instead of mixing
-              await new Promise((resolve) => setTimeout(resolve, HeroMancer.ADVANCEMENT_DELAY.transitionDelay));
+              await new Promise((resolve) => {
+                setTimeout(() => {
+                  resolve();
+                }, HeroMancer.ADVANCEMENT_DELAY.transitionDelay);
+              });
 
               currentManager = null;
 

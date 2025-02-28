@@ -1,5 +1,5 @@
 import { HM } from '../hero-mancer.js';
-import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, MandatoryFields, SavedOptions, StatRoller, SummaryManager } from './index.js';
+import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, MandatoryFields, ObserverRegistry, SavedOptions, StatRoller, SummaryManager } from './index.js';
 
 /**
  * Manages event listeners and UI updates for the HeroMancer application.
@@ -39,19 +39,19 @@ export class Listeners {
     const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
 
     abilityDropdowns.forEach((dropdown, index) => {
-      dropdown.addEventListener('change', (event) => {
+      if (dropdown._abilityChangeHandler) {
+        dropdown.removeEventListener('change', dropdown._abilityChangeHandler);
+      }
+      dropdown._abilityChangeHandler = (event) => {
         if (diceRollingMethod === 'manualFormula') {
           const selectedValue = event.target.value;
           selectedValues[index] = selectedValue;
           const scoreInput = event.target.parentElement.querySelector('.ability-score');
 
-          // Batch DOM updates
           requestAnimationFrame(() => {
-            // Update attributes
             event.target.setAttribute('name', `abilities[${selectedValue}]`);
             scoreInput.setAttribute('name', `abilities[${selectedValue}].score`);
 
-            // Batch option updates
             const updates = [];
             abilityDropdowns.forEach((otherDropdown, otherIndex) => {
               Array.from(otherDropdown.options).forEach((option) => {
@@ -64,15 +64,14 @@ export class Listeners {
               });
             });
 
-            // Apply all updates in one batch
             updates.forEach((update) => update());
           });
         } else {
-          // Handle point buy/standard array cases
           selectedValues[index] = event.target.value || '';
           DropdownHandler.updateAbilityDropdowns(abilityDropdowns, selectedValues, totalPoints, diceRollingMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
         }
-      });
+      };
+      dropdown.addEventListener('change', dropdown._abilityChangeHandler);
     });
 
     if (diceRollingMethod === 'pointBuy') {
@@ -96,15 +95,6 @@ export class Listeners {
     // Create a new instance for this render cycle
     const equipment = new EquipmentParser(classDropdown?.value, backgroundDropdown?.value);
 
-    // First remove any existing listeners to prevent duplicates
-    if (classDropdown?._equipmentChangeHandler) {
-      classDropdown.removeEventListener('change', classDropdown._equipmentChangeHandler);
-    }
-
-    if (backgroundDropdown?._equipmentChangeHandler) {
-      backgroundDropdown.removeEventListener('change', backgroundDropdown._equipmentChangeHandler);
-    }
-
     if (equipmentContainer) {
       // Clear any existing content
       equipmentContainer.innerHTML = '';
@@ -117,6 +107,11 @@ export class Listeners {
 
     // Create and store new handler functions
     if (classDropdown) {
+      // Clean up existing handler first
+      if (classDropdown._equipmentChangeHandler) {
+        classDropdown.removeEventListener('change', classDropdown._equipmentChangeHandler);
+      }
+
       classDropdown._equipmentChangeHandler = async (event) => {
         const selectedValue = event.target.value;
         HM.CONFIG.SELECT_STORAGE.class = {
@@ -134,6 +129,11 @@ export class Listeners {
     }
 
     if (backgroundDropdown) {
+      // Clean up existing handler first
+      if (backgroundDropdown._equipmentChangeHandler) {
+        backgroundDropdown.removeEventListener('change', backgroundDropdown._equipmentChangeHandler);
+      }
+
       backgroundDropdown._equipmentChangeHandler = async (event) => {
         const selectedValue = event.target.value;
         HM.CONFIG.SELECT_STORAGE.background = {
@@ -267,7 +267,6 @@ export class Listeners {
    * @param {HTMLElement} html The root element containing form fields
    */
   static initializeFormValidationListeners(html) {
-    // Add change listeners for all relevant input types
     const formElements = html.querySelectorAll('input, select, textarea, color-picker');
     formElements.forEach((element) => {
       // Remove previous listeners to avoid duplication
@@ -280,11 +279,7 @@ export class Listeners {
 
       // Create and store the handler references
       element._mandatoryFieldChangeHandler = async (event) => {
-        HM.log(3, `Field changed: ${element.name || element.id}`, {
-          type: element.type || element.tagName.toLowerCase(),
-          value: element.value,
-          checked: element.checked
-        });
+        HM.log(3, `Field changed: ${element.name || element.id}`);
         await MandatoryFields.checkMandatoryFields(html);
       };
 
@@ -293,23 +288,18 @@ export class Listeners {
       // Add input listener for real-time validation
       if (element.tagName.toLowerCase() === 'input' || element.tagName.toLowerCase() === 'textarea') {
         element._mandatoryFieldInputHandler = async (event) => {
-          HM.log(3, `Field input: ${element.name || element.id}`, {
-            type: element.type || element.tagName.toLowerCase(),
-            value: element.value
-          });
+          HM.log(3, `Field input: ${element.name || element.id}`);
           await MandatoryFields.checkMandatoryFields(html);
         };
         element.addEventListener('input', element._mandatoryFieldInputHandler);
       }
     });
 
-    // Handle ProseMirror elements separately
     const proseMirrorElements = html.querySelectorAll('prose-mirror');
-    proseMirrorElements.forEach((element) => {
+    proseMirrorElements.forEach((element, index) => {
       // Clean up previous observer if exists
-      if (element._observer) {
-        element._observer.disconnect();
-      }
+      const observerId = `heromancer-prose-${element.name || index}`;
+      ObserverRegistry.unregister(observerId);
 
       // Create handler for content changes
       const changeHandler = async () => {
@@ -317,15 +307,9 @@ export class Listeners {
         await MandatoryFields.checkMandatoryFields(html);
       };
 
-      // Use MutationObserver to detect content changes
-      element._observer = new MutationObserver(changeHandler);
       const editorContent = element.querySelector('.editor-content.ProseMirror');
       if (editorContent) {
-        element._observer.observe(editorContent, {
-          childList: true,
-          characterData: true,
-          subtree: true
-        });
+        ObserverRegistry.register(observerId, editorContent, { childList: true, characterData: true, subtree: true }, changeHandler);
       }
     });
   }
