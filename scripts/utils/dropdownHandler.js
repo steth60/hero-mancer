@@ -280,7 +280,7 @@ export class DropdownHandler {
    */
   static async updateDescription(type, selectedId, context) {
     try {
-      const docs = this.getDocumentsFromCacheOrContextFromCacheOrContext(context, `${type}Docs`);
+      const docs = this.getDocumentsFromCacheOrContext(context, `${type}Docs`);
       if (!docs) {
         HM.log(2, `No ${type} documents found for description update`);
         return;
@@ -310,7 +310,7 @@ export class DropdownHandler {
    * @param {string} documentsKey Key for document collection
    * @returns {Array|null} Array of documents if found
    */
-  static getDocumentsFromCacheOrContextFromCacheOrContext(context, documentsKey) {
+  static getDocumentsFromCacheOrContext(context, documentsKey) {
     if (DocumentCache.has(context, documentsKey)) {
       return DocumentCache.get(context, documentsKey);
     }
