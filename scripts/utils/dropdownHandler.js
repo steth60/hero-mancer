@@ -341,6 +341,7 @@ export class DropdownHandler {
 
       // Collect all dropdown updates first, then apply them in a batch
       const dropdownUpdates = [];
+      const selectedValues = Array.from(abilityDropdowns).map((dropdown) => dropdown.value);
 
       switch (mode) {
         case MODES.POINT_BUY:
@@ -350,8 +351,9 @@ export class DropdownHandler {
           this.handleManualFormulaMode(abilityDropdowns, selectedAbilities, dropdownUpdates);
           break;
         case MODES.STANDARD_ARRAY:
-          //  this.handleStandardArrayMode(abilityDropdowns, selectedAbilities, standardArray);
-          HM.log(3, 'Standard Array mode being used.');
+          // Create an array of current dropdown values
+
+          this.handleStandardArrayMode(abilityDropdowns, selectedValues);
           break;
         default:
           throw new Error(`Unsupported mode: ${mode}`);
@@ -389,6 +391,68 @@ export class DropdownHandler {
       // Add the update to our batch rather than executing immediately
       dropdownUpdates.push(() => {
         this.updateDropdownSelectionAvailability(dropdown, currentValue, remainingPoints);
+      });
+    });
+  }
+
+  static handleStandardArrayMode(abilityDropdowns, selectedValues) {
+    // Log initial state
+    HM.log(3, '--- Standard Array Mode Debug ---');
+    HM.log(3, 'Selected values:', selectedValues);
+
+    // Count how many times each value can be selected
+    const valueOccurrences = {};
+
+    // FIXED: Get the actual standard array values instead of all dropdown options
+    // We'll use the first dropdown to get the available options (they all have the same)
+    const firstDropdown = abilityDropdowns[0];
+    const availableOptions = Array.from(firstDropdown.options).filter((opt) => opt.value && opt.value !== '');
+
+    // Create a set to avoid duplicates in the standard array
+    const uniqueValues = new Set();
+    availableOptions.forEach((option) => uniqueValues.add(option.value));
+
+    // Count occurrences in the first dropdown (which reflects the defined standard array)
+    availableOptions.forEach((option) => {
+      const value = option.value;
+      if (value) valueOccurrences[value] = (valueOccurrences[value] || 0) + 1;
+    });
+
+    HM.log(3, 'Value occurrences in standard array:', valueOccurrences);
+
+    // Count how many times each value is currently selected
+    const selectedCounts = {};
+    selectedValues.forEach((value) => {
+      if (value) {
+        selectedCounts[value] = (selectedCounts[value] || 0) + 1;
+      }
+    });
+
+    HM.log(3, 'Current selection counts:', selectedCounts);
+
+    // Update all dropdowns
+    abilityDropdowns.forEach((dropdown, index) => {
+      const currentValue = selectedValues[index];
+      HM.log(3, `Dropdown ${index} current value: ${currentValue}`);
+
+      // Update all options in this dropdown
+      Array.from(dropdown.options).forEach((option) => {
+        const optionValue = option.value;
+
+        // Skip the empty option
+        if (!optionValue) return;
+
+        const maxOccurrences = valueOccurrences[optionValue] || 0;
+        const currentOccurrences = selectedCounts[optionValue] || 0;
+
+        // Option should be disabled if:
+        // 1. It's already selected the maximum number of times, AND
+        // 2. It's not the currently selected value in this dropdown
+        const isDisabled = currentOccurrences >= maxOccurrences && optionValue !== currentValue;
+
+        HM.log(3, `  Option ${optionValue}: maxOccurrences=${maxOccurrences}, currentOccurrences=${currentOccurrences}, isDisabled=${isDisabled}`);
+
+        option.disabled = isDisabled;
       });
     });
   }

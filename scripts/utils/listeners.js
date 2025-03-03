@@ -56,10 +56,20 @@ export class Listeners {
               }
             });
           });
+        } else if (diceRollingMethod === 'standardArray') {
+          // Get previous value to update counts
+          const previousValue = selectedValues[index];
+          const newValue = event.target.value;
+
+          // Update our tracking array
+          selectedValues[index] = newValue;
+
+          // Refresh all dropdowns
+          DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
         } else {
-          // Handle point buy/standard array cases
+          // Handle point buy case
           selectedValues[index] = event.target.value || '';
-          DropdownHandler.updateAbilityDropdowns(abilityDropdowns, selectedValues, totalPoints, diceRollingMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
+          DropdownHandler.refreshAbilityDropdownsState(abilityDropdowns, selectedValues, totalPoints, diceRollingMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
         }
       });
     });
@@ -68,6 +78,8 @@ export class Listeners {
       this.updateRemainingPointsDisplay(context.remainingPoints);
       this.updatePlusButtonState(selectedAbilities, context.remainingPoints);
       this.updateMinusButtonState(selectedAbilities);
+    } else if (diceRollingMethod === 'standardArray') {
+      DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
     }
   }
 
@@ -266,7 +278,7 @@ export class Listeners {
 
       // Create and store the handler references
       element._mandatoryFieldChangeHandler = async (event) => {
-        HM.log(3, `Field changed: ${element.name || element.id}`);
+        //  HM.log(3, `Field changed: ${element.name || element.id}`);
         await MandatoryFields.checkMandatoryFields(html);
       };
 
@@ -305,6 +317,7 @@ export class Listeners {
     const savedOptions = await SavedOptions.loadOptions();
     if (Object.keys(savedOptions).length === 0) return;
 
+    // First pass to restore all form elements
     for (const [key, value] of Object.entries(savedOptions)) {
       const elem = html.querySelector(`[name="${key}"]`);
       if (!elem) continue;
@@ -316,6 +329,16 @@ export class Listeners {
       } else {
         elem.value = value;
       }
+    }
+
+    // Second pass to handle ability dropdowns
+    const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    if (diceRollingMethod === 'standardArray') {
+      const abilityDropdowns = html.querySelectorAll('.ability-dropdown');
+      const selectedValues = Array.from(abilityDropdowns).map((dropdown) => dropdown.value);
+
+      // Update available options based on current selections
+      DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
     }
 
     // Update summaries after restoring options

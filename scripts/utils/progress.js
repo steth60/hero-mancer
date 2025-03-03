@@ -59,7 +59,7 @@ export class ProgressBar {
       const [filledCount, totalFields] = this.#calculateCompletionFromForm(form);
       const percentage = (filledCount / totalFields) * 100;
 
-      HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${percentage.toFixed(2)}%)`);
+      //  HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${percentage.toFixed(2)}%)`);
 
       // Batch DOM updates
       requestAnimationFrame(() => {
@@ -200,10 +200,10 @@ export class ProgressBar {
       });
     }
 
-    HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${((filledCount / totalFields) * 100).toFixed(2)}%)`, {
-      totalFields,
-      filledCount
-    });
+    // HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${((filledCount / totalFields) * 100).toFixed(2)}%)`, {
+    //   totalFields,
+    //   filledCount
+    // });
 
     return [filledCount, totalFields];
   }
