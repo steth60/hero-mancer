@@ -174,8 +174,6 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Helper function to find label for an element
     const findLabel = (element) => {
-      HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
-
       // Skip elements within the summary-section
       if (element.closest('.summary-section')) {
         return null;
