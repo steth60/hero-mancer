@@ -561,7 +561,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     // Check mandatory fields
     const missingFields = mandatoryFields.filter((field) => {
       const value = formData.object[field];
-      return !value || value.trim() === '';
+      return value === undefined || value === null || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0);
     });
 
     if (missingFields.length > 0) {

@@ -307,7 +307,7 @@
 
 /* Point-buy specific container styling */
 .ability-container.point-buy {
-  gap: 0.625rem;
+  gap: 0.125rem;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between; /* Space between each ability block */
@@ -326,8 +326,8 @@
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  width: 14%;
-  max-width: 14%;
+  width: 16%;
+  max-width: 16%;
   border: 1px solid hsl(0deg 0% 80%);
   border-radius: 6px;
   text-align: center;
@@ -346,7 +346,11 @@
 
 /* Center the ability label (e.g., STR) above the controls */
 .ability-block.point-buy .ability-label {
-  font-weight: bold; /* Space between label and controls */
+  gap: 0.2rem;
+  padding: 0 0.25rem;
+  font-weight: bold;
+  text-align: center;
+  white-space: normal;
 }
 
 /* Flex row for minus, score, and plus buttons */
@@ -537,6 +541,10 @@
   .hm-app-tab-content fieldset select {
     width: 100%;
     margin: 0;
+  }
+
+  .ability-container.point-buy {
+    justify-content: center;
   }
 }
 
@@ -1040,4 +1048,12 @@
   display: flex;
   position: relative;
   align-items: center;
+}
+
+.mandatory-indicator {
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.9em;
 }
