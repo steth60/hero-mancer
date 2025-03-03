@@ -158,13 +158,13 @@ export class ProgressBar {
       }
 
       // Log field state
-      HM.log(3, 'Field status check:', {
-        name: input.name,
-        type: input.type || input.tagName.toLowerCase(),
-        value: input.value,
-        checked: input.checked,
-        isFilled: isFilled
-      });
+      // HM.log(3, 'Field status check:', {
+      //   name: input.name,
+      //   type: input.type || input.tagName.toLowerCase(),
+      //   value: input.value,
+      //   checked: input.checked,
+      //   isFilled: isFilled
+      // });
 
       if (isFilled) filledCount++;
     });

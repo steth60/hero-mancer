@@ -16,7 +16,8 @@ const ABILITY_SCORES = {
  */
 const MODES = {
   POINT_BUY: 'pointBuy',
-  MANUAL_FORMULA: 'manualFormula'
+  MANUAL_FORMULA: 'manualFormula',
+  STANDARD_ARRAY: 'standardArray'
 };
 
 /**
@@ -332,7 +333,7 @@ export class DropdownHandler {
    * @param {number} totalPoints Total points allowed for Point Buy
    * @param {string} mode Dice rolling method ('pointBuy', 'manualFormula')
    */
-  static refreshAbilityDropdownsState(abilityDropdowns, selectedAbilities, totalPoints, mode) {
+  static refreshAbilityDropdownsState(abilityDropdowns, selectedAbilities, totalPoints, mode, standardArray) {
     try {
       if (!Array.isArray(selectedAbilities) || !Number.isInteger(totalPoints)) {
         throw new Error('Invalid input parameters');
@@ -347,6 +348,10 @@ export class DropdownHandler {
           break;
         case MODES.MANUAL_FORMULA:
           this.handleManualFormulaMode(abilityDropdowns, selectedAbilities, dropdownUpdates);
+          break;
+        case MODES.STANDARD_ARRAY:
+          //  this.handleStandardArrayMode(abilityDropdowns, selectedAbilities, standardArray);
+          HM.log(3, 'Standard Array mode being used.');
           break;
         default:
           throw new Error(`Unsupported mode: ${mode}`);

@@ -150,6 +150,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Get dice rolling method once and reuse it
     const diceRollMethod = this.#getDiceRollingMethod();
+    HM.log(1, 'Dice Roll Method in _prepareContext:', diceRollMethod);
 
     // Prepare context with all required data
     return {

@@ -240,7 +240,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
           fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
         }
       } else {
-        isComplete = this.isFormFieldComplete(field, element, form);
+        isComplete = this.isFormFieldComplete(element);
         const label = this.findAssociatedLabel(element);
         if (label) {
           fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
@@ -305,7 +305,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     const editorContent = element.querySelector('.editor-content.ProseMirror')?.innerHTML || '';
     const isComplete = !emptyStates.includes(proseMirrorValue) && proseMirrorValue.trim() !== '' && !emptyStates.includes(editorContent) && editorContent.trim() !== '';
 
-    HM.log(3, 'Checking mandatory fields:', { element: element, type: type, value: value, checked: checked });
+    // HM.log(3, 'Checking mandatory fields:', { element: element, type: type, value: value, checked: checked });
 
     switch (type) {
       case 'checkbox':
@@ -330,7 +330,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   static findAssociatedLabel(element) {
-    HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
+    // HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
     if (element.localName === 'prose-mirror') {
       HM.log(3, 'Finding label for ProseMirror element:', { element: element });
       let h3Element = element.closest('.notes-section')?.querySelector('h3');
