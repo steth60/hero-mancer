@@ -396,21 +396,12 @@ export class DropdownHandler {
   }
 
   static handleStandardArrayMode(abilityDropdowns, selectedValues) {
-    // Log initial state
-    HM.log(3, '--- Standard Array Mode Debug ---');
-    HM.log(3, 'Selected values:', selectedValues);
-
-    // Count how many times each value can be selected
+    // Count how many times each value can be selected in total
     const valueOccurrences = {};
 
-    // FIXED: Get the actual standard array values instead of all dropdown options
-    // We'll use the first dropdown to get the available options (they all have the same)
+    // Get the actual standard array values from the first dropdown
     const firstDropdown = abilityDropdowns[0];
     const availableOptions = Array.from(firstDropdown.options).filter((opt) => opt.value && opt.value !== '');
-
-    // Create a set to avoid duplicates in the standard array
-    const uniqueValues = new Set();
-    availableOptions.forEach((option) => uniqueValues.add(option.value));
 
     // Count occurrences in the first dropdown (which reflects the defined standard array)
     availableOptions.forEach((option) => {
@@ -433,7 +424,18 @@ export class DropdownHandler {
     // Update all dropdowns
     abilityDropdowns.forEach((dropdown, index) => {
       const currentValue = selectedValues[index];
-      HM.log(3, `Dropdown ${index} current value: ${currentValue}`);
+      const valuesToDisable = {};
+
+      // Initialize a counter for each value that has been selected
+      Object.entries(selectedCounts).forEach(([value, count]) => {
+        valuesToDisable[value] = count;
+
+        // If this is the current value of this dropdown, decrement the count
+        // since we don't want to disable the current selection
+        if (value === currentValue) {
+          valuesToDisable[value]--;
+        }
+      });
 
       // Update all options in this dropdown
       Array.from(dropdown.options).forEach((option) => {
@@ -442,17 +444,13 @@ export class DropdownHandler {
         // Skip the empty option
         if (!optionValue) return;
 
-        const maxOccurrences = valueOccurrences[optionValue] || 0;
-        const currentOccurrences = selectedCounts[optionValue] || 0;
-
-        // Option should be disabled if:
-        // 1. It's already selected the maximum number of times, AND
-        // 2. It's not the currently selected value in this dropdown
-        const isDisabled = currentOccurrences >= maxOccurrences && optionValue !== currentValue;
-
-        HM.log(3, `  Option ${optionValue}: maxOccurrences=${maxOccurrences}, currentOccurrences=${currentOccurrences}, isDisabled=${isDisabled}`);
-
-        option.disabled = isDisabled;
+        // If this value needs to be disabled and we haven't disabled enough instances yet
+        if (valuesToDisable[optionValue] > 0) {
+          option.disabled = true;
+          valuesToDisable[optionValue]--;
+        } else {
+          option.disabled = false;
+        }
       });
     });
   }
