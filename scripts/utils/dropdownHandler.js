@@ -41,9 +41,9 @@ export const EventDispatcher = {
 
   /**
    * Subscribe to an event
-   * @param {string} event Event name
-   * @param {Function} callback Callback function
-   * @param {object} source Source object for callback
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   * @param {object} source - Source object for callback
    */
   on(event, callback, source) {
     if (!this.listeners.has(event)) {
@@ -56,8 +56,8 @@ export const EventDispatcher = {
 
   /**
    * Emit an event with data
-   * @param {string} event Event name
-   * @param {*} data Event data
+   * @param {string} event - Event name
+   * @param {*} data - Event data
    */
   emit(event, data) {
     if (this.listeners.has(event)) {
@@ -67,8 +67,8 @@ export const EventDispatcher = {
 
   /**
    * Unsubscribe from an event
-   * @param {string} event Event name
-   * @param {Function} callback Callback function to remove
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function to remove
    */
   off(event, callback) {
     if (this.listeners.has(event)) {
@@ -79,7 +79,7 @@ export const EventDispatcher = {
 
   /**
    * Remove all listeners from a specific source
-   * @param {object} source Source object to remove listeners from
+   * @param {object} source - Source object to remove listeners from
    */
   removeAllFromSource(source) {
     this.listenerSources.forEach((sourceMap, event) => {
@@ -128,9 +128,10 @@ class DocumentCache {
 
   /**
    * Generate cache key from context and documents key
-   * @param {object} context Application context
-   * @param {string} documentsKey Document collection key
+   * @param {object} context - Application context
+   * @param {string} documentsKey - Document collection key
    * @returns {string} Cache key
+   * @static
    */
   static getKey(context, documentsKey) {
     return `${context.id}-${documentsKey}`;
@@ -138,9 +139,10 @@ class DocumentCache {
 
   /**
    * Retrieve documents from cache
-   * @param {object} context Application context
-   * @param {string} documentsKey Document collection key
+   * @param {object} context - Application context
+   * @param {string} documentsKey - Document collection key
    * @returns {Array|undefined} Cached documents
+   * @static
    */
   static get(context, documentsKey) {
     const result = this.cache.get(this.getKey(context, documentsKey));
@@ -150,9 +152,10 @@ class DocumentCache {
 
   /**
    * Store documents in cache
-   * @param {object} context Application context
-   * @param {string} documentsKey Document collection key
-   * @param {Array} docs Documents to cache
+   * @param {object} context - Application context
+   * @param {string} documentsKey - Document collection key
+   * @param {Array} docs - Documents to cache
+   * @static
    */
   static set(context, documentsKey, docs) {
     this.cache.set(this.getKey(context, documentsKey), docs);
@@ -160,21 +163,15 @@ class DocumentCache {
 
   /**
    * Check if documents exist in cache
-   * @param {object} context Application context
-   * @param {string} documentsKey Document collection key
+   * @param {object} context - Application context
+   * @param {string} documentsKey - Document collection key
    * @returns {boolean} Whether documents are cached
+   * @static
    */
   static has(context, documentsKey) {
     return this.cache.has(this.getKey(context, documentsKey));
   }
 }
-
-/**
- * @typedef {object} DropdownConfig
- * @property {string} type - Type of dropdown ('class', 'race', 'background')
- * @property {HTMLElement} html - The HTML element containing the dropdown
- * @property {object} context - Context object containing document data
- */
 
 /**
  * Handles dropdown interactions and updates throughout the application
@@ -183,8 +180,9 @@ class DocumentCache {
 export class DropdownHandler {
   /**
    * Initializes a dropdown with event listeners and description updates
-   * @param {DropdownConfig} config Configuration object for dropdown initialization
+   * @param {DropdownConfig} config - Configuration object for dropdown initialization
    * @returns {Promise<void>}
+   * @static
    */
   static async initializeDropdown({ type, html, context }) {
     const dropdown = this.findDropdownElementByType(html, type);
@@ -235,9 +233,10 @@ export class DropdownHandler {
 
   /**
    * Retrieves dropdown element from DOM
-   * @param {HTMLElement} html Parent element
-   * @param {string} type Dropdown type
+   * @param {HTMLElement} html - Parent element
+   * @param {string} type - Dropdown type
    * @returns {HTMLElement|null} Dropdown element if found
+   * @static
    */
   static findDropdownElementByType(html, type) {
     const dropdown = html.querySelector(`#${type}-dropdown`);
@@ -249,10 +248,12 @@ export class DropdownHandler {
 
   /**
    * Handles dropdown change events
-   * @param {Event} event Change event
-   * @param {string} type Dropdown type
-   * @param {HTMLElement} html Parent element
-   * @param {object} context Application context
+   * @param {string} type - Dropdown type
+   * @param {HTMLElement} html - Parent element
+   * @param {object} context - Application context
+   * @param {Event} event - Change event
+   * @returns {Promise<void>}
+   * @static
    */
   static async handleDropdownChange(type, html, context, event) {
     try {
@@ -274,10 +275,11 @@ export class DropdownHandler {
 
   /**
    * Updates description based on selected item
-   * @param {string} type Dropdown type
-   * @param {string} selectedId Selected item ID
-   * @param {HTMLElement} html Parent element
-   * @param {object} context Application context
+   * @param {string} type - Dropdown type
+   * @param {string} selectedId - Selected item ID
+   * @param {object} context - Application context
+   * @returns {Promise<void>}
+   * @static
    */
   static async updateDescription(type, selectedId, context) {
     try {
@@ -307,9 +309,10 @@ export class DropdownHandler {
 
   /**
    * Retrieves documents from cache or context
-   * @param {object} context Application context
-   * @param {string} documentsKey Key for document collection
+   * @param {object} context - Application context
+   * @param {string} documentsKey - Key for document collection
    * @returns {Array|null} Array of documents if found
+   * @static
    */
   static getDocumentsFromCacheOrContext(context, documentsKey) {
     if (DocumentCache.has(context, documentsKey)) {
@@ -328,10 +331,12 @@ export class DropdownHandler {
 
   /**
    * Updates ability score dropdowns based on mode and selections
-   * @param {NodeList} abilityDropdowns List of ability dropdown elements
-   * @param {number[]} selectedAbilities Currently selected ability scores
-   * @param {number} totalPoints Total points allowed for Point Buy
-   * @param {string} mode Dice rolling method ('pointBuy', 'manualFormula')
+   * @param {NodeList} abilityDropdowns - List of ability dropdown elements
+   * @param {number[]} selectedAbilities - Currently selected ability scores
+   * @param {number} totalPoints - Total points allowed for Point Buy
+   * @param {string} mode - Dice rolling method ('pointBuy', 'manualFormula')
+   * @param {number[]} standardArray - Array of standard ability scores
+   * @static
    */
   static refreshAbilityDropdownsState(abilityDropdowns, selectedAbilities, totalPoints, mode, standardArray) {
     try {
@@ -377,9 +382,10 @@ export class DropdownHandler {
 
   /**
    * Handles point buy mode updates
-   * @param {NodeList} abilityDropdowns Ability dropdown elements
-   * @param {number[]} selectedAbilities Selected ability scores
-   * @param {number} totalPoints Total available points
+   * @param {NodeList} abilityDropdowns - Ability dropdown elements
+   * @param {number[]} selectedAbilities - Selected ability scores
+   * @param {number} totalPoints - Total available points
+   * @static
    */
   static processPointBuyDropdownUpdates(abilityDropdowns, selectedAbilities, totalPoints, dropdownUpdates) {
     const pointsSpent = StatRoller.calculateTotalPointsSpent(selectedAbilities);
@@ -395,6 +401,12 @@ export class DropdownHandler {
     });
   }
 
+  /**
+   * Handles standard array mode dropdown updates
+   * @param {NodeList} abilityDropdowns - Ability dropdown elements
+   * @param {string[]} selectedValues - Currently selected values
+   * @static
+   */
   static handleStandardArrayMode(abilityDropdowns, selectedValues) {
     // Count how many times each value can be selected in total
     const valueOccurrences = {};
@@ -456,10 +468,11 @@ export class DropdownHandler {
   }
 
   /**
-   * Updates individual dropdown options
-   * @param {HTMLElement} dropdown Dropdown element
-   * @param {number} currentValue Current selected value
-   * @param {number} remainingPoints Remaining points
+   * Updates dropdown options based on point cost
+   * @param {HTMLElement} dropdown - Dropdown element
+   * @param {number} currentValue - Current selected value
+   * @param {number} remainingPoints - Remaining points
+   * @static
    */
   static updateDropdownSelectionAvailability(dropdown, currentValue, remainingPoints) {
     dropdown.querySelectorAll('option').forEach((option) => {
@@ -496,9 +509,10 @@ export class DropdownHandler {
 
   /**
    * Generates HTML for dropdown options
-   * @param {Array} items Grouped data for races, classes, or backgrounds
-   * @param {string} groupKey Key for group labeling
+   * @param {Array} items - Grouped data for races, classes, or backgrounds
+   * @param {string} groupKey - Key for group labeling
    * @returns {string} HTML string for dropdown options
+   * @static
    */
   static generateDropdownHTML(items, groupKey) {
     return items
@@ -518,8 +532,9 @@ export class DropdownHandler {
 
   /**
    * Creates HTML for individual option
-   * @param {object} doc Document object containing id and name
+   * @param {object} doc - Document object containing id and name
    * @returns {string} HTML string for option
+   * @static
    */
   static createOptionHTML(doc) {
     return `<option value="${doc.id}">${doc.name}</option>`;

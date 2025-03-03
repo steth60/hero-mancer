@@ -28,7 +28,7 @@ export { EquipmentParser } from './equipmentParser.js';
 export { HtmlManipulator } from './htmlManipulator.js';
 
 /** Handles event listeners and callbacks */
-export { Listeners } from './listeners.js';
+export { Listeners, MutationObserverRegistry } from './listeners.js';
 
 /** Handles mandatory fields settings */
 export { MandatoryFields } from '../app/MandatoryFields.js';

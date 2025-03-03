@@ -11,10 +11,10 @@ export class DocumentService {
 
   /**
    * Fetches and prepares documents based on the specified type for dropdown use
-   * @async
-   * @param {'race'|'class'|'background'|'species'} type Document type to register
-   * @throws {Error} If type is invalid or document retrieval fails
+   * @param {'race'|'class'|'background'|'species'} type - Document type to register
    * @returns {Promise<{types: Array, dropdownHtml: string}>}
+   * @throws {Error} If type is invalid or document retrieval fails
+   * @static
    */
   static async prepareDocumentsByType(type) {
     try {
@@ -42,11 +42,11 @@ export class DocumentService {
 
   /**
    * Fetches documents from compendiums based on type
-   * @private
-   * @async
-   * @param {'race'|'class'|'background'|'species'} type Document type
-   * @throws {Error} If type is invalid or retrieval fails
+   * @param {'race'|'class'|'background'|'species'} type - Document type
    * @returns {Promise<{documents: Array, uniqueFolders: Array}>}
+   * @throws {Error} If type is invalid or retrieval fails
+   * @private
+   * @static
    */
   static async #fetchTypeDocumentsFromCompendiums(type) {
     if (!['race', 'class', 'background', 'species'].includes(type)) {
@@ -101,9 +101,10 @@ export class DocumentService {
 
   /**
    * Determines pack name based on id
+   * @param {string} id - Pack id
+   * @returns {string} Formatted pack name
    * @private
-   * @param {string} id Pack id
-   * @returns {string}
+   * @static
    */
   static #determinePackName(id) {
     if (id.includes('players-handbook')) return game.i18n.localize('hm.app.document-service.phb'); // Shorthand for 2024 PHB
@@ -119,9 +120,10 @@ export class DocumentService {
 
   /**
    * Sorts document array by name and pack
+   * @param {Array} documents - Documents to sort
+   * @returns {Array} Sorted documents
    * @private
-   * @param {Array} documents Documents to sort
-   * @returns {Array}
+   * @static
    */
   static #sortDocumentsByNameAndPack(documents) {
     return documents
@@ -141,10 +143,11 @@ export class DocumentService {
 
   /**
    * Groups and sorts documents by specified key
-   * @private
-   * @param {Array} documents Documents to process
-   * @param {'folderName'|'packName'} key Key to group by
+   * @param {Array} documents - Documents to process
+   * @param {'folderName'|'packName'} key - Key to group by
    * @returns {Array} Sorted array of grouped documents
+   * @private
+   * @static
    */
   static #organizeDocumentsIntoGroups(documents, key) {
     const uniqueMap = new Map();

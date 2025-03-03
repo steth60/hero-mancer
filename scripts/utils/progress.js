@@ -14,6 +14,7 @@ export class ProgressBar {
    * @param {HTMLElement} element - The application element
    * @param {number} completedSections - Number of completed sections
    * @param {number} totalSections - Total number of sections
+   * @static
    */
   static updateHeader(element, completedSections, totalSections) {
     if (!element || typeof completedSections !== 'number' || typeof totalSections !== 'number') return;
@@ -33,6 +34,7 @@ export class ProgressBar {
   /**
    * Clears the progress bar styling from the header
    * @param {HTMLElement} element - The application element
+   * @static
    */
   static clearHeader(element) {
     const headerElement = element?.querySelector('.window-header');
@@ -50,7 +52,9 @@ export class ProgressBar {
   /**
    * Updates progress based on form data
    * @param {HTMLElement} element - The application element
-   * @param {FormData} formData - The form data
+   * @param {HTMLFormElement} form - The form data
+   * @returns {number} The calculated completion percentage
+   * @static
    */
   static calculateAndUpdateProgress(element, form) {
     if (!element || !form) return;
@@ -92,6 +96,7 @@ export class ProgressBar {
    * @param {HTMLElement} headerElement - The header element
    * @param {number} progressPercentage - Current progress percentage
    * @private
+   * @static
    */
   static #updateHeaderGradient(headerElement, progressPercentage) {
     // Starting color: rgb(69, 99, 181) - blue
@@ -119,6 +124,7 @@ export class ProgressBar {
    * @param {HTMLElement} headerElement - The header element
    * @param {number} progressPercentage - Current progress percentage
    * @private
+   * @static
    */
   static #updateHeaderTitle(headerElement, progressPercentage) {
     const titleElement = headerElement.querySelector('.window-title');
@@ -134,6 +140,7 @@ export class ProgressBar {
    * @param {HTMLElement} form - The form element
    * @returns {[number, number]} - Array containing [filledFields, totalFields]
    * @private
+   * @static
    */
   static #calculateCompletionFromForm(form) {
     let totalFields = 0;
@@ -156,15 +163,6 @@ export class ProgressBar {
       } else {
         isFilled = this.#isFormFieldPopulated(input.name, input.value, form);
       }
-
-      // Log field state
-      // HM.log(3, 'Field status check:', {
-      //   name: input.name,
-      //   type: input.type || input.tagName.toLowerCase(),
-      //   value: input.value,
-      //   checked: input.checked,
-      //   isFilled: isFilled
-      // });
 
       if (isFilled) filledCount++;
     });
@@ -200,11 +198,6 @@ export class ProgressBar {
       });
     }
 
-    // HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${((filledCount / totalFields) * 100).toFixed(2)}%)`, {
-    //   totalFields,
-    //   filledCount
-    // });
-
     return [filledCount, totalFields];
   }
 
@@ -215,6 +208,7 @@ export class ProgressBar {
    * @param {HTMLElement} form - The form element
    * @returns {boolean} - Whether the field is considered filled
    * @private
+   * @static
    */
   static #isFormFieldPopulated(key, value, form) {
     // Handle starting wealth toggle first
@@ -260,6 +254,7 @@ export class ProgressBar {
    * @param {HTMLElement} form - The form element
    * @returns {boolean} - Whether the ability field is considered filled
    * @private
+   * @static
    */
   static #isAbilityScoreFieldPopulated(value, form) {
     const rollMethodSelect = form.querySelector('#roll-method');

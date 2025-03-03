@@ -133,7 +133,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Protected Methods                           */
   /* -------------------------------------------- */
 
-  /** @override */
+  /**
+   * Prepares the main context data for the character creation application
+   * Initializes abilities, processes compatibility settings, and prepares all tab data
+   * @param {object} options - Application render options
+   * @returns {Promise<object>} Complete context for character creation rendering
+   * @protected
+   * @override
+   */
   async _prepareContext(options) {
     if (!HM.documents.race || !HM.documents.class || !HM.documents.background) {
       ui.notifications.info('hm.actortab-button.loading', { localize: true });
@@ -174,7 +181,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     };
   }
 
-  /** @override */
+  /**
+   * Prepares context data for a specific part/tab of the application
+   * Handles specific logic for each tab section (start, race, class, etc.)
+   * @param {string} partId - ID of the template part being rendered
+   * @param {object} context - Shared context from _prepareContext
+   * @returns {object} Modified context for the specific part
+   * @protected
+   * @override
+   */
   _preparePartContext(partId, context) {
     try {
       HM.log(3, 'Preparing part context', { partId, context });
@@ -235,6 +250,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @param {string[]} parts An array of parts that correspond to tabs
    * @returns {Record<string, Partial<ApplicationTab>>}
    * @protected
+   * @override
    */
   _getTabs(parts) {
     try {
@@ -327,8 +343,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * Actions performed after any render of the Application.
    * Post-render steps are not awaited by the render process.
    * @param {ApplicationRenderContext} context Prepared context data
-   * @param {RenderOptions} options Provided render options
+   * @param {RenderOptions} _options Provided render options
    * @protected
+   * @override
    */
   async _onRender(context, _options) {
     if (this.#isRendering) return;
@@ -358,6 +375,13 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
+  /**
+   * Processes form changes and updates completion progress
+   * @param {object} formConfig - Form configuration
+   * @param {Event} event - Change event
+   * @protected
+   * @override
+   */
   _onChangeForm(formConfig, event) {
     super._onChangeForm(formConfig, event);
 
@@ -367,6 +391,13 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     this.completionPercentage = ProgressBar.calculateAndUpdateProgress(this.element, form);
   }
 
+  /**
+   * Actions to perform when the application is closed
+   * Cleans up resources and references
+   * @returns {Promise<void>}
+   * @protected
+   * @override
+   */
   async _onClose() {
     HM.log(3, 'Closing application.');
     await HeroMancer.cleanupEventListeners(this);
@@ -382,7 +413,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /**
    * Prepares ability scores data for the context
-   * @returns {Array} Array of ability data objects
+   * @returns {Array<object>} Array of ability data objects
    * @private
    */
   #buildAbilitiesContext() {
@@ -534,6 +565,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     ui.notifications.info('hm.app.optionsReset', { localize: true });
   }
 
+  /**
+   * Handles tab switching in the HeroMancer interface
+   * Updates the active tab and re-renders the application
+   * @param {Event} _event - The click event
+   * @param {HTMLElement} target - The clicked element with data-tab attribute
+   * @returns {void}
+   * @static
+   */
   static switchToTab(_event, target) {
     try {
       const tabId = target.dataset.tab;
@@ -796,10 +835,29 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
+  /**
+   * Collects equipment selections from the form inputs
+   * Delegates to EquipmentParser.collectEquipmentSelections for processing
+   * @param {Event} event - The form submission event
+   * @param {object} options - Collection options
+   * @param {boolean} [options.includeClass=true] - Whether to include class equipment
+   * @param {boolean} [options.includeBackground=true] - Whether to include background equipment
+   * @returns {Promise<Array<object>>} Array of equipment item data ready for creation
+   * @static
+   */
   static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
     return EquipmentParser.collectEquipmentSelections(event, options);
   }
 
+  /**
+   * Main form submission handler for character creation
+   * Validates input, creates actor, and applies advancements
+   * @param {Event} event - The form submission event
+   * @param {HTMLFormElement} form - The form element
+   * @param {FormDataExtended} formData - The processed form data
+   * @returns {Promise<void>}
+   * @static
+   */
   static async formHandler(event, form, formData) {
     try {
       const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];

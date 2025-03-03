@@ -61,11 +61,23 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   /*  Protected Methods                           */
   /* -------------------------------------------- */
 
+  /**
+   * Prepares context data for the compendium configuration application
+   * @param {object} options - Application render options
+   * @returns {Promise<object>} Context data for template rendering
+   * @protected
+   */
   async _prepareContext(options) {
     HM.log(3, 'Preparing context with options:', options);
     return context;
   }
 
+  /**
+   * Actions to perform after the application renders
+   * @param {object} _context - The rendered context data
+   * @param {object} _options - The render options
+   * @protected
+   */
   _onRender(_context, _options) {
     HM.log(3, 'Rendering application with context and options.');
   }
@@ -155,6 +167,14 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     await game.settings.set('hero-mancer', `${type}Packs`, selectedValues);
   }
 
+  /**
+   * Form submission handler for compendium configuration
+   * @param {Event} _event - The form submission event
+   * @param {HTMLFormElement} _form - The form element
+   * @param {FormDataExtended} _formData - The processed form data
+   * @returns {Promise<void>}
+   * @static
+   */
   static async formHandler(_event, _form, _formData) {
     const types = ['class', 'race', 'background', 'item'];
     const requiresWorldReload = true; // Settings changes require world reload
@@ -183,6 +203,13 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     }
   }
 
+  /**
+   * Shows a confirmation dialog for reloading the world/application
+   * @param {object} options - Configuration options
+   * @param {boolean} options.world - Whether to reload the entire world
+   * @returns {Promise<void>}
+   * @static
+   */
   static async reloadConfirm({ world = false } = {}) {
     const reload = await DialogV2.confirm({
       id: 'reload-world-confirm',
@@ -206,6 +233,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
    * @param {string} type The type of documents to collect
    * @param {boolean} useCache Whether to use cached results
    * @returns {Promise<Set>} A set of valid pack objects
+   * @private
    */
   static async #collectValidPacks(type, useCache = true) {
     if (useCache && this.#validPacksCache.has(type)) {
@@ -255,6 +283,14 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     return validPacks;
   }
 
+  /**
+   * Renders a dialog for selecting compendium packs
+   * @param {string} type - The type of compendium ('class', 'race', 'background', 'item')
+   * @param {Set} validPacks - Set of valid pack objects
+   * @param {Array<string>} selectedPacks - Array of currently selected pack IDs
+   * @returns {Promise<void>}
+   * @private
+   */
   static async #renderCompendiumDialog(type, validPacks, selectedPacks) {
     const inputConfig = {
       name: 'compendiumMultiSelect',

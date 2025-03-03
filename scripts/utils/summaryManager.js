@@ -17,6 +17,12 @@ class TableManager {
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
 
+  /**
+   * Loads and initializes roll tables for a selected background
+   * @param {object} background - Background document
+   * @returns {Promise<void>}
+   * @static
+   */
   static async loadRollTablesForBackground(background) {
     if (!background) {
       HM.log(2, 'No background provided for table initialization');
@@ -92,6 +98,11 @@ class TableManager {
     }
   }
 
+  /**
+   * Updates roll button availability based on found table types
+   * @param {Set<string>|null} foundTableTypes - Set of found table types or null if none
+   * @static
+   */
   static updateRollButtonsAvailability(foundTableTypes) {
     const typeToFieldMap = {
       'Personality Traits': 'traits',
@@ -129,6 +140,13 @@ class TableManager {
     }
   }
 
+  /**
+   * Rolls on a background characteristic table and returns result
+   * @param {string} backgroundId - Background document ID
+   * @param {string} characteristicType - Type of characteristic to roll for
+   * @returns {Promise<string|null>} The roll result or null if unavailable
+   * @static
+   */
   static async rollOnBackgroundCharacteristicTable(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
     HM.log(3, 'Found tables for background:', tables);
@@ -172,6 +190,13 @@ class TableManager {
     }
   }
 
+  /**
+   * Checks if all results in a table have been drawn
+   * @param {string} backgroundId - Background document ID
+   * @param {string} characteristicType - Type of characteristic to check
+   * @returns {boolean} True if all results are drawn
+   * @static
+   */
   static areAllTableResultsDrawn(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
     if (!tables) return true;
@@ -188,6 +213,12 @@ class TableManager {
     return availableResults.length === 0;
   }
 
+  /**
+   * Resets tables to make all results available again
+   * @param {string} backgroundId - Background document ID
+   * @returns {Promise<void>}
+   * @static
+   */
   static async resetTables(backgroundId) {
     const tables = this.currentTables.get(backgroundId);
     if (!tables) return;
@@ -203,6 +234,13 @@ class TableManager {
   /*  Static Protected Methods                    */
   /* -------------------------------------------- */
 
+  /**
+   * Extracts roll table UUIDs from description text
+   * @param {string} description - Description text to parse
+   * @returns {string[]} Array of table UUIDs
+   * @static
+   * @protected
+   */
   static _parseTableUuidsFromDescription(description) {
     const uuidPattern = /@UUID\[Compendium\.dnd5e\.tables\.RollTable\.(.*?)]/g;
     const matches = [...description.matchAll(uuidPattern)];
@@ -296,6 +334,11 @@ export class SummaryManager {
     }
   }
 
+  /**
+   * Updates the background summary text and formatting
+   * @returns {Promise<void>}
+   * @static
+   */
   static async updateBackgroundSummary() {
     const backgroundSelect = document.querySelector('#background-dropdown');
     const summary = document.querySelector('.background-summary');
@@ -326,6 +369,11 @@ export class SummaryManager {
     summary.innerHTML = await TextEditor.enrichHTML(content);
   }
 
+  /**
+   * Updates the class and race summary text
+   * @returns {Promise<void>}
+   * @static
+   */
   static async updateClassRaceSummary() {
     const raceSelect = document.querySelector('#race-dropdown');
     const classSelect = document.querySelector('#class-dropdown');
@@ -355,6 +403,11 @@ export class SummaryManager {
     summary.innerHTML = await TextEditor.enrichHTML(content);
   }
 
+  /**
+   * Updates the equipment summary with selected items
+   * @returns {Promise<void>}
+   * @static
+   */
   static async updateEquipmentSummary() {
     const priorityTypes = ['weapon', 'armor', 'shield'];
 
@@ -396,6 +449,11 @@ export class SummaryManager {
     }
   }
 
+  /**
+   * Updates the abilities summary based on highest scores
+   * @returns {Promise<void>}
+   * @static
+   */
   static async updateAbilitiesSummary() {
     const abilityBlocks = document.querySelectorAll('.ability-block');
     const abilityScores = {};
@@ -435,6 +493,11 @@ export class SummaryManager {
     }
   }
 
+  /**
+   * Updates character portrait with provided image path
+   * @param {string} imagePath - Path to character image
+   * @instance
+   */
   updateCharacterPortrait(imagePath) {
     const portraitImg = document.querySelector('.character-portrait img');
     if (portraitImg) {
@@ -442,6 +505,10 @@ export class SummaryManager {
     }
   }
 
+  /**
+   * Initializes character portrait with default image
+   * @static
+   */
   static initializePortrait() {
     const portraitContainer = document.querySelector('.character-portrait');
     if (portraitContainer) {
@@ -474,6 +541,10 @@ export class SummaryManager {
     }
   }
 
+  /**
+   * Sets up roll buttons for background characteristics
+   * @static
+   */
   static initializeRollButtons() {
     const rollButtons = document.querySelectorAll('.roll-btn');
     const backgroundSelect = document.querySelector('#background-dropdown');
@@ -535,6 +606,12 @@ export class SummaryManager {
     });
   }
 
+  /**
+   * Processes background selection changes to load relevant tables
+   * @param {object} selectedBackground - Selected background data
+   * @returns {Promise<void>}
+   * @static
+   */
   static async processBackgroundSelectionChange(selectedBackground) {
     if (!selectedBackground?.selectedValue) {
       return;
@@ -557,6 +634,11 @@ export class SummaryManager {
     }
   }
 
+  /**
+   * Generates a formatted chat message summarizing the created character
+   * @returns {string} HTML content for chat message
+   * @static
+   */
   static generateCharacterSummaryChatMessage() {
     const characterName = document.querySelector('#character-name')?.value || game.user.name;
 

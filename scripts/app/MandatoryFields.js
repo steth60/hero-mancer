@@ -51,6 +51,14 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Protected Methods                           */
   /* -------------------------------------------- */
 
+  /**
+   * Prepares context data for the mandatory fields configuration
+   * Loads current field settings and organizes them by category
+   * @param {object} _options - Application render options
+   * @returns {Promise<object>} Context data for template rendering
+   * @protected
+   * @override
+   */
   async _prepareContext(_options) {
     // Get all valid form fields
     const fieldCategories = await this.getAllFormFields();
@@ -88,6 +96,10 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Public Methods                              */
   /* -------------------------------------------- */
 
+  /**
+   * Retrieves all configurable form fields organized by category
+   * @returns {Promise<object>} Object containing categorized form fields
+   */
   async getAllFormFields() {
     const abilityFields = Object.entries(CONFIG.DND5E.abilities).map(([key, ability]) => ({
       key: `abilities[${key}]`,
@@ -156,6 +168,14 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
 
+  /**
+   * Processes form submission for mandatory field settings
+   * @param {Event} _event - The form submission event
+   * @param {HTMLFormElement} form - The form element
+   * @param {FormDataExtended} formData - The processed form data
+   * @returns {Promise<void>}
+   * @static
+   */
   static async formHandler(_event, form, formData) {
     const requiresWorldReload = true; // Settings changes require world reload
     try {
@@ -181,6 +201,13 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
+  /**
+   * Validates the form against mandatory field requirements
+   * Updates UI to indicate incomplete fields and controls submit button state
+   * @param {HTMLElement} form - The form element to check
+   * @returns {Promise<boolean>} True if all mandatory fields are valid
+   * @static
+   */
   static async checkMandatoryFields(form) {
     const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
     const submitButton = form.querySelector('.hm-app-footer-submit');
@@ -274,6 +301,13 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     return missingFields.length === 0;
   }
 
+  /**
+   * Checks if an ability score field is complete based on the current roll method
+   * @param {HTMLElement} element - The ability input element
+   * @param {HTMLElement} abilityBlock - The parent ability block element
+   * @returns {boolean} Whether the field is complete
+   * @static
+   */
   static isAbilityFieldComplete(element, abilityBlock) {
     if (!abilityBlock) return false;
 
@@ -294,6 +328,12 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
+  /**
+   * Checks if a form field contains valid content
+   * @param {HTMLElement} element - The form field to check
+   * @returns {boolean} Whether the field has valid content
+   * @static
+   */
   static isFormFieldComplete(element) {
     if (!element) return false;
 
@@ -329,6 +369,13 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
+  /**
+   * Finds the label element associated with a form field
+   * Handles special cases like ProseMirror editors and various form layouts
+   * @param {HTMLElement} element - The form element to find a label for
+   * @returns {HTMLElement|null} The associated label element or null if not found
+   * @static
+   */
   static findAssociatedLabel(element) {
     // HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
     if (element.localName === 'prose-mirror') {
@@ -343,6 +390,13 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
       ?.querySelector('label, span.ability-label');
   }
 
+  /**
+   * Adds a visual indicator to show field completion status
+   * Creates or updates an icon prepended to the label
+   * @param {HTMLElement} labelElement - The label element to modify
+   * @param {boolean} [isComplete=false] - Whether the associated field is complete
+   * @static
+   */
   static addIndicator(labelElement, isComplete = false) {
     // Remove existing indicator if any
     const existingIcon = labelElement.querySelector('.mandatory-indicator');
@@ -369,6 +423,13 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     labelElement.prepend(icon);
   }
 
+  /**
+   * Shows a confirmation dialog for reloading the world/application
+   * @param {object} options - Configuration options
+   * @param {boolean} options.world - Whether to reload the entire world
+   * @returns {Promise<void>}
+   * @static
+   */
   static async reloadConfirm({ world = false } = {}) {
     const reload = await DialogV2.confirm({
       id: 'reload-world-confirm',

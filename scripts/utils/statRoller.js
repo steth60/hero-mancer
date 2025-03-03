@@ -23,9 +23,10 @@ export class StatRoller {
 
   /**
    * Initiates the stat rolling process
-   * @param {HTMLElement} form The form containing the ability score input
-   * @throws {Error} If form validation fails or rolling encounters an error
+   * @param {HTMLElement} form - The form containing the ability score input
    * @returns {Promise<void>}
+   * @throws {Error} If form validation fails or rolling encounters an error
+   * @static
    */
   static async rollAbilityScore(form) {
     if (this.isRolling) {
@@ -59,6 +60,7 @@ export class StatRoller {
   /**
    * Gets the roll formula from settings or sets default
    * @returns {Promise<string>} The roll formula to use
+   * @static
    */
   static async getAbilityScoreRollFormula() {
     let formula = game.settings.get(HM.CONFIG.ID, 'customRollFormula');
@@ -72,8 +74,9 @@ export class StatRoller {
 
   /**
    * Gets the ability score input element
-   * @param {string} index The ability block index
+   * @param {string} index - The ability block index
    * @returns {HTMLElement|null} The input element or null if not found
+   * @static
    */
   static getAbilityInput(index) {
     const block = document.getElementById(`ability-block-${index}`);
@@ -83,6 +86,7 @@ export class StatRoller {
   /**
    * Checks if any ability scores have existing values
    * @returns {boolean} True if any ability scores have values
+   * @static
    */
   static hasExistingValues() {
     return Array.from(document.querySelectorAll('.ability-score')).some((input) => input.value?.trim() !== '');
@@ -90,10 +94,11 @@ export class StatRoller {
 
   /**
    * Performs a single ability score roll
-   * @param {string} rollFormula The formula to use for rolling
-   * @param {string} index The ability block index
-   * @param {HTMLElement} input The ability score input element
+   * @param {string} rollFormula - The formula to use for rolling
+   * @param {string} index - The ability block index
+   * @param {HTMLElement} input - The ability score input element
    * @returns {Promise<void>}
+   * @static
    */
   static async rollSingleAbilityScore(rollFormula, index, input) {
     try {
@@ -116,8 +121,9 @@ export class StatRoller {
 
   /**
    * Rolls all ability scores in sequence
-   * @param {string} rollFormula The formula to use for rolling
+   * @param {string} rollFormula - The formula to use for rolling
    * @returns {Promise<void>}
+   * @static
    */
   static async rollAllStats(rollFormula) {
     const blocks = document.querySelectorAll('.ability-block');
@@ -165,6 +171,7 @@ export class StatRoller {
   /**
    * Gets the default standard array for ability scores
    * @returns {string} Comma-separated string of ability scores
+   * @static
    */
   static getStandardArrayDefault() {
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
@@ -174,7 +181,8 @@ export class StatRoller {
 
   /**
    * Validates and sets a custom standard array
-   * @param {string} value Comma-separated string of ability scores
+   * @param {string} value - Comma-separated string of ability scores
+   * @static
    */
   static validateAndSetCustomStandardArray(value) {
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
@@ -195,8 +203,9 @@ export class StatRoller {
 
   /**
    * Generates a standard array of ability scores
-   * @param {number} extraAbilities Number of additional abilities beyond the base six
+   * @param {number} extraAbilities - Number of additional abilities beyond the base six
    * @returns {number[]} Array of ability scores in descending order
+   * @static
    */
   static getStandardArray(extraAbilities) {
     const scores = [15, 14, 13, 12, 10, 8, ...Array(extraAbilities).fill(11)];
@@ -205,9 +214,8 @@ export class StatRoller {
 
   /**
    * Calculates total points available for point buy
-   * @returns {number} Total points available. If a custom total is set in settings
-   * and differs from the default calculation (27 + extra points for additional abilities),
-   * returns just the custom total. Otherwise returns the default calculation.
+   * @returns {number} Total points available
+   * @static
    */
   static getTotalPoints() {
     const customTotal = game.settings.get(HM.CONFIG.ID, 'customPointBuyTotal');
@@ -226,8 +234,9 @@ export class StatRoller {
 
   /**
    * Gets the point cost for a given ability score
-   * @param {number} score The ability score (8-15)
+   * @param {number} score - The ability score (8-15)
    * @returns {number} Point cost for the score
+   * @static
    */
   static getPointBuyCostForScore(score) {
     const costs = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
@@ -236,8 +245,9 @@ export class StatRoller {
 
   /**
    * Calculates total points spent on ability scores
-   * @param {number[]} scores Array of selected ability scores
+   * @param {number[]} scores - Array of selected ability scores
    * @returns {number} Total points spent
+   * @static
    */
   static calculateTotalPointsSpent(scores) {
     return scores.reduce((total, score) => total + this.getPointBuyCostForScore(score), 0);
@@ -249,11 +259,13 @@ export class StatRoller {
 
   /**
    * Shows the reroll confirmation dialog
-   * @param {string} rollFormula The formula to use for rolling
-   * @param {boolean} chainedRolls Whether chained rolls are enabled
-   * @param {string} index The ability block index
-   * @param {HTMLElement} input The ability score input element
+   * @param {string} rollFormula - The formula to use for rolling
+   * @param {boolean} chainedRolls - Whether chained rolls are enabled
+   * @param {string} index - The ability block index
+   * @param {HTMLElement} input - The ability score input element
    * @returns {Promise<void>}
+   * @private
+   * @static
    */
   static async #promptForAbilityScoreReroll(rollFormula, chainedRolls, index, input) {
     const dialog = new DialogV2({
@@ -275,6 +287,8 @@ export class StatRoller {
   /**
    * Gets the content for the reroll dialog
    * @returns {string} The HTML content for the dialog
+   * @private
+   * @static
    */
   static #getRerollDialogContent() {
     // Only show the chain roll checkbox if chain rolls are enabled in settings
@@ -301,11 +315,13 @@ export class StatRoller {
 
   /**
    * Gets the button configuration for the reroll dialog
-   * @param {string} rollFormula The formula to use for rolling
-   * @param {boolean} chainedRolls Whether chained rolls are enabled
-   * @param {string} index The ability block index
-   * @param {HTMLElement} input The ability score input element
+   * @param {string} rollFormula - The formula to use for rolling
+   * @param {boolean} chainedRolls - Whether chained rolls are enabled
+   * @param {string} index - The ability block index
+   * @param {HTMLElement} input - The ability score input element
    * @returns {object[]} The button configurations
+   * @private
+   * @static
    */
   static #getRerollDialogButtons(rollFormula, chainedRolls, index, input) {
     return [

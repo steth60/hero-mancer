@@ -12,9 +12,11 @@ export class Listeners {
 
   /**
    * Initializes all listeners for the application
-   * @param {HTMLElement} html The root element to attach listeners to
-   * @param {object} context The application context
-   * @param {number[]} selectedAbilities Array of selected ability scores
+   * @param {HTMLElement} html - The root element to attach listeners to
+   * @param {object} context - The application context
+   * @param {number[]} selectedAbilities - Array of selected ability scores
+   * @returns {Promise<void>}
+   * @static
    */
   static async initializeListeners(html, context, selectedAbilities) {
     this.initializeAbilityListeners(context, selectedAbilities);
@@ -28,8 +30,9 @@ export class Listeners {
 
   /**
    * Initializes ability score related listeners and UI updates
-   * @param {object} context The application context
-   * @param {number[]} selectedAbilities Array of selected ability scores
+   * @param {object} context - The application context
+   * @param {number[]} selectedAbilities - Array of selected ability scores
+   * @static
    */
   static initializeAbilityListeners(context, selectedAbilities) {
     const abilityDropdowns = document.querySelectorAll('.ability-dropdown');
@@ -85,6 +88,7 @@ export class Listeners {
 
   /**
    * Initializes equipment selection listeners and renders initial equipment choices
+   * @static
    */
   static initializeEquipmentListeners() {
     const equipmentContainer = document.querySelector('#equipment-container');
@@ -154,12 +158,18 @@ export class Listeners {
 
   /**
    * Initializes character-related listeners including token art and portrait updates
+   * @static
    */
   static initializeCharacterListeners() {
     const tokenArtCheckbox = document.querySelector('#link-token-art');
     tokenArtCheckbox?.addEventListener('change', CharacterArtPicker._toggleTokenArtRowVisibility);
   }
 
+  /**
+   * Initializes the ability score rolling method selector
+   * @param {HTMLElement} html - The root element
+   * @static
+   */
   static initializeRollMethodListener(html) {
     HM.log(3, 'Initializing roll method listener');
     if (!html) {
@@ -201,6 +211,10 @@ export class Listeners {
     });
   }
 
+  /**
+   * Initializes token customization listeners and visual state updates
+   * @static
+   */
   static initializeTokenCustomizationListeners() {
     const ringEnabled = document.querySelector('input[name="ring.enabled"]');
     const ringOptions = document.querySelectorAll(
@@ -243,6 +257,10 @@ export class Listeners {
     });
   }
 
+  /**
+   * Initializes player customization listeners for color and display elements
+   * @static
+   */
   static initializePlayerCustomizationListeners() {
     const colorInput = document.querySelector('color-picker[name="player-color"]');
     if (!colorInput) return;
@@ -263,7 +281,8 @@ export class Listeners {
 
   /**
    * Initialize form validation listeners for mandatory fields
-   * @param {HTMLElement} html The root element containing form fields
+   * @param {HTMLElement} html - The root element containing form fields
+   * @static
    */
   static initializeFormValidationListeners(html) {
     const formElements = html.querySelectorAll('input, select, textarea, color-picker');
@@ -313,6 +332,12 @@ export class Listeners {
     });
   }
 
+  /**
+   * Restores previously saved form options
+   * @param {HTMLElement} html - The form element
+   * @returns {Promise<void>}
+   * @static
+   */
   static async restoreFormOptions(html) {
     const savedOptions = await SavedOptions.loadOptions();
     if (Object.keys(savedOptions).length === 0) return;
@@ -349,7 +374,8 @@ export class Listeners {
 
   /**
    * Updates the display of remaining points in the abilities tab
-   * @param {number} remainingPoints The number of points remaining to spend
+   * @param {number} remainingPoints - The number of points remaining to spend
+   * @static
    */
   static updateRemainingPointsDisplay(remainingPoints) {
     const abilitiesTab = document.querySelector(".tab[data-tab='abilities']");
@@ -366,9 +392,10 @@ export class Listeners {
 
   /**
    * Adjusts ability score up or down within valid range and point limits
-   * @param {number} index The index of the ability score to adjust
-   * @param {number} change The amount to change the score by (positive or negative)
-   * @param {number[]} selectedAbilities Array of current ability scores
+   * @param {number} index - The index of the ability score to adjust
+   * @param {number} change - The amount to change the score by (positive or negative)
+   * @param {number[]} selectedAbilities - Array of current ability scores
+   * @static
    */
   static changeAbilityScoreValue(index, change, selectedAbilities) {
     if (!Array.isArray(selectedAbilities)) {
@@ -402,8 +429,9 @@ export class Listeners {
 
   /**
    * Updates the state of plus buttons based on available points and maximum scores
-   * @param {number[]} selectedAbilities Array of current ability scores
-   * @param {number} remainingPoints Points available to spend
+   * @param {number[]} selectedAbilities - Array of current ability scores
+   * @param {number} remainingPoints - Points available to spend
+   * @static
    */
   static updatePlusButtonState(selectedAbilities, remainingPoints) {
     // Create a document fragment for batch processing
@@ -433,7 +461,8 @@ export class Listeners {
 
   /**
    * Updates the state of minus buttons based on minimum allowed scores
-   * @param {number[]} selectedAbilities Array of current ability scores
+   * @param {number[]} selectedAbilities - Array of current ability scores
+   * @static
    */
   static updateMinusButtonState(selectedAbilities) {
     const updates = [];
@@ -465,10 +494,12 @@ export class Listeners {
 
   /**
    * Updates equipment section UI based on class or background changes
-   * @param {EquipmentParser} equipment The equipment parser instance
-   * @param {HTMLElement} container The container element for equipment choices
-   * @param {'class'|'background'} type The type of equipment section to update
+   * @param {EquipmentParser} equipment - The equipment parser instance
+   * @param {HTMLElement} container - The container element for equipment choices
+   * @param {'class'|'background'} type - The type of equipment section to update
    * @returns {Promise<void>}
+   * @private
+   * @static
    */
   static async #refreshEquipmentSectionUI(equipment, container, type) {
     try {
@@ -499,10 +530,11 @@ export class Listeners {
 
   /**
    * Updates the color of the remaining points display based on percentage remaining
-   * @param {HTMLElement} element The element to update
-   * @param {number} remainingPoints Current remaining points
-   * @param {number} totalPoints Total available points
+   * @param {HTMLElement} element - The element to update
+   * @param {number} remainingPoints - Current remaining points
+   * @param {number} totalPoints - Total available points
    * @private
+   * @static
    */
   static #updatePointsColor(element, remainingPoints, totalPoints) {
     if (!element) return;
@@ -518,7 +550,7 @@ export class Listeners {
  * to ensure proper tracking and cleanup
  * @class
  */
-class MutationObserverRegistry {
+export class MutationObserverRegistry {
   /* -------------------------------------------- */
   /*  Static Properties                           */
   /* -------------------------------------------- */
@@ -532,11 +564,12 @@ class MutationObserverRegistry {
 
   /**
    * Registers a new MutationObserver with a unique key
-   * @param {string} key Unique identifier for this observer
-   * @param {HTMLElement} element The DOM element to observe
-   * @param {MutationObserverInit} config Observer configuration options
-   * @param {MutationCallback} callback Callback function for mutations
+   * @param {string} key - Unique identifier for this observer
+   * @param {HTMLElement} element - The DOM element to observe
+   * @param {MutationObserverInit} config - Observer configuration options
+   * @param {MutationCallback} callback - Callback function for mutations
    * @returns {MutationObserver} The created observer instance
+   * @static
    */
   static register(key, element, config, callback) {
     // Clean up existing observer with this key if it exists
@@ -558,8 +591,9 @@ class MutationObserverRegistry {
 
   /**
    * Unregisters and disconnects a specific observer
-   * @param {string} key The key of the observer to unregister
+   * @param {string} key - The key of the observer to unregister
    * @returns {boolean} Whether the observer was successfully unregistered
+   * @static
    */
   static unregister(key) {
     if (this.#registry.has(key)) {
@@ -579,8 +613,9 @@ class MutationObserverRegistry {
 
   /**
    * Unregisters all observers matching a prefix
-   * @param {string} prefix The prefix to match against observer keys
+   * @param {string} prefix - The prefix to match against observer keys
    * @returns {number} Number of observers unregistered
+   * @static
    */
   static unregisterByPrefix(prefix) {
     let count = 0;
@@ -601,6 +636,7 @@ class MutationObserverRegistry {
   /**
    * Unregisters and disconnects all observers
    * @returns {number} Number of observers unregistered
+   * @static
    */
   static unregisterAll() {
     try {
@@ -632,8 +668,9 @@ class MutationObserverRegistry {
 
   /**
    * Gets the observer instance by key
-   * @param {string} key The key of the observer to get
+   * @param {string} key - The key of the observer to get
    * @returns {MutationObserver|null} The observer instance or null if not found
+   * @static
    */
   static get(key) {
     return this.#registry.get(key) || null;
@@ -642,6 +679,7 @@ class MutationObserverRegistry {
   /**
    * Gets the total number of registered observers
    * @returns {number} Count of registered observers
+   * @static
    */
   static get count() {
     return this.#registry.size;

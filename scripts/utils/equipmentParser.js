@@ -1,48 +1,128 @@
 import { HM } from '../utils/index.js';
 
+/**
+ * Parses, manages, and renders equipment data for character creation
+ * Handles equipment selection UI, lookup item indexing, and equipment data collection
+ * @class
+ */
 export class EquipmentParser {
   /* -------------------------------------------- */
   /*  Static Properties                           */
   /* -------------------------------------------- */
 
+  /**
+   * Set of armor items for lookup
+   * @type {Set<object>}
+   * @static
+   */
   static armor = new Set();
 
+  /**
+   * Set of item IDs that have been combined in UI display
+   * @type {Set<string>}
+   * @static
+   */
   static combinedItemIds = new Set();
 
+  /**
+   * Cache for equipment content to avoid repetitive lookups
+   * @type {Map<string, object>}
+   * @static
+   */
   static contentCache = new Map();
 
+  /**
+   * Set of arcane focus items
+   * @type {Set<object>}
+   * @static
+   */
   static focus = new Set();
 
+  /**
+   * Set of martial melee weapons
+   * @type {Set<object>}
+   * @static
+   */
   static martialM = new Set();
 
+  /**
+   * Set of martial ranged weapons
+   * @type {Set<object>}
+   * @static
+   */
   static martialR = new Set();
 
+  /**
+   * Set of musical instruments
+   * @type {Set<object>}
+   * @static
+   */
   static music = new Set();
 
+  /**
+   * Set of items that have been rendered in the UI
+   * @type {Set<string>}
+   * @static
+   */
   static renderedItems = new Set();
 
+  /**
+   * Set of shield items
+   * @type {Set<object>}
+   * @static
+   */
   static shield = new Set();
 
+  /**
+   * Set of simple melee weapons
+   * @type {Set<object>}
+   * @static
+   */
   static simpleM = new Set();
 
+  /**
+   * Set of simple ranged weapons
+   * @type {Set<object>}
+   * @static
+   */
   static simpleR = new Set();
 
   /* -------------------------------------------- */
   /*  Instance Properties                         */
   /* -------------------------------------------- */
 
+  /**
+   * Parsed equipment data for class and background
+   * @type {object|null}
+   */
   equipmentData;
 
+  /**
+   * ID of the selected class
+   * @type {string}
+   */
   classId;
 
+  /**
+   * ID of the selected background
+   * @type {string}
+   */
   backgroundId;
 
+  /**
+   * Set of proficiencies the character has
+   * @type {Set<string>}
+   */
   proficiencies;
 
   /* -------------------------------------------- */
   /*  Constructor                                 */
   /* -------------------------------------------- */
 
+  /**
+   * Creates a new EquipmentParser instance
+   * Initializes properties and preloads compendium indices
+   */
   constructor() {
     this.equipmentData = null;
     this.classId = HM.CONFIG.SELECT_STORAGE.class.selectedId;
@@ -58,6 +138,7 @@ export class EquipmentParser {
   /**
    * Retrieves and combines equipment data from class and background selections
    * @async
+   * @returns {Promise<void>}
    */
   async fetchEquipmentData() {
     const classEquipment = await this.getStartingEquipment('class');
@@ -71,7 +152,7 @@ export class EquipmentParser {
   /**
    * Searches all selectedPacks for a document by ID
    * @async
-   * @param {string} itemId Item ID to search for
+   * @param {string} itemId - Item ID to search for
    * @returns {Promise<Item|null>} Found item document or null
    */
   async findItemDocumentById(itemId) {
@@ -89,7 +170,7 @@ export class EquipmentParser {
   /**
    * Extracts granted proficiencies from advancement data
    * @async
-   * @param {Array<object>} advancements Array of advancement configurations
+   * @param {Array<object>} advancements - Array of advancement configurations
    * @returns {Promise<Set<string>>} Set of granted proficiency strings
    */
   async extractProficienciesFromAdvancements(advancements) {
@@ -109,7 +190,7 @@ export class EquipmentParser {
   /**
    * Fetches starting equipment and proficiencies for a given selection type
    * @async
-   * @param {('class'|'background')} type Selection type to fetch equipment for
+   * @param {'class'|'background'} type - Selection type to fetch equipment for
    * @returns {Promise<Array<object>>} Starting equipment array
    * @throws {Error} If compendium lookup fails
    */
@@ -136,8 +217,8 @@ export class EquipmentParser {
   /**
    * Renders starting wealth options for class
    * @async
-   * @param {string} classId Class document ID
-   * @param {HTMLElement} sectionContainer Section container element
+   * @param {string} classId - Class document ID
+   * @param {HTMLElement} sectionContainer - Section container element
    * @throws {Error} If wealth option rendering fails
    */
   async renderClassWealthOption(classId, sectionContainer) {
@@ -225,7 +306,7 @@ export class EquipmentParser {
   /**
    * Renders equipment selection UI for specified or all types
    * @async
-   * @param {?string} type Optional type to render ('class'|'background'). If null, renders all
+   * @param {?string} type - Optional type to render ('class'|'background'). If null, renders all
    * @returns {Promise<HTMLElement>} Container element with rendered equipment choices
    * @throws {Error} If rendering fails
    */
@@ -377,8 +458,9 @@ export class EquipmentParser {
   /**
    * Creates and returns a DOM element for an equipment item
    * @async
-   * @param {object} item Equipment item data
+   * @param {object} item - Equipment item data
    * @returns {Promise<HTMLElement|null>} Equipment element or null if skipped/invalid
+   * @private
    */
   async #buildEquipmentUIElement(item) {
     if (!item) {
@@ -508,8 +590,9 @@ export class EquipmentParser {
 
   /**
    * Gets linked item ID from equipment item
-   * @param {object} item Equipment item
+   * @param {object} item - Equipment item
    * @returns {string|null} Linked item ID
+   * @private
    */
   #extractLinkedItemId(item) {
     const linkedItem = item.children.find((child) => child.type === 'linked');
@@ -518,8 +601,9 @@ export class EquipmentParser {
 
   /**
    * Finds weapon type child in equipment item
-   * @param {object} item Parent item
+   * @param {object} item - Parent item
    * @returns {object|null} Weapon type child or null
+   * @private
    */
   #findWeaponTypeChild(item) {
     return item.children.find((child) => child.type === 'weapon' && child.key === 'simpleM');
@@ -527,8 +611,9 @@ export class EquipmentParser {
 
   /**
    * Gets label for weapon/armor lookup key
-   * @param {string} key Lookup key (e.g. 'sim', 'mar', 'shield')
+   * @param {string} key - Lookup key (e.g. 'sim', 'mar', 'shield')
    * @returns {string} Human-readable label
+   * @private
    */
   #getLookupKeyLabel(key) {
     /* TODO: Get this data from CONFIG.DND5E instead. */
@@ -546,8 +631,9 @@ export class EquipmentParser {
 
   /**
    * Checks if an item has already been rendered
-   * @param {object} item Item to check
+   * @param {object} item - Item to check
    * @returns {boolean} True if item ID exists in renderedItems
+   * @private
    */
   #hasItemBeenRendered(item) {
     return EquipmentParser.renderedItems.has(item._id);
@@ -555,8 +641,9 @@ export class EquipmentParser {
 
   /**
    * Checks if item has multiple quantity choices
-   * @param {object} item Equipment item
+   * @param {object} item - Equipment item
    * @returns {boolean} True if multiple quantities
+   * @private
    */
   #isMultiQuantityChoice(item) {
     let quantityChoices = 0;
@@ -576,8 +663,9 @@ export class EquipmentParser {
 
   /**
    * Checks if an AND block item is standalone (not part of an OR choice)
-   * @param {object} item Equipment item to check
+   * @param {object} item - Equipment item to check
    * @returns {boolean} True if standalone
+   * @private
    */
   #isStandaloneAndBlock(item) {
     return !this.equipmentData.class.some((p) => p._id === item.group && p.type === 'OR') && !this.equipmentData.background.some((p) => p._id === item.group && p.type === 'OR');
@@ -585,8 +673,9 @@ export class EquipmentParser {
 
   /**
    * Checks if item represents a weapon/shield choice combination
-   * @param {object} item Equipment item to check
+   * @param {object} item - Equipment item to check
    * @returns {boolean} True if valid weapon/shield combination
+   * @private
    */
   #isWeaponShieldChoice(item) {
     const andGroup = item.children.find((child) => child.type === 'AND');
@@ -601,9 +690,10 @@ export class EquipmentParser {
   /**
    * Renders an AND block of equipment items
    * @async
-   * @param {object} item AND block item
-   * @param {HTMLElement} itemContainer Container element
+   * @param {object} item - AND block item
+   * @param {HTMLElement} itemContainer - Container element
    * @returns {Promise<HTMLElement>} Modified container
+   * @private
    */
   async #renderAndBlock(item, itemContainer) {
     HM.log(3, `Processing AND block: ${item._id}`);
@@ -751,9 +841,10 @@ export class EquipmentParser {
   /**
    * Renders AND group equipment selection
    * @async
-   * @param {object} child AND group item
-   * @param {HTMLSelectElement} select Select element
-   * @param {Set} renderedItemNames Tracking set
+   * @param {object} child - AND group item
+   * @param {HTMLSelectElement} select - Select element
+   * @param {Set} renderedItemNames - Tracking set
+   * @private
    */
   async #renderAndGroup(child, select, renderedItemNames) {
     let combinedLabel = '';
@@ -831,9 +922,10 @@ export class EquipmentParser {
 
   /**
    * Renders arcane/divine focus equipment selection
-   * @param {object} item Focus item data
-   * @param {HTMLElement} itemContainer Container element
+   * @param {object} item - Focus item data
+   * @param {HTMLElement} itemContainer - Container element
    * @returns {HTMLElement|null} Modified container or null if invalid
+   * @private
    */
   async #renderFocusItem(item, itemContainer) {
     if (!item?.key) {
@@ -912,11 +1004,12 @@ export class EquipmentParser {
   /**
    * Renders individual equipment item as dropdown option
    * @async
-   * @param {object} child Item to render
-   * @param {HTMLSelectElement} select Select element to add option to
-   * @param {Set<string>} renderedItemNames Set of already rendered names
+   * @param {object} child - Item to render
+   * @param {HTMLSelectElement} select - Select element to add option to
+   * @param {Set<string>} renderedItemNames - Set of already rendered names
    * @returns {Promise<void>}
    * @throws {Error} If item lookup fails
+   * @private
    */
   async #renderIndividualItem(child, select, renderedItemNames) {
     if (child.type === 'linked') {
@@ -956,9 +1049,10 @@ export class EquipmentParser {
 
   /**
    * Renders a linked equipment item
-   * @param {object} item Linked item to render
-   * @param {HTMLElement} itemContainer Container element
+   * @param {object} item - Linked item to render
+   * @param {HTMLElement} itemContainer - Container element
    * @returns {HTMLElement|null} Modified container or null if skipped
+   * @private
    */
   #renderLinkedItem(item, itemContainer) {
     if (!item?._source?.key) {
@@ -1024,10 +1118,11 @@ export class EquipmentParser {
   /**
    * Renders lookup options for weapons/armor/tools
    * @async
-   * @param {object} child Equipment child with lookup key
-   * @param {HTMLSelectElement} select Select element
-   * @param {Set<string>} renderedItemNames Tracking set
+   * @param {object} child - Equipment child with lookup key
+   * @param {HTMLSelectElement} select - Select element
+   * @param {Set<string>} renderedItemNames - Tracking set
    * @returns {Promise<void>}
+   * @private
    */
   async #renderLookupOptions(child, select, renderedItemNames) {
     try {
@@ -1093,9 +1188,10 @@ export class EquipmentParser {
   /**
    * Renders an OR-type equipment selection block
    * @async
-   * @param {object} item OR block item data
-   * @param {HTMLElement} itemContainer Container element
+   * @param {object} item - OR block item data
+   * @param {HTMLElement} itemContainer - Container element
    * @returns {Promise<HTMLElement>} Modified container with selection elements
+   * @private
    */
   async #renderOrBlock(item, itemContainer) {
     if (!item?.children?.length) {
@@ -1298,8 +1394,9 @@ export class EquipmentParser {
 
   /**
    * Determines if item should be rendered as dropdown
-   * @param {object} item Equipment item
+   * @param {object} item - Equipment item
    * @returns {boolean} True if should render as dropdown
+   * @private
    */
   #shouldItemUseDropdownDisplay(item) {
     HM.log(3, `Checking dropdown render for ${item._id}: type=${item.type}, group=${item.group}`);
@@ -1335,9 +1432,10 @@ export class EquipmentParser {
    * Collects equipment selections from the HTML form
    * @param {Event} event - The form submission event
    * @param {object} options - Collection options
-   * @param {boolean} options.includeClass - Whether to include class equipment
-   * @param {boolean} options.includeBackground - Whether to include background equipment
-   * @returns {Promise<Array>} An array of equipment items
+   * @param {boolean} [options.includeClass=true] - Whether to include class equipment
+   * @param {boolean} [options.includeBackground=true] - Whether to include background equipment
+   * @returns {Promise<Array<object>>} An array of equipment items
+   * @static
    */
   static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
     const equipment = [];
@@ -1541,8 +1639,8 @@ export class EquipmentParser {
    * Retrieves all selected compendium packs from settings.
    * Combines item packs, class packs, background packs, and race packs into a single array.
    * @async
-   * @static
    * @returns {Promise<string[]>} Array of compendium pack IDs
+   * @static
    */
   static async getSelectedItemPacks() {
     const itemPacks = (await game.settings.get('hero-mancer', 'itemPacks')) || [];
@@ -1638,9 +1736,9 @@ export class EquipmentParser {
 
   /**
    * Processes starting wealth form data into currency amounts
-   * @static
-   * @param {object} formData Form data containing wealth options
+   * @param {object} formData - Form data containing wealth options
    * @returns {object|null} Currency amounts or null if invalid
+   * @static
    */
   static async convertWealthStringToCurrency(formData) {
     if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
@@ -1708,11 +1806,11 @@ export class EquipmentParser {
 
   /**
    * Collects and filters equipment items from selected compendiums
-   * @static
-   * @async
-   * @param {string[]} selectedPacks Array of selected compendium IDs
+   * @param {string[]} selectedPacks - Array of selected compendium IDs
    * @returns {Promise<Array<object>>} Array of non-magical equipment items
    * @throws {Error} If item collection fails
+   * @private
+   * @static
    */
   static async #collectAllItems(selectedPacks) {
     const startTime = performance.now();
