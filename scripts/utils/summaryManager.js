@@ -4,7 +4,7 @@ import { HM, MutationObserverRegistry } from './index.js';
  * Manages RollTable interactions for character backgrounds and characteristics.
  * @class
  */
-export class TableManager {
+class TableManager {
   /* -------------------------------------------- */
   /*  Static Properties                           */
   /* -------------------------------------------- */
