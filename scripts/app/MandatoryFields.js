@@ -189,24 +189,23 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
 
       HM.log(3, 'Selected mandatory fields:', mandatoryFields);
 
-
       // Save to settings
       await game.settings.set(HM.CONFIG.ID, 'mandatoryFields', mandatoryFields);
 
-    // Helper function to find label for an element
-    const findLabel = (element) => {
-      // Skip elements within the summary-section
-      if (element.closest('.summary-section')) {
-        return null;
-      }
+      // Helper function to find label for an element
+      const findLabel = (element) => {
+        // Skip elements within the summary-section
+        if (element.closest('.summary-section')) {
+          return null;
+        }
 
-      if (element.localName === 'prose-mirror') {
-        HM.log(3, 'Finding label for ProseMirror element:', { element: element });
-        let h3Element = element.closest('.notes-section')?.querySelector('h3');
-        HM.log(3, 'Found h3 element:', { h3Element: h3Element });
-        return h3Element;
-      }
-
+        if (element.localName === 'prose-mirror') {
+          HM.log(3, 'Finding label for ProseMirror element:', { element: element });
+          let h3Element = element.closest('.notes-section')?.querySelector('h3');
+          HM.log(3, 'Found h3 element:', { h3Element: h3Element });
+          return h3Element;
+        }
+      };
 
       this.constructor.reloadConfirm({ world: requiresWorldReload });
 

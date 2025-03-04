@@ -297,11 +297,11 @@
   min-height: 0;
   max-height: 100%;
   margin: 1rem 0;
-  padding: 2rem;
   border: 1px solid var(--user-color);
   border-radius: 0.375rem;
   overflow: auto;
   overflow-x: hidden;
+  padding: 2rem;
 }
 
 .application.hm-app fieldset > legend {
@@ -475,8 +475,8 @@
 }
 
 .hm-app-tab-content .equipment-choices h3 {
-  font-size: 1.75rem;
   font-family: 'modesto condensed', serif;
+  font-size: 1.75rem;
 }
 
 /* ==========================================================================
@@ -610,11 +610,7 @@
   box-sizing: border-box;
   width: 16%;
   max-width: 16%;
-
   border: 1px solid #ccc;
-
-  border: 1px solid hsl(0deg 0% 80%);
-
   border-radius: 6px;
   text-align: center;
 }
@@ -627,14 +623,7 @@
 
 .ability-block.point-buy .ability-label {
   gap: 0.2rem;
-
   font-weight: bold;
-
-  padding: 0 0.25rem;
-  font-weight: bold;
-  text-align: center;
-  white-space: normal;
-
 }
 
 .ability-block.point-buy .control-row {
@@ -716,153 +705,9 @@
     0.5px 0.5px 0.5px #000000b3;
 }
 
-
 /* ==========================================================================
     Equipment Section
    ========================================================================== */
-
-/* Popup section styling in compendiums */
-.hm-compendiums-popup-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 10px 0;
-}
-
-/* Paragraph inside popup section */
-.hm-compendiums-popup-section p {
-  flex: 1;
-  margin: 0;
-}
-
-/* Button styling inside popup section */
-.hm-compendiums-popup-section button {
-  width: auto;
-  margin-left: 10px;
-  white-space: nowrap;
-}
-
-/* Footer for compendiums */
-.hm-compendiums-footer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding-top: 1rem;
-}
-
-/* Footer actions for compendiums */
-.hm-compendiums-footer-actions {
-  gap: 0.625rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 50%;
-}
-
-/* Multi-checkbox layout in popups */
-.hm-compendiums-popup-dialog multi-checkbox {
-  display: block;
-  max-height: calc(50vh - 100px); /* Account for header and buttons */
-  padding-right: 0.5rem;
-  overflow-y: auto; /* Prevent content from touching scrollbar */
-}
-
-/* Checkbox label styling in multi-checkbox */
-.hm-compendiums-popup-dialog multi-checkbox label.checkbox {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  padding: 0.25rem 0;
-}
-
-/* Checkbox input styling */
-.hm-compendiums-popup-dialog multi-checkbox label.checkbox input[type='checkbox'] {
-  order: 1;
-  margin-left: 10px;
-}
-
-@media (width <= 1024px) {
-  .application.hm-app {
-    width: 95%;
-    max-width: 95%;
-    max-height: 75vh;
-  }
-
-  .application.hm-app .hm-app-nav {
-    gap: 1rem;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .application.hm-app .hm-app-nav a.item {
-    flex-grow: 1;
-    flex-shrink: 1;
-    min-width: 150px;
-    margin-bottom: 10px;
-  }
-
-  .hm-app-tab-content fieldset input[type='text'],
-  .hm-app-tab-content fieldset select {
-    width: 80%;
-    margin-right: 0;
-    margin-left: 0;
-  }
-
-  .hm-app-footer-actions {
-    gap: 0.313rem;
-    width: 100%;
-  }
-}
-
-@media (width <= 768px) {
-  .application.hm-app {
-    width: 100%;
-    max-height: 70vh;
-  }
-
-  .hm-app-footer-actions {
-    gap: 0.5rem;
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .application.hm-app .hm-app-nav a.item {
-    padding: 0 0.313rem;
-    font-size: var(--font-size-13);
-  }
-
-  .hm-app-tab-content fieldset {
-    padding: 0.313rem;
-  }
-
-  .hm-app-tab-content fieldset input[type='text'],
-  .hm-app-tab-content fieldset select {
-    width: 100%;
-    margin: 0;
-  }
-
-  .ability-container.point-buy {
-    justify-content: center;
-  }
-}
-
-/* Minimum width requirement for Foundry
-(700px <= width <= 1024px)
-*/
-@media (700px <= width <= 1024px) {
-  .application.hm-app {
-    width: 100%;
-    height: auto;
-    max-height: 80vh;
-  }
-
-  .hm-app-footer-actions button {
-    padding: 0.25rem 0.5rem;
-    font-size: var(--font-size-13);
-  }
-}
-
 
 .equipment-container {
   display: flex;
@@ -906,10 +751,10 @@
 .equipment-item {
   display: flex;
   flex-direction: column;
-  width: 100%;
   max-width: 100%;
   padding: 0.75rem 0;
   border-bottom: 1px solid var(--color-border-dark-secondary);
+  width: 100%;
 }
 
 .equipment-item label,
@@ -1331,7 +1176,6 @@
   align-items: center;
 }
 
-
 /* Animations */
 @keyframes roll-dice {
   0% {
@@ -1453,11 +1297,4 @@
     padding: 0.25rem 0.5rem;
     font-size: var(--font-size-13);
   }
-=======
-.mandatory-indicator {
-  display: inline-flex;
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  font-size: 0.9em;
 }
