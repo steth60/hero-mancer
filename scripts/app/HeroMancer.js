@@ -731,12 +731,20 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
             }
           });
 
+
           HM.log(3, 'Cleaned up ability block handlers and observers');
         }
       } catch (error) {
         HM.log(1, 'Error cleaning up ability blocks:', error);
         cleanupIssues.push('ability blocks');
       }
+
+    // Check mandatory fields
+    const missingFields = mandatoryFields.filter((field) => {
+      const value = formData.object[field];
+      return value === undefined || value === null || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0);
+    });
+
 
       // Clean up equipment container
       try {
