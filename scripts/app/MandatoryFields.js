@@ -18,7 +18,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     position: {
       height: 'auto',
-      width: '800'
+      width: 'auto'
     },
     window: {
       icon: 'fa-solid fa-list-check',
