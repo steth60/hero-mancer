@@ -1,24 +1,53 @@
-import { HM } from '../hero-mancer.js';
+import { HM } from '../utils/index.js';
 
+/**
+ * Handles image selection for character, token, and player art
+ * @class
+ */
 export class CharacterArtPicker {
-  static getRootDirectory() {
+  /* -------------------------------------------- */
+  /*  Static Getters & Setters                    */
+  /* -------------------------------------------- */
+
+  /**
+   * Gets the root directory for art selection
+   * @returns {string} The configured root directory path
+   * @static
+   */
+  static get rootDirectory() {
     return game.settings.get(HM.CONFIG.ID, 'artPickerRoot');
   }
 
-  static setRootDirectory(path) {
-    HM.log(3, `CharacterArtPicker.setRootDirectory called with path: ${path}`);
+  /**
+   * Sets the root directory for art selection
+   * @param {string} path - The path to set as root directory
+   * @static
+   */
+  static set rootDirectory(path) {
+    HM.log(3, `CharacterArtPicker.rootDirectory setter called with path: ${path}`);
     if (!path) {
-      HM.log(2, 'Attempted to set ROOT_DIRECTORY to empty path');
+      HM.log(2, 'Attempted to set rootDirectory to empty path');
       return;
     }
     // Update the game setting instead of a static property
     game.settings.set(HM.CONFIG.ID, 'artPickerRoot', path);
-    HM.log(3, `ROOT_DIRECTORY setting updated to: ${path}`);
+    HM.log(3, `rootDirectory setting updated to: ${path}`);
   }
 
-  static async selectCharacterArt(event, target) {
-    const rootDir = CharacterArtPicker.getRootDirectory();
-    HM.log(3, `CharacterArtPicker.selectCharacterArt using ROOT_DIRECTORY: ${rootDir}`);
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
+  /**
+   * Opens a file picker to select character portrait art
+   * @param {Event} _event - The triggering event
+   * @param {HTMLElement} _target - The element that triggered the event
+   * @returns {Promise<void>}
+   * @static
+   */
+  static async selectCharacterArt(_event, _target) {
+    const rootDir = CharacterArtPicker.rootDirectory;
+    HM.log(3, `CharacterArtPicker.selectCharacterArt using rootDirectory: ${rootDir}`);
 
     const inputField = document.getElementById('character-art-path');
     const currentPath = inputField.value || rootDir;
@@ -52,9 +81,16 @@ export class CharacterArtPicker {
     filepicker.render(true);
   }
 
-  static async selectTokenArt(event, target) {
-    const rootDir = CharacterArtPicker.getRootDirectory();
-    HM.log(3, `CharacterArtPicker.selectTokenArt using ROOT_DIRECTORY: ${rootDir}`);
+  /**
+   * Opens a file picker to select token art
+   * @param {Event} _event - The triggering event
+   * @param {HTMLElement} _target - The element that triggered the event
+   * @returns {Promise<void>}
+   * @static
+   */
+  static async selectTokenArt(_event, _target) {
+    const rootDir = CharacterArtPicker.rootDirectory;
+    HM.log(3, `CharacterArtPicker.selectTokenArt using rootDirectory: ${rootDir}`);
 
     const inputField = document.getElementById('token-art-path');
     const currentPath = inputField.value || rootDir;
@@ -80,9 +116,16 @@ export class CharacterArtPicker {
     filepicker.render(true);
   }
 
-  static async selectPlayerAvatar(event, target) {
-    const rootDir = CharacterArtPicker.getRootDirectory();
-    HM.log(3, `CharacterArtPicker.selectPlayerAvatar using ROOT_DIRECTORY: ${rootDir}`);
+  /**
+   * Opens a file picker to select player avatar art
+   * @param {Event} _event - The triggering event
+   * @param {HTMLElement} _target - The element that triggered the event
+   * @returns {Promise<void>}
+   * @static
+   */
+  static async selectPlayerAvatar(_event, _target) {
+    const rootDir = CharacterArtPicker.rootDirectory;
+    HM.log(3, `CharacterArtPicker.selectPlayerAvatar using rootDirectory: ${rootDir}`);
 
     const inputField = document.getElementById('player-avatar-path');
     const currentPath = inputField.value || rootDir;
@@ -108,7 +151,17 @@ export class CharacterArtPicker {
     filepicker.render(true);
   }
 
-  static _toggleTokenArtRow() {
+  /* -------------------------------------------- */
+  /*  Static Protected Methods                    */
+  /* -------------------------------------------- */
+
+  /**
+   * Toggles visibility of token art row based on checkbox state
+   * @returns {void}
+   * @protected
+   * @static
+   */
+  static _toggleTokenArtRowVisibility() {
     HM.log(3, 'Toggle token art row');
     const tokenArtRow = document.getElementById('token-art-row');
     const isLinked = document.getElementById('link-token-art').checked;

@@ -4,12 +4,12 @@
     <p>{{localize 'hm.app.race.preamble'}}</p>
     <hr />
 
-    <div class="form-row">
+    <div class="form-row flex items-center gap-sm mb-sm">
       <!-- Label for the race dropdown -->
       <label for='race-dropdown'>{{localize 'hm.app.race.select-label'}}</label>
 
       <!-- Race Dropdown -->
-      <select id='race-dropdown' name='race' data-dtype='String' aria-describedby='race-description'
+      <select id='race-dropdown' name='race' class="form-select" data-dtype='String' aria-describedby='race-description'
         aria-label='{{localize "hm.app.race.select-label"}}'>
         <option value=''>{{localize 'hm.app.race.select-placeholder'}}</option>
 
@@ -36,7 +36,7 @@
     </div>
 
     <!-- Enriched Description Section for the selected race -->
-    <div id='race-description' role='region' aria-live='polite' aria-atomic='true'>
+    <div id='race-description' class="overflow-vert-only" role='region' aria-live='polite' aria-atomic='true'>
       {{{enrichedDescription}}}
     </div>
   </fieldset>

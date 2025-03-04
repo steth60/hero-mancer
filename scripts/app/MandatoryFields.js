@@ -1,8 +1,12 @@
-import { HM } from '../hero-mancer.js';
+import { HM } from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   static DEFAULT_OPTIONS = {
     id: 'hero-mancer-settings-mandatory-fields',
     classes: ['hm-app'],
@@ -14,17 +18,13 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     position: {
       height: 'auto',
-      width: '400'
+      width: 'auto'
     },
     window: {
       icon: 'fa-solid fa-list-check',
       resizable: false
     }
   };
-
-  get title() {
-    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.mandatory-fields.menu.name')}`;
-  }
 
   static PARTS = {
     form: {
@@ -39,7 +39,27 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   };
 
-  async _prepareContext(options) {
+  /* -------------------------------------------- */
+  /*  Getters                                     */
+  /* -------------------------------------------- */
+
+  get title() {
+    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.mandatory-fields.menu.name')}`;
+  }
+
+  /* -------------------------------------------- */
+  /*  Protected Methods                           */
+  /* -------------------------------------------- */
+
+  /**
+   * Prepares context data for the mandatory fields configuration
+   * Loads current field settings and organizes them by category
+   * @param {object} _options - Application render options
+   * @returns {Promise<object>} Context data for template rendering
+   * @protected
+   * @override
+   */
+  async _prepareContext(_options) {
     // Get all valid form fields
     const fieldCategories = await this.getAllFormFields();
 
@@ -72,31 +92,14 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     };
   }
 
-  static async formHandler(event, form, formData) {
-    const requiresWorldReload = true; // Settings changes require world reload
-    try {
-      HM.log(3, 'Raw form data:', formData);
+  /* -------------------------------------------- */
+  /*  Public Methods                              */
+  /* -------------------------------------------- */
 
-      // Get all checkboxes from the form
-      const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-      const mandatoryFields = Array.from(checkboxes)
-        .filter((checkbox) => checkbox.checked)
-        .map((checkbox) => checkbox.name);
-
-      HM.log(3, 'Selected mandatory fields:', mandatoryFields);
-
-      // Save to settings
-      await game.settings.set(HM.CONFIG.ID, 'mandatoryFields', mandatoryFields);
-
-      this.constructor.reloadConfirm({ world: requiresWorldReload });
-
-      ui.notifications.info('hm.settings.mandatory-fields.saved', { localize: true });
-    } catch (error) {
-      HM.log(1, 'Error in MandatoryFields formHandler:', error);
-      ui.notifications.error('hm.settings.mandatory-fields.error-saving', { localize: true });
-    }
-  }
-
+  /**
+   * Retrieves all configurable form fields organized by category
+   * @returns {Promise<object>} Object containing categorized form fields
+   */
   async getAllFormFields() {
     const abilityFields = Object.entries(CONFIG.DND5E.abilities).map(([key, ability]) => ({
       key: `abilities[${key}]`,
@@ -161,16 +164,34 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     };
   }
 
-  static async checkMandatoryFields(form) {
-    const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
-    const submitButton = form.querySelector('.hm-app-footer-submit');
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
-    HM.log(3, 'Checking mandatory fields:', mandatoryFields);
+  /**
+   * Processes form submission for mandatory field settings
+   * @param {Event} _event - The form submission event
+   * @param {HTMLFormElement} form - The form element
+   * @param {FormDataExtended} formData - The processed form data
+   * @returns {Promise<void>}
+   * @static
+   */
+  static async formHandler(_event, form, formData) {
+    const requiresWorldReload = true; // Settings changes require world reload
+    try {
+      HM.log(3, 'Raw form data:', formData);
 
-    if (!submitButton || !mandatoryFields.length) {
-      HM.log(3, 'No submit button or mandatory fields found');
-      return true;
-    }
+      // Get all checkboxes from the form
+      const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+      const mandatoryFields = Array.from(checkboxes)
+        .filter((checkbox) => checkbox.checked)
+        .map((checkbox) => checkbox.name);
+
+      HM.log(3, 'Selected mandatory fields:', mandatoryFields);
+
+
+      // Save to settings
+      await game.settings.set(HM.CONFIG.ID, 'mandatoryFields', mandatoryFields);
 
     // Helper function to find label for an element
     const findLabel = (element) => {
@@ -186,153 +207,245 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
         return h3Element;
       }
 
-      return element
-        .closest('.form-row, .art-selection-row, .customization-row, .ability-block, .form-group, .trait-group, .personality-group, .description-group, .notes-group')
-        ?.querySelector('label, span.ability-label');
-    };
 
-    // Helper function to add indicator to a label/span
-    const addIndicator = (labelElement, isComplete = false) => {
-      // Remove existing indicator if any
-      const existingIcon = labelElement.querySelector('.mandatory-indicator');
-      if (existingIcon) {
-        // Only remove if the state changed
-        const currentIsComplete = existingIcon.classList.contains('fa-circle-check');
-        if (currentIsComplete === isComplete) {
-          return; // No change needed
-        }
-        existingIcon.remove();
-      }
+      this.constructor.reloadConfirm({ world: requiresWorldReload });
 
-      // Create new indicator
-      const icon = document.createElement('i');
-      if (isComplete) {
-        icon.className = 'fa-duotone fa-solid fa-circle-check mandatory-indicator';
-        icon.style.color = 'hsl(122deg 39% 49%)';
-        icon.style.textShadow = '0 0 8px hsla(122deg, 39%, 49%, 50%)';
-      } else {
-        icon.className = 'fa-duotone fa-solid fa-diamond-exclamation mandatory-indicator';
-        icon.style.color = 'hsl(0deg 100% 71%)';
-        icon.style.textShadow = '0 0 8px hsla(0deg, 100%, 71%, 50%)';
-      }
-      labelElement.prepend(icon);
-    };
+      ui.notifications.info('hm.settings.mandatory-fields.saved', { localize: true });
+    } catch (error) {
+      HM.log(1, 'Error in MandatoryFields formHandler:', error);
+      ui.notifications.error('hm.settings.mandatory-fields.error-saving', { localize: true });
+    }
+  }
 
-    // Handle mandatory field indicators
+  /**
+   * Validates the form against mandatory field requirements
+   * Updates UI to indicate incomplete fields and controls submit button state
+   * @param {HTMLElement} form - The form element to check
+   * @returns {Promise<boolean>} True if all mandatory fields are valid
+   * @static
+   */
+  static async checkMandatoryFields(form) {
+    const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
+    const submitButton = form.querySelector('.hm-app-footer-submit');
+
+    if (!submitButton || !mandatoryFields.length) return true;
+
+    // Collect all DOM updates
+    const mandatoryIndicatorUpdates = [];
+    const fieldCompletionUpdates = [];
+
+    // First pass: collect all field elements and mark as mandatory
+    const fieldElements = new Map();
     mandatoryFields.forEach((field) => {
       const element = form.querySelector(`[name="${field}"]`);
       if (!element) return;
 
-      element.classList.add('mandatory-field');
+      fieldElements.set(field, element);
 
+      // Add mandatory class if not already present
+      if (!element.classList.contains('mandatory-field')) {
+        mandatoryIndicatorUpdates.push(() => element.classList.add('mandatory-field'));
+      }
+
+      // Setup indicator on label
       if (field.startsWith('abilities[')) {
         const abilityBlock = element.closest('.ability-block');
         const label = abilityBlock?.querySelector('.ability-label') || abilityBlock?.querySelector('label');
-        if (label) addIndicator(label);
+        if (label) {
+          mandatoryIndicatorUpdates.push(() => this.addIndicator(label, false));
+        }
       } else {
-        const label = findLabel(element);
-        if (label) addIndicator(label);
+        const label = this.findAssociatedLabel(element);
+        if (label) {
+          mandatoryIndicatorUpdates.push(() => this.addIndicator(label, false));
+        }
       }
     });
 
-    // Check each mandatory field
-    const missingFields = mandatoryFields.filter((field) => {
-      const element = form.querySelector(`[name="${field}"]`);
-      if (!element) {
-        HM.log(2, `Could not find element for mandatory field: ${field}`);
-        return false;
-      }
+    // Apply initial mandatory field marking
+    if (mandatoryIndicatorUpdates.length > 0) {
+      requestAnimationFrame(() => {
+        mandatoryIndicatorUpdates.forEach((update) => update());
+      });
+    }
 
+    // Second pass: check field completion status
+    const missingFields = [];
+    fieldElements.forEach((element, field) => {
       let isComplete = false;
 
       if (field.startsWith('abilities[')) {
         const abilityBlock = element.closest('.ability-block');
-        if (abilityBlock) {
-          // Standard Array - single dropdown
-          if (element.classList.contains('ability-dropdown') && !abilityBlock.classList.contains('point-buy')) {
-            isComplete = element.value && element.value !== '';
-          }
-          // Point Buy - hidden input with control buttons
-          else if (element.type === 'hidden' && abilityBlock.classList.contains('point-buy')) {
-            const score = parseInt(element.value);
-            isComplete = !isNaN(score) && score >= 8;
-          }
-          // Manual - dropdown + number input
-          else {
-            const dropdown = abilityBlock.querySelector('.ability-dropdown');
-            const scoreInput = abilityBlock.querySelector('.ability-score');
-            isComplete = dropdown?.value && scoreInput?.value && dropdown.value !== '' && scoreInput.value !== '';
-          }
+        isComplete = this.isAbilityFieldComplete(element, abilityBlock);
 
-          // Update ability block indicator
-          const label = abilityBlock.querySelector('.ability-label') || abilityBlock.querySelector('label');
-          if (label) addIndicator(label, isComplete);
+        const label = abilityBlock.querySelector('.ability-label') || abilityBlock.querySelector('label');
+        if (label) {
+          fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
         }
       } else {
-        const type = element?.localName || element?.type || '';
-        const value = element?.value;
-        const checked = element?.checked;
-        const emptyStates = ['', '<p></p>', '<p><br></p>', '<p><br class="ProseMirror-trailingBreak"></p>'];
-        const proseMirrorValue = value || '';
-        const editorContent = element.querySelector('.editor-content.ProseMirror')?.innerHTML || '';
-
-        HM.log(3, 'Checking mandatory fields:', { element: element, type: type, value: value, checked: checked });
-
-        switch (type) {
-          case 'checkbox':
-            isComplete = checked;
-            break;
-          case 'text':
-          case 'textarea':
-            isComplete = value && value.trim() !== '';
-            break;
-          case 'color-picker':
-            isComplete = value && value !== '#000000';
-            break;
-          case 'select-one':
-            isComplete = value && value !== '';
-            break;
-          case 'prose-mirror':
-            isComplete = !emptyStates.includes(proseMirrorValue) && proseMirrorValue.trim() !== '' && !emptyStates.includes(editorContent) && editorContent.trim() !== '';
-            HM.log(3, 'Checking prose-mirror content:', {
-              value: proseMirrorValue,
-              editorContent: editorContent,
-              isComplete: isComplete
-            });
-            break;
-          default:
-            isComplete = value && value.trim() !== '';
-            break;
+        isComplete = this.isFormFieldComplete(element);
+        const label = this.findAssociatedLabel(element);
+        if (label) {
+          fieldCompletionUpdates.push(() => this.addIndicator(label, isComplete));
         }
-
-        // Update regular field indicator
-        const label = findLabel(element);
-        if (label) addIndicator(label, isComplete);
       }
 
-      element.classList.toggle('complete', isComplete);
-      return !isComplete;
+      fieldCompletionUpdates.push(() => element.classList.toggle('complete', isComplete));
+
+      if (!isComplete) {
+        missingFields.push(field);
+      }
     });
 
-    const isValid = missingFields.length === 0;
-    HM.log(3, `Form validation result: ${isValid}`, {
-      missingFields,
-      submitButtonDisabled: !isValid
+    // Apply all field completion updates at once
+    requestAnimationFrame(() => {
+      fieldCompletionUpdates.forEach((update) => update());
+
+      // Update submit button state
+      const isValid = missingFields.length === 0;
+      submitButton.disabled = !isValid;
+
+      if (!isValid) {
+        submitButton['data-tooltip'] = game.i18n.format('hm.errors.missing-mandatory-fields', {
+          fields: missingFields.join(', ')
+        });
+      } else {
+        submitButton.title = game.i18n.localize('hm.app.save-description');
+      }
     });
 
-    submitButton.disabled = !isValid;
-
-    if (!isValid) {
-      submitButton['data-tooltip'] = game.i18n.format('hm.errors.missing-mandatory-fields', {
-        fields: missingFields.join(', ')
-      });
-    } else {
-      submitButton.title = game.i18n.localize('hm.app.save-description');
-    }
-
-    return isValid;
+    return missingFields.length === 0;
   }
 
+  /**
+   * Checks if an ability score field is complete based on the current roll method
+   * @param {HTMLElement} element - The ability input element
+   * @param {HTMLElement} abilityBlock - The parent ability block element
+   * @returns {boolean} Whether the field is complete
+   * @static
+   */
+  static isAbilityFieldComplete(element, abilityBlock) {
+    if (!abilityBlock) return false;
+
+    // Standard Array - single dropdown
+    if (element.classList.contains('ability-dropdown') && !abilityBlock.classList.contains('point-buy')) {
+      return element.value && element.value !== '';
+    }
+    // Point Buy - hidden input with control buttons
+    else if (element.type === 'hidden' && abilityBlock.classList.contains('point-buy')) {
+      const score = parseInt(element.value);
+      return !isNaN(score) && score >= 8;
+    }
+    // Manual - dropdown + number input
+    else {
+      const dropdown = abilityBlock.querySelector('.ability-dropdown');
+      const scoreInput = abilityBlock.querySelector('.ability-score');
+      return dropdown?.value && scoreInput?.value && dropdown.value !== '' && scoreInput.value !== '';
+    }
+  }
+
+  /**
+   * Checks if a form field contains valid content
+   * @param {HTMLElement} element - The form field to check
+   * @returns {boolean} Whether the field has valid content
+   * @static
+   */
+  static isFormFieldComplete(element) {
+    if (!element) return false;
+
+    const type = element?.localName || element?.type || '';
+    const value = element?.value;
+    const checked = element?.checked;
+    const emptyStates = ['', '<p></p>', '<p><br></p>', '<p><br class="ProseMirror-trailingBreak"></p>'];
+    const proseMirrorValue = value || '';
+    const editorContent = element.querySelector('.editor-content.ProseMirror')?.innerHTML || '';
+    const isComplete = !emptyStates.includes(proseMirrorValue) && proseMirrorValue.trim() !== '' && !emptyStates.includes(editorContent) && editorContent.trim() !== '';
+
+    // HM.log(3, 'Checking mandatory fields:', { element: element, type: type, value: value, checked: checked });
+
+    switch (type) {
+      case 'checkbox':
+        return checked;
+      case 'text':
+      case 'textarea':
+        return value && value.trim() !== '';
+      case 'color-picker':
+        return value && value !== '#000000';
+      case 'select-one':
+        return value && value !== '';
+      case 'prose-mirror':
+        HM.log(3, 'Checking prose-mirror content:', {
+          value: proseMirrorValue,
+          editorContent: editorContent,
+          isComplete: isComplete
+        });
+        return isComplete;
+      default:
+        return value && value.trim() !== '';
+    }
+  }
+
+  /**
+   * Finds the label element associated with a form field
+   * Handles special cases like ProseMirror editors and various form layouts
+   * @param {HTMLElement} element - The form element to find a label for
+   * @returns {HTMLElement|null} The associated label element or null if not found
+   * @static
+   */
+  static findAssociatedLabel(element) {
+    // HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
+    if (element.localName === 'prose-mirror') {
+      HM.log(3, 'Finding label for ProseMirror element:', { element: element });
+      let h3Element = element.closest('.notes-section')?.querySelector('h3');
+      HM.log(3, 'Found h3 element:', { h3Element: h3Element });
+      return h3Element;
+    }
+
+    return element
+      .closest('.form-row, .art-selection-row, .customization-row, .ability-block, .form-group, .trait-group, .personality-group, .description-group, .notes-group')
+      ?.querySelector('label, span.ability-label');
+  }
+
+  /**
+   * Adds a visual indicator to show field completion status
+   * Creates or updates an icon prepended to the label
+   * @param {HTMLElement} labelElement - The label element to modify
+   * @param {boolean} [isComplete=false] - Whether the associated field is complete
+   * @static
+   */
+  static addIndicator(labelElement, isComplete = false) {
+    // Remove existing indicator if any
+    const existingIcon = labelElement.querySelector('.mandatory-indicator');
+    if (existingIcon) {
+      // Only remove if the state changed
+      const currentIsComplete = existingIcon.classList.contains('fa-circle-check');
+      if (currentIsComplete === isComplete) {
+        return; // No change needed
+      }
+      existingIcon.remove();
+    }
+
+    // Create new indicator
+    const icon = document.createElement('i');
+    if (isComplete) {
+      icon.className = 'fa-duotone fa-solid fa-circle-check mandatory-indicator';
+      icon.style.color = 'hsl(122deg 39% 49%)';
+      icon.style.textShadow = '0 0 8px hsla(122deg, 39%, 49%, 50%)';
+    } else {
+      icon.className = 'fa-duotone fa-solid fa-diamond-exclamation mandatory-indicator';
+      icon.style.color = 'hsl(0deg 100% 71%)';
+      icon.style.textShadow = '0 0 8px hsla(0deg, 100%, 71%, 50%)';
+    }
+    labelElement.prepend(icon);
+  }
+
+  /**
+   * Shows a confirmation dialog for reloading the world/application
+   * @param {object} options - Configuration options
+   * @param {boolean} options.world - Whether to reload the entire world
+   * @returns {Promise<void>}
+   * @static
+   */
   static async reloadConfirm({ world = false } = {}) {
     const reload = await DialogV2.confirm({
       id: 'reload-world-confirm',

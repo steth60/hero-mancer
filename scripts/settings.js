@@ -1,5 +1,4 @@
-import { HM } from './hero-mancer.js';
-import { CharacterArtPicker, CustomCompendiums, DiceRolling, MandatoryFields, StatRoller } from './utils/index.js';
+import { CharacterArtPicker, CustomCompendiums, DiceRolling, HM, MandatoryFields, StatRoller } from './utils/index.js';
 
 /**
  * Main registration function that initializes all module settings.
@@ -27,7 +26,7 @@ export function registerSettings() {
     type: String,
     default: '/',
     onChange: (value) => {
-      CharacterArtPicker.setRootDirectory(value);
+      CharacterArtPicker.rootDirectory = value;
     }
   });
 
@@ -54,7 +53,7 @@ export function registerSettings() {
   game.settings.registerMenu(HM.CONFIG.ID, 'customCompendiumMenu', {
     name: 'hm.settings.custom-compendiums.menu.name',
     hint: 'hm.settings.custom-compendiums.menu.hint',
-    icon: 'fa-solid fa-bars',
+    icon: 'fa-solid fa-atlas',
     label: 'hm.settings.configure-compendiums',
     type: CustomCompendiums,
     restricted: true,
@@ -147,8 +146,8 @@ export function registerSettings() {
     type: Object,
     default: {
       standardArray: true,
-      manual: true,
-      pointBuy: true
+      pointBuy: true,
+      manual: true
     }
   });
 

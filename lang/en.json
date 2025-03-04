@@ -171,15 +171,26 @@
       }
     },
     "errors": {
+      "advancement-process": "There was an error applying character advancements. Your character may be incomplete.",
+      "advancement-timeout": "Advancement process timed out. Please check your character sheet for completeness.",
+      "cache-error": "Error loading cached data. Character creation data will be refreshed.",
+      "cleanup-failed": "Failed to properly clean up some resources. You may need to refresh the page if you experience issues.",
+      "description-update": "Failed to update item description.",
+      "dropdown-initialization": "Failed to initialize dropdown options.",
+      "equipment-rendering": "There was an error loading equipment. Please try a different selection or refresh the application.",
+      "event-handler-error": "An error occurred while processing an event.",
       "failed-compendium-retrieval": "Failed to retrieve documents from compendium pack: {type}",
-      "fetch-fail": "An error occurred while fetching selected items. Please try again.",
+      "form-submission": "There was an error submitting the form. Please try again.",
       "missing-mandatory-fields": "Required fields missing: {fields}",
       "no-background": "The selected background could not be found.",
       "no-class": "The selected class could not be found.",
       "no-race": "The selected race could not be found.",
+      "roll-failed": "Failed to roll ability score. Please try again.",
+      "save-options-failed": "Failed to save your options. Please try again.",
       "select-background": "Please select a background before submitting.",
       "select-class": "Please select a class before submitting.",
-      "select-race": "Please select a race before submitting."
+      "select-race": "Please select a race before submitting.",
+      "tab-navigation": "There was an error navigating to the selected tab."
     },
     "settings": {
       "alignments": {
@@ -325,6 +336,9 @@
     },
     "unknown": "unknown {type}",
     "warnings": {
+      "advancement-failed": "Failed to apply {item} advancement. Your character may be missing some features.",
+      "advancement-timeout": "The advancement process for {item} took too long and was skipped.",
+      "partial-cleanup": "Some resources could not be properly cleaned up.",
       "select-background": "You must select a valid background first."
     }
   }

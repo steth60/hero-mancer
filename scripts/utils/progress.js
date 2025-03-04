@@ -1,15 +1,20 @@
-import { HM } from '../hero-mancer.js';
+import { HM } from '../utils/index.js';
 
 /**
  * Manages progress bar for Hero Mancer
  * @class
  */
 export class ProgressBar {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
   /**
    * Updates the header progress bar and title
    * @param {HTMLElement} element - The application element
    * @param {number} completedSections - Number of completed sections
    * @param {number} totalSections - Total number of sections
+   * @static
    */
   static updateHeader(element, completedSections, totalSections) {
     if (!element || typeof completedSections !== 'number' || typeof totalSections !== 'number') return;
@@ -27,10 +32,71 @@ export class ProgressBar {
   }
 
   /**
+   * Clears the progress bar styling from the header
+   * @param {HTMLElement} element - The application element
+   * @static
+   */
+  static clearHeader(element) {
+    const headerElement = element?.querySelector('.window-header');
+    if (!headerElement) return;
+
+    headerElement.style.background = '';
+
+    const titleElement = headerElement.querySelector('.window-title');
+    if (titleElement && titleElement.dataset.baseTitle) {
+      titleElement.textContent = titleElement.dataset.baseTitle;
+      delete titleElement.dataset.baseTitle;
+    }
+  }
+
+  /**
+   * Updates progress based on form data
+   * @param {HTMLElement} element - The application element
+   * @param {HTMLFormElement} form - The form data
+   * @returns {number} The calculated completion percentage
+   * @static
+   */
+  static calculateAndUpdateProgress(element, form) {
+    if (!element || !form) return;
+
+    try {
+      const [filledCount, totalFields] = this.#calculateCompletionFromForm(form);
+      const percentage = (filledCount / totalFields) * 100;
+
+      //  HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${percentage.toFixed(2)}%)`);
+
+      // Batch DOM updates
+      requestAnimationFrame(() => {
+        // Update progress bar
+        const hmHeader = element.querySelector('.hm-app-header');
+        if (hmHeader) {
+          hmHeader.style.setProperty('--progress-percent', `${percentage}%`);
+        }
+
+        // Update progress text
+        const progressText = element.querySelector('.wizard-progress-text');
+        if (progressText) {
+          progressText.textContent = `${Math.round(percentage)}%`;
+        }
+      });
+
+      return percentage;
+    } catch (err) {
+      HM.log(1, 'Error processing form progress:', err);
+      return 0;
+    }
+  }
+
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
+
+  /**
    * Updates the header gradient based on progress
    * @param {HTMLElement} headerElement - The header element
    * @param {number} progressPercentage - Current progress percentage
    * @private
+   * @static
    */
   static #updateHeaderGradient(headerElement, progressPercentage) {
     // Starting color: rgb(69, 99, 181) - blue
@@ -58,6 +124,7 @@ export class ProgressBar {
    * @param {HTMLElement} headerElement - The header element
    * @param {number} progressPercentage - Current progress percentage
    * @private
+   * @static
    */
   static #updateHeaderTitle(headerElement, progressPercentage) {
     const titleElement = headerElement.querySelector('.window-title');
@@ -69,62 +136,13 @@ export class ProgressBar {
   }
 
   /**
-   * Clears the progress bar styling from the header
-   * @param {HTMLElement} element - The application element
-   */
-  static clearHeader(element) {
-    const headerElement = element?.querySelector('.window-header');
-    if (!headerElement) return;
-
-    headerElement.style.background = '';
-
-    const titleElement = headerElement.querySelector('.window-title');
-    if (titleElement && titleElement.dataset.baseTitle) {
-      titleElement.textContent = titleElement.dataset.baseTitle;
-      delete titleElement.dataset.baseTitle;
-    }
-  }
-
-  /**
-   * Updates progress based on form data
-   * @param {HTMLElement} element - The application element
-   * @param {FormData} formData - The form data
-   */
-  static updateProgress(element, form) {
-    if (!element || !form) return;
-
-    try {
-      const [filledCount, totalFields] = this.#processFormData(form);
-      const percentage = (filledCount / totalFields) * 100;
-
-      HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${percentage.toFixed(2)}%)`);
-
-      // Update progress bar
-      const hmHeader = element.querySelector('.hm-app-header');
-      if (hmHeader) {
-        hmHeader.style.setProperty('--progress-percent', `${percentage}%`);
-      }
-
-      // Update progress text
-      const progressText = element.querySelector('.wizard-progress-text');
-      if (progressText) {
-        progressText.textContent = `${Math.round(percentage)}%`;
-      }
-
-      return percentage;
-    } catch (err) {
-      HM.log(1, 'Error processing form progress:', err);
-      return 0;
-    }
-  }
-
-  /**
    * Processes form data to determine completion
    * @param {HTMLElement} form - The form element
    * @returns {[number, number]} - Array containing [filledFields, totalFields]
    * @private
+   * @static
    */
-  static #processFormData(form) {
+  static #calculateCompletionFromForm(form) {
     let totalFields = 0;
     let filledCount = 0;
 
@@ -143,17 +161,8 @@ export class ProgressBar {
       } else if (input.type === 'select-one') {
         isFilled = Boolean(input.value);
       } else {
-        isFilled = this.#isFieldFilled(input.name, input.value, form);
+        isFilled = this.#isFormFieldPopulated(input.name, input.value, form);
       }
-
-      // Log field state
-      HM.log(3, 'Field status check:', {
-        name: input.name,
-        type: input.type || input.tagName.toLowerCase(),
-        value: input.value,
-        checked: input.checked,
-        isFilled: isFilled
-      });
 
       if (isFilled) filledCount++;
     });
@@ -189,11 +198,6 @@ export class ProgressBar {
       });
     }
 
-    HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${((filledCount / totalFields) * 100).toFixed(2)}%)`, {
-      totalFields,
-      filledCount
-    });
-
     return [filledCount, totalFields];
   }
 
@@ -204,8 +208,9 @@ export class ProgressBar {
    * @param {HTMLElement} form - The form element
    * @returns {boolean} - Whether the field is considered filled
    * @private
+   * @static
    */
-  static #isFieldFilled(key, value, form) {
+  static #isFormFieldPopulated(key, value, form) {
     // Handle starting wealth toggle first
     if (key === 'use-starting-wealth') {
       return true; // Always count this as filled since it's a boolean toggle
@@ -213,7 +218,7 @@ export class ProgressBar {
 
     // Handle abilities fields
     if (key.match(/^abilities\[.*]$/)) {
-      const isFilled = this.#isAbilityFieldFilled(value, form);
+      const isFilled = this.#isAbilityScoreFieldPopulated(value, form);
       HM.log(3, `Ability field "${key}" filled: ${isFilled}`);
       return isFilled;
     }
@@ -249,8 +254,9 @@ export class ProgressBar {
    * @param {HTMLElement} form - The form element
    * @returns {boolean} - Whether the ability field is considered filled
    * @private
+   * @static
    */
-  static #isAbilityFieldFilled(value, form) {
+  static #isAbilityScoreFieldPopulated(value, form) {
     const rollMethodSelect = form.querySelector('#roll-method');
     const isPointBuy = rollMethodSelect?.value === 'pointBuy';
 

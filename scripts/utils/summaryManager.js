@@ -1,23 +1,32 @@
-import { HM } from '../hero-mancer.js';
+import { HM, MutationObserverRegistry } from './index.js';
 
 /**
  * Manages RollTable interactions for character backgrounds and characteristics.
+ * @class
  */
-export class TableManager {
+class TableManager {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   static currentTables = new Map();
 
   static tableTypes = ['Personality Traits', 'Ideals', 'Bonds', 'Flaws'];
 
-  static _extractTableIds(description) {
-    const uuidPattern = /@UUID\[Compendium\.dnd5e\.tables\.RollTable\.(.*?)]/g;
-    const matches = [...description.matchAll(uuidPattern)];
-    return matches.map((match) => match[1]);
-  }
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
-  static async initializeTablesForBackground(background) {
+  /**
+   * Loads and initializes roll tables for a selected background
+   * @param {object} background - Background document
+   * @returns {Promise<void>}
+   * @static
+   */
+  static async loadRollTablesForBackground(background) {
     if (!background) {
       HM.log(2, 'No background provided for table initialization');
-      TableManager.updateUIForMissingTables(null);
+      TableManager.updateRollButtonsAvailability(null);
       return;
     }
 
@@ -31,7 +40,7 @@ export class TableManager {
 
       if (!matches.length) {
         HM.log(3, 'No RollTable UUIDs found in background description, hiding UI elements.');
-        TableManager.updateUIForMissingTables(null);
+        TableManager.updateRollButtonsAvailability(null);
         return;
       }
 
@@ -66,26 +75,35 @@ export class TableManager {
 
       const validTables = tables.filter((table) => table !== null);
       if (validTables.length) {
-        for (const table of validTables) {
-          try {
-            await table.resetResults();
-          } catch (error) {
-            HM.log(1, `Error resetting table ${table.id}:`, error);
-          }
-        }
+        // Process all table resets in parallel
+        await Promise.all(
+          validTables.map(async (table) => {
+            try {
+              await table.resetResults();
+            } catch (error) {
+              HM.log(1, `Error resetting table ${table.id}:`, error);
+            }
+          })
+        );
+
         this.currentTables.set(background.id, validTables);
         HM.log(3, 'Tables initialized and stored for background:', background.id);
       }
 
       // Update UI based on which table types were found
-      TableManager.updateUIForMissingTables(foundTableTypes);
+      TableManager.updateRollButtonsAvailability(foundTableTypes);
     } catch (error) {
       HM.log(1, 'Error initializing tables for background:', error);
-      TableManager.updateUIForMissingTables(null);
+      TableManager.updateRollButtonsAvailability(null);
     }
   }
 
-  static updateUIForMissingTables(foundTableTypes) {
+  /**
+   * Updates roll button availability based on found table types
+   * @param {Set<string>|null} foundTableTypes - Set of found table types or null if none
+   * @static
+   */
+  static updateRollButtonsAvailability(foundTableTypes) {
     const typeToFieldMap = {
       'Personality Traits': 'traits',
       'Ideals': 'ideals',
@@ -93,23 +111,43 @@ export class TableManager {
       'Flaws': 'flaws'
     };
 
+    // Collect all DOM updates
+    const updates = [];
+
     Object.entries(typeToFieldMap).forEach(([tableType, fieldName]) => {
       const container = document.querySelector(`.personality-group textarea[name="${fieldName}"]`);
       const rollButton = document.querySelector(`.personality-group button[data-table="${fieldName}"]`);
 
       if (container && rollButton) {
         const hasTable = foundTableTypes?.has(tableType);
+        const newPlaceholder = game.i18n.localize(hasTable ? `hm.app.finalize.${fieldName}-placeholder` : `hm.app.finalize.${fieldName}-placeholder-alt`);
+        const newDisplay = hasTable ? 'block' : 'none';
 
-        // Update placeholder text
-        container.placeholder = game.i18n.localize(hasTable ? `hm.app.finalize.${fieldName}-placeholder` : `hm.app.finalize.${fieldName}-placeholder-alt`);
+        // Only queue updates if values are changing
+        if (container.placeholder !== newPlaceholder) {
+          updates.push(() => (container.placeholder = newPlaceholder));
+        }
 
-        // Show/hide roll button
-        rollButton.style.display = hasTable ? 'block' : 'none';
+        if (rollButton.style.display !== newDisplay) {
+          updates.push(() => (rollButton.style.display = newDisplay));
+        }
       }
     });
+
+    // Apply all updates at once
+    if (updates.length) {
+      requestAnimationFrame(() => updates.forEach((update) => update()));
+    }
   }
 
-  static async rollForCharacteristic(backgroundId, characteristicType) {
+  /**
+   * Rolls on a background characteristic table and returns result
+   * @param {string} backgroundId - Background document ID
+   * @param {string} characteristicType - Type of characteristic to roll for
+   * @returns {Promise<string|null>} The roll result or null if unavailable
+   * @static
+   */
+  static async rollOnBackgroundCharacteristicTable(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
     HM.log(3, 'Found tables for background:', tables);
 
@@ -152,7 +190,14 @@ export class TableManager {
     }
   }
 
-  static isTableExhausted(backgroundId, characteristicType) {
+  /**
+   * Checks if all results in a table have been drawn
+   * @param {string} backgroundId - Background document ID
+   * @param {string} characteristicType - Type of characteristic to check
+   * @returns {boolean} True if all results are drawn
+   * @static
+   */
+  static areAllTableResultsDrawn(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
     if (!tables) return true;
 
@@ -168,6 +213,12 @@ export class TableManager {
     return availableResults.length === 0;
   }
 
+  /**
+   * Resets tables to make all results available again
+   * @param {string} backgroundId - Background document ID
+   * @returns {Promise<void>}
+   * @static
+   */
   static async resetTables(backgroundId) {
     const tables = this.currentTables.get(backgroundId);
     if (!tables) return;
@@ -178,92 +229,116 @@ export class TableManager {
       console.error('Error resetting tables:', error);
     }
   }
+
+  /* -------------------------------------------- */
+  /*  Static Protected Methods                    */
+  /* -------------------------------------------- */
+
+  /**
+   * Extracts roll table UUIDs from description text
+   * @param {string} description - Description text to parse
+   * @returns {string[]} Array of table UUIDs
+   * @static
+   * @protected
+   */
+  static _parseTableUuidsFromDescription(description) {
+    const uuidPattern = /@UUID\[Compendium\.dnd5e\.tables\.RollTable\.(.*?)]/g;
+    const matches = [...description.matchAll(uuidPattern)];
+    return matches.map((match) => match[1]);
+  }
 }
 
 /**
  * Manages summary updates and UI interactions for the character creation process.
+ * @class
  */
 export class SummaryManager {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
+  /**
+   * Initializes all summary-related event listeners and observers
+   * @static
+   */
   static initializeSummaryListeners() {
+    // Clean up existing listeners and observers first
+    this.cleanup();
+
     const raceDropdown = document.querySelector('#race-dropdown');
     const classDropdown = document.querySelector('#class-dropdown');
     const backgroundDropdown = document.querySelector('#background-dropdown');
     const equipmentContainer = document.querySelector('#equipment-container');
     const abilityBlocks = document.querySelectorAll('.ability-block');
     const proseMirror = document.querySelector('prose-mirror[name="backstory"]');
+
     this.initializePortrait();
     this.initializeRollButtons();
 
     HM.log(3, 'Found dropdowns:', { race: raceDropdown, class: classDropdown, background: backgroundDropdown });
 
     if (raceDropdown) {
-      raceDropdown.addEventListener('change', (event) => {
+      raceDropdown._summaryChangeHandler = (event) => {
         HM.log(3, 'Race dropdown changed:', event.target.value);
         this.updateClassRaceSummary();
         this.updateEquipmentSummary();
-      });
+      };
+      raceDropdown.addEventListener('change', raceDropdown._summaryChangeHandler);
     }
 
     if (classDropdown) {
-      classDropdown.addEventListener('change', (event) => {
+      classDropdown._summaryChangeHandler = (event) => {
         this.updateClassRaceSummary();
         this.updateEquipmentSummary();
-      });
+      };
+      classDropdown.addEventListener('change', classDropdown._summaryChangeHandler);
     }
 
     if (backgroundDropdown) {
-      backgroundDropdown.addEventListener('change', (event) => {
+      backgroundDropdown._summaryChangeHandler = (event) => {
         this.updateBackgroundSummary();
         this.updateEquipmentSummary();
-      });
+      };
+      backgroundDropdown.addEventListener('change', backgroundDropdown._summaryChangeHandler);
     }
 
     if (equipmentContainer) {
-      equipmentContainer.addEventListener('change', () => {
-        this.updateEquipmentSummary();
-      });
-      const observer = new MutationObserver(() => this.updateEquipmentSummary());
-      observer.observe(equipmentContainer, { childList: true, subtree: true });
+      // Register equipment container observer with MutationObserverRegistry
+      MutationObserverRegistry.register('summary-equipment', equipmentContainer, { childList: true, subtree: true }, () => this.updateEquipmentSummary());
     }
 
     if (abilityBlocks) {
-      abilityBlocks.forEach((block) => {
+      abilityBlocks.forEach((block, index) => {
         const currentScore = block.querySelector('.current-score');
         if (currentScore) {
-          const observer = new MutationObserver(() => this.updateAbilitiesSummary());
-          observer.observe(currentScore, {
-            childList: true,
-            characterData: true,
-            subtree: true
-          });
+          // Register ability score observer with MutationObserverRegistry
+          MutationObserverRegistry.register(`summary-ability-${index}`, currentScore, { childList: true, characterData: true, subtree: true }, () => this.updateAbilitiesSummary());
         }
 
         const otherInputs = block.querySelectorAll('.ability-dropdown, .ability-score');
         otherInputs.forEach((input) => {
-          input.addEventListener('change', () => this.updateAbilitiesSummary());
+          input._summarySummaryHandler = () => this.updateAbilitiesSummary();
+          input.addEventListener('change', input._summarySummaryHandler);
         });
       });
     }
 
-    /** There might be a better way of doing this... */
     if (proseMirror) {
-      const observer = new MutationObserver((mutations) => {
+      // Register proseMirror observer with MutationObserverRegistry
+      MutationObserverRegistry.register('summary-backstory', proseMirror, { childList: true, characterData: true, subtree: true, attributes: true }, (mutations) => {
         const hasContent = proseMirror.innerHTML.trim() !== '';
-
         if (hasContent) {
           proseMirror.dispatchEvent(new Event('change', { bubbles: true }));
         }
       });
-
-      observer.observe(proseMirror, {
-        childList: true,
-        characterData: true,
-        subtree: true,
-        attributes: true
-      });
     }
   }
 
+  /**
+   * Updates the background summary text and formatting
+   * @returns {Promise<void>}
+   * @static
+   */
   static async updateBackgroundSummary() {
     const backgroundSelect = document.querySelector('#background-dropdown');
     const summary = document.querySelector('.background-summary');
@@ -294,6 +369,11 @@ export class SummaryManager {
     summary.innerHTML = await TextEditor.enrichHTML(content);
   }
 
+  /**
+   * Updates the class and race summary text
+   * @returns {Promise<void>}
+   * @static
+   */
   static async updateClassRaceSummary() {
     const raceSelect = document.querySelector('#race-dropdown');
     const classSelect = document.querySelector('#class-dropdown');
@@ -323,6 +403,11 @@ export class SummaryManager {
     summary.innerHTML = await TextEditor.enrichHTML(content);
   }
 
+  /**
+   * Updates the equipment summary with selected items
+   * @returns {Promise<void>}
+   * @static
+   */
   static async updateEquipmentSummary() {
     const priorityTypes = ['weapon', 'armor', 'shield'];
 
@@ -364,6 +449,11 @@ export class SummaryManager {
     }
   }
 
+  /**
+   * Updates the abilities summary based on highest scores
+   * @returns {Promise<void>}
+   * @static
+   */
   static async updateAbilitiesSummary() {
     const abilityBlocks = document.querySelectorAll('.ability-block');
     const abilityScores = {};
@@ -403,6 +493,11 @@ export class SummaryManager {
     }
   }
 
+  /**
+   * Updates character portrait with provided image path
+   * @param {string} imagePath - Path to character image
+   * @instance
+   */
   updateCharacterPortrait(imagePath) {
     const portraitImg = document.querySelector('.character-portrait img');
     if (portraitImg) {
@@ -410,6 +505,10 @@ export class SummaryManager {
     }
   }
 
+  /**
+   * Initializes character portrait with default image
+   * @static
+   */
   static initializePortrait() {
     const portraitContainer = document.querySelector('.character-portrait');
     if (portraitContainer) {
@@ -420,6 +519,10 @@ export class SummaryManager {
       const portraitImg = portraitContainer.querySelector('img');
       if (portraitImg) {
         portraitImg.src = defaultImage;
+
+        // Check if dark mode is active and apply inversion if needed
+        const isDarkMode = game.settings.get('core', 'colorScheme') === 'dark';
+        this.applyDarkModeToImage(portraitImg, isDarkMode);
       }
 
       // Add name and art path update handling
@@ -433,15 +536,39 @@ export class SummaryManager {
         }
         if (portraitImg && artInput) {
           portraitImg.src = artInput.value || defaultImage;
+
+          // Reapply dark mode treatment when image changes
+          const isDarkMode = game.settings.get('core', 'colorScheme') === 'dark';
+          this.applyDarkModeToImage(portraitImg, isDarkMode);
         }
       };
 
       nameInput?.addEventListener('change', updatePortrait);
       artInput?.addEventListener('change', updatePortrait);
       updatePortrait();
+
+      // Listen for color scheme changes
+      Hooks.on('colorSchemeChange', (scheme) => {
+        if (portraitImg) {
+          this.applyDarkModeToImage(portraitImg, scheme === 'dark');
+        }
+      });
     }
   }
 
+  // Helper method to apply or remove dark mode treatment to images
+  static applyDarkModeToImage(imgElement, isDarkMode) {
+    if (isDarkMode) {
+      imgElement.style.filter = 'invert(1)';
+    } else {
+      imgElement.style.filter = 'none';
+    }
+  }
+
+  /**
+   * Sets up roll buttons for background characteristics
+   * @static
+   */
   static initializeRollButtons() {
     const rollButtons = document.querySelectorAll('.roll-btn');
     const backgroundSelect = document.querySelector('#background-dropdown');
@@ -449,12 +576,21 @@ export class SummaryManager {
     HM.log(3, 'Found roll buttons:', rollButtons);
     HM.log(3, 'Found background select:', backgroundSelect);
 
-    rollButtons.forEach((button) => (button.disabled = true));
+    // Batch disable all buttons initially
+    if (rollButtons.length) {
+      requestAnimationFrame(() => {
+        rollButtons.forEach((button) => (button.disabled = true));
+      });
+    }
 
     backgroundSelect?.addEventListener('change', (event) => {
       const backgroundId = event.target.value.split(' (')[0];
       HM.log(3, 'Background changed to:', backgroundId);
-      rollButtons.forEach((button) => (button.disabled = !backgroundId));
+
+      // Batch button updates
+      requestAnimationFrame(() => {
+        rollButtons.forEach((button) => (button.disabled = !backgroundId));
+      });
     });
 
     rollButtons.forEach((button) => {
@@ -477,7 +613,7 @@ export class SummaryManager {
           return;
         }
 
-        const result = await TableManager.rollForCharacteristic(backgroundId, tableType);
+        const result = await TableManager.rollOnBackgroundCharacteristicTable(backgroundId, tableType);
         HM.log(3, 'Roll result:', result);
 
         if (result) {
@@ -486,7 +622,7 @@ export class SummaryManager {
           // Trigger change event on textarea to update form data
           textarea.dispatchEvent(new Event('change', { bubbles: true }));
 
-          if (TableManager.isTableExhausted(backgroundId, tableType)) {
+          if (TableManager.areAllTableResultsDrawn(backgroundId, tableType)) {
             button.disabled = true;
           }
         }
@@ -494,7 +630,13 @@ export class SummaryManager {
     });
   }
 
-  static async handleBackgroundChange(selectedBackground) {
+  /**
+   * Processes background selection changes to load relevant tables
+   * @param {object} selectedBackground - Selected background data
+   * @returns {Promise<void>}
+   * @static
+   */
+  static async processBackgroundSelectionChange(selectedBackground) {
     if (!selectedBackground?.selectedValue) {
       return;
     }
@@ -503,16 +645,25 @@ export class SummaryManager {
     const cleanPackId = packId.slice(0, -1);
     const uuid = `Compendium.${cleanPackId}.Item.${itemId}`;
 
-    const background = await fromUuid(uuid);
-    if (background) {
-      await TableManager.initializeTablesForBackground(background);
+    try {
+      const background = await fromUuid(uuid);
+      if (background) {
+        await TableManager.loadRollTablesForBackground(background);
 
-      const rollButtons = document.querySelectorAll('.roll-btn');
-      rollButtons.forEach((button) => (button.disabled = false));
+        const rollButtons = document.querySelectorAll('.roll-btn');
+        rollButtons.forEach((button) => (button.disabled = false));
+      }
+    } catch (error) {
+      HM.log(1, `Error loading background with UUID ${uuid}:`, error);
     }
   }
 
-  static getSummaryForChat() {
+  /**
+   * Generates a formatted chat message summarizing the created character
+   * @returns {string} HTML content for chat message
+   * @static
+   */
+  static generateCharacterSummaryChatMessage() {
     const characterName = document.querySelector('#character-name')?.value || game.user.name;
 
     const summaries = {
@@ -547,5 +698,27 @@ export class SummaryManager {
     message += '</div>';
 
     return message;
+  }
+
+  /**
+   * Cleans up all event listeners and observers
+   * @static
+   */
+  static cleanup() {
+    MutationObserverRegistry.unregisterByPrefix('summary-');
+    document.querySelectorAll('#race-dropdown, #class-dropdown, #background-dropdown').forEach((dropdown) => {
+      if (dropdown._summaryChangeHandler) {
+        dropdown.removeEventListener('change', dropdown._summaryChangeHandler);
+        dropdown._summaryChangeHandler = null;
+      }
+    });
+    document.querySelectorAll('.ability-block .ability-dropdown, .ability-block .ability-score').forEach((input) => {
+      if (input._summarySummaryHandler) {
+        input.removeEventListener('change', input._summarySummaryHandler);
+        input._summarySummaryHandler = null;
+      }
+    });
+
+    HM.log(3, 'SummaryManager: cleaned up observers and event listeners');
   }
 }

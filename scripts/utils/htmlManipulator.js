@@ -1,43 +1,67 @@
-import { HM } from '../hero-mancer.js';
-import { HeroMancer } from './index.js';
+import { HeroMancer, HM } from './index.js';
 
 /**
  * Handles DOM manipulation for the HeroMancer UI elements
  * @class
  */
 export class HtmlManipulator {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   /** @type {HTMLButtonElement|null} Reference to the created button */
   static button = null;
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   /**
    * Registers the HeroMancer button in the Actors tab header
    * @throws {Error} If required DOM elements are not found
+   * @static
    */
   static registerButton() {
     // First clean up any existing button state but keep the button reference
-    this.cleanupButton();
+    this.#removeButtonEventListeners();
 
     const headerActions = document.querySelector('section[class*="actors-sidebar"] header[class*="directory-header"] div[class*="header-actions"]');
     if (!headerActions) {
       throw new Error('Header actions element not found');
     }
 
-    this.button = this.createButton();
-    const createFolderButton = headerActions.querySelector('button[class*="create-folder"]');
-    headerActions.insertBefore(this.button, createFolderButton);
+    // Check if button already exists in the DOM
+    let existingButton = headerActions.querySelector('.hm-actortab-button');
 
-    const hiddenHint = this.createHiddenHint();
-    headerActions.appendChild(hiddenHint);
+    if (existingButton) {
+      // Use the existing button
+      this.button = existingButton;
+    } else {
+      // Create and insert new button
+      this.button = this.#createButton();
+      const createFolderButton = headerActions.querySelector('button[class*="create-folder"]');
+      headerActions.insertBefore(this.button, createFolderButton);
 
-    this.addButtonListener();
+      // Only add the hint if we're creating a new button
+      const hiddenHint = this.#createHiddenHint();
+      headerActions.appendChild(hiddenHint);
+    }
+
+    // Add listener to the button (whether existing or new)
+    this.#addButtonListener();
   }
+
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
 
   /**
    * Creates the HeroMancer button element
    * @returns {HTMLButtonElement} The created button
    * @private
+   * @static
    */
-  static createButton() {
+  static #createButton() {
     const buttonHint = game.i18n.localize('hm.actortab-button.hint');
     const buttonName = game.i18n.localize('hm.actortab-button.name');
 
@@ -57,8 +81,9 @@ export class HtmlManipulator {
    * Creates the hidden hint element for screen readers
    * @returns {HTMLSpanElement} The created hint element
    * @private
+   * @static
    */
-  static createHiddenHint() {
+  static #createHiddenHint() {
     const buttonHint = game.i18n.localize('hm.actortab-button.hint');
     const hiddenHint = document.createElement('span');
     hiddenHint.id = 'hm-button-hint';
@@ -70,9 +95,9 @@ export class HtmlManipulator {
   /**
    * Adds click event listener to the button
    * @private
+   * @static
    */
-  // In htmlManipulator.js
-  static addButtonListener() {
+  static #addButtonListener() {
     const clickHandler = () => {
       HM.log(3, 'Button clicked - direct handler');
 
@@ -96,14 +121,12 @@ export class HtmlManipulator {
     }
   }
 
-  static cleanup() {
-    this.cleanupButton();
-    if (this.button) {
-      this.addButtonListener();
-    }
-  }
-
-  static cleanupButton() {
+  /**
+   * Removes event listeners from the button element
+   * @private
+   * @static
+   */
+  static #removeButtonEventListeners() {
     if (this.button?.clickHandler) {
       this.button.removeEventListener('click', this.button.clickHandler);
       this.button.clickHandler = null;

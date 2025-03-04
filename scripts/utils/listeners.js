@@ -1,5 +1,4 @@
-import { HM } from '../hero-mancer.js';
-import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, MandatoryFields, SavedOptions, StatRoller, SummaryManager } from './index.js';
+import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, HM, MandatoryFields, SavedOptions, StatRoller, SummaryManager } from './index.js';
 
 /**
  * Manages event listeners and UI updates for the HeroMancer application.
@@ -7,11 +6,17 @@ import { CharacterArtPicker, DropdownHandler, EquipmentParser, HeroMancer, Manda
  * @class
  */
 export class Listeners {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
   /**
    * Initializes all listeners for the application
-   * @param {HTMLElement} html The root element to attach listeners to
-   * @param {object} context The application context
-   * @param {number[]} selectedAbilities Array of selected ability scores
+   * @param {HTMLElement} html - The root element to attach listeners to
+   * @param {object} context - The application context
+   * @param {number[]} selectedAbilities - Array of selected ability scores
+   * @returns {Promise<void>}
+   * @static
    */
   static async initializeListeners(html, context, selectedAbilities) {
     this.initializeAbilityListeners(context, selectedAbilities);
@@ -25,8 +30,9 @@ export class Listeners {
 
   /**
    * Initializes ability score related listeners and UI updates
-   * @param {object} context The application context
-   * @param {number[]} selectedAbilities Array of selected ability scores
+   * @param {object} context - The application context
+   * @param {number[]} selectedAbilities - Array of selected ability scores
+   * @static
    */
   static initializeAbilityListeners(context, selectedAbilities) {
     const abilityDropdowns = document.querySelectorAll('.ability-dropdown');
@@ -53,10 +59,23 @@ export class Listeners {
               }
             });
           });
+        } else if (diceRollingMethod === 'standardArray') {
+          // Get previous value to update counts
+          const previousValue = selectedValues[index];
+          const newValue = event.target.value;
+
+          // Update our tracking array
+          selectedValues[index] = newValue;
+
+          requestAnimationFrame(() => {
+            HM.log(3, 'Initializing standard array dropdowns');
+            // Force a second application of the standard array handling
+            DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
+          });
         } else {
-          // Handle point buy/standard array cases
+          // Handle point buy case
           selectedValues[index] = event.target.value || '';
-          DropdownHandler.updateAbilityDropdowns(abilityDropdowns, selectedValues, totalPoints, diceRollingMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
+          DropdownHandler.refreshAbilityDropdownsState(abilityDropdowns, selectedValues, totalPoints, diceRollingMethod === 'pointBuy' ? 'pointBuy' : 'manualFormula');
         }
       });
     });
@@ -65,195 +84,95 @@ export class Listeners {
       this.updateRemainingPointsDisplay(context.remainingPoints);
       this.updatePlusButtonState(selectedAbilities, context.remainingPoints);
       this.updateMinusButtonState(selectedAbilities);
+    } else if (diceRollingMethod === 'standardArray') {
+      DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
     }
   }
 
   /**
    * Initializes equipment selection listeners and renders initial equipment choices
+   * @static
    */
   static initializeEquipmentListeners() {
     const equipmentContainer = document.querySelector('#equipment-container');
     const classDropdown = document.querySelector('#class-dropdown');
     const backgroundDropdown = document.querySelector('#background-dropdown');
 
+    // Create a new instance for this render cycle
     const equipment = new EquipmentParser(classDropdown?.value, backgroundDropdown?.value);
 
     if (equipmentContainer) {
+      // Clear any existing content
+      equipmentContainer.innerHTML = '';
+
       equipment
-        .renderEquipmentChoices()
+        .generateEquipmentSelectionUI()
         .then((choices) => equipmentContainer.appendChild(choices))
         .catch((error) => HM.log(1, 'Error rendering equipment choices:', error));
     }
 
-    classDropdown?.addEventListener('change', async (event) => {
-      const selectedValue = event.target.value;
-      HM.CONFIG.SELECT_STORAGE.class = {
-        selectedValue,
-        selectedId: selectedValue.split(' ')[0]
-      };
-      equipment.classId = HM.CONFIG.SELECT_STORAGE.class.selectedId;
-      await this.updateEquipmentSection(equipment, equipmentContainer, 'class');
-    });
-
-    backgroundDropdown?.addEventListener('change', async (event) => {
-      const selectedValue = event.target.value;
-      HM.CONFIG.SELECT_STORAGE.background = {
-        selectedValue,
-        selectedId: selectedValue.split(' ')[0]
-      };
-      equipment.backgroundId = HM.CONFIG.SELECT_STORAGE.background.selectedId;
-      await this.updateEquipmentSection(equipment, equipmentContainer, 'background');
-      SummaryManager.updateBackgroundSummary(event.target);
-
-      await SummaryManager.handleBackgroundChange(HM.CONFIG.SELECT_STORAGE.background);
-    });
-  }
-
-  /**
-   * Updates equipment section UI based on class or background changes
-   * @param {EquipmentParser} equipment The equipment parser instance
-   * @param {HTMLElement} container The container element for equipment choices
-   * @param {'class'|'background'} type The type of equipment section to update
-   * @returns {Promise<void>}
-   */
-  static async updateEquipmentSection(equipment, container, type) {
-    try {
-      // Reset rendered flags on all items before updating
-      if (EquipmentParser.lookupItems) {
-        Object.values(EquipmentParser.lookupItems).forEach((itemSet) => {
-          itemSet.forEach((item) => {
-            delete item.rendered;
-            delete item.isSpecialCase;
-            delete item.specialGrouping;
-          });
-        });
+    // Create and store new handler functions
+    if (classDropdown) {
+      // Clean up existing handler first
+      if (classDropdown._equipmentChangeHandler) {
+        classDropdown.removeEventListener('change', classDropdown._equipmentChangeHandler);
       }
 
-      const updatedChoices = await equipment.renderEquipmentChoices(type);
-      const sectionClass = `${type}-equipment-section`;
-      const existingSection = container.querySelector(`.${sectionClass}`);
+      classDropdown._equipmentChangeHandler = async (event) => {
+        const selectedValue = event.target.value;
+        HM.CONFIG.SELECT_STORAGE.class = {
+          selectedValue,
+          selectedId: selectedValue.split(' ')[0]
+        };
 
-      if (existingSection) {
-        existingSection.replaceWith(updatedChoices.querySelector(`.${sectionClass}`));
-      } else {
-        container.appendChild(updatedChoices.querySelector(`.${sectionClass}`));
+        // Create a new parser for this update
+        const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
+
+        await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'class');
+      };
+
+      classDropdown.addEventListener('change', classDropdown._equipmentChangeHandler);
+    }
+
+    if (backgroundDropdown) {
+      // Clean up existing handler first
+      if (backgroundDropdown._equipmentChangeHandler) {
+        backgroundDropdown.removeEventListener('change', backgroundDropdown._equipmentChangeHandler);
       }
-    } catch (error) {
-      HM.log(1, `Error updating ${type} equipment choices:`, error);
+
+      backgroundDropdown._equipmentChangeHandler = async (event) => {
+        const selectedValue = event.target.value;
+        HM.CONFIG.SELECT_STORAGE.background = {
+          selectedValue,
+          selectedId: selectedValue.split(' ')[0]
+        };
+
+        // Create a new parser for this update
+        const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
+
+        await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'background');
+        SummaryManager.updateBackgroundSummary(event.target);
+        await SummaryManager.processBackgroundSelectionChange(HM.CONFIG.SELECT_STORAGE.background);
+      };
+
+      backgroundDropdown.addEventListener('change', backgroundDropdown._equipmentChangeHandler);
     }
   }
 
   /**
    * Initializes character-related listeners including token art and portrait updates
+   * @static
    */
   static initializeCharacterListeners() {
     const tokenArtCheckbox = document.querySelector('#link-token-art');
-    tokenArtCheckbox?.addEventListener('change', CharacterArtPicker._toggleTokenArtRow);
+    tokenArtCheckbox?.addEventListener('change', CharacterArtPicker._toggleTokenArtRowVisibility);
   }
 
   /**
-   * Updates the display of remaining points in the abilities tab
-   * @param {number} remainingPoints The number of points remaining to spend
+   * Initializes the ability score rolling method selector
+   * @param {HTMLElement} html - The root element
+   * @static
    */
-  static updateRemainingPointsDisplay(remainingPoints) {
-    const abilitiesTab = document.querySelector(".tab[data-tab='abilities']");
-    if (!abilitiesTab?.classList.contains('active')) return;
-
-    const remainingPointsElement = document.getElementById('remaining-points');
-    const totalPoints = StatRoller.getTotalPoints();
-
-    if (remainingPointsElement) {
-      remainingPointsElement.innerHTML = remainingPoints;
-      this.#updatePointsColor(remainingPointsElement, remainingPoints, totalPoints);
-    }
-  }
-
-  /**
-   * Updates the color of the remaining points display based on percentage remaining
-   * @param {HTMLElement} element The element to update
-   * @param {number} remainingPoints Current remaining points
-   * @param {number} totalPoints Total available points
-   * @private
-   */
-  static #updatePointsColor(element, remainingPoints, totalPoints) {
-    if (!element) return;
-
-    const percentage = (remainingPoints / totalPoints) * 100;
-    const hue = Math.max(0, Math.min(120, (percentage * 120) / 100));
-    element.style.color = `hsl(${hue}, 100%, 35%)`;
-  }
-
-  /**
-   * Adjusts ability score up or down within valid range and point limits
-   * @param {number} index The index of the ability score to adjust
-   * @param {number} change The amount to change the score by (positive or negative)
-   * @param {number[]} selectedAbilities Array of current ability scores
-   */
-  static adjustScore(index, change, selectedAbilities) {
-    if (!Array.isArray(selectedAbilities)) {
-      HM.log(2, 'selectedAbilities must be an array');
-      return;
-    }
-    const abilityScoreElement = document.getElementById(`ability-score-${index}`);
-    const currentScore = parseInt(abilityScoreElement.innerHTML, 10);
-    const newScore = Math.min(15, Math.max(8, currentScore + change));
-
-    const totalPoints = StatRoller.getTotalPoints();
-    const pointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
-
-    if (change > 0 && pointsSpent + StatRoller.getPointCost(newScore) - StatRoller.getPointCost(currentScore) > totalPoints) {
-      HM.log(2, 'Not enough points remaining to increase this score.');
-      return;
-    }
-
-    if (newScore !== currentScore) {
-      abilityScoreElement.innerHTML = newScore;
-      selectedAbilities[index] = newScore;
-
-      const updatedPointsSpent = StatRoller.calculatePointsSpent(selectedAbilities);
-      const remainingPoints = totalPoints - updatedPointsSpent;
-
-      this.updateRemainingPointsDisplay(remainingPoints);
-      this.updatePlusButtonState(selectedAbilities, remainingPoints);
-      this.updateMinusButtonState(selectedAbilities);
-    }
-  }
-
-  /**
-   * Updates the state of plus buttons based on available points and maximum scores
-   * @param {number[]} selectedAbilities Array of current ability scores
-   * @param {number} remainingPoints Points available to spend
-   */
-  static updatePlusButtonState(selectedAbilities, remainingPoints) {
-    document.querySelectorAll('.plus-button').forEach((button, index) => {
-      const currentScore = selectedAbilities[index];
-      const pointCostForNextIncrease = StatRoller.getPointCost(currentScore + 1) - StatRoller.getPointCost(currentScore);
-
-      button.disabled = currentScore >= 15 || remainingPoints < pointCostForNextIncrease;
-
-      const inputElement = document.getElementById(`ability-${index}-input`);
-      if (inputElement) {
-        inputElement.value = currentScore;
-      }
-    });
-  }
-
-  /**
-   * Updates the state of minus buttons based on minimum allowed scores
-   * @param {number[]} selectedAbilities Array of current ability scores
-   */
-  static updateMinusButtonState(selectedAbilities) {
-    document.querySelectorAll('.minus-button').forEach((button, index) => {
-      const currentScore = selectedAbilities[index];
-      button.disabled = currentScore <= 8;
-
-      const inputElement = document.getElementById(`ability-${index}-input`);
-      if (inputElement) {
-        inputElement.value = currentScore;
-      }
-    });
-  }
-
   static initializeRollMethodListener(html) {
     HM.log(3, 'Initializing roll method listener');
     if (!html) {
@@ -295,13 +214,20 @@ export class Listeners {
     });
   }
 
+  /**
+   * Initializes token customization listeners and visual state updates
+   * @static
+   */
   static initializeTokenCustomizationListeners() {
-    const ringEnabled = document.querySelector('input[name="ring.enabled"]');
+    const ringEnabled = game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization');
+    if (!ringEnabled) return;
+
+    const ringEnabledElement = document.querySelector('input[name="ring.enabled"]');
     const ringOptions = document.querySelectorAll(
       ['.customization-row:has(color-picker[name="ring.color"])', '.customization-row:has(color-picker[name="backgroundColor"])', '.customization-row.ring-effects'].join(', ')
     );
 
-    if (!ringEnabled || !ringOptions.length) {
+    if (!ringEnabledElement || !ringOptions.length) {
       HM.log(2, 'Token customization elements not found');
       return;
     }
@@ -309,11 +235,11 @@ export class Listeners {
     // Initial state
     HM.log(3, 'Setting initial token ring states');
     ringOptions.forEach((option) => {
-      option.style.display = ringEnabled.checked ? 'flex' : 'none';
+      option.style.display = ringEnabledElement.checked ? 'flex' : 'none';
     });
 
     // Reset and toggle on change
-    ringEnabled.addEventListener('change', (event) => {
+    ringEnabledElement.addEventListener('change', (event) => {
       HM.log(3, 'Ring enabled changed:', event.currentTarget.checked);
 
       if (!event.currentTarget.checked) {
@@ -337,10 +263,52 @@ export class Listeners {
     });
   }
 
+  /**
+   * Initializes player customization listeners for color and display elements
+   * @static
+   */
   static initializePlayerCustomizationListeners() {
+    const playerCustomization = game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization');
+    if (!playerCustomization) return;
+
     const colorInput = document.querySelector('color-picker[name="player-color"]');
     if (!colorInput) return;
 
+    // Apply the initial color value immediately
+    const initialColor = colorInput.value || '#000000';
+    if (initialColor) {
+      game.user.update({
+        color: initialColor
+      });
+
+      const colorElements = document.querySelectorAll('.hm-player-color');
+      colorElements.forEach((el) => {
+        el.style.color = initialColor;
+      });
+    }
+
+    // Set up mutation observer to watch for value changes that might happen during rendering
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+          const newColor = colorInput.value || '#000000';
+
+          game.user.update({
+            color: newColor
+          });
+
+          const colorElements = document.querySelectorAll('.hm-player-color');
+          colorElements.forEach((el) => {
+            el.style.color = newColor;
+          });
+        }
+      });
+    });
+
+    // Start observing the color-picker for attribute changes
+    observer.observe(colorInput, { attributes: true });
+
+    // Also keep the regular change event listener for user interactions
     colorInput.addEventListener('change', (e) => {
       const newColor = e.currentTarget.value || '#000000';
 
@@ -353,12 +321,79 @@ export class Listeners {
         el.style.color = newColor;
       });
     });
+
+    // Make sure to disconnect the observer when appropriate (e.g., when the application closes)
+    // Store it on a class property so you can access it elsewhere
+    this.colorObserver = observer;
   }
 
+  /**
+   * Initialize form validation listeners for mandatory fields
+   * @param {HTMLElement} html - The root element containing form fields
+   * @static
+   */
+  static initializeFormValidationListeners(html) {
+    const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
+    if (mandatoryFields.length === 0) return;
+
+    const formElements = html.querySelectorAll('input, select, textarea, color-picker');
+    formElements.forEach((element) => {
+      // Remove previous listeners to avoid duplication
+      if (element._mandatoryFieldChangeHandler) {
+        element.removeEventListener('change', element._mandatoryFieldChangeHandler);
+      }
+      if (element._mandatoryFieldInputHandler) {
+        element.removeEventListener('input', element._mandatoryFieldInputHandler);
+      }
+
+      // Create and store the handler references
+      element._mandatoryFieldChangeHandler = async (event) => {
+        //  HM.log(3, `Field changed: ${element.name || element.id}`);
+        await MandatoryFields.checkMandatoryFields(html);
+      };
+
+      element.addEventListener('change', element._mandatoryFieldChangeHandler);
+
+      // Add input listener for real-time validation
+      if (element.tagName.toLowerCase() === 'input' || element.tagName.toLowerCase() === 'textarea') {
+        element._mandatoryFieldInputHandler = async (event) => {
+          HM.log(3, `Field input: ${element.name || element.id}`);
+          await MandatoryFields.checkMandatoryFields(html);
+        };
+        element.addEventListener('input', element._mandatoryFieldInputHandler);
+      }
+    });
+
+    const proseMirrorElements = html.querySelectorAll('prose-mirror');
+    proseMirrorElements.forEach((element, index) => {
+      // Clean up previous observer if exists
+      const observerId = `heromancer-prose-${element.name || index}`;
+      MutationObserverRegistry.unregister(observerId);
+
+      // Create handler for content changes
+      const changeHandler = async () => {
+        HM.log(3, `ProseMirror content changed: ${element.name || element.id}`);
+        await MandatoryFields.checkMandatoryFields(html);
+      };
+
+      const editorContent = element.querySelector('.editor-content.ProseMirror');
+      if (editorContent) {
+        MutationObserverRegistry.register(observerId, editorContent, { childList: true, characterData: true, subtree: true }, changeHandler);
+      }
+    });
+  }
+
+  /**
+   * Restores previously saved form options
+   * @param {HTMLElement} html - The form element
+   * @returns {Promise<void>}
+   * @static
+   */
   static async restoreFormOptions(html) {
     const savedOptions = await SavedOptions.loadOptions();
     if (Object.keys(savedOptions).length === 0) return;
 
+    // First pass to restore all form elements
     for (const [key, value] of Object.entries(savedOptions)) {
       const elem = html.querySelector(`[name="${key}"]`);
       if (!elem) continue;
@@ -372,6 +407,16 @@ export class Listeners {
       }
     }
 
+    // Second pass to handle ability dropdowns
+    const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    if (diceRollingMethod === 'standardArray') {
+      const abilityDropdowns = html.querySelectorAll('.ability-dropdown');
+      const selectedValues = Array.from(abilityDropdowns).map((dropdown) => dropdown.value);
+
+      // Update available options based on current selections
+      DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
+    }
+
     // Update summaries after restoring options
     requestAnimationFrame(() => {
       SummaryManager.updateClassRaceSummary();
@@ -379,70 +424,315 @@ export class Listeners {
   }
 
   /**
-   * Initialize form validation listeners for mandatory fields
-   * @param {HTMLElement} html The root element containing form fields
+   * Updates the display of remaining points in the abilities tab
+   * @param {number} remainingPoints - The number of points remaining to spend
+   * @static
    */
-  static initializeFormValidationListeners(html) {
-    // Add change listeners for all relevant input types
-    const formElements = html.querySelectorAll('input, select, textarea, color-picker');
-    formElements.forEach((element) => {
-      // Remove previous listeners to avoid duplication
-      if (element._mandatoryFieldChangeHandler) {
-        element.removeEventListener('change', element._mandatoryFieldChangeHandler);
+  static updateRemainingPointsDisplay(remainingPoints) {
+    const abilitiesTab = document.querySelector(".tab[data-tab='abilities']");
+    if (!abilitiesTab?.classList.contains('active')) return;
+
+    const remainingPointsElement = document.getElementById('remaining-points');
+    const totalPoints = StatRoller.getTotalPoints();
+
+    if (remainingPointsElement) {
+      remainingPointsElement.innerHTML = remainingPoints;
+      this.#updatePointsColor(remainingPointsElement, remainingPoints, totalPoints);
+    }
+  }
+
+  /**
+   * Adjusts ability score up or down within valid range and point limits
+   * @param {number} index - The index of the ability score to adjust
+   * @param {number} change - The amount to change the score by (positive or negative)
+   * @param {number[]} selectedAbilities - Array of current ability scores
+   * @static
+   */
+  static changeAbilityScoreValue(index, change, selectedAbilities) {
+    if (!Array.isArray(selectedAbilities)) {
+      HM.log(2, 'selectedAbilities must be an array');
+      return;
+    }
+    const abilityScoreElement = document.getElementById(`ability-score-${index}`);
+    const currentScore = parseInt(abilityScoreElement.innerHTML, 10);
+    const newScore = Math.min(15, Math.max(8, currentScore + change));
+
+    const totalPoints = StatRoller.getTotalPoints();
+    const pointsSpent = StatRoller.calculateTotalPointsSpent(selectedAbilities);
+
+    if (change > 0 && pointsSpent + StatRoller.getPointBuyCostForScore(newScore) - StatRoller.getPointBuyCostForScore(currentScore) > totalPoints) {
+      HM.log(2, 'Not enough points remaining to increase this score.');
+      return;
+    }
+
+    if (newScore !== currentScore) {
+      abilityScoreElement.innerHTML = newScore;
+      selectedAbilities[index] = newScore;
+
+      const updatedPointsSpent = StatRoller.calculateTotalPointsSpent(selectedAbilities);
+      const remainingPoints = totalPoints - updatedPointsSpent;
+
+      this.updateRemainingPointsDisplay(remainingPoints);
+      this.updatePlusButtonState(selectedAbilities, remainingPoints);
+      this.updateMinusButtonState(selectedAbilities);
+    }
+  }
+
+  /**
+   * Updates the state of plus buttons based on available points and maximum scores
+   * @param {number[]} selectedAbilities - Array of current ability scores
+   * @param {number} remainingPoints - Points available to spend
+   * @static
+   */
+  static updatePlusButtonState(selectedAbilities, remainingPoints) {
+    // Create a document fragment for batch processing
+    const updates = [];
+
+    document.querySelectorAll('.plus-button').forEach((button, index) => {
+      const currentScore = selectedAbilities[index];
+      const pointCostForNextIncrease = StatRoller.getPointBuyCostForScore(currentScore + 1) - StatRoller.getPointBuyCostForScore(currentScore);
+      const shouldDisable = currentScore >= 15 || remainingPoints < pointCostForNextIncrease;
+
+      // Only update if the state actually changes
+      if (button.disabled !== shouldDisable) {
+        updates.push(() => (button.disabled = shouldDisable));
       }
-      if (element._mandatoryFieldInputHandler) {
-        element.removeEventListener('input', element._mandatoryFieldInputHandler);
+
+      const inputElement = document.getElementById(`ability-${index}-input`);
+      if (inputElement && inputElement.value !== String(currentScore)) {
+        updates.push(() => (inputElement.value = currentScore));
+      }
+    });
+
+    // Apply all updates in one batch
+    if (updates.length) {
+      requestAnimationFrame(() => updates.forEach((update) => update()));
+    }
+  }
+
+  /**
+   * Updates the state of minus buttons based on minimum allowed scores
+   * @param {number[]} selectedAbilities - Array of current ability scores
+   * @static
+   */
+  static updateMinusButtonState(selectedAbilities) {
+    const updates = [];
+
+    document.querySelectorAll('.minus-button').forEach((button, index) => {
+      const currentScore = selectedAbilities[index];
+      const shouldDisable = currentScore <= 8;
+
+      // Only update if the state actually changes
+      if (button.disabled !== shouldDisable) {
+        updates.push(() => (button.disabled = shouldDisable));
       }
 
-      // Create and store the handler references
-      element._mandatoryFieldChangeHandler = async (event) => {
-        HM.log(3, `Field changed: ${element.name || element.id}`, {
-          type: element.type || element.tagName.toLowerCase(),
-          value: element.value,
-          checked: element.checked
-        });
-        await MandatoryFields.checkMandatoryFields(html);
-      };
+      const inputElement = document.getElementById(`ability-${index}-input`);
+      if (inputElement && inputElement.value !== String(currentScore)) {
+        updates.push(() => (inputElement.value = currentScore));
+      }
+    });
 
-      element.addEventListener('change', element._mandatoryFieldChangeHandler);
+    // Apply all updates in one batch
+    if (updates.length) {
+      requestAnimationFrame(() => updates.forEach((update) => update()));
+    }
+  }
 
-      // Add input listener for real-time validation
-      if (element.tagName.toLowerCase() === 'input' || element.tagName.toLowerCase() === 'textarea') {
-        element._mandatoryFieldInputHandler = async (event) => {
-          HM.log(3, `Field input: ${element.name || element.id}`, {
-            type: element.type || element.tagName.toLowerCase(),
-            value: element.value
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
+
+  /**
+   * Updates equipment section UI based on class or background changes
+   * @param {EquipmentParser} equipment - The equipment parser instance
+   * @param {HTMLElement} container - The container element for equipment choices
+   * @param {'class'|'background'} type - The type of equipment section to update
+   * @returns {Promise<void>}
+   * @private
+   * @static
+   */
+  static async #refreshEquipmentSectionUI(equipment, container, type) {
+    try {
+      // Reset rendered flags on all items before updating
+      if (EquipmentParser.lookupItems) {
+        Object.values(EquipmentParser.lookupItems).forEach((itemSet) => {
+          itemSet.forEach((item) => {
+            delete item.rendered;
+            delete item.isSpecialCase;
+            delete item.specialGrouping;
           });
-          await MandatoryFields.checkMandatoryFields(html);
-        };
-        element.addEventListener('input', element._mandatoryFieldInputHandler);
-      }
-    });
-
-    // Handle ProseMirror elements separately
-    const proseMirrorElements = html.querySelectorAll('prose-mirror');
-    proseMirrorElements.forEach((element) => {
-      // Clean up previous observer if exists
-      if (element._observer) {
-        element._observer.disconnect();
-      }
-
-      // Create handler for content changes
-      const changeHandler = async () => {
-        HM.log(3, `ProseMirror content changed: ${element.name || element.id}`);
-        await MandatoryFields.checkMandatoryFields(html);
-      };
-
-      // Use MutationObserver to detect content changes
-      element._observer = new MutationObserver(changeHandler);
-      const editorContent = element.querySelector('.editor-content.ProseMirror');
-      if (editorContent) {
-        element._observer.observe(editorContent, {
-          childList: true,
-          characterData: true,
-          subtree: true
         });
       }
-    });
+
+      const updatedChoices = await equipment.generateEquipmentSelectionUI(type);
+      const sectionClass = `${type}-equipment-section`;
+      const existingSection = container.querySelector(`.${sectionClass}`);
+
+      if (existingSection) {
+        existingSection.replaceWith(updatedChoices.querySelector(`.${sectionClass}`));
+      } else {
+        container.appendChild(updatedChoices.querySelector(`.${sectionClass}`));
+      }
+    } catch (error) {
+      HM.log(1, `Error updating ${type} equipment choices:`, error);
+    }
+  }
+
+  /**
+   * Updates the color of the remaining points display based on percentage remaining
+   * @param {HTMLElement} element - The element to update
+   * @param {number} remainingPoints - Current remaining points
+   * @param {number} totalPoints - Total available points
+   * @private
+   * @static
+   */
+  static #updatePointsColor(element, remainingPoints, totalPoints) {
+    if (!element) return;
+
+    const percentage = (remainingPoints / totalPoints) * 100;
+    const hue = Math.max(0, Math.min(120, (percentage * 120) / 100));
+    element.style.color = `hsl(${hue}, 100%, 35%)`;
+  }
+}
+
+/**
+ * Manages MutationObserver instances throughout the application
+ * to ensure proper tracking and cleanup
+ * @class
+ */
+export class MutationObserverRegistry {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
+  /** @type {Map<string, MutationObserver>} */
+  static #registry = new Map();
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
+  /**
+   * Registers a new MutationObserver with a unique key
+   * @param {string} key - Unique identifier for this observer
+   * @param {HTMLElement} element - The DOM element to observe
+   * @param {MutationObserverInit} config - Observer configuration options
+   * @param {MutationCallback} callback - Callback function for mutations
+   * @returns {MutationObserver} The created observer instance
+   * @static
+   */
+  static register(key, element, config, callback) {
+    // Clean up existing observer with this key if it exists
+    this.unregister(key);
+
+    try {
+      // Create and store the new observer
+      const observer = new MutationObserver(callback);
+      observer.observe(element, config);
+      this.#registry.set(key, observer);
+
+      HM.log(3, `Registered observer: ${key}`);
+      return observer;
+    } catch (error) {
+      HM.log(1, `Error registering observer for ${key}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Unregisters and disconnects a specific observer
+   * @param {string} key - The key of the observer to unregister
+   * @returns {boolean} Whether the observer was successfully unregistered
+   * @static
+   */
+  static unregister(key) {
+    if (this.#registry.has(key)) {
+      try {
+        const observer = this.#registry.get(key);
+        observer.disconnect();
+        this.#registry.delete(key);
+
+        HM.log(3, `Unregistered observer: ${key}`);
+        return true;
+      } catch (error) {
+        HM.log(1, `Error unregistering observer ${key}:`, error);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Unregisters all observers matching a prefix
+   * @param {string} prefix - The prefix to match against observer keys
+   * @returns {number} Number of observers unregistered
+   * @static
+   */
+  static unregisterByPrefix(prefix) {
+    let count = 0;
+    for (const key of this.#registry.keys()) {
+      if (key.startsWith(prefix)) {
+        if (this.unregister(key)) {
+          count++;
+        }
+      }
+    }
+
+    if (count > 0) {
+      HM.log(3, `Unregistered ${count} observers with prefix: ${prefix}`);
+    }
+    return count;
+  }
+
+  /**
+   * Unregisters and disconnects all observers
+   * @returns {number} Number of observers unregistered
+   * @static
+   */
+  static unregisterAll() {
+    try {
+      const count = this.#registry.size;
+
+      const disconnectErrors = [];
+      this.#registry.forEach((observer, key) => {
+        try {
+          observer.disconnect();
+        } catch (error) {
+          HM.log(1, `Error disconnecting observer ${key}:`, error);
+          disconnectErrors.push(key);
+        }
+      });
+
+      this.#registry.clear();
+
+      if (disconnectErrors.length > 0) {
+        HM.log(1, `Encountered errors disconnecting ${disconnectErrors.length} observers: ${disconnectErrors.join(', ')}`);
+      }
+
+      HM.log(3, `Unregistered all ${count} observers`);
+      return count;
+    } catch (error) {
+      HM.log(1, 'Error unregistering all observers:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Gets the observer instance by key
+   * @param {string} key - The key of the observer to get
+   * @returns {MutationObserver|null} The observer instance or null if not found
+   * @static
+   */
+  static get(key) {
+    return this.#registry.get(key) || null;
+  }
+
+  /**
+   * Gets the total number of registered observers
+   * @returns {number} Count of registered observers
+   * @static
+   */
+  static get count() {
+    return this.#registry.size;
   }
 }

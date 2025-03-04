@@ -1,8 +1,15 @@
 import { registerSettings } from './settings.js';
-import { CacheManager, CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HtmlManipulator } from './utils/index.js';
+import { CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HtmlManipulator } from './utils/index.js';
 
-/* Main Hero Mancer class, define some statics that will be used everywhere in the module. */
+/**
+ * Main Hero Mancer class, define some statics that will be used everywhere in the module.
+ * @class
+ */
 export class HM {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   static CONFIG = {
     ID: 'hero-mancer',
     TITLE: 'Hero Mancer',
@@ -16,6 +23,10 @@ export class HM {
   };
 
   static logLevel = 0;
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
 
   static init() {
     this.initSettings();
@@ -71,13 +82,15 @@ export class HM {
    * @throws {Error} If document preparation fails
    * @async
    */
-  static async prepareDocuments() {
+  static async loadAndEnrichDocuments() {
     HM.log(3, 'Preparing documents for Hero Mancer');
 
     try {
-      const [raceDocs, classDocs, backgroundDocs] = await Promise.all([DocumentService.prepDocs('race'), DocumentService.prepDocs('class'), DocumentService.prepDocs('background')]).then((results) =>
-        results.map((r) => r.types)
-      );
+      const [raceDocs, classDocs, backgroundDocs] = await Promise.all([
+        DocumentService.prepareDocumentsByType('race'),
+        DocumentService.prepareDocumentsByType('class'),
+        DocumentService.prepareDocumentsByType('background')
+      ]).then((results) => results.map((r) => r.types));
 
       this.documents = { race: raceDocs, class: classDocs, background: backgroundDocs };
 
@@ -88,6 +101,12 @@ export class HM {
           if (doc?.description) {
             try {
               doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
+
+              // Replace h3 with h2 tags for nicer styling.
+              doc.enrichedDescription = doc.enrichedDescription
+                .replace(/<h3/g, '<h2')
+                .replace(/<\/h3/g, '</h2')
+                .replace(/<\/ h3/g, '</ h2');
             } catch (error) {
               HM.log(1, `Failed to enrich description for '${doc.name}':`, error);
             }
@@ -95,8 +114,6 @@ export class HM {
         })
       );
 
-      const cacheManager = new CacheManager();
-      cacheManager.cacheDocuments({ raceDocs, classDocs, backgroundDocs });
       HM.log(3, 'Document preparation complete');
     } catch (error) {
       HM.log(1, 'Failed to prepare documents:', error.message);
@@ -104,17 +121,20 @@ export class HM {
     }
   }
 
-  static updateSelection(type, selection) {
+  static updateStoredSelection(type, selection) {
     this.CONFIG.SELECT_STORAGE[type] = selection;
   }
 }
 
-// Add SELECT_STORAGE after class definition
 HM.CONFIG.SELECT_STORAGE = {
   class: { selectedValue: '', selectedId: '' },
   race: { selectedValue: '', selectedId: '' },
   background: { selectedValue: '', selectedId: '' }
 };
+
+/* -------------------------------------------- */
+/*  Hooks                                       */
+/* -------------------------------------------- */
 
 Hooks.on('init', () => {
   HM.init();
@@ -130,12 +150,12 @@ Hooks.once('ready', async () => {
     HM.COMPAT = { ELKAN: true };
     HM.log(3, 'Elkan Detected: Compatibility auto-enabled.');
   }
-  await HM.prepareDocuments();
+  await HM.loadAndEnrichDocuments();
 
   // Load compendium selections
-  CustomCompendiums.classPacks = game.settings.get('hero-mancer', 'classPacks');
-  CustomCompendiums.racePacks = game.settings.get('hero-mancer', 'racePacks');
-  CustomCompendiums.backgroundPacks = game.settings.get('hero-mancer', 'backgroundPacks');
+  CustomCompendiums.classPacks = game.settings.get(HM.CONFIG.ID, 'classPacks');
+  CustomCompendiums.racePacks = game.settings.get(HM.CONFIG.ID, 'racePacks');
+  CustomCompendiums.backgroundPacks = game.settings.get(HM.CONFIG.ID, 'backgroundPacks');
 
   HM.log(3, {
     classPacks: CustomCompendiums.classPacks,

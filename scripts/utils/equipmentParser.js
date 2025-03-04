@@ -1,83 +1,161 @@
-import { HM } from '../hero-mancer.js';
+import { HM } from '../utils/index.js';
 
+/**
+ * Parses, manages, and renders equipment data for character creation
+ * Handles equipment selection UI, lookup item indexing, and equipment data collection
+ * @class
+ */
 export class EquipmentParser {
-  /** @type {Set<string>} Set of valid simple melee weapons. */
-  static simpleM = new Set();
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
 
-  /** @type {Set<string>} Set of valid simple ranged weapons.*/
-  static simpleR = new Set();
-
-  /** @type {Set<string>} Set of valid martial melee weapons. */
-  static martialM = new Set();
-
-  /** @type {Set<string>} Set of valid martial ranged weapons. */
-  static martialR = new Set();
-
-  /** @type {Set<string>} Set of valid musical instruments. */
-  static music = new Set();
-
-  /** @type {Set<string>} Set of valid shields. */
-  static shield = new Set();
-
-  /** @type {Set<string>} Set of valid armor types. */
+  /**
+   * Set of armor items for lookup
+   * @type {Set<object>}
+   * @static
+   */
   static armor = new Set();
 
-  /** @type {Set<string>} Set of valid foci. */
-  static focus = new Set();
-
-  /** @type {Map<string, any>} Cache for storing content lookup results */
-  static contentCache = new Map();
-
-  /** @type {Set<string>} Tracks rendered equipment items to prevent duplicates */
-  static renderedItems = new Set();
-
-  /** @type {Set<string>} Tracks combined item IDs for multi-item equipment */
+  /**
+   * Set of item IDs that have been combined in UI display
+   * @type {Set<string>}
+   * @static
+   */
   static combinedItemIds = new Set();
 
   /**
-   * Retrieves all selected compendium packs from settings.
-   * Combines item packs, class packs, background packs, and race packs into a single array.
-   * @async
+   * Cache for equipment content to avoid repetitive lookups
+   * @type {Map<string, object>}
    * @static
-   * @returns {Promise<string[]>} Array of compendium pack IDs
    */
-  static async getSelectedItemPacks() {
-    const itemPacks = (await game.settings.get('hero-mancer', 'itemPacks')) || [];
-    const classPacks = (await game.settings.get('hero-mancer', 'classPacks')) || [];
-    const backgroundPacks = (await game.settings.get('hero-mancer', 'backgroundPacks')) || [];
-    const racePacks = (await game.settings.get('hero-mancer', 'racePacks')) || [];
-
-    return [...itemPacks, ...classPacks, ...backgroundPacks, ...racePacks];
-  }
+  static contentCache = new Map();
 
   /**
-   * Initializes the content cache by loading indices from all Item-type compendium packs
+   * Set of arcane focus items
+   * @type {Set<object>}
    * @static
-   * @async
-   * @throws {Error} If pack index loading fails
    */
-  static async initializeContentCache() {
-    const selectedPacks = await this.getSelectedItemPacks();
-    const packs = selectedPacks.map((id) => game.packs.get(id)).filter((p) => p?.documentName === 'Item');
-    await Promise.all(packs.map((p) => p.getIndex({ fields: ['system.contents', 'uuid'] })));
-    HM.log(3, `EquipmentParser cache initialized with ${this.contentCache.size} entries`);
-  }
+  static focus = new Set();
 
+  /**
+   * Set of martial melee weapons
+   * @type {Set<object>}
+   * @static
+   */
+  static martialM = new Set();
+
+  /**
+   * Set of martial ranged weapons
+   * @type {Set<object>}
+   * @static
+   */
+  static martialR = new Set();
+
+  /**
+   * Set of musical instruments
+   * @type {Set<object>}
+   * @static
+   */
+  static music = new Set();
+
+  /**
+   * Set of items that have been rendered in the UI
+   * @type {Set<string>}
+   * @static
+   */
+  static renderedItems = new Set();
+
+  /**
+   * Set of shield items
+   * @type {Set<object>}
+   * @static
+   */
+  static shield = new Set();
+
+  /**
+   * Set of simple melee weapons
+   * @type {Set<object>}
+   * @static
+   */
+  static simpleM = new Set();
+
+  /**
+   * Set of simple ranged weapons
+   * @type {Set<object>}
+   * @static
+   */
+  static simpleR = new Set();
+
+  /* -------------------------------------------- */
+  /*  Instance Properties                         */
+  /* -------------------------------------------- */
+
+  /**
+   * Parsed equipment data for class and background
+   * @type {object|null}
+   */
+  equipmentData;
+
+  /**
+   * ID of the selected class
+   * @type {string}
+   */
+  classId;
+
+  /**
+   * ID of the selected background
+   * @type {string}
+   */
+  backgroundId;
+
+  /**
+   * Set of proficiencies the character has
+   * @type {Set<string>}
+   */
+  proficiencies;
+
+  /* -------------------------------------------- */
+  /*  Constructor                                 */
+  /* -------------------------------------------- */
+
+  /**
+   * Creates a new EquipmentParser instance
+   * Initializes properties and preloads compendium indices
+   */
   constructor() {
     this.equipmentData = null;
     this.classId = HM.CONFIG.SELECT_STORAGE.class.selectedId;
     this.backgroundId = HM.CONFIG.SELECT_STORAGE.background.selectedId;
     this.proficiencies = new Set();
-    EquipmentParser.initializeContentCache();
+    EquipmentParser.preloadCompendiumIndices();
+  }
+
+  /* -------------------------------------------- */
+  /*  Public Methods                              */
+  /* -------------------------------------------- */
+
+  /**
+   * Retrieves and combines equipment data from class and background selections
+   * @async
+   * @returns {Promise<void>}
+   */
+  async fetchEquipmentData() {
+    const classEquipment = await this.getStartingEquipment('class');
+    const backgroundEquipment = await this.getStartingEquipment('background');
+    this.equipmentData = {
+      class: classEquipment || [],
+      background: backgroundEquipment || []
+    };
   }
 
   /**
    * Searches all selectedPacks for a document by ID
    * @async
-   * @param {string} itemId Item ID to search for
+   * @param {string} itemId - Item ID to search for
    * @returns {Promise<Item|null>} Found item document or null
    */
-  async findItemInCompendiums(itemId) {
+  async findItemDocumentById(itemId) {
     const selectedPacks = await EquipmentParser.getSelectedItemPacks();
     for (const packId of selectedPacks) {
       const pack = game.packs.get(packId);
@@ -90,39 +168,12 @@ export class EquipmentParser {
   }
 
   /**
-   * Fetches starting equipment and proficiencies for a given selection type
-   * @async
-   * @param {('class'|'background')} type Selection type to fetch equipment for
-   * @returns {Promise<Array<object>>} Starting equipment array
-   * @throws {Error} If compendium lookup fails
-   */
-  async getStartingEquipment(type) {
-    const { selectedId } = HM.CONFIG.SELECT_STORAGE[type] || {};
-    HM.log(3, `Fetching starting equipment for type: ${type}, selectedId: ${selectedId}`);
-
-    if (!selectedId) {
-      HM.log(2, `No selection found for type: ${type}. Ignore this warning if first-render.`);
-      return [];
-    }
-
-    const doc = await this.findItemInCompendiums(selectedId);
-
-    if (doc) {
-      this.proficiencies = await this.getProficiencies(doc.system.advancement || []);
-    } else {
-      HM.log(2, `No document found for type ${type} with selectedId ${selectedId}`, { doc: doc });
-    }
-
-    return doc?.system.startingEquipment || [];
-  }
-
-  /**
    * Extracts granted proficiencies from advancement data
    * @async
-   * @param {Array<object>} advancements Array of advancement configurations
+   * @param {Array<object>} advancements - Array of advancement configurations
    * @returns {Promise<Set<string>>} Set of granted proficiency strings
    */
-  async getProficiencies(advancements) {
+  async extractProficienciesFromAdvancements(advancements) {
     const proficiencies = new Set();
 
     for (const advancement of advancements) {
@@ -137,671 +188,434 @@ export class EquipmentParser {
   }
 
   /**
-   * Retrieves and combines equipment data from class and background selections
+   * Fetches starting equipment and proficiencies for a given selection type
    * @async
+   * @param {'class'|'background'} type - Selection type to fetch equipment for
+   * @returns {Promise<Array<object>>} Starting equipment array
+   * @throws {Error} If compendium lookup fails
    */
-  async fetchEquipmentData() {
-    const classEquipment = await this.getStartingEquipment('class');
-    const backgroundEquipment = await this.getStartingEquipment('background');
-    this.equipmentData = {
-      class: classEquipment || [],
-      background: backgroundEquipment || []
-    };
+  async getStartingEquipment(type) {
+    const { selectedId } = HM.CONFIG.SELECT_STORAGE[type] || {};
+    HM.log(3, `Fetching starting equipment for type: ${type}, selectedId: ${selectedId}`);
+
+    if (!selectedId) {
+      HM.log(3, `No selection found for type: ${type}. Ignore this warning if first-render.`);
+      return [];
+    }
+
+    const doc = await this.findItemDocumentById(selectedId);
+
+    if (doc) {
+      this.proficiencies = await this.extractProficienciesFromAdvancements(doc.system.advancement || []);
+    } else {
+      HM.log(2, `No document found for type ${type} with selectedId ${selectedId}`, { doc: doc });
+    }
+
+    return doc?.system.startingEquipment || [];
+  }
+
+  /**
+   * Renders starting wealth options for class
+   * @async
+   * @param {string} classId - Class document ID
+   * @param {HTMLElement} sectionContainer - Section container element
+   * @throws {Error} If wealth option rendering fails
+   */
+  async renderClassWealthOption(classId, sectionContainer) {
+    if (foundry.utils.isNewerVersion('4.0.0', game.system.version)) {
+      return;
+    } else if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
+      return;
+    }
+
+    try {
+      const classDoc = await this.findItemDocumentById(classId);
+      if (!classDoc || !classDoc.system.wealth) return;
+
+      const wealthContainer = document.createElement('div');
+      wealthContainer.classList.add('wealth-option-container');
+
+      const wealthCheckbox = document.createElement('input');
+      wealthCheckbox.type = 'checkbox';
+      wealthCheckbox.id = 'use-starting-wealth';
+      wealthCheckbox.name = 'use-starting-wealth';
+
+      const wealthLabel = document.createElement('label');
+      wealthLabel.htmlFor = 'use-starting-wealth';
+      wealthLabel.innerHTML = game.i18n.localize('hm.app.equipment.use-starting-wealth');
+
+      const wealthRollContainer = document.createElement('div');
+      wealthRollContainer.classList.add('wealth-roll-container');
+      wealthRollContainer.style.display = 'none';
+
+      const wealthInput = document.createElement('input');
+      wealthInput.type = 'text';
+      wealthInput.id = 'starting-wealth-amount';
+      wealthInput.name = 'starting-wealth-amount';
+      wealthInput.readOnly = true;
+      wealthInput.placeholder = game.i18n.localize('hm.app.equipment.wealth-placeholder');
+
+      const rollButton = document.createElement('button');
+      rollButton.type = 'button';
+      rollButton.innerHTML = game.i18n.localize('hm.app.equipment.roll-wealth');
+      rollButton.classList.add('wealth-roll-button');
+
+      rollButton.addEventListener('click', async () => {
+        const formula = classDoc.system.wealth;
+        const roll = new Roll(formula);
+        await roll.evaluate();
+        wealthInput.value = `${roll.total} gp`;
+        wealthInput.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      wealthCheckbox.addEventListener('change', (event) => {
+        const equipmentElements = sectionContainer.querySelectorAll('.equipment-item');
+        equipmentElements.forEach((el) => {
+          if (event.target.checked) {
+            el.classList.add('disabled');
+            el.querySelectorAll('select, input[type="checkbox"], label').forEach((input) => {
+              input.disabled = true;
+            });
+          } else {
+            el.classList.remove('disabled');
+            el.querySelectorAll('select, input[type="checkbox"], label').forEach((input) => {
+              input.disabled = false;
+            });
+          }
+        });
+        wealthRollContainer.style.display = event.target.checked ? 'flex' : 'none';
+        if (!event.target.checked) {
+          wealthInput.value = '';
+        }
+      });
+
+      wealthContainer.appendChild(wealthCheckbox);
+      wealthContainer.appendChild(wealthLabel);
+      wealthRollContainer.appendChild(wealthInput);
+      wealthRollContainer.appendChild(rollButton);
+      wealthContainer.appendChild(wealthRollContainer);
+
+      sectionContainer.appendChild(wealthContainer);
+    } catch (error) {
+      HM.log(1, 'Error rendering wealth option:', error);
+    }
+
+    HM.log(3, `Rendered wealth options for class ${classId}`);
   }
 
   /**
    * Renders equipment selection UI for specified or all types
    * @async
-   * @param {?string} type Optional type to render ('class'|'background'). If null, renders all
+   * @param {?string} type - Optional type to render ('class'|'background'). If null, renders all
    * @returns {Promise<HTMLElement>} Container element with rendered equipment choices
    * @throws {Error} If rendering fails
    */
-  async renderEquipmentChoices(type = null) {
-    EquipmentParser.renderedItems = new Set();
-    EquipmentParser.combinedItemIds = new Set();
-    this.equipmentData = null;
-
-    await EquipmentParser.initializeLookupItems();
-    if (!EquipmentParser.lookupItems) {
-      HM.log(1, 'Failed to initialize lookup items');
+  async generateEquipmentSelectionUI(type = null) {
+    if (!type || !this._renderInProgress) {
+      this._renderInProgress = true;
+      EquipmentParser.renderedItems = new Set();
+      EquipmentParser.combinedItemIds = new Set();
     }
 
-    await this.fetchEquipmentData();
-    if (!this.equipmentData) {
-      HM.log(1, 'Failed to fetch equipment data');
-    }
+    try {
+      this.equipmentData = null;
 
-    let container = document.querySelector('.equipment-choices');
-    if (!container) {
-      container = document.createElement('div');
-      container.classList.add('equipment-choices');
-    }
-
-    const typesToRender = type ? [type] : Object.keys(this.equipmentData);
-
-    for (const currentType of typesToRender) {
-      const items = this.equipmentData[currentType] || [];
-
-      // Check if the section for this type already exists, otherwise create it
-      let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
-      if (sectionContainer) {
-        HM.log(3, `${currentType}-equipment-section already exists. Clearing and reusing.`);
-        HM.log(3, 'Existing container:', sectionContainer);
-        sectionContainer.innerHTML = ''; // Clear existing content if section exists
-      } else {
-        sectionContainer = document.createElement('div');
-        sectionContainer.classList.add(`${currentType}-equipment-section`);
-        container.appendChild(sectionContainer);
+      await EquipmentParser.initializeLookupItems();
+      if (!EquipmentParser.lookupItems) {
+        HM.log(1, 'Failed to initialize lookup items');
       }
 
-      // Get the localized placeholder text for the current type
-      const placeholderText = game.i18n.localize(`hm.app.${currentType}.select-placeholder`);
-      const dropdown = document.querySelector(`#${currentType}-dropdown`);
-      const dropdownText = dropdown.selectedOptions[0].innerHTML;
-      const isPlaceholder = dropdownText === placeholderText;
-
-      // Add a header for the section based on whether it's a placeholder
-      const header = document.createElement('h3');
-      /** TODO: Make this localization friendly. */
-      header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
-      sectionContainer.appendChild(header);
-      if (currentType === 'class' && this.classId) {
-        await this.renderClassWealthOption(this.classId, sectionContainer);
+      await this.fetchEquipmentData();
+      if (!this.equipmentData) {
+        HM.log(1, 'Failed to fetch equipment data');
       }
-      for (const item of items) {
-        const itemDoc = await fromUuidSync(item.key);
-        HM.log(3, 'PROCESSING ITEM DEBUG:', { item: item, itemDoc: itemDoc });
-        item.name = itemDoc?.name || item.key;
-        const itemElement = await this.createEquipmentElement(item);
 
-        if (itemElement) {
-          sectionContainer.appendChild(itemElement);
+      let container = document.querySelector('.equipment-choices');
+      if (!container) {
+        container = document.createElement('div');
+        container.classList.add('equipment-choices');
+      }
+
+      const typesToRender = type ? [type] : Object.keys(this.equipmentData);
+
+      try {
+        for (const currentType of typesToRender) {
+          const items = this.equipmentData[currentType] || [];
+
+          // Pre-fetch all item documents in parallel
+          const itemDocs = await Promise.all(
+            items.map(async (item) => {
+              if (!item.key) return { item, doc: null };
+              try {
+                const doc = await fromUuidSync(item.key);
+                return { item, doc };
+              } catch (error) {
+                HM.log(2, `Error pre-fetching item document for ${item.key}:`, error);
+                return { item, doc: null };
+              }
+            })
+          );
+
+          // Create section container
+          let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
+          if (sectionContainer) {
+            HM.log(3, `${currentType}-equipment-section already exists. Clearing and reusing.`);
+            sectionContainer.innerHTML = '';
+          } else {
+            sectionContainer = document.createElement('div');
+            sectionContainer.classList.add(`${currentType}-equipment-section`);
+            container.appendChild(sectionContainer);
+          }
+
+          // Get the localized placeholder text for the current type
+          const placeholderText = game.i18n.localize(`hm.app.${currentType}.select-placeholder`);
+          const dropdown = document.querySelector(`#${currentType}-dropdown`);
+          const dropdownText = dropdown?.selectedOptions?.[0]?.innerHTML || currentType;
+          const isPlaceholder = dropdown && dropdownText === placeholderText;
+
+          // Add a header for the section
+          const header = document.createElement('h3');
+          header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
+          sectionContainer.appendChild(header);
+
+          if (currentType === 'class' && this.classId) {
+            await this.renderClassWealthOption(this.classId, sectionContainer).catch((error) => {
+              HM.log(1, `Error rendering wealth option: ${error.message}`);
+            });
+          }
+
+          // Process all items with their pre-fetched documents
+          const processedItems = new Set();
+          const failedItems = [];
+
+          for (const { item, doc } of itemDocs) {
+            if (!item || processedItems.has(item._id || item.key)) {
+              continue;
+            }
+
+            processedItems.add(item._id || item.key);
+
+            // Update item with document info
+            if (doc) {
+              item.name = doc.name;
+            } else if (item.key) {
+              item.name = item.key;
+            }
+
+            try {
+              const itemElement = await this.#buildEquipmentUIElement(item);
+              if (itemElement) {
+                sectionContainer.appendChild(itemElement);
+              }
+            } catch (error) {
+              HM.log(1, `Failed to create equipment element for ${item.name || item.key}:`, error);
+              failedItems.push(item.name || item.key || 'unnamed item');
+            }
+          }
+
+          if (failedItems.length > 0) {
+            const errorMessage = document.createElement('div');
+            errorMessage.classList.add('equipment-error');
+            errorMessage.textContent = `Failed to load ${failedItems.length} equipment items.`;
+            sectionContainer.appendChild(errorMessage);
+          }
         }
+      } catch (error) {
+        HM.log(1, 'Error processing equipment sections:', error);
+
+        // Create a fallback message
+        const errorMessage = document.createElement('div');
+        errorMessage.classList.add('error-message');
+        errorMessage.textContent = game.i18n.localize('hm.errors.equipment-rendering');
+        container.appendChild(errorMessage);
+      }
+
+      return container;
+    } catch (error) {
+      HM.log(1, 'Failed to render equipment choices:', error);
+
+      // Return a minimal fallback container
+      const fallbackContainer = document.createElement('div');
+      fallbackContainer.classList.add('equipment-choices', 'error-state');
+
+      const errorMessage = document.createElement('div');
+      errorMessage.classList.add('error-message');
+      errorMessage.innerHTML = `<p>${game.i18n.localize('hm.errors.equipment-rendering')}</p>`;
+      fallbackContainer.appendChild(errorMessage);
+
+      return fallbackContainer;
+    } finally {
+      if (!type) {
+        this._renderInProgress = false;
       }
     }
-    return container;
   }
+
+  /* -------------------------------------------- */
+  /*  Private Methods                             */
+  /* -------------------------------------------- */
 
   /**
    * Creates and returns a DOM element for an equipment item
    * @async
-   * @param {object} item Equipment item data
+   * @param {object} item - Equipment item data
    * @returns {Promise<HTMLElement|null>} Equipment element or null if skipped/invalid
+   * @private
    */
-  async createEquipmentElement(item) {
+  async #buildEquipmentUIElement(item) {
     if (!item) {
-      HM.log(1, 'Null or undefined item passed to createEquipmentElement');
+      HM.log(2, 'Null or undefined item passed to #buildEquipmentUIElement');
       return null;
     }
 
-    if (this.isItemRendered(item)) {
-      HM.log(3, `DEBUG: Skipping already rendered item: ${item._source.key}`, { item: item });
+    if (this.#hasItemBeenRendered(item)) {
+      HM.log(3, `DEBUG: Skipping already rendered item: ${item._source?.key}`, { item: item });
       return null;
     }
 
-    HM.log(3, 'Creating equipment element:', {
-      type: item.type,
-      key: item.key,
-      _source: item._source,
-      children: item.children
-    });
+    try {
+      HM.log(3, 'Creating equipment element:', {
+        type: item.type,
+        key: item.key,
+        _source: item._source,
+        children: item.children
+      });
 
-    const itemContainer = document.createElement('div');
-    itemContainer.classList.add('equipment-item');
+      const itemContainer = document.createElement('div');
+      itemContainer.classList.add('equipment-item');
 
-    if (!item.group) {
-      const labelElement = document.createElement('h4');
-      labelElement.classList.add('parent-label');
+      const fragment = document.createDocumentFragment();
 
-      let shouldAddLabel = false;
+      if (!item.group) {
+        const labelElement = document.createElement('h4');
+        labelElement.classList.add('parent-label');
 
-      if (item.key) {
-        try {
-          const itemDoc = await fromUuidSync(item.key);
-          if (itemDoc) {
-            labelElement.innerHTML = item.label || `${item.count || ''} ${itemDoc.name}`;
-            shouldAddLabel = true;
-          } else {
-            HM.log(2, `No document found for item key: ${item.key}`, { item: item, labelElement: labelElement });
+        let shouldAddLabel = false;
+
+        if (item.key) {
+          try {
+            let itemDoc = await fromUuidSync(item.key);
+
+            // If fromUuidSync fails to return a document, try regular fromUuid
+            if (!itemDoc) {
+              try {
+                itemDoc = await fromUuid(item.key);
+              } catch (err) {
+                HM.log(1, `Error getting document for item ${item._source?.key}: ${err.message}`);
+              }
+            }
+
+            if (itemDoc) {
+              labelElement.innerHTML = item.label || `${item.count || ''} ${itemDoc.name}`;
+              shouldAddLabel = true;
+            } else {
+              HM.log(2, `No document found for item key: ${item.key}`, { item, labelElement });
+              labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+              shouldAddLabel = true;
+            }
+          } catch (error) {
+            HM.log(1, `Error getting label for item ${item._source?.key}: ${error.message}`, { item, labelElement });
             labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
             shouldAddLabel = true;
           }
-        } catch (error) {
-          HM.log(1, `Error getting label for item ${item._source.key}: ${error.message}`, { item: item, labelElement: labelElement });
-          labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
-          shouldAddLabel = true;
+        }
+
+        if (shouldAddLabel) {
+          fragment.appendChild(labelElement);
         }
       }
-      if (shouldAddLabel) {
-        itemContainer.appendChild(labelElement);
-      }
-    }
 
-    // First check if this is part of an OR choice
-    if (item.group) {
-      const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
-      if (parentItem?.type === 'OR') {
-        return null;
-      }
-    }
+      // Add the fragment to the container at the end
+      itemContainer.appendChild(fragment);
 
-    let result;
-    switch (item.type) {
-      case 'OR':
-        HM.log(3, `DEBUG: Rendering OR block for item: ${item._source.key}`, { item: item });
-        result = await this.renderOrBlock(item, itemContainer);
-        break;
-      case 'AND':
-        HM.log(3, `DEBUG: Rendering AND block for item: ${item._source?.key || item.type}`, { item: item });
-        if (!item.group || this.isStandaloneAndBlock(item)) {
-          result = await this.renderAndBlock(item, itemContainer);
+      // First check if this is part of an OR choice
+      if (item.group) {
+        const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
+        if (parentItem?.type === 'OR') {
+          return null;
         }
-        break;
-      case 'linked':
-        HM.log(3, `DEBUG: Rendering linked item: ${item._source.key}`, { item: item });
-        result = await this.renderLinkedItem(item, itemContainer);
-        break;
-      case 'focus':
-        HM.log(3, `DEBUG: Rendering focus item: ${item._source.key}`, { item: item });
-        result = await this.renderFocusItem(item, itemContainer);
-        break;
-      default:
-        HM.log(3, `Unsupported item type: ${item.type}`, { item: item });
-        return null;
-    }
+      }
 
-    if (result) {
-      EquipmentParser.renderedItems.add(item._id);
-    }
+      let result;
 
-    return result;
-  }
+      try {
+        switch (item.type) {
+          case 'OR':
+            HM.log(3, `DEBUG: Rendering OR block for item: ${item._source?.key}`, { item: item });
+            result = await this.#renderOrBlock(item, itemContainer);
+            break;
+          case 'AND':
+            HM.log(3, `DEBUG: Rendering AND block for item: ${item._source?.key || item.type}`, { item: item });
+            if (!item.group || this.#isStandaloneAndBlock(item)) {
+              result = await this.#renderAndBlock(item, itemContainer);
+            }
+            break;
+          case 'linked':
+            HM.log(3, `DEBUG: Rendering linked item: ${item._source?.key}`, { item: item });
+            result = await this.#renderLinkedItem(item, itemContainer);
+            break;
+          case 'focus':
+            HM.log(3, `DEBUG: Rendering focus item: ${item._source?.key}`, { item: item });
+            result = await this.#renderFocusItem(item, itemContainer);
+            break;
+          case 'weapon':
+          case 'armor':
+            break;
+          default:
+            HM.log(2, `Unsupported item type: ${item.type}`, { item: item });
+            return null;
+        }
+      } catch (error) {
+        HM.log(2, `Error rendering item ${item.type}:`, error);
 
-  /**
-   * Checks if an AND block item is standalone (not part of an OR choice)
-   * @param {object} item Equipment item to check
-   * @returns {boolean} True if standalone
-   */
-  isStandaloneAndBlock(item) {
-    return !this.equipmentData.class.some((p) => p._id === item.group && p.type === 'OR') && !this.equipmentData.background.some((p) => p._id === item.group && p.type === 'OR');
-  }
+        // Create a simple fallback element
+        const errorElement = document.createElement('div');
+        errorElement.classList.add('equipment-item-error');
+        errorElement.textContent = game.i18n.localize('hm.app.equipment.unknown-choice');
+        itemContainer.appendChild(errorElement);
 
-  /**
-   * Checks if an item has already been rendered
-   * @param {object} item Item to check
-   * @returns {boolean} True if item ID exists in renderedItems
-   */
-  isItemRendered(item) {
-    return EquipmentParser.renderedItems.has(item._id);
-  }
+        result = itemContainer;
+      }
 
-  /**
-   * Detects special case of multi-option OR blocks with AND children
-   * @param {object} item Item to check
-   * @returns {boolean} True if special multi-option case
-   */
-  isSpecialMultiOptionCase(item) {
-    return item.type === 'OR' && item.children.some((child) => child.type === 'AND' && child.children.length > 1) && item.children.some((entry) => entry.count && entry.count > 1);
-  }
+      if (result) {
+        EquipmentParser.renderedItems.add(item._id);
+      }
 
-  /**
-   * Renders special case multi-option equipment selections
-   * @async
-   * @param {object} item Multi-option item data
-   * @returns {Promise<HTMLElement>} Container with multiple dropdowns
-   * @throws {Error} If dropdown creation fails
-   */
-  async renderSpecialMultiOptionCase(item) {
-    if (!item.children?.length) {
-      HM.log(1, 'Invalid children array for special case item:', item);
+      return result;
+    } catch (error) {
+      HM.log(1, 'Critical error creating equipment element:', error);
       return null;
     }
-
-    const itemContainer = document.createElement('div');
-    itemContainer.classList.add('equipment-item');
-
-    const labelElement = document.createElement('h4');
-    labelElement.classList.add('parent-label');
-    labelElement.innerHTML = item.label;
-    itemContainer.appendChild(labelElement);
-
-    const dropdown1 = await this.createDropdown(item, 'AND');
-    const dropdown2 = await this.createDropdown(item, 'multiCount');
-    itemContainer.appendChild(dropdown1);
-    itemContainer.appendChild(dropdown2);
-
-    return itemContainer;
-  }
-
-  /**
-   * Creates a dropdown element for equipment selection
-   * @async
-   * @param {object} item Parent item data
-   * @param {('AND'|'multiCount')} type Dropdown type
-   * @returns {Promise<HTMLSelectElement>} Configured dropdown element
-   * @throws {Error} If option creation fails
-   */
-  async createDropdown(item, type) {
-    const dropdown = document.createElement('select');
-    const group = item.children.find((child) => child.type === type && child.children.length > 1);
-
-    if (!EquipmentParser.lookupItems[child.key]) {
-      HM.log(1, `No lookup items found for key: ${child.key}`);
-    }
-
-    if (!group) {
-      HM.log(1, `Required ${type} group not found for item:`, { item: item });
-      return dropdown;
-    } else {
-      try {
-        group.children.forEach((child) => {
-          const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key] || []);
-          lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
-
-          lookupOptions.forEach((option) => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option._id;
-            optionElement.innerHTML = option.name;
-            dropdown.appendChild(optionElement);
-          });
-
-          this.markAsRendered(child);
-        });
-      } catch (error) {
-        HM.log(1, `Error in processing ${type} group for dropdown in special case: ${item._id}`, error);
-      }
-    }
-    return dropdown;
-  }
-
-  /**
-   * Marks an equipment entry as rendered in special case handling
-   * @param {object} entry Equipment entry to mark
-   */
-  markAsRendered(entry) {
-    entry.rendered = true;
-    entry.isSpecialCase = true;
-  }
-
-  /**
-   * Renders an OR-type equipment selection block
-   * @async
-   * @param {object} item OR block item data
-   * @param {HTMLElement} itemContainer Container element
-   * @returns {Promise<HTMLElement>} Modified container with selection elements
-   */
-  async renderOrBlock(item, itemContainer) {
-    if (!item?.children?.length) {
-      HM.log(1, 'Invalid OR block item:', item);
-      return itemContainer;
-    }
-
-    if (!item._source) {
-      HM.log(1, 'Missing _source property on OR block item:', item);
-      return itemContainer;
-    }
-
-    HM.log(3, `Rendering OR block: ${item._id}`);
-
-    const labelElement = document.createElement('h4');
-    labelElement.classList.add('parent-label');
-    labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
-    itemContainer.appendChild(labelElement);
-
-    const select = document.createElement('select');
-    select.id = item._source?.key || item._id || `or-select-${Date.now()}`;
-
-    const defaultSelection = document.createElement('input');
-    defaultSelection.type = 'hidden';
-    defaultSelection.id = `${select.id}-default`;
-    itemContainer.appendChild(defaultSelection);
-
-    // Create an event handler to track selections
-    select.addEventListener('change', (event) => {
-      defaultSelection.value = event.target.value;
-    });
-
-    itemContainer.appendChild(select);
-
-    // Check for different types of specialized choices
-    const isMultiQuantityChoice = this.isMultiQuantityChoice(item);
-    const weaponTypeChild = this.findWeaponTypeChild(item);
-    const hasFocusOption = item.children.some((child) => child.type === 'focus');
-    const isWeaponShieldChoice = this.isWeaponShieldChoice(item);
-    const hasDualWeaponOption = item.children.some((child) => child.type === 'weapon' && child.count === 2);
-    let secondSelect = null;
-
-    // Handle weapon-shield choice pattern
-    if (isWeaponShieldChoice && hasDualWeaponOption) {
-      const dropdownContainer = document.createElement('div');
-      dropdownContainer.classList.add('dual-weapon-selection');
-
-      secondSelect = document.createElement('select');
-      secondSelect.id = `${item._source?.key || item._id || Date.now()}-second`;
-      dropdownContainer.appendChild(secondSelect);
-      itemContainer.appendChild(dropdownContainer);
-
-      // Find the weapon child to determine which lookup key to use
-      const andGroup = item.children.find((child) => child.type === 'AND');
-      const weaponChild = andGroup.children.find((child) => child.type === 'weapon' && ['martialM', 'mar', 'simpleM', 'sim'].includes(child.key));
-      const weaponLookupKey = weaponChild.key;
-
-      // Populate first dropdown with weapons
-      const weaponOptions = Array.from(EquipmentParser.lookupItems[weaponLookupKey] || []);
-      weaponOptions.sort((a, b) => a.name.localeCompare(b.name));
-
-      // Add weapons to first dropdown and select the first one
-      weaponOptions.forEach((weapon, index) => {
-        const option = document.createElement('option');
-        option.value = weapon._id || weapon.uuid || `weapon-${index}`;
-        option.innerHTML = weapon.name;
-        if (index === 0) option.selected = true; // Select first weapon
-        select.appendChild(option);
-      });
-
-      const populateSecondDropdown = () => {
-        secondSelect.innerHTML = '';
-        weaponOptions.forEach((weapon, index) => {
-          const option = document.createElement('option');
-          option.value = weapon._id || weapon.uuid || `weapon-${index}`;
-          option.innerHTML = weapon.name;
-          if (index === 0) option.selected = true; // Select first weapon
-          secondSelect.appendChild(option);
-        });
-
-        // Add shield options
-        const shieldOptions = Array.from(EquipmentParser.lookupItems.shield || []);
-        shieldOptions.sort((a, b) => a.name.localeCompare(b.name));
-
-        shieldOptions.forEach((shield) => {
-          const option = document.createElement('option');
-          option.value = shield._id || shield.uuid || `shield-${index}`;
-          option.innerHTML = shield.name;
-          secondSelect.appendChild(option);
-        });
-      };
-
-      populateSecondDropdown();
-      select.addEventListener('change', populateSecondDropdown);
-
-      return itemContainer;
-    }
-    // Handle regular weapon quantity choices
-    else if (isMultiQuantityChoice && weaponTypeChild) {
-      const dropdownContainer = document.createElement('div');
-      dropdownContainer.classList.add('dual-weapon-selection');
-
-      const secondSelect = document.createElement('select');
-      secondSelect.id = `${item._source.key}-second`;
-      secondSelect.style.display = 'none';
-
-      const secondLabel = document.createElement('label');
-      secondLabel.htmlFor = secondSelect.id;
-      secondLabel.innerHTML = game.i18n.localize('hm.app.equipment.choose-second-weapon');
-      secondLabel.style.display = 'none';
-      secondLabel.classList.add('second-weapon-label');
-
-      dropdownContainer.appendChild(secondLabel);
-      dropdownContainer.appendChild(secondSelect);
-      itemContainer.appendChild(dropdownContainer);
-
-      select.addEventListener('change', async (event) => {
-        const isWeaponSelection = event.target.value !== this.findLinkedItemId(item);
-        secondLabel.style.display = isWeaponSelection ? 'block' : 'none';
-        secondSelect.style.display = isWeaponSelection ? 'block' : 'none';
-
-        if (isWeaponSelection) {
-          secondSelect.innerHTML = `<option value="">${game.i18n.localize('hm.app.equipment.select-weapon')}</option>`;
-          const lookupOptions = Array.from(EquipmentParser.lookupItems[weaponTypeChild.key] || []);
-          lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
-
-          lookupOptions.forEach((option) => {
-            const optionElement = document.createElement('option');
-            const itemQuantityMatch = child.label?.match(/^(\d+)\s+(.+)$/i);
-            if (itemQuantityMatch) {
-              optionElement.dataset.quantity = itemQuantityMatch[1];
-              optionElement.innerHTML = child.label;
-            } else {
-              optionElement.dataset.quantity = child.count || 1;
-              optionElement.innerHTML = child.count > 1 ? `${child.count} ${option.name}` : option.name;
-            }
-            optionElement.value = option._source.key;
-            optionElement.innerHTML = option.name;
-            secondSelect.appendChild(optionElement);
-          });
-        }
-      });
-    } else if (isMultiQuantityChoice && !weaponTypeChild) {
-      HM.log(1, 'Multi-quantity choice missing weapon type child');
-    }
-
-    // Handle regular items and focus items separately
-    const renderedItemNames = new Set();
-    const nonFocusItems = item.children.filter((child) => child.type !== 'focus');
-    const focusItem = item.children.find((child) => child.type === 'focus');
-
-    // Handle focus option if present
-    if (hasFocusOption && focusItem) {
-      const focusType = focusItem.key;
-      const focusConfig = CONFIG.DND5E.focusTypes[focusType];
-
-      if (focusConfig) {
-        const pouchItem = nonFocusItems.find((child) => child.type === 'linked' && child.label?.toLowerCase().includes('component pouch'));
-        if (pouchItem) {
-          pouchItem.rendered = true;
-          renderedItemNames.add('Component Pouch');
-
-          const pouchOption = document.createElement('option');
-          pouchOption.value = pouchItem._source.key;
-          pouchOption.innerHTML = pouchItem.label || pouchItem.name;
-          pouchOption.selected = true;
-          select.appendChild(pouchOption);
-          defaultSelection.value = pouchItem._source.key;
-        }
-
-        // Add focus options
-        Object.entries(focusConfig.itemIds).forEach(([focusName, itemId]) => {
-          const option = document.createElement('option');
-          option.value = itemId;
-          option.innerHTML = focusName.charAt(0).toUpperCase() + focusName.slice(1);
-          select.appendChild(option);
-        });
-      } else {
-        HM.log(2, `No focus configuration found for type: ${focusType}`);
-      }
-    }
-
-    for (const child of nonFocusItems) {
-      HM.log(3, 'Processing nonFocusItem child:', {
-        type: child.type,
-        key: child.key,
-        _source: child._source,
-        label: child.label
-      });
-      if (child.type === 'AND') {
-        await this.renderAndGroup(child, select, renderedItemNames);
-      } else if (['linked', 'weapon', 'tool', 'armor'].includes(child.type)) {
-        await this.renderIndividualItem(child, select, renderedItemNames);
-      }
-    }
-
-    HM.log(3, `Completed OR block render: ${item._id}`);
-    return itemContainer;
-  }
-
-  /**
-   * Checks if item represents a weapon/shield choice combination
-   * @param {object} item Equipment item to check
-   * @returns {boolean} True if valid weapon/shield combination
-   */
-  isWeaponShieldChoice(item) {
-    const andGroup = item.children.find((child) => child.type === 'AND');
-    if (!andGroup) return false;
-
-    const hasWeapon = andGroup.children?.some((child) => child.type === 'weapon' && ['martialM', 'mar', 'simpleM', 'sim'].includes(child.key));
-    const hasShield = andGroup.children?.some((child) => child.type === 'armor' && child._source?.key?.includes('shield'));
-
-    return hasWeapon && hasShield;
-  }
-
-  /**
-   * Determines if item should be rendered as dropdown
-   * @param {object} item Equipment item
-   * @returns {boolean} True if should render as dropdown
-   */
-  shouldRenderAsDropdown(item) {
-    HM.log(3, `Checking dropdown render for ${item._id}: type=${item.type}, group=${item.group}`);
-
-    // Check for items that are part of an OR block
-    if (item.group) {
-      const parentItem = this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
-      return parentItem?.type === 'OR';
-    }
-
-    // Check for combined items that should be rendered in a dropdown
-    if (item.type === 'AND' && item.children?.length > 1) {
-      const parent = this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
-      if (parent?.type === 'OR') {
-        return true;
-      }
-    }
-
-    // Check if item is already part of a combined selection
-    if (EquipmentParser.combinedItemIds.has(item._source.key)) {
-      return true;
-    }
-
-    // Top-level OR blocks should be dropdowns
-    return item.type === 'OR';
-  }
-
-  /**
-   * Checks if item has multiple quantity choices
-   * @param {object} item Equipment item
-   * @returns {boolean} True if multiple quantities
-   */
-  isMultiQuantityChoice(item) {
-    let quantityChoices = 0;
-
-    if (!item?.children?.length) {
-      HM.log(1, 'Invalid item passed to isMultiQuantityChoice', { item: item });
-      return false;
-    }
-
-    for (const child of item.children) {
-      if (child.count && child.count > 1) {
-        quantityChoices++;
-      }
-    }
-    return quantityChoices > 1;
-  }
-
-  /**
-   * Finds weapon type child in equipment item
-   * @param {object} item Parent item
-   * @returns {object|null} Weapon type child or null
-   */
-  findWeaponTypeChild(item) {
-    return item.children.find((child) => child.type === 'weapon' && child.key === 'simpleM');
   }
 
   /**
    * Gets linked item ID from equipment item
-   * @param {object} item Equipment item
+   * @param {object} item - Equipment item
    * @returns {string|null} Linked item ID
+   * @private
    */
-  findLinkedItemId(item) {
+  #extractLinkedItemId(item) {
     const linkedItem = item.children.find((child) => child.type === 'linked');
     return linkedItem ? linkedItem._source.key : null;
   }
 
   /**
-   * Renders AND group equipment selection
-   * @async
-   * @param {object} child AND group item
-   * @param {HTMLSelectElement} select Select element
-   * @param {Set} renderedItemNames Tracking set
+   * Finds weapon type child in equipment item
+   * @param {object} item - Parent item
+   * @returns {object|null} Weapon type child or null
+   * @private
    */
-  async renderAndGroup(child, select, renderedItemNames) {
-    let combinedLabel = '';
-    const combinedIds = [];
-    const lookupKeys = ['sim', 'mar', 'simpleM', 'simpleR', 'martialM', 'martialR', 'shield'];
-    const processedIds = new Set();
-
-    // Mark all children as rendered if this is part of an OR choice
-    const isPartOfOrChoice =
-      (child.group && this.equipmentData.class.some((p) => p._id === child.group && p.type === 'OR')) || this.equipmentData.background.some((p) => p._id === child.group && p.type === 'OR');
-
-    if (!child?.children?.length) {
-      HM.log(1, 'Invalid AND group child:', child);
-      return;
-    }
-
-    for (const subChild of child.children) {
-      try {
-        if (processedIds.has(subChild._id)) continue;
-        processedIds.add(subChild._id);
-        if (lookupKeys.includes(subChild.key)) {
-          if (combinedLabel) combinedLabel += ' + ';
-          const lookupLabel = this.getLookupKeyLabel(subChild.key);
-          combinedLabel += `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} ${lookupLabel}`.trim();
-          combinedIds.push(subChild._id);
-
-          if (isPartOfOrChoice) {
-            subChild.rendered = true;
-            subChild.isSpecialCase = true;
-          }
-          continue;
-        }
-
-        // Handle normal linked items
-        const subChildItem = await fromUuidSync(subChild.key);
-        if (!subChildItem) throw new Error(`Item not found for UUID: ${subChild.key}`);
-
-        if (combinedLabel) combinedLabel += ' + ';
-        // Create proper HTML link
-        combinedLabel += `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} <a class="content-link" draggable="true" data-uuid="${subChild.key}">${subChildItem.name}</a>`.trim();
-        combinedIds.push(subChild._id);
-
-        if (isPartOfOrChoice) {
-          subChild.rendered = true;
-          subChild.isSpecialCase = true;
-        }
-        EquipmentParser.combinedItemIds.add(subChild._id);
-      } catch (error) {
-        HM.log(1, `Error processing sub-child in AND group for child ${child._id}: ${error.message}`);
-        continue;
-      }
-    }
-
-    if (combinedLabel && !renderedItemNames.has(combinedLabel)) {
-      renderedItemNames.add(combinedLabel);
-      const optionElement = document.createElement('option');
-      optionElement.value = combinedIds.join(',');
-      optionElement.innerHTML = combinedLabel;
-      select.appendChild(optionElement);
-
-      // Mark all items in the combination as rendered
-      combinedIds.forEach((id) => {
-        EquipmentParser.renderedItems.add(id);
-        EquipmentParser.combinedItemIds.add(id);
-      });
-
-      if (isPartOfOrChoice) {
-        child.rendered = true;
-        child.isSpecialCase = true;
-      }
-    }
-
-    HM.log(3, `Completed rendering AND group ${child._id}`);
+  #findWeaponTypeChild(item) {
+    return item.children.find((child) => child.type === 'weapon' && child.key === 'simpleM');
   }
 
   /**
    * Gets label for weapon/armor lookup key
-   * @param {string} key Lookup key (e.g. 'sim', 'mar', 'shield')
+   * @param {string} key - Lookup key (e.g. 'sim', 'mar', 'shield')
    * @returns {string} Human-readable label
+   * @private
    */
-  getLookupKeyLabel(key) {
+  #getLookupKeyLabel(key) {
     /* TODO: Get this data from CONFIG.DND5E instead. */
     const labels = {
       sim: 'Simple Weapon',
@@ -816,127 +630,72 @@ export class EquipmentParser {
   }
 
   /**
-   * Renders individual equipment item as dropdown option
-   * @async
-   * @param {object} child Item to render
-   * @param {HTMLSelectElement} select Select element to add option to
-   * @param {Set<string>} renderedItemNames Set of already rendered names
-   * @returns {Promise<void>}
-   * @throws {Error} If item lookup fails
+   * Checks if an item has already been rendered
+   * @param {object} item - Item to check
+   * @returns {boolean} True if item ID exists in renderedItems
+   * @private
    */
-  async renderIndividualItem(child, select, renderedItemNames) {
-    if (child.type === 'linked') {
-      if (EquipmentParser.combinedItemIds.has(child._source.key)) return;
-      const label = child.label.trim();
-      const [, count, name] = label.match(/^(\d+)\s*(.+)$/) || [null, null, label];
-      const displayName = name || label.replace(/\s*\(.*?\)\s*/g, '');
-
-      if (renderedItemNames.has(displayName) || EquipmentParser.combinedItemIds.has(child._source.key)) return;
-      renderedItemNames.add(displayName);
-
-      const optionElement = document.createElement('option');
-      optionElement.value = child._source.key;
-      optionElement.innerHTML = count > 1 || count !== null ? `${count} ${displayName}` : displayName;
-
-      if (select.options.length === 0) {
-        optionElement.selected = true;
-        const defaultSelection = select.parentElement.querySelector(`#\\3${select.id}-default`);
-        if (defaultSelection) {
-          defaultSelection.value = child._source?.key || child._id;
-        }
-      }
-
-      if (child.requiresProficiency) {
-        const requiredProficiency = `${child.type}:${child.key}`;
-        if (!this.proficiencies.has(requiredProficiency)) {
-          optionElement.disabled = true;
-          optionElement.innerHTML = `${optionElement.innerHTML} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
-        }
-      }
-
-      select.appendChild(optionElement);
-    } else if (['weapon', 'armor', 'tool', 'shield'].includes(child.type)) {
-      await this.renderLookupOptions(child, select, renderedItemNames);
-    }
+  #hasItemBeenRendered(item) {
+    return EquipmentParser.renderedItems.has(item._id);
   }
 
   /**
-   * Renders lookup options for weapons/armor/tools
-   * @async
-   * @param {object} child Equipment child with lookup key
-   * @param {HTMLSelectElement} select Select element
-   * @param {Set<string>} renderedItemNames Tracking set
-   * @returns {Promise<void>}
+   * Checks if item has multiple quantity choices
+   * @param {object} item - Equipment item
+   * @returns {boolean} True if multiple quantities
+   * @private
    */
-  async renderLookupOptions(child, select, renderedItemNames) {
-    try {
-      const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key] || []);
-      lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
+  #isMultiQuantityChoice(item) {
+    let quantityChoices = 0;
 
-      let defaultSelection = select.parentElement.querySelector(`#\\3${select.id}-default`);
-      if (!defaultSelection) {
-        defaultSelection = document.createElement('input');
-        defaultSelection.type = 'hidden';
-        defaultSelection.id = `${select.id}-default`; // Note: Using underscore instead of dash
-        select.parentElement.appendChild(defaultSelection);
-      }
-
-      let shouldSelectFirst = select.options.length === 0;
-      let isFirstEnabledOption = true;
-
-      lookupOptions.forEach((option) => {
-        if (renderedItemNames.has(option.name)) return;
-        if (option.rendered && option.sort === child.sort && option.group === child.group) return;
-
-        const uuid = option.uuid;
-        if (!uuid) {
-          HM.log(2, `No UUID found for item ${option.id}`, option);
-          return;
-        }
-
-        option.rendered = true;
-        option.group = child.group;
-        option.sort = child.sort;
-        option.key = child.key;
-
-        renderedItemNames.add(option.name);
-
-        const optionElement = document.createElement('option');
-        optionElement.value = uuid;
-        optionElement.innerHTML = option.name;
-        let isEnabled = true;
-        if (child.requiresProficiency) {
-          const requiredProficiency = `${child.type}:${child.key}`;
-          if (!this.proficiencies.has(requiredProficiency)) {
-            optionElement.disabled = true;
-            optionElement.innerHTML = `${option.name} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
-            isEnabled = false;
-          }
-        }
-
-        // Only set as selected if this is the first enabled option AND we should select first
-        if (shouldSelectFirst && isFirstEnabledOption && !optionElement.disabled && isEnabled) {
-          optionElement.selected = true;
-          defaultSelection.value = uuid;
-          select.value = uuid;
-          isFirstEnabledOption = false;
-        }
-
-        select.appendChild(optionElement);
-      });
-    } catch (error) {
-      HM.log(1, `Error retrieving lookup options for ${child.key}: ${error.message}`);
+    if (!item?.children?.length) {
+      HM.log(1, 'Invalid item passed to #isMultiQuantityChoice', { item: item });
+      return false;
     }
+
+    for (const child of item.children) {
+      if (child.count && child.count > 1) {
+        quantityChoices++;
+      }
+    }
+    return quantityChoices > 1;
+  }
+
+  /**
+   * Checks if an AND block item is standalone (not part of an OR choice)
+   * @param {object} item - Equipment item to check
+   * @returns {boolean} True if standalone
+   * @private
+   */
+  #isStandaloneAndBlock(item) {
+    return !this.equipmentData.class.some((p) => p._id === item.group && p.type === 'OR') && !this.equipmentData.background.some((p) => p._id === item.group && p.type === 'OR');
+  }
+
+  /**
+   * Checks if item represents a weapon/shield choice combination
+   * @param {object} item - Equipment item to check
+   * @returns {boolean} True if valid weapon/shield combination
+   * @private
+   */
+  #isWeaponShieldChoice(item) {
+    const andGroup = item.children.find((child) => child.type === 'AND');
+    if (!andGroup) return false;
+
+    const hasWeapon = andGroup.children?.some((child) => child.type === 'weapon' && ['martialM', 'mar', 'simpleM', 'sim'].includes(child.key));
+    const hasShield = andGroup.children?.some((child) => child.type === 'armor' && child._source?.key?.includes('shield'));
+
+    return hasWeapon && hasShield;
   }
 
   /**
    * Renders an AND block of equipment items
    * @async
-   * @param {object} item AND block item
-   * @param {HTMLElement} itemContainer Container element
+   * @param {object} item - AND block item
+   * @param {HTMLElement} itemContainer - Container element
    * @returns {Promise<HTMLElement>} Modified container
+   * @private
    */
-  async renderAndBlock(item, itemContainer) {
+  async #renderAndBlock(item, itemContainer) {
     HM.log(3, `Processing AND block: ${item._id}`);
 
     const processedIds = new Set();
@@ -1080,85 +839,101 @@ export class EquipmentParser {
   }
 
   /**
-   * Renders a linked equipment item
-   * @param {object} item Linked item to render
-   * @param {HTMLElement} itemContainer Container element
-   * @returns {HTMLElement|null} Modified container or null if skipped
+   * Renders AND group equipment selection
+   * @async
+   * @param {object} child - AND group item
+   * @param {HTMLSelectElement} select - Select element
+   * @param {Set} renderedItemNames - Tracking set
+   * @private
    */
-  renderLinkedItem(item, itemContainer) {
-    if (!item?._source?.key) {
-      HM.log(1, 'Invalid linked item:', item);
-      return null;
+  async #renderAndGroup(child, select, renderedItemNames) {
+    let combinedLabel = '';
+    const combinedIds = [];
+    const lookupKeys = ['sim', 'mar', 'simpleM', 'simpleR', 'martialM', 'martialR', 'shield'];
+    const processedIds = new Set();
+
+    // Mark all children as rendered if this is part of an OR choice
+    const isPartOfOrChoice =
+      (child.group && this.equipmentData.class.some((p) => p._id === child.group && p.type === 'OR')) || this.equipmentData.background.some((p) => p._id === child.group && p.type === 'OR');
+
+    if (!child?.children?.length) {
+      HM.log(1, 'Invalid AND group child:', child);
+      return;
     }
 
-    if (item.group) {
-      const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
-      if (parentItem?.type === 'OR') {
-        return null;
+    for (const subChild of child.children) {
+      try {
+        if (processedIds.has(subChild._id)) continue;
+        processedIds.add(subChild._id);
+        if (lookupKeys.includes(subChild.key)) {
+          if (combinedLabel) combinedLabel += ' + ';
+          const lookupLabel = this.#getLookupKeyLabel(subChild.key);
+          combinedLabel += `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} ${lookupLabel}`.trim();
+          combinedIds.push(subChild._id);
+
+          if (isPartOfOrChoice) {
+            subChild.rendered = true;
+            subChild.isSpecialCase = true;
+          }
+          continue;
+        }
+
+        // Handle normal linked items
+        const subChildItem = await fromUuidSync(subChild.key);
+        if (!subChildItem) throw new Error(`Item not found for UUID: ${subChild.key}`);
+
+        if (combinedLabel) combinedLabel += ' + ';
+        // Create proper HTML link
+        combinedLabel += `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} <a class="content-link" draggable="true" data-uuid="${subChild.key}">${subChildItem.name}</a>`.trim();
+        combinedIds.push(subChild._id);
+
+        if (isPartOfOrChoice) {
+          subChild.rendered = true;
+          subChild.isSpecialCase = true;
+        }
+        EquipmentParser.combinedItemIds.add(subChild._id);
+      } catch (error) {
+        HM.log(1, `Error processing sub-child in AND group for child ${child._id}: ${error.message}`);
+        continue;
       }
     }
-    // Don't mark as rendered until we confirm the item should be displayed
-    if (EquipmentParser.combinedItemIds.has(item._source.key)) {
-      HM.log(3, 'Skipping item in combinedItems:', item._source.key);
-      return null;
-    }
-    if (this.shouldRenderAsDropdown(item)) {
-      HM.log(3, 'Skipping item that should be dropdown:', item._source.key);
-      return null;
-    }
 
-    // Only check renderedItems if we've confirmed it's not part of a combination
-    if (EquipmentParser.renderedItems.has(item._id)) {
-      HM.log(3, 'Skipping previously rendered item:', item._id);
-      return null;
-    }
+    if (combinedLabel && !renderedItemNames.has(combinedLabel)) {
+      renderedItemNames.add(combinedLabel);
+      const optionElement = document.createElement('option');
+      optionElement.value = combinedIds.join(',');
+      optionElement.innerHTML = combinedLabel;
+      select.appendChild(optionElement);
 
-    // Create elements
-    const labelElement = document.createElement('label');
-    const linkedCheckbox = document.createElement('input');
-    linkedCheckbox.type = 'checkbox';
-    linkedCheckbox.id = item._source.key;
-    linkedCheckbox.value = item._source.key;
-    linkedCheckbox.checked = true;
+      // Mark all items in the combination as rendered
+      combinedIds.forEach((id) => {
+        EquipmentParser.renderedItems.add(id);
+        EquipmentParser.combinedItemIds.add(id);
+      });
 
-    // Process display label
-    let displayLabel = item.label;
-    let displayCount = '';
-
-    if (item.label?.includes('<a class')) {
-      const countMatch = item.label.match(/^(\d+)&times;/);
-      if (countMatch) {
-        displayCount = countMatch[1];
-        displayLabel = item.label.replace(/^\d+&times;\s*/, '').replace('</i>', `</i>${displayCount} `);
+      if (isPartOfOrChoice) {
+        child.rendered = true;
+        child.isSpecialCase = true;
       }
-    } else {
-      displayCount = item._source.count > 1 || item._source.count !== null ? item._source.count : '';
     }
 
-    labelElement.innerHTML = `${displayLabel?.trim() || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
-    labelElement.prepend(linkedCheckbox);
-    itemContainer.appendChild(labelElement);
-
-    // Only mark as rendered after successful creation
-    EquipmentParser.renderedItems.add(item._id);
-
-    HM.log(3, `Completed linked item render: ${item._id}`);
-    return itemContainer;
+    HM.log(3, `Completed rendering AND group ${child._id}`);
   }
 
   /**
    * Renders arcane/divine focus equipment selection
-   * @param {object} item Focus item data
-   * @param {HTMLElement} itemContainer Container element
+   * @param {object} item - Focus item data
+   * @param {HTMLElement} itemContainer - Container element
    * @returns {HTMLElement|null} Modified container or null if invalid
+   * @private
    */
-  async renderFocusItem(item, itemContainer) {
+  async #renderFocusItem(item, itemContainer) {
     if (!item?.key) {
       HM.log(1, 'Invalid focus item:', item);
       return null;
     }
 
-    if (this.shouldRenderAsDropdown(item)) return null;
+    if (this.#shouldItemUseDropdownDisplay(item)) return null;
 
     const focusType = item.key;
     const focusConfig = CONFIG.DND5E.focusTypes[focusType];
@@ -1227,12 +1002,745 @@ export class EquipmentParser {
   }
 
   /**
-   * Processes starting wealth form data into currency amounts
-   * @static
-   * @param {object} formData Form data containing wealth options
-   * @returns {object|null} Currency amounts or null if invalid
+   * Renders individual equipment item as dropdown option
+   * @async
+   * @param {object} child - Item to render
+   * @param {HTMLSelectElement} select - Select element to add option to
+   * @param {Set<string>} renderedItemNames - Set of already rendered names
+   * @returns {Promise<void>}
+   * @throws {Error} If item lookup fails
+   * @private
    */
-  static async processStartingWealth(formData) {
+  async #renderIndividualItem(child, select, renderedItemNames) {
+    if (child.type === 'linked') {
+      if (EquipmentParser.combinedItemIds.has(child._source.key)) return;
+      const label = child.label.trim();
+      const [, count, name] = label.match(/^(\d+)\s*(.+)$/) || [null, null, label];
+      const displayName = name || label.replace(/\s*\(.*?\)\s*/g, '');
+
+      if (renderedItemNames.has(displayName) || EquipmentParser.combinedItemIds.has(child._source.key)) return;
+      renderedItemNames.add(displayName);
+
+      const optionElement = document.createElement('option');
+      optionElement.value = child._source.key;
+      optionElement.innerHTML = count > 1 || count !== null ? `${count} ${displayName}` : displayName;
+
+      if (select.options.length === 0) {
+        optionElement.selected = true;
+        const defaultSelection = select.parentElement.querySelector(`#\\3${select.id}-default`);
+        if (defaultSelection) {
+          defaultSelection.value = child._source?.key || child._id;
+        }
+      }
+
+      if (child.requiresProficiency) {
+        const requiredProficiency = `${child.type}:${child.key}`;
+        if (!this.proficiencies.has(requiredProficiency)) {
+          optionElement.disabled = true;
+          optionElement.innerHTML = `${optionElement.innerHTML} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+        }
+      }
+
+      select.appendChild(optionElement);
+    } else if (['weapon', 'armor', 'tool', 'shield'].includes(child.type)) {
+      await this.#renderLookupOptions(child, select, renderedItemNames);
+    }
+  }
+
+  /**
+   * Renders a linked equipment item
+   * @param {object} item - Linked item to render
+   * @param {HTMLElement} itemContainer - Container element
+   * @returns {HTMLElement|null} Modified container or null if skipped
+   * @private
+   */
+  #renderLinkedItem(item, itemContainer) {
+    if (!item?._source?.key) {
+      HM.log(1, 'Invalid linked item:', item);
+      return null;
+    }
+
+    if (item.group) {
+      const parentItem = this.equipmentData.class.find((p) => p._id === item.group) || this.equipmentData.background.find((p) => p._id === item.group);
+      if (parentItem?.type === 'OR') {
+        return null;
+      }
+    }
+    // Don't mark as rendered until we confirm the item should be displayed
+    if (EquipmentParser.combinedItemIds.has(item._source.key)) {
+      HM.log(3, 'Skipping item in combinedItems:', item._source.key);
+      return null;
+    }
+    if (this.#shouldItemUseDropdownDisplay(item)) {
+      HM.log(3, 'Skipping item that should be dropdown:', item._source.key);
+      return null;
+    }
+
+    // Only check renderedItems if we've confirmed it's not part of a combination
+    if (EquipmentParser.renderedItems.has(item._id)) {
+      HM.log(3, 'Skipping previously rendered item:', item._id);
+      return null;
+    }
+
+    // Create elements
+    const labelElement = document.createElement('label');
+    const linkedCheckbox = document.createElement('input');
+    linkedCheckbox.type = 'checkbox';
+    linkedCheckbox.id = item._source.key;
+    linkedCheckbox.value = item._source.key;
+    linkedCheckbox.checked = true;
+
+    // Process display label
+    let displayLabel = item.label;
+    let displayCount = '';
+
+    if (item.label?.includes('<a class')) {
+      const countMatch = item.label.match(/^(\d+)&times;/);
+      if (countMatch) {
+        displayCount = countMatch[1];
+        displayLabel = item.label.replace(/^\d+&times;\s*/, '').replace('</i>', `</i>${displayCount} `);
+      }
+    } else {
+      displayCount = item._source.count > 1 || item._source.count !== null ? item._source.count : '';
+    }
+
+    labelElement.innerHTML = `${displayLabel?.trim() || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
+    labelElement.prepend(linkedCheckbox);
+    itemContainer.appendChild(labelElement);
+
+    // Only mark as rendered after successful creation
+    EquipmentParser.renderedItems.add(item._id);
+
+    HM.log(3, `Completed linked item render: ${item._id}`);
+    return itemContainer;
+  }
+
+  /**
+   * Renders lookup options for weapons/armor/tools
+   * @async
+   * @param {object} child - Equipment child with lookup key
+   * @param {HTMLSelectElement} select - Select element
+   * @param {Set<string>} renderedItemNames - Tracking set
+   * @returns {Promise<void>}
+   * @private
+   */
+  async #renderLookupOptions(child, select, renderedItemNames) {
+    try {
+      const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key] || []);
+      lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+      let defaultSelection = select.parentElement.querySelector(`#\\3${select.id}-default`);
+      if (!defaultSelection) {
+        defaultSelection = document.createElement('input');
+        defaultSelection.type = 'hidden';
+        defaultSelection.id = `${select.id}-default`; // Note: Using underscore instead of dash
+        select.parentElement.appendChild(defaultSelection);
+      }
+
+      let shouldSelectFirst = select.options.length === 0;
+      let isFirstEnabledOption = true;
+
+      lookupOptions.forEach((option) => {
+        if (renderedItemNames.has(option.name)) return;
+        if (option.rendered && option.sort === child.sort && option.group === child.group) return;
+
+        const uuid = option.uuid;
+        if (!uuid) {
+          HM.log(2, `No UUID found for item ${option.id}`, option);
+          return;
+        }
+
+        option.rendered = true;
+        option.group = child.group;
+        option.sort = child.sort;
+        option.key = child.key;
+
+        renderedItemNames.add(option.name);
+
+        const optionElement = document.createElement('option');
+        optionElement.value = uuid;
+        optionElement.innerHTML = option.name;
+        let isEnabled = true;
+        if (child.requiresProficiency) {
+          const requiredProficiency = `${child.type}:${child.key}`;
+          if (!this.proficiencies.has(requiredProficiency)) {
+            optionElement.disabled = true;
+            optionElement.innerHTML = `${option.name} (${game.i18n.localize('hm.app.equipment.lacks-proficiency')})`;
+            isEnabled = false;
+          }
+        }
+
+        // Only set as selected if this is the first enabled option AND we should select first
+        if (shouldSelectFirst && isFirstEnabledOption && !optionElement.disabled && isEnabled) {
+          optionElement.selected = true;
+          defaultSelection.value = uuid;
+          select.value = uuid;
+          isFirstEnabledOption = false;
+        }
+
+        select.appendChild(optionElement);
+      });
+    } catch (error) {
+      HM.log(1, `Error retrieving lookup options for ${child.key}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Renders an OR-type equipment selection block
+   * @async
+   * @param {object} item - OR block item data
+   * @param {HTMLElement} itemContainer - Container element
+   * @returns {Promise<HTMLElement>} Modified container with selection elements
+   * @private
+   */
+  async #renderOrBlock(item, itemContainer) {
+    if (!item?.children?.length) {
+      HM.log(1, 'Invalid OR block item:', item);
+      return itemContainer;
+    }
+
+    if (!item._source) {
+      HM.log(1, 'Missing _source property on OR block item:', item);
+      return itemContainer;
+    }
+
+    HM.log(3, `Rendering OR block: ${item._id}`);
+
+    const labelElement = document.createElement('h4');
+    labelElement.classList.add('parent-label');
+    labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+    itemContainer.appendChild(labelElement);
+
+    const select = document.createElement('select');
+    select.id = item._source?.key || item._id || `or-select-${Date.now()}`;
+
+    const defaultSelection = document.createElement('input');
+    defaultSelection.type = 'hidden';
+    defaultSelection.id = `${select.id}-default`;
+    itemContainer.appendChild(defaultSelection);
+
+    // Create an event handler to track selections
+    select.addEventListener('change', (event) => {
+      defaultSelection.value = event.target.value;
+    });
+
+    itemContainer.appendChild(select);
+
+    // Check for different types of specialized choices
+    const isMultiQuantityChoice = this.#isMultiQuantityChoice(item);
+    const weaponTypeChild = this.#findWeaponTypeChild(item);
+    const hasFocusOption = item.children.some((child) => child.type === 'focus');
+    const isWeaponShieldChoice = this.#isWeaponShieldChoice(item);
+    const hasDualWeaponOption = item.children.some((child) => child.type === 'weapon' && child.count === 2);
+    let secondSelect = null;
+
+    // Handle weapon-shield choice pattern
+    if (isWeaponShieldChoice && hasDualWeaponOption) {
+      const dropdownContainer = document.createElement('div');
+      dropdownContainer.classList.add('dual-weapon-selection');
+
+      secondSelect = document.createElement('select');
+      secondSelect.id = `${item._source?.key || item._id || Date.now()}-second`;
+      dropdownContainer.appendChild(secondSelect);
+      itemContainer.appendChild(dropdownContainer);
+
+      // Find the weapon child to determine which lookup key to use
+      const andGroup = item.children.find((child) => child.type === 'AND');
+      const weaponChild = andGroup.children.find((child) => child.type === 'weapon' && ['martialM', 'mar', 'simpleM', 'sim'].includes(child.key));
+      const weaponLookupKey = weaponChild.key;
+
+      // Populate first dropdown with weapons
+      const weaponOptions = Array.from(EquipmentParser.lookupItems[weaponLookupKey] || []);
+      weaponOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Add weapons to first dropdown and select the first one
+      weaponOptions.forEach((weapon, index) => {
+        const option = document.createElement('option');
+        option.value = weapon._id || weapon.uuid || `weapon-${index}`;
+        option.innerHTML = weapon.name;
+        if (index === 0) option.selected = true; // Select first weapon
+        select.appendChild(option);
+      });
+
+      const populateSecondDropdown = () => {
+        secondSelect.innerHTML = '';
+        weaponOptions.forEach((weapon, index) => {
+          const option = document.createElement('option');
+          option.value = weapon._id || weapon.uuid || `weapon-${index}`;
+          option.innerHTML = weapon.name;
+          if (index === 0) option.selected = true; // Select first weapon
+          secondSelect.appendChild(option);
+        });
+
+        // Add shield options
+        const shieldOptions = Array.from(EquipmentParser.lookupItems.shield || []);
+        shieldOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+        shieldOptions.forEach((shield) => {
+          const option = document.createElement('option');
+          option.value = shield._id || shield.uuid || `shield-${index}`;
+          option.innerHTML = shield.name;
+          secondSelect.appendChild(option);
+        });
+      };
+
+      populateSecondDropdown();
+      select.addEventListener('change', populateSecondDropdown);
+
+      return itemContainer;
+    }
+    // Handle regular weapon quantity choices
+    else if (isMultiQuantityChoice && weaponTypeChild) {
+      const dropdownContainer = document.createElement('div');
+      dropdownContainer.classList.add('dual-weapon-selection');
+
+      const secondSelect = document.createElement('select');
+      secondSelect.id = `${item._source.key}-second`;
+      secondSelect.style.display = 'none';
+
+      const secondLabel = document.createElement('label');
+      secondLabel.htmlFor = secondSelect.id;
+      secondLabel.innerHTML = game.i18n.localize('hm.app.equipment.choose-second-weapon');
+      secondLabel.style.display = 'none';
+      secondLabel.classList.add('second-weapon-label');
+
+      dropdownContainer.appendChild(secondLabel);
+      dropdownContainer.appendChild(secondSelect);
+      itemContainer.appendChild(dropdownContainer);
+
+      select.addEventListener('change', async (event) => {
+        const isWeaponSelection = event.target.value !== this.#extractLinkedItemId(item);
+        secondLabel.style.display = isWeaponSelection ? 'block' : 'none';
+        secondSelect.style.display = isWeaponSelection ? 'block' : 'none';
+
+        if (isWeaponSelection) {
+          secondSelect.innerHTML = `<option value="">${game.i18n.localize('hm.app.equipment.select-weapon')}</option>`;
+          const lookupOptions = Array.from(EquipmentParser.lookupItems[weaponTypeChild.key] || []);
+          lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+          lookupOptions.forEach((option) => {
+            const optionElement = document.createElement('option');
+            const itemQuantityMatch = child.label?.match(/^(\d+)\s+(.+)$/i);
+            if (itemQuantityMatch) {
+              optionElement.dataset.quantity = itemQuantityMatch[1];
+              optionElement.innerHTML = child.label;
+            } else {
+              optionElement.dataset.quantity = child.count || 1;
+              optionElement.innerHTML = child.count > 1 ? `${child.count} ${option.name}` : option.name;
+            }
+            optionElement.value = option._source.key;
+            optionElement.innerHTML = option.name;
+            secondSelect.appendChild(optionElement);
+          });
+        }
+      });
+    } else if (isMultiQuantityChoice && !weaponTypeChild) {
+      HM.log(1, 'Multi-quantity choice missing weapon type child');
+    }
+
+    // Handle regular items and focus items separately
+    const renderedItemNames = new Set();
+    const nonFocusItems = item.children.filter((child) => child.type !== 'focus');
+    const focusItem = item.children.find((child) => child.type === 'focus');
+
+    // Handle focus option if present
+    if (hasFocusOption && focusItem) {
+      const focusType = focusItem.key;
+      const focusConfig = CONFIG.DND5E.focusTypes[focusType];
+
+      if (focusConfig) {
+        const pouchItem = nonFocusItems.find((child) => child.type === 'linked' && child.label?.toLowerCase().includes('component pouch'));
+        if (pouchItem) {
+          pouchItem.rendered = true;
+          renderedItemNames.add('Component Pouch');
+
+          const pouchOption = document.createElement('option');
+          pouchOption.value = pouchItem._source.key;
+          pouchOption.innerHTML = pouchItem.label || pouchItem.name;
+          pouchOption.selected = true;
+          select.appendChild(pouchOption);
+          defaultSelection.value = pouchItem._source.key;
+        }
+
+        // Add focus options
+        Object.entries(focusConfig.itemIds).forEach(([focusName, itemId]) => {
+          const option = document.createElement('option');
+          option.value = itemId;
+          option.innerHTML = focusName.charAt(0).toUpperCase() + focusName.slice(1);
+          select.appendChild(option);
+        });
+      } else {
+        HM.log(2, `No focus configuration found for type: ${focusType}`);
+      }
+    }
+
+    for (const child of nonFocusItems) {
+      HM.log(3, 'Processing nonFocusItem child:', {
+        type: child.type,
+        key: child.key,
+        _source: child._source,
+        label: child.label
+      });
+      if (child.type === 'AND') {
+        await this.#renderAndGroup(child, select, renderedItemNames);
+      } else if (['linked', 'weapon', 'tool', 'armor'].includes(child.type)) {
+        await this.#renderIndividualItem(child, select, renderedItemNames);
+      }
+    }
+
+    HM.log(3, `Completed OR block render: ${item._id}`);
+    return itemContainer;
+  }
+
+  /**
+   * Determines if item should be rendered as dropdown
+   * @param {object} item - Equipment item
+   * @returns {boolean} True if should render as dropdown
+   * @private
+   */
+  #shouldItemUseDropdownDisplay(item) {
+    HM.log(3, `Checking dropdown render for ${item._id}: type=${item.type}, group=${item.group}`);
+
+    // Check for items that are part of an OR block
+    if (item.group) {
+      const parentItem = this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
+      return parentItem?.type === 'OR';
+    }
+
+    // Check for combined items that should be rendered in a dropdown
+    if (item.type === 'AND' && item.children?.length > 1) {
+      const parent = this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
+      if (parent?.type === 'OR') {
+        return true;
+      }
+    }
+
+    // Check if item is already part of a combined selection
+    if (EquipmentParser.combinedItemIds.has(item._source.key)) {
+      return true;
+    }
+
+    // Top-level OR blocks should be dropdowns
+    return item.type === 'OR';
+  }
+
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
+  /**
+   * Collects equipment selections from the HTML form
+   * @param {Event} event - The form submission event
+   * @param {object} options - Collection options
+   * @param {boolean} [options.includeClass=true] - Whether to include class equipment
+   * @param {boolean} [options.includeBackground=true] - Whether to include background equipment
+   * @returns {Promise<Array<object>>} An array of equipment items
+   * @static
+   */
+  static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
+    const equipment = [];
+    const equipmentContainer = event.srcElement.querySelector('#equipment-container');
+    if (!equipmentContainer) return equipment;
+
+    async function findItemInPacks(itemId) {
+      if (!itemId) return null;
+
+      HM.log(3, `Searching for item ID: ${itemId}`);
+      try {
+        const indexItem = fromUuidSync(itemId);
+        if (indexItem) {
+          const packId = indexItem.pack;
+          const pack = game.packs.get(packId);
+          if (pack) {
+            const fullItem = await pack.getDocument(indexItem._id);
+            HM.log(3, `Found full item ${itemId}`);
+            return fullItem;
+          }
+        }
+        HM.log(3, `Could not find item ${itemId} in any pack`);
+        return null;
+      } catch (error) {
+        HM.log(2, `Error finding item ${itemId}:`, error);
+        return null;
+      }
+    }
+
+    async function processContainerItem(containerItem, quantity) {
+      if (!containerItem) return;
+
+      try {
+        const packId = containerItem.pack;
+        const pack = game.packs.get(packId);
+
+        if (pack) {
+          const fullContainer = await pack.getDocument(containerItem._id);
+          if (fullContainer) {
+            const containerData = await CONFIG.Item.documentClass.createWithContents([fullContainer], {
+              keepId: true,
+              transformAll: async (doc) => {
+                const transformed = doc.toObject();
+                if (doc.id === fullContainer.id) {
+                  transformed.system = transformed.system || {};
+                  transformed.system.quantity = quantity;
+                  transformed.system.currency = fullContainer.system?.currency;
+                  transformed.system.equipped = true;
+                }
+                return transformed;
+              }
+            });
+
+            if (containerData?.length) {
+              equipment.push(...containerData);
+              HM.log(3, `Added container ${fullContainer.name} and its contents to equipment`);
+            }
+          }
+        }
+      } catch (error) {
+        HM.log(1, `Error processing container ${containerItem?.name || containerItem?._id}:`, error);
+      }
+    }
+
+    // Get all appropriate sections based on options
+    const equipmentSections = Array.from(equipmentContainer.querySelectorAll('.equipment-choices > div')).filter((section) => {
+      if (section.classList.contains('class-equipment-section') && !options.includeClass) {
+        return false;
+      }
+      if (section.classList.contains('background-equipment-section') && !options.includeBackground) {
+        return false;
+      }
+      return true;
+    });
+
+    // Process all sections in parallel
+    await Promise.all(
+      equipmentSections.map(async (section) => {
+        HM.log(3, 'Processing section:', section.className);
+
+        // Process dropdowns in parallel
+        const dropdowns = Array.from(section.querySelectorAll('select'));
+        HM.log(3, `Found ${dropdowns.length} dropdowns in section`);
+
+        const dropdownPromises = dropdowns.map(async (dropdown) => {
+          const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
+          if (!value) return;
+
+          try {
+            const item = await findItemInPacks(value);
+            if (!item) return;
+
+            const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
+            const optionText = selectedOption?.textContent || '';
+
+            const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
+            const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i);
+            const midQuantityMatch = optionText.match(/(.+?)\s+x(\d+)/i);
+
+            let quantity = 1;
+            if (startQuantityMatch) quantity = parseInt(startQuantityMatch[1]);
+            else if (endQuantityMatch) quantity = parseInt(endQuantityMatch[2]);
+            else if (midQuantityMatch) quantity = parseInt(midQuantityMatch[2]);
+
+            HM.log(3, `Detected quantity ${quantity} from option text: "${optionText}"`);
+
+            const itemData = item.toObject();
+            if (itemData.type === 'container') {
+              return processContainerItem(item, quantity);
+            } else {
+              equipment.push({
+                ...itemData,
+                system: {
+                  ...itemData.system,
+                  quantity: quantity,
+                  equipped: true
+                }
+              });
+            }
+          } catch (error) {
+            HM.log(2, `Error processing dropdown ${dropdown.id}:`, error);
+          }
+        });
+
+        await Promise.all(dropdownPromises);
+
+        // Process checkboxes in parallel
+        const checkboxes = Array.from(section.querySelectorAll('input[type="checkbox"]')).filter((cb) => cb.checked);
+        HM.log(3, `Found ${checkboxes.length} checked checkboxes in section`);
+
+        const checkboxPromises = checkboxes.map(async (checkbox) => {
+          try {
+            // Get the actual label text
+            const labelElement = checkbox.parentElement;
+            const fullLabel = labelElement.textContent.trim();
+            HM.log(3, 'Processing checkbox with label:', fullLabel);
+
+            const itemIds = checkbox.id.split(',').filter((id) => id);
+            // Split on '+' and trim each part
+            const entries = fullLabel.split('+').map((entry) => entry.trim());
+
+            // Fetch all items in parallel
+            const items = await Promise.all(
+              itemIds.map(async (itemId) => {
+                return {
+                  itemId,
+                  item: await findItemInPacks(itemId)
+                };
+              })
+            );
+
+            // Process each found item
+            for (const { itemId, item } of items) {
+              if (!item) {
+                HM.log(2, `Could not find item for ID: ${itemId}`);
+                continue;
+              }
+
+              // Search all entries for this item's quantity
+              let quantity = 1;
+
+              for (const entry of entries) {
+                const itemPattern = new RegExp(`(\\d+)\\s+${item.name}`, 'i');
+                const match = entry.match(itemPattern);
+
+                if (match) {
+                  quantity = parseInt(match[1]);
+                  HM.log(3, `Found quantity ${quantity} for ${item.name}`);
+                  break;
+                }
+              }
+
+              const itemData = item.toObject();
+              if (itemData.type === 'container') {
+                await processContainerItem(item, quantity);
+              } else {
+                equipment.push({
+                  ...itemData,
+                  system: {
+                    ...itemData.system,
+                    quantity: quantity,
+                    equipped: true
+                  }
+                });
+                HM.log(3, `Added item to equipment: ${item.name} (qty: ${quantity})`);
+              }
+            }
+          } catch (error) {
+            HM.log(2, 'Error processing checkbox:', error);
+          }
+        });
+
+        await Promise.all(checkboxPromises);
+      })
+    );
+
+    return equipment;
+  }
+
+  /**
+   * Retrieves all selected compendium packs from settings.
+   * Combines item packs, class packs, background packs, and race packs into a single array.
+   * @async
+   * @returns {Promise<string[]>} Array of compendium pack IDs
+   * @static
+   */
+  static async getSelectedItemPacks() {
+    const itemPacks = (await game.settings.get('hero-mancer', 'itemPacks')) || [];
+    const classPacks = (await game.settings.get('hero-mancer', 'classPacks')) || [];
+    const backgroundPacks = (await game.settings.get('hero-mancer', 'backgroundPacks')) || [];
+    const racePacks = (await game.settings.get('hero-mancer', 'racePacks')) || [];
+
+    return [...itemPacks, ...classPacks, ...backgroundPacks, ...racePacks];
+  }
+
+  /**
+   * Initializes the content cache by loading indices from all Item-type compendium packs
+   * @static
+   * @async
+   * @throws {Error} If pack index loading fails
+   */
+  static async preloadCompendiumIndices() {
+    const selectedPacks = await this.getSelectedItemPacks();
+    const packs = selectedPacks.map((id) => game.packs.get(id)).filter((p) => p?.documentName === 'Item');
+    await Promise.all(packs.map((p) => p.getIndex({ fields: ['system.contents', 'uuid'] })));
+    HM.log(3, `EquipmentParser cache initialized with ${this.contentCache.size} entries`);
+  }
+
+  /**
+   * Initializes and categorizes equipment lookup items from compendiums
+   * @static
+   * @async
+   * @throws {Error} If initialization or categorization fails
+   */
+  static async initializeLookupItems() {
+    const startTime = performance.now();
+
+    if (this.lookupItemsInitialized) return;
+    this.lookupItemsInitialized = true;
+    this.itemUuidMap = new Map();
+
+    const selectedPacks = await this.getSelectedItemPacks();
+
+    try {
+      const allItems = await this.#collectAllItems(selectedPacks);
+      if (!allItems?.length) {
+        HM.log(1, 'No items collected from compendiums');
+        return;
+      }
+
+      const categories = {
+        simpleM: new Set(),
+        simpleR: new Set(),
+        martialM: new Set(),
+        martialR: new Set(),
+        music: new Set(),
+        shield: new Set(),
+        armor: new Set(),
+        focus: new Set()
+      };
+
+      // Process in chunks to avoid overwhelming the event loop
+      const CHUNK_SIZE = 200;
+      const chunks = [];
+
+      for (let i = 0; i < allItems.length; i += CHUNK_SIZE) {
+        chunks.push(allItems.slice(i, i + CHUNK_SIZE));
+      }
+
+      let categorizedCount = 0;
+
+      await Promise.all(
+        chunks.map(async (chunk) => {
+          chunk.forEach((item) => {
+            const type = item.system?.type?.value || item.type;
+            if (categories[type]) {
+              categories[type].add(item);
+              categorizedCount++;
+            }
+          });
+        })
+      );
+
+      Object.assign(this, categories);
+      this.lookupItems = {
+        ...categories,
+        sim: new Set([...categories.simpleM, ...categories.simpleR]),
+        mar: new Set([...categories.martialM, ...categories.martialR])
+      };
+
+      const endTime = performance.now();
+      HM.log(3, `Equipment lookup initialized in ${(endTime - startTime).toFixed(2)}ms. ${categorizedCount} items categorized.`);
+    } catch (error) {
+      const endTime = performance.now();
+      HM.log(1, `Equipment lookup initialization failed after ${(endTime - startTime).toFixed(2)}ms:`, error);
+    }
+  }
+
+  /**
+   * Processes starting wealth form data into currency amounts
+   * @param {object} formData - Form data containing wealth options
+   * @returns {object|null} Currency amounts or null if invalid
+   * @static
+   */
+  static async convertWealthStringToCurrency(formData) {
     if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
       HM.log(3, 'USING MODERN RULES - NO STARTING WEALTH');
       return null;
@@ -1292,162 +1800,20 @@ export class EquipmentParser {
     return currencies;
   }
 
-  /**
-   * Renders starting wealth options for class
-   * @async
-   * @param {string} classId Class document ID
-   * @param {HTMLElement} sectionContainer Section container element
-   * @throws {Error} If wealth option rendering fails
-   */
-  async renderClassWealthOption(classId, sectionContainer) {
-    if (foundry.utils.isNewerVersion('4.0.0', game.system.version)) {
-      return;
-    } else if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
-      return;
-    }
-
-    try {
-      const classDoc = await this.findItemInCompendiums(classId);
-      if (!classDoc || !classDoc.system.wealth) return;
-
-      const wealthContainer = document.createElement('div');
-      wealthContainer.classList.add('wealth-option-container');
-
-      const wealthCheckbox = document.createElement('input');
-      wealthCheckbox.type = 'checkbox';
-      wealthCheckbox.id = 'use-starting-wealth';
-      wealthCheckbox.name = 'use-starting-wealth';
-
-      const wealthLabel = document.createElement('label');
-      wealthLabel.htmlFor = 'use-starting-wealth';
-      wealthLabel.innerHTML = game.i18n.localize('hm.app.equipment.use-starting-wealth');
-
-      const wealthRollContainer = document.createElement('div');
-      wealthRollContainer.classList.add('wealth-roll-container');
-      wealthRollContainer.style.display = 'none';
-
-      const wealthInput = document.createElement('input');
-      wealthInput.type = 'text';
-      wealthInput.id = 'starting-wealth-amount';
-      wealthInput.name = 'starting-wealth-amount';
-      wealthInput.readOnly = true;
-      wealthInput.placeholder = game.i18n.localize('hm.app.equipment.wealth-placeholder');
-
-      const rollButton = document.createElement('button');
-      rollButton.type = 'button';
-      rollButton.innerHTML = game.i18n.localize('hm.app.equipment.roll-wealth');
-      rollButton.classList.add('wealth-roll-button');
-
-      rollButton.addEventListener('click', async () => {
-        const formula = classDoc.system.wealth;
-        const roll = new Roll(formula);
-        await roll.evaluate();
-        wealthInput.value = `${roll.total} gp`;
-        wealthInput.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-
-      wealthCheckbox.addEventListener('change', (event) => {
-        const equipmentElements = sectionContainer.querySelectorAll('.equipment-item');
-        equipmentElements.forEach((el) => {
-          if (event.target.checked) {
-            el.classList.add('disabled');
-            el.querySelectorAll('select, input[type="checkbox"], label').forEach((input) => {
-              input.disabled = true;
-            });
-          } else {
-            el.classList.remove('disabled');
-            el.querySelectorAll('select, input[type="checkbox"], label').forEach((input) => {
-              input.disabled = false;
-            });
-          }
-        });
-        wealthRollContainer.style.display = event.target.checked ? 'flex' : 'none';
-        if (!event.target.checked) {
-          wealthInput.value = '';
-        }
-      });
-
-      wealthContainer.appendChild(wealthCheckbox);
-      wealthContainer.appendChild(wealthLabel);
-      wealthRollContainer.appendChild(wealthInput);
-      wealthRollContainer.appendChild(rollButton);
-      wealthContainer.appendChild(wealthRollContainer);
-
-      sectionContainer.appendChild(wealthContainer);
-    } catch (error) {
-      HM.log(1, 'Error rendering wealth option:', error);
-    }
-
-    HM.log(3, `Rendered wealth options for class ${classId}`);
-  }
-
-  /**
-   * Initializes and categorizes equipment lookup items from compendiums
-   * @static
-   * @async
-   * @throws {Error} If initialization or categorization fails
-   */
-  static async initializeLookupItems() {
-    const startTime = performance.now();
-
-    if (this.lookupItemsInitialized) return;
-    this.lookupItemsInitialized = true;
-    this.itemUuidMap = new Map();
-
-    const selectedPacks = await this.getSelectedItemPacks();
-
-    try {
-      const allItems = await this.collectAllItems(selectedPacks);
-      if (!allItems?.length) {
-        HM.log(1, 'No items collected from compendiums');
-      }
-
-      const categories = {
-        simpleM: new Set(),
-        simpleR: new Set(),
-        martialM: new Set(),
-        martialR: new Set(),
-        music: new Set(),
-        shield: new Set(),
-        armor: new Set(),
-        focus: new Set()
-      };
-
-      let categorizedCount = 0;
-      for (const item of allItems) {
-        const type = item.system?.type?.value || item.type;
-        if (categories[type]) {
-          categories[type].add(item);
-          categorizedCount++;
-        }
-      }
-
-      Object.assign(this, categories);
-      this.lookupItems = {
-        ...categories,
-        sim: new Set([...categories.simpleM, ...categories.simpleR]),
-        mar: new Set([...categories.martialM, ...categories.martialR])
-      };
-
-      const endTime = performance.now();
-      HM.log(3, `Equipment lookup initialized in ${(endTime - startTime).toFixed(2)}ms. ${categorizedCount} items categorized.`);
-    } catch (error) {
-      const endTime = performance.now();
-      HM.log(1, `Equipment lookup initialization failed after ${(endTime - startTime).toFixed(2)}ms:`, error);
-    }
-  }
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
 
   /**
    * Collects and filters equipment items from selected compendiums
-   * @static
-   * @async
-   * @param {string[]} selectedPacks Array of selected compendium IDs
+   * @param {string[]} selectedPacks - Array of selected compendium IDs
    * @returns {Promise<Array<object>>} Array of non-magical equipment items
    * @throws {Error} If item collection fails
+   * @private
+   * @static
    */
-  static async collectAllItems(selectedPacks) {
+  static async #collectAllItems(selectedPacks) {
     const startTime = performance.now();
-    const items = [];
     const packs = selectedPacks.map((id) => game.packs.get(id)).filter((p) => p?.documentName === 'Item');
     const focusItemIds = new Set();
 
@@ -1460,264 +1826,54 @@ export class EquipmentParser {
 
     try {
       const packIndices = await Promise.all(packs.map((pack) => pack.getIndex()));
-      let processedCount = 0;
-      let skippedCount = 0;
 
-      for (const index of packIndices) {
-        for (const item of index) {
-          const isMagic = Array.isArray(item.system?.properties) && item.system.properties.includes('mgc');
+      // Process all items from all packs in parallel
+      const itemProcessingResults = await Promise.all(
+        packIndices.map(async (index) => {
+          const packItems = [];
+          let processedCount = 0;
+          let skippedCount = 0;
 
-          this.itemUuidMap.set(item._id, item.uuid);
-          processedCount++;
+          for (const item of index) {
+            const isMagic = Array.isArray(item.system?.properties) && item.system.properties.includes('mgc');
 
-          if (item.system?.identifier === 'unarmed-strike' || isMagic) {
-            skippedCount++;
-            continue;
+            this.itemUuidMap.set(item._id, item.uuid);
+            processedCount++;
+
+            if (item.system?.identifier === 'unarmed-strike' || isMagic) {
+              skippedCount++;
+              continue;
+            }
+
+            if (focusItemIds.has(item._id)) {
+              item.system.type.value = 'focus';
+            }
+
+            packItems.push(item);
           }
 
-          if (focusItemIds.has(item._id)) {
-            item.system.type.value = 'focus';
-          }
+          return { packItems, processedCount, skippedCount };
+        })
+      );
 
-          items.push(item);
-        }
+      // Combine results
+      const items = [];
+      let totalProcessed = 0;
+      let totalSkipped = 0;
+
+      for (const result of itemProcessingResults) {
+        items.push(...result.packItems);
+        totalProcessed += result.processedCount;
+        totalSkipped += result.skippedCount;
       }
 
       const endTime = performance.now();
-      HM.log(3, `Items collected in ${(endTime - startTime).toFixed(2)}ms. Processed: ${processedCount}, Included: ${items.length}, Skipped: ${skippedCount}`);
+      HM.log(3, `Items collected in ${(endTime - startTime).toFixed(2)}ms. Processed: ${totalProcessed}, Included: ${items.length}, Skipped: ${totalSkipped}`);
       return items;
     } catch (error) {
       const endTime = performance.now();
       HM.log(1, `Item collection failed after ${(endTime - startTime).toFixed(2)}ms:`, error);
+      return [];
     }
-  }
-
-  /* -------------------------------------------- */
-  /*  Collection Method                           */
-  /* -------------------------------------------- */
-
-  /**
-   * Collects equipment selections from the HTML form
-   * @param {Event} event - The form submission event
-   * @param {object} options - Collection options
-   * @param {boolean} options.includeClass - Whether to include class equipment
-   * @param {boolean} options.includeBackground - Whether to include background equipment
-   * @returns {Promise<Array>} An array of equipment items
-   */
-  static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
-    const equipment = [];
-    const equipmentContainer = event.srcElement.querySelector('#equipment-container');
-    if (!equipmentContainer) return equipment;
-
-    /**
-     * Searches for an item in the game's compendium packs by its UUID.
-     * @async
-     * @function findItemInPacks
-     * @param {string} itemId The UUID of the item to search for.
-     * @returns {Promise<object | null>} A promise that resolves to the full item document if found, or `null` if not found.
-     */
-    async function findItemInPacks(itemId) {
-      HM.log(3, `Searching for item ID: ${itemId}`);
-      const indexItem = fromUuidSync(itemId);
-      if (indexItem) {
-        const packId = indexItem.pack;
-        const pack = game.packs.get(packId);
-        if (pack) {
-          const fullItem = await pack.getDocument(indexItem._id);
-          HM.log(3, `Found full item ${itemId}`);
-          return fullItem;
-        }
-      }
-      HM.log(3, `Could not find item ${itemId} in any pack`);
-      return null;
-    }
-
-    /**
-     * Processes a container item by retrieving its full data from a compendium pack,
-     * populating it with its contents, and adding it to the equipment list.
-     * @async
-     * @function processContainerItem
-     * @param {object} containerItem The container item object to process.
-     * @param {string} containerItem.pack The ID of the compendium pack containing the container item.
-     * @param {string} containerItem._id The unique identifier of the container item in the pack.
-     * @param {number} quantity The quantity of the container item to set.
-     * @returns {Promise<void>} A promise that resolves when the container item has been processed.
-     *
-     * @throws Will log an error if there is an issue processing the container or its contents.
-     *
-     */
-    async function processContainerItem(containerItem, quantity) {
-      const packId = containerItem.pack;
-      const pack = game.packs.get(packId);
-
-      if (pack) {
-        const fullContainer = await pack.getDocument(containerItem._id);
-        if (fullContainer) {
-          /* Somewhere here, we should be setting fullContainer.system.contents to containerData */
-          /* so that when the container is in the sheet it has contents === to the objects of the contents inside. */
-          try {
-            const containerData = await CONFIG.Item.documentClass.createWithContents([fullContainer], {
-              keepId: true,
-              transformAll: async (doc) => {
-                const transformed = doc.toObject();
-                if (doc.id === fullContainer.id) {
-                  transformed.system = transformed.system || {};
-                  transformed.system.quantity = quantity;
-                  transformed.system.currency = fullContainer.system?.currency;
-                  transformed.system.equipped = true;
-                }
-                return transformed;
-              }
-            });
-
-            if (containerData?.length) {
-              equipment.push(...containerData);
-              HM.log(3, `Added container ${fullContainer.name} and its contents to equipment`);
-            }
-          } catch (error) {
-            HM.log(1, `Error processing container ${fullContainer.name}:`, error);
-          }
-        }
-      }
-    }
-
-    const equipmentSections = equipmentContainer.querySelectorAll('.equipment-choices > div');
-
-    for (const section of equipmentSections) {
-      // Check if we should process this section based on its class
-      if (section.classList.contains('class-equipment-section') && !options.includeClass) {
-        continue;
-      }
-      if (section.classList.contains('background-equipment-section') && !options.includeBackground) {
-        continue;
-      }
-
-      HM.log(3, 'Processing new section');
-
-      // Process dropdowns
-      const dropdowns = section.querySelectorAll('select');
-      HM.log(3, `Found ${dropdowns.length} dropdowns in section`);
-
-      for (const dropdown of dropdowns) {
-        const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
-        HM.log(3, `Processing dropdown ${dropdown.id} with value: ${value}`);
-
-        if (!value) {
-          HM.log(3, `No value for dropdown ${dropdown.id}, skipping`);
-          continue;
-        }
-
-        const item = await findItemInPacks(value);
-        if (item) {
-          const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
-          const optionText = selectedOption?.textContent || '';
-
-          const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
-          const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i);
-          const midQuantityMatch = optionText.match(/(.+?)\s+x(\d+)/i);
-
-          let quantity = 1;
-          if (startQuantityMatch) quantity = parseInt(startQuantityMatch[1]);
-          else if (endQuantityMatch) quantity = parseInt(endQuantityMatch[2]);
-          else if (midQuantityMatch) quantity = parseInt(midQuantityMatch[2]);
-
-          HM.log(3, `Detected quantity ${quantity} from option text: "${optionText}"`);
-
-          const itemData = item.toObject();
-          if (itemData.type === 'container') {
-            await processContainerItem(item, quantity);
-          } else {
-            equipment.push({
-              ...itemData,
-              system: {
-                ...itemData.system,
-                quantity: quantity,
-                equipped: true
-              }
-            });
-          }
-        }
-      }
-
-      // Process checkboxes
-      const checkboxes = section.querySelectorAll('input[type="checkbox"]');
-      HM.log(3, `Found checkboxes in section: ${checkboxes.length}`);
-
-      for (const checkbox of checkboxes) {
-        if (!checkbox.checked) continue;
-
-        // Get the actual label text
-        const labelElement = checkbox.parentElement;
-        const fullLabel = labelElement.textContent.trim();
-        HM.log(3, 'Processing checkbox with label:', fullLabel);
-
-        const itemIds = checkbox.id.split(',');
-        // Split on '+' and trim each part
-        const entries = fullLabel.split('+').map((entry) => entry.trim());
-
-        HM.log(3, 'Parsed label:', {
-          fullLabel,
-          entries
-        });
-
-        for (const itemId of itemIds) {
-          if (!itemId) continue;
-          HM.log(3, `Processing itemId: ${itemId}`);
-
-          const item = await findItemInPacks(itemId);
-          if (!item) {
-            HM.log(2, `Could not find item for ID: ${itemId}`);
-            continue;
-          }
-
-          HM.log(3, `Found item "${item.name}" (${itemId})`);
-
-          // Search all entries for this item's quantity
-          let quantity = 1;
-          HM.log(3, 'Looking for quantity in entries:', {
-            itemName: item.name,
-            entries,
-            entryTexts: entries.map((e) => `"${e}"`) // Show exact text with quotes
-          });
-
-          for (const entry of entries) {
-            const itemPattern = new RegExp(`(\\d+)\\s+${item.name}`, 'i');
-            const match = entry.match(itemPattern);
-            HM.log(3, `Checking entry "${entry}" against pattern "${itemPattern}"`);
-
-            if (match) {
-              quantity = parseInt(match[1]);
-              HM.log(3, `Found quantity ${quantity} for ${item.name}`);
-              break;
-            }
-          }
-
-          HM.log(3, 'Preparing to add item:', {
-            name: item.name,
-            quantity,
-            type: item.type,
-            entries
-          });
-
-          const itemData = item.toObject();
-          if (itemData.type === 'container') {
-            HM.log(3, `Processing container: ${item.name}`);
-            await processContainerItem(item, quantity);
-          } else {
-            equipment.push({
-              ...itemData,
-              system: {
-                ...itemData.system,
-                quantity: quantity,
-                equipped: true
-              }
-            });
-            HM.log(3, `Added item to equipment: ${item.name} (qty: ${quantity})`);
-          }
-        }
-      }
-    }
-
-    return equipment;
   }
 }

@@ -1,9 +1,12 @@
-import { HM } from '../hero-mancer.js';
-import { StatRoller } from '../utils/index.js';
+import { HM, StatRoller } from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
+  /* -------------------------------------------- */
+  /*  Static Properties                           */
+  /* -------------------------------------------- */
+
   static DEFAULT_OPTIONS = {
     id: 'hero-mancer-settings-dice-rolling',
     classes: ['hm-app'],
@@ -15,17 +18,13 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     position: {
       height: 'auto',
-      width: '650'
+      width: '550'
     },
     window: {
       icon: 'fa-solid fa-dice',
       resizable: false
     }
   };
-
-  get title() {
-    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.dice-rolling.menu.name')}`;
-  }
 
   static PARTS = {
     form: {
@@ -40,7 +39,25 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   };
 
-  async _prepareContext(options) {
+  /* -------------------------------------------- */
+  /*  Getters                                     */
+  /* -------------------------------------------- */
+
+  get title() {
+    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.dice-rolling.menu.name')}`;
+  }
+
+  /* -------------------------------------------- */
+  /*  Protected Methods                           */
+  /* -------------------------------------------- */
+
+  /**
+   * Prepares context data for the dice rolling settings application
+   * @param {object} _options - Application render options
+   * @returns {Promise<object>} Context data for template rendering with dice rolling settings
+   * @protected
+   */
+  async _prepareContext(_options) {
     const context = {
       allowedMethods: await game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
       customRollFormula: game.settings.get(HM.CONFIG.ID, 'customRollFormula'),
@@ -53,7 +70,14 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
     return context;
   }
 
-  _onRender() {
+  /**
+   * Actions to perform after the application renders
+   * Sets up event listeners for the roll delay slider
+   * @param {object} _context - The rendered context data
+   * @param {object} _options - The render options
+   * @protected
+   */
+  _onRender(_context, _options) {
     const html = this.element;
     const slider = html.querySelector('input[type="range"]');
     const output = html.querySelector('.delay-value');
@@ -63,7 +87,20 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
     });
   }
 
-  static async formHandler(event, form, formData) {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
+  /**
+   * Processes form submission for dice rolling settings
+   * Validates and saves settings for ability score generation methods
+   * @param {Event} _event - The form submission event
+   * @param {HTMLFormElement} form - The form element
+   * @param {FormDataExtended} formData - The processed form data
+   * @returns {Promise<boolean|void>} Returns false if validation fails
+   * @static
+   */
+  static async formHandler(_event, form, formData) {
     const requiresWorldReload = true; // Settings changes require world reload
     try {
       const allowedMethods = {
@@ -100,6 +137,13 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
+  /**
+   * Shows a confirmation dialog for reloading the world/application
+   * @param {object} options - Configuration options
+   * @param {boolean} options.world - Whether to reload the entire world
+   * @returns {Promise<void>}
+   * @static
+   */
   static async reloadConfirm({ world = false } = {}) {
     const reload = await DialogV2.confirm({
       id: 'reload-world-confirm',

@@ -1,46 +1,54 @@
-import { HM } from '../hero-mancer.js';
-import { DropdownHandler } from './index.js';
+import { DropdownHandler, HM } from './index.js';
 
 /**
  * Service for managing game document preparation and processing
  * @class
  */
 export class DocumentService {
+  /* -------------------------------------------- */
+  /*  Static Public Methods                       */
+  /* -------------------------------------------- */
+
   /**
    * Fetches and prepares documents based on the specified type for dropdown use
-   * @async
-   * @param {'race'|'class'|'background'|'species'} type Document type to register
-   * @throws {Error} If type is invalid or document retrieval fails
+   * @param {'race'|'class'|'background'|'species'} type - Document type to register
    * @returns {Promise<{types: Array, dropdownHtml: string}>}
+   * @throws {Error} If type is invalid or document retrieval fails
+   * @static
    */
-  static async prepDocs(type) {
+  static async prepareDocumentsByType(type) {
     try {
       HM.log(3, `Starting prepDocs for type: ${type}`);
 
-      const data = await this.#fetchDocuments(type);
+      const data = await this.#fetchTypeDocumentsFromCompendiums(type);
       const groupingField = type === 'race' ? 'folderName' : 'packName';
-      const sortedUniqueFolders = this.#groupAndSortDocuments(data.documents, groupingField);
+      const sortedUniqueFolders = this.#organizeDocumentsIntoGroups(data.documents, groupingField);
       const dropdownHtml = DropdownHandler.generateDropdownHTML(sortedUniqueFolders, groupingField);
 
       return { types: sortedUniqueFolders, dropdownHtml };
     } catch (error) {
       HM.log(1, `Error: Failed to register ${type} documents`, error);
+
       return {
         types: [],
-        dropdownHtml: `<option value="">${game.i18n.localize(`hm.no-${type}-available`)}</option>`
+        dropdownHtml: `<option value="">${game.i18n.localize(`hm.app.${type}.none`)}</option>`
       };
     }
   }
 
+  /* -------------------------------------------- */
+  /*  Static Private Methods                      */
+  /* -------------------------------------------- */
+
   /**
    * Fetches documents from compendiums based on type
-   * @private
-   * @async
-   * @param {'race'|'class'|'background'|'species'} type Document type
-   * @throws {Error} If type is invalid or retrieval fails
+   * @param {'race'|'class'|'background'|'species'} type - Document type
    * @returns {Promise<{documents: Array, uniqueFolders: Array}>}
+   * @throws {Error} If type is invalid or retrieval fails
+   * @private
+   * @static
    */
-  static async #fetchDocuments(type) {
+  static async #fetchTypeDocumentsFromCompendiums(type) {
     if (!['race', 'class', 'background', 'species'].includes(type)) {
       throw new Error('Invalid document type');
     }
@@ -49,41 +57,54 @@ export class DocumentService {
     const packs = selectedPacks.length > 0 ? game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id)) : game.packs.filter((pack) => pack.metadata.type === 'Item');
 
     const validPacks = new Set();
+    const failedPacks = [];
 
-    for (const pack of packs) {
-      HM.log(3, 'Fetching documents from pack:', pack);
-      try {
-        const documents = await pack.getDocuments({ type });
+    // Process all packs in parallel for better performance
+    await Promise.all(
+      packs.map(async (pack) => {
+        HM.log(3, 'Fetching documents from pack:', pack);
+        try {
+          const documents = await pack.getDocuments({ type });
 
-        documents.forEach((doc) => {
-          if (!doc) return;
+          documents.forEach((doc) => {
+            if (!doc) return;
 
-          const packName = this.#determinePackName(pack.metadata.id);
-          validPacks.add({
-            doc,
-            packName,
-            packId: pack.metadata.id,
-            description: doc.system.description?.value || game.i18n.localize('hm.app.no-description'),
-            folderName: doc.folder?.name || null
+            const packName = this.#determinePackName(pack.metadata.id);
+            validPacks.add({
+              doc,
+              packName,
+              packId: pack.metadata.id,
+              description: doc.system.description?.value || game.i18n.localize('hm.app.no-description'),
+              folderName: doc.folder?.name || null
+            });
           });
-        });
-      } catch (error) {
-        HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}:`, error);
-        ui.notifications.error(game.i18n.format('hm.errors.failed-compendium-retrieval', { type: pack.metadata.label }));
-      }
+        } catch (error) {
+          HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}:`, error);
+          failedPacks.push(pack.metadata.label);
+        }
+      })
+    );
+
+    if (failedPacks.length > 0) {
+      ui.notifications.error(
+        game.i18n.format('hm.errors.failed-compendium-retrieval', {
+          type: failedPacks.join(', ')
+        })
+      );
     }
 
     return {
-      documents: this.#sortDocuments([...validPacks]),
+      documents: this.#sortDocumentsByNameAndPack([...validPacks]),
       uniqueFolders: []
     };
   }
 
   /**
    * Determines pack name based on id
+   * @param {string} id - Pack id
+   * @returns {string} Formatted pack name
    * @private
-   * @param {string} id Pack id
-   * @returns {string}
+   * @static
    */
   static #determinePackName(id) {
     if (id.includes('players-handbook')) return game.i18n.localize('hm.app.document-service.phb'); // Shorthand for 2024 PHB
@@ -99,11 +120,12 @@ export class DocumentService {
 
   /**
    * Sorts document array by name and pack
+   * @param {Array} documents - Documents to sort
+   * @returns {Array} Sorted documents
    * @private
-   * @param {Array} documents Documents to sort
-   * @returns {Array}
+   * @static
    */
-  static #sortDocuments(documents) {
+  static #sortDocumentsByNameAndPack(documents) {
     return documents
       .map(({ doc, packName, packId, description, folderName }) => ({
         id: doc.id,
@@ -121,12 +143,13 @@ export class DocumentService {
 
   /**
    * Groups and sorts documents by specified key
-   * @private
-   * @param {Array} documents Documents to process
-   * @param {'folderName'|'packName'} key Key to group by
+   * @param {Array} documents - Documents to process
+   * @param {'folderName'|'packName'} key - Key to group by
    * @returns {Array} Sorted array of grouped documents
+   * @private
+   * @static
    */
-  static #groupAndSortDocuments(documents, key) {
+  static #organizeDocumentsIntoGroups(documents, key) {
     const uniqueMap = new Map();
 
     documents.forEach(({ id, name, description, packName, packId, folderName }) => {

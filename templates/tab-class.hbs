@@ -4,13 +4,13 @@
     <p>{{localize 'hm.app.class.preamble'}}</p>
     <hr />
 
-    <div class="form-row">
+    <div class="form-row flex items-center gap-sm mb-sm">
       <!-- Label for the class dropdown -->
       <label for='class-dropdown'>{{localize 'hm.app.class.select-label'}}</label>
 
       <!-- Class Dropdown -->
-      <select id='class-dropdown' name='class' data-dtype='String' aria-describedby='class-description'
-        aria-label='{{localize "hm.app.class.select-label"}}'>
+      <select id='class-dropdown' name='class' class="form-select" data-dtype='String'
+        aria-describedby='class-description' aria-label='{{localize "hm.app.class.select-label"}}'>
         <option value=''>{{localize 'hm.app.class.select-placeholder'}}</option>
 
         {{#each classDocs}}
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Enriched Description Section for the selected class -->
-    <div id='class-description' role='region' aria-live='polite' aria-atomic='true'>
+    <div id='class-description' class="overflow-vert-only" role='region' aria-live='polite' aria-atomic='true'>
       {{{enrichedDescription}}}
     </div>
   </fieldset>
