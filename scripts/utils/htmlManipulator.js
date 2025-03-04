@@ -30,13 +30,24 @@ export class HtmlManipulator {
       throw new Error('Header actions element not found');
     }
 
-    this.button = this.#createButton();
-    const createFolderButton = headerActions.querySelector('button[class*="create-folder"]');
-    headerActions.insertBefore(this.button, createFolderButton);
+    // Check if button already exists in the DOM
+    let existingButton = headerActions.querySelector('.hm-actortab-button');
 
-    const hiddenHint = this.#createHiddenHint();
-    headerActions.appendChild(hiddenHint);
+    if (existingButton) {
+      // Use the existing button
+      this.button = existingButton;
+    } else {
+      // Create and insert new button
+      this.button = this.#createButton();
+      const createFolderButton = headerActions.querySelector('button[class*="create-folder"]');
+      headerActions.insertBefore(this.button, createFolderButton);
 
+      // Only add the hint if we're creating a new button
+      const hiddenHint = this.#createHiddenHint();
+      headerActions.appendChild(hiddenHint);
+    }
+
+    // Add listener to the button (whether existing or new)
     this.#addButtonListener();
   }
 

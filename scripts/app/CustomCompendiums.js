@@ -29,7 +29,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       width: '400'
     },
     window: {
-      icon: 'fa-solid fa-egg',
+      icon: 'fa-solid fa-atlas',
       resizable: false
     }
   };

@@ -53,7 +53,7 @@ export function registerSettings() {
   game.settings.registerMenu(HM.CONFIG.ID, 'customCompendiumMenu', {
     name: 'hm.settings.custom-compendiums.menu.name',
     hint: 'hm.settings.custom-compendiums.menu.hint',
-    icon: 'fa-solid fa-bars',
+    icon: 'fa-solid fa-atlas',
     label: 'hm.settings.configure-compendiums',
     type: CustomCompendiums,
     restricted: true,

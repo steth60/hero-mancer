@@ -67,8 +67,11 @@ export class Listeners {
           // Update our tracking array
           selectedValues[index] = newValue;
 
-          // Refresh all dropdowns
-          DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
+          requestAnimationFrame(() => {
+            HM.log(3, 'Initializing standard array dropdowns');
+            // Force a second application of the standard array handling
+            DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
+          });
         } else {
           // Handle point buy case
           selectedValues[index] = event.target.value || '';
@@ -216,12 +219,15 @@ export class Listeners {
    * @static
    */
   static initializeTokenCustomizationListeners() {
-    const ringEnabled = document.querySelector('input[name="ring.enabled"]');
+    const ringEnabled = game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization');
+    if (!ringEnabled) return;
+
+    const ringEnabledElement = document.querySelector('input[name="ring.enabled"]');
     const ringOptions = document.querySelectorAll(
       ['.customization-row:has(color-picker[name="ring.color"])', '.customization-row:has(color-picker[name="backgroundColor"])', '.customization-row.ring-effects'].join(', ')
     );
 
-    if (!ringEnabled || !ringOptions.length) {
+    if (!ringEnabledElement || !ringOptions.length) {
       HM.log(2, 'Token customization elements not found');
       return;
     }
@@ -229,11 +235,11 @@ export class Listeners {
     // Initial state
     HM.log(3, 'Setting initial token ring states');
     ringOptions.forEach((option) => {
-      option.style.display = ringEnabled.checked ? 'flex' : 'none';
+      option.style.display = ringEnabledElement.checked ? 'flex' : 'none';
     });
 
     // Reset and toggle on change
-    ringEnabled.addEventListener('change', (event) => {
+    ringEnabledElement.addEventListener('change', (event) => {
       HM.log(3, 'Ring enabled changed:', event.currentTarget.checked);
 
       if (!event.currentTarget.checked) {
@@ -262,9 +268,47 @@ export class Listeners {
    * @static
    */
   static initializePlayerCustomizationListeners() {
+    const playerCustomization = game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization');
+    if (!playerCustomization) return;
+
     const colorInput = document.querySelector('color-picker[name="player-color"]');
     if (!colorInput) return;
 
+    // Apply the initial color value immediately
+    const initialColor = colorInput.value || '#000000';
+    if (initialColor) {
+      game.user.update({
+        color: initialColor
+      });
+
+      const colorElements = document.querySelectorAll('.hm-player-color');
+      colorElements.forEach((el) => {
+        el.style.color = initialColor;
+      });
+    }
+
+    // Set up mutation observer to watch for value changes that might happen during rendering
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+          const newColor = colorInput.value || '#000000';
+
+          game.user.update({
+            color: newColor
+          });
+
+          const colorElements = document.querySelectorAll('.hm-player-color');
+          colorElements.forEach((el) => {
+            el.style.color = newColor;
+          });
+        }
+      });
+    });
+
+    // Start observing the color-picker for attribute changes
+    observer.observe(colorInput, { attributes: true });
+
+    // Also keep the regular change event listener for user interactions
     colorInput.addEventListener('change', (e) => {
       const newColor = e.currentTarget.value || '#000000';
 
@@ -277,6 +321,10 @@ export class Listeners {
         el.style.color = newColor;
       });
     });
+
+    // Make sure to disconnect the observer when appropriate (e.g., when the application closes)
+    // Store it on a class property so you can access it elsewhere
+    this.colorObserver = observer;
   }
 
   /**
@@ -285,6 +333,9 @@ export class Listeners {
    * @static
    */
   static initializeFormValidationListeners(html) {
+    const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
+    if (mandatoryFields.length === 0) return;
+
     const formElements = html.querySelectorAll('input, select, textarea, color-picker');
     formElements.forEach((element) => {
       // Remove previous listeners to avoid duplication

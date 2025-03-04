@@ -1,22 +1,16 @@
 <footer>
-	<div class='hm-app-footer-actions'>
+	<div class='hm-app-footer-actions flex justify-center items-center gap-md whitespace-nowrap'>
 		<!-- Submit Button with aria-label and described by the tooltip -->
-		<button type='submit' class='hm-app-footer-submit' data-tooltip='{{localize "hm.app.submit"}}' aria-label='{{localize "hm.app.submit"}}' aria-describedby='submit-tooltip' role='button'>
+		<button type='submit' class='hm-app-footer-submit' data-tooltip='{{localize "hm.app.submit"}}'
+			aria-label='{{localize "hm.app.submit"}}' aria-describedby='submit-tooltip' role='button'>
 			{{localize 'hm.app.submit'}}
 		</button>
 		<!-- Tooltip for Submit Button -->
 		<span id='submit-tooltip' class='sr-only'>{{localize 'hm.app.submit'}}</span>
 
 		<!-- Cancel Button with aria-label and described by the tooltip -->
-		<button
-			type='button'
-			data-action='close'
-			class='hm-app-footer-cancel'
-			data-tooltip='{{localize "hm.app.cancel"}}'
-			aria-label='{{localize "hm.app.cancel"}}'
-			aria-describedby='cancel-tooltip'
-			role='button'
-		>
+		<button type='button' data-action='close' class='hm-app-footer-cancel' data-tooltip='{{localize "hm.app.cancel"}}'
+			aria-label='{{localize "hm.app.cancel"}}' aria-describedby='cancel-tooltip' role='button'>
 			{{localize 'hm.app.cancel'}}
 		</button>
 		<!-- Tooltip for Cancel Button -->

@@ -1,13 +1,13 @@
 <form>
-  <div class="fields-container">
+  <div class="fields-container overflow-y-auto pr-sm">
     <!-- Start Tab Section -->
-    <div class="field-group">
-      <h3>{{localize "hm.settings.mandatory-fields.groups.start"}}</h3>
+    <div class="field-group p-sm">
+      <h3 class="font-bold pb-xs">{{localize "hm.settings.mandatory-fields.groups.start"}}</h3>
       <div class="basic-fields">
-        <h4>{{localize "hm.settings.mandatory-fields.groups.basic"}}</h4>
+        <h4 class="text-md mb-xs">{{localize "hm.settings.mandatory-fields.groups.basic"}}</h4>
         {{#each fields.basic}}
-          <div class="form-group">
-            <label>
+          <div class="form-group flex flex-col gap-xs pl-sm mb-xs">
+            <label class="flex items-center gap-sm">
               <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
               {{this.label}}
             </label>
@@ -17,10 +17,10 @@
 
       {{#if playerCustomizationEnabled}}
         <div class="player-customization-fields">
-          <h4>{{localize "hm.settings.mandatory-fields.groups.player"}}</h4>
+          <h4 class="text-md mb-xs">{{localize "hm.settings.mandatory-fields.groups.player"}}</h4>
           {{#each fields.player}}
-            <div class="form-group">
-              <label>
+            <div class="form-group flex flex-col gap-xs pl-sm mb-xs">
+              <label class="flex items-center gap-sm">
                 <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
                 {{this.label}}
               </label>
@@ -31,10 +31,10 @@
 
       {{#if tokenCustomizationEnabled}}
         <div class="token-customization-fields">
-          <h4>{{localize "hm.settings.mandatory-fields.groups.token"}}</h4>
+          <h4 class="text-md mb-xs">{{localize "hm.settings.mandatory-fields.groups.token"}}</h4>
           {{#each fields.token}}
-            <div class="form-group">
-              <label>
+            <div class="form-group flex flex-col gap-xs pl-sm mb-xs">
+              <label class="flex items-center gap-sm">
                 <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
                 {{this.label}}
               </label>
@@ -45,12 +45,12 @@
     </div>
 
     <!-- Core Character Sections -->
-    <div class="field-group">
-      <h3>{{localize "hm.settings.mandatory-fields.groups.core"}}</h3>
+    <div class="field-group p-sm">
+      <h3 class="font-bold pb-xs">{{localize "hm.settings.mandatory-fields.groups.core"}}</h3>
 
       {{#each fields.core}}
-        <div class="form-group">
-          <label>
+        <div class="form-group flex flex-col gap-xs pl-sm mb-xs">
+          <label class="flex items-center gap-sm">
             <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
             {{this.label}}
           </label>
@@ -59,11 +59,11 @@
     </div>
 
     <!-- Abilities Section -->
-    <div class="field-group">
-      <h3>{{localize "hm.settings.mandatory-fields.groups.abilities"}}</h3>
+    <div class="field-group p-sm">
+      <h3 class="font-bold pb-xs">{{localize "hm.settings.mandatory-fields.groups.abilities"}}</h3>
       {{#each fields.abilities}}
-        <div class="form-group">
-          <label>
+        <div class="form-group flex flex-col gap-xs pl-sm mb-xs">
+          <label class="flex items-center gap-sm">
             <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
             {{this.label}}
           </label>
@@ -72,15 +72,15 @@
     </div>
 
     <!-- Character Details Section -->
-    <div class="field-group">
-      <h3>{{localize "hm.settings.mandatory-fields.groups.biography"}}</h3>
+    <div class="field-group p-sm">
+      <h3 class="font-bold pb-xs">{{localize "hm.settings.mandatory-fields.groups.biography"}}</h3>
 
       <!-- Details Fields -->
       <div class="details-fields">
-        <h4>{{localize "hm.settings.mandatory-fields.groups.details"}}</h4>
+        <h4 class="text-md mb-xs">{{localize "hm.settings.mandatory-fields.groups.details"}}</h4>
         {{#each fields.details}}
-          <div class="form-group">
-            <label>
+          <div class="form-group flex flex-col gap-xs pl-sm mb-xs">
+            <label class="flex items-center gap-sm">
               <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
               {{this.label}}
             </label>
@@ -90,10 +90,10 @@
 
       <!-- Physical Fields -->
       <div class="physical-fields">
-        <h4>{{localize "hm.settings.mandatory-fields.groups.physical"}}</h4>
+        <h4 class="text-md mb-xs">{{localize "hm.settings.mandatory-fields.groups.physical"}}</h4>
         {{#each fields.physical}}
-          <div class="form-group">
-            <label>
+          <div class="form-group flex flex-col gap-xs pl-sm mb-xs">
+            <label class="flex items-center gap-sm">
               <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
               {{this.label}}
             </label>
@@ -103,10 +103,10 @@
 
       <!-- Personality Fields -->
       <div class="personality-fields">
-        <h4>{{localize "hm.settings.mandatory-fields.groups.personality"}}</h4>
+        <h4 class="text-md mb-xs">{{localize "hm.settings.mandatory-fields.groups.personality"}}</h4>
         {{#each fields.personality}}
-          <div class="form-group">
-            <label>
+          <div class="form-group flex flex-col gap-xs pl-sm mb-xs">
+            <label class="flex items-center gap-sm">
               <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
               {{this.label}}
             </label>

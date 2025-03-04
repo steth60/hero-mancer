@@ -408,55 +408,42 @@ export class DropdownHandler {
    * @static
    */
   static handleStandardArrayMode(abilityDropdowns, selectedValues) {
-    // Count how many times each value can be selected in total
+    // Get the standard array from the first dropdown's options
     const valueOccurrences = {};
-
-    // Get the actual standard array values from the first dropdown
     const firstDropdown = abilityDropdowns[0];
     const availableOptions = Array.from(firstDropdown.options).filter((opt) => opt.value && opt.value !== '');
 
-    // Count occurrences in the first dropdown (which reflects the defined standard array)
+    // Count occurrences of each value in the standard array
     availableOptions.forEach((option) => {
       const value = option.value;
       if (value) valueOccurrences[value] = (valueOccurrences[value] || 0) + 1;
     });
 
-    HM.log(3, 'Value occurrences in standard array:', valueOccurrences);
-
-    // Count how many times each value is currently selected
+    // Count current selections
     const selectedCounts = {};
     selectedValues.forEach((value) => {
-      if (value) {
-        selectedCounts[value] = (selectedCounts[value] || 0) + 1;
-      }
+      if (value) selectedCounts[value] = (selectedCounts[value] || 0) + 1;
     });
 
-    HM.log(3, 'Current selection counts:', selectedCounts);
-
-    // Update all dropdowns
+    // Update each dropdown
     abilityDropdowns.forEach((dropdown, index) => {
       const currentValue = selectedValues[index];
       const valuesToDisable = {};
 
-      // Initialize a counter for each value that has been selected
+      // For each selected value, determine how many instances to disable
       Object.entries(selectedCounts).forEach(([value, count]) => {
         valuesToDisable[value] = count;
-
-        // If this is the current value of this dropdown, decrement the count
-        // since we don't want to disable the current selection
+        // Don't disable the current selection
         if (value === currentValue) {
           valuesToDisable[value]--;
         }
       });
 
-      // Update all options in this dropdown
+      // Apply disabling to options
       Array.from(dropdown.options).forEach((option) => {
         const optionValue = option.value;
+        if (!optionValue) return; // Skip empty option
 
-        // Skip the empty option
-        if (!optionValue) return;
-
-        // If this value needs to be disabled and we haven't disabled enough instances yet
         if (valuesToDisable[optionValue] > 0) {
           option.disabled = true;
           valuesToDisable[optionValue]--;

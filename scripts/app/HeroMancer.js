@@ -157,7 +157,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Get dice rolling method once and reuse it
     const diceRollMethod = this.#getDiceRollingMethod();
-    HM.log(1, 'Dice Roll Method in _prepareContext:', diceRollMethod);
+    HM.log(3, 'Dice Roll Method in _prepareContext:', diceRollMethod);
 
     // Prepare context with all required data
     return {
@@ -177,7 +177,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
       tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
       token: this.#getTokenConfig(),
-      mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields')
+      mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields'),
+      randomSafeColor: HeroMancer.#randomSafeColor()
     };
   }
 
@@ -402,7 +403,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     HM.log(3, 'Closing application.');
     await HeroMancer.cleanupEventListeners(this);
     EventDispatcher.clearAll();
-    HtmlManipulator.removeButtonEventListenersReferences();
+    HtmlManipulator.registerButton(); // Clears and recreates button listener
     HM.heroMancer = null; // Clear the instance
     super._onClose();
   }
@@ -541,6 +542,13 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
 
+  /**
+   * Resets all form options to their default values and clears user-saved flags
+   * @param {Event} event - The triggering event
+   * @param {HTMLElement} target - The DOM element that triggered the reset
+   * @returns {Promise<void>}
+   * @static
+   */
   static async resetOptions(event, target) {
     HM.log(3, 'Resetting options.', { event: event, target: target });
     await game.user.setFlag(HM.CONFIG.ID, SavedOptions.FLAG, null);
@@ -549,7 +557,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!form) return;
 
     form.querySelectorAll('select, input').forEach((elem) => {
-      if (elem.type === 'checkbox') {
+      if (elem.parentElement.localName === 'color-picker') {
+        elem.value = HeroMancer.#randomSafeColor();
+        elem.parentElement.value = HeroMancer.#randomSafeColor();
+      } else if (elem.type === 'checkbox') {
         elem.checked = false;
         elem.dispatchEvent(new Event('change'));
       } else if (elem.tagName === 'SELECT') {
@@ -596,17 +607,37 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  /* Logic for rolling stats and updating input fields */
+  /**
+   * Rolls an ability score using the configured dice rolling method
+   * @param {Event} _event - The triggering event
+   * @param {HTMLElement} form - The form element containing ability score data
+   * @returns {Promise<void>}
+   * @static
+   */
   static async rollStat(_event, form) {
     HM.log(3, 'Rolling stats using user-defined formula.');
     await StatRoller.rollAbilityScore(form); // Use the utility function
   }
 
+  /**
+   * Increases an ability score by 1 point
+   * @param {Event} _event - The triggering event
+   * @param {HTMLElement} form - The form element with the data-ability-index attribute
+   * @returns {void}
+   * @static
+   */
   static increaseScore(_event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
     Listeners.changeAbilityScoreValue(index, 1, HeroMancer.selectedAbilities);
   }
 
+  /**
+   * Decreases an ability score by 1 point
+   * @param {Event} _event - The triggering event
+   * @param {HTMLElement} form - The form element with the data-ability-index attribute
+   * @returns {void}
+   * @static
+   */
   static decreaseScore(_event, form) {
     const index = parseInt(form.getAttribute('data-ability-index'), 10);
     Listeners.changeAbilityScoreValue(index, -1, HeroMancer.selectedAbilities);
@@ -1278,6 +1309,13 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /*  Static Private Methods                      */
   /* -------------------------------------------- */
 
+  /**
+   * Transforms form data into a token configuration object
+   * @param {object} formData - The form data containing token configuration settings
+   * @returns {object} A token data object compatible with Foundry VTT's token system
+   * @private
+   * @static
+   */
   static #transformTokenData(formData) {
     try {
       HM.log(3, 'Transform Token Data - Input:', formData);
@@ -1295,14 +1333,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       // Only add token customization properties if enabled
       if (game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')) {
-        tokenData.displayName = parseInt(formData.displayName);
-        tokenData.displayBars = parseInt(formData.displayBars);
-        tokenData.bar1 = {
-          attribute: formData['bar1.attribute'] || null
-        };
-        tokenData.bar2 = {
-          attribute: formData['bar2.attribute'] || null
-        };
+        // Display settings
+        if (formData.displayName) tokenData.displayName = parseInt(formData.displayName);
+        if (formData.displayBars) tokenData.displayBars = parseInt(formData.displayBars);
+
+        // Bar settings
+        tokenData.bar1 = { attribute: formData['bar1.attribute'] || null };
+        tokenData.bar2 = { attribute: formData['bar2.attribute'] || null };
+
+        // Ring settings
         tokenData.ring = {
           enabled: formData['ring.enabled'] || false,
           colors: {
@@ -1321,6 +1360,13 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
+  /**
+   * Calculates token ring effects based on selected effect options
+   * @param {string[]} effectsArray - Array of effect names to be applied
+   * @returns {number} A bitwise flag representing the combined effects
+   * @private
+   * @static
+   */
   static #calculateRingEffects(effectsArray) {
     const TRE = CONFIG.Token.ring.ringClass.effects;
     let effects = TRE.ENABLED;
@@ -1332,5 +1378,28 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     });
 
     return effects;
+  }
+
+  /**
+   * Generates a random color from a predefined list of visually distinct, easy-to-see colors
+   * @returns {string} A hex color code string (e.g. '#FF5733')
+   * @private
+   * @static
+   */
+  static #randomSafeColor() {
+    // Pre-defined list of visually distinct, easy-to-see colors
+    const safeColorList = [
+      '#FF5733', // Bright orange-red
+      '#33FF57', // Bright green
+      '#3357FF', // Bright blue
+      '#FF33F5', // Bright pink
+      '#F5FF33', // Bright yellow
+      '#33FFF5', // Bright cyan
+      '#9D33FF', // Bright purple
+      '#FF9D33' // Bright amber
+    ];
+
+    // Randomly select a color from the list
+    return safeColorList[Math.floor(Math.random() * safeColorList.length)];
   }
 }

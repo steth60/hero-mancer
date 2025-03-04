@@ -519,6 +519,10 @@ export class SummaryManager {
       const portraitImg = portraitContainer.querySelector('img');
       if (portraitImg) {
         portraitImg.src = defaultImage;
+
+        // Check if dark mode is active and apply inversion if needed
+        const isDarkMode = game.settings.get('core', 'colorScheme') === 'dark';
+        this.applyDarkModeToImage(portraitImg, isDarkMode);
       }
 
       // Add name and art path update handling
@@ -532,12 +536,32 @@ export class SummaryManager {
         }
         if (portraitImg && artInput) {
           portraitImg.src = artInput.value || defaultImage;
+
+          // Reapply dark mode treatment when image changes
+          const isDarkMode = game.settings.get('core', 'colorScheme') === 'dark';
+          this.applyDarkModeToImage(portraitImg, isDarkMode);
         }
       };
 
       nameInput?.addEventListener('change', updatePortrait);
       artInput?.addEventListener('change', updatePortrait);
       updatePortrait();
+
+      // Listen for color scheme changes
+      Hooks.on('colorSchemeChange', (scheme) => {
+        if (portraitImg) {
+          this.applyDarkModeToImage(portraitImg, scheme === 'dark');
+        }
+      });
+    }
+  }
+
+  // Helper method to apply or remove dark mode treatment to images
+  static applyDarkModeToImage(imgElement, isDarkMode) {
+    if (isDarkMode) {
+      imgElement.style.filter = 'invert(1)';
+    } else {
+      imgElement.style.filter = 'none';
     }
   }
 

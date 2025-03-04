@@ -18,7 +18,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     position: {
       height: 'auto',
-      width: '650'
+      width: '550'
     },
     window: {
       icon: 'fa-solid fa-dice',

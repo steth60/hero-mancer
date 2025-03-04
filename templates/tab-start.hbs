@@ -39,8 +39,7 @@
       <hr />
       <div class="customization-row flex items-center gap-sm mb-sm" id="color-row">
         <label for="player-color" class="label-15">{{localize 'hm.app.start.player-color'}}</label>
-        <color-picker name="player-color" class="input-35" value=""
-          placeholder="{{localize 'hm.app.start.player-color-placeholder'}}" />
+        <color-picker id="player-color" name="player-color" class="input-35" value="{{randomSafeColor}}" />
       </div>
       <div class="customization-row flex items-center gap-sm mb-sm" id="pronoun-row">
         <label for="player-pronouns" class="label-15">{{localize 'hm.app.start.player-pronouns'}}</label>
@@ -98,12 +97,13 @@
 
       <div class="customization-row flex items-center gap-sm mb-sm">
         <label for="ring-color" class="label-15">{{localize "TOKEN.FIELDS.ring.colors.ring.label"}}</label>
-        <color-picker name="ring.color" class="input-35" value="{{ object.ring.color }}" />
+        <color-picker id="ring-color" name="ring.color" class="input-35" value="{{randomSafeColor}}" />
       </div>
 
       <div class="customization-row flex items-center gap-sm mb-sm">
         <label for="background-color" class="label-15">{{localize "DND5E.TokenRings.BackgroundColor"}}</label>
-        <color-picker name="backgroundColor" class="input-35" value="{{ object.backgroundColor }}" />
+        <color-picker id="background-color" name="backgroundColor" class="input-35"
+          value="{{ object.backgroundColor }}" />
       </div>
 
       <div class="customization-row flex flex-wrap items-center gap-sm mb-sm ring-effects">
