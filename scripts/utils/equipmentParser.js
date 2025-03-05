@@ -103,11 +103,15 @@ export class EquipmentParser {
    */
   classId;
 
+  classUUID;
+
   /**
    * ID of the selected background
    * @type {string}
    */
   backgroundId;
+
+  backgroundUUID;
 
   /**
    * Set of proficiencies the character has
@@ -126,7 +130,9 @@ export class EquipmentParser {
   constructor() {
     this.equipmentData = null;
     this.classId = HM.CONFIG.SELECT_STORAGE.class.selectedId;
+    this.classUUID = HM.CONFIG.SELECT_STORAGE.class.selectedUUID;
     this.backgroundId = HM.CONFIG.SELECT_STORAGE.background.selectedId;
+    this.backgroundUUID = HM.CONFIG.SELECT_STORAGE.background.selectedUUID;
     this.proficiencies = new Set();
     EquipmentParser.preloadCompendiumIndices();
   }
@@ -143,6 +149,7 @@ export class EquipmentParser {
   async fetchEquipmentData() {
     const classEquipment = await this.getStartingEquipment('class');
     const backgroundEquipment = await this.getStartingEquipment('background');
+
     this.equipmentData = {
       class: classEquipment || [],
       background: backgroundEquipment || []
@@ -195,23 +202,44 @@ export class EquipmentParser {
    * @throws {Error} If compendium lookup fails
    */
   async getStartingEquipment(type) {
-    const { selectedId } = HM.CONFIG.SELECT_STORAGE[type] || {};
-    HM.log(3, `Fetching starting equipment for type: ${type}, selectedId: ${selectedId}`);
+    const storedData = HM.CONFIG.SELECT_STORAGE[type] || {};
+    const selectedId = storedData.selectedId;
+    const selectedUUID = storedData.selectedUUID;
 
     if (!selectedId) {
       HM.log(3, `No selection found for type: ${type}. Ignore this warning if first-render.`);
       return [];
     }
 
-    const doc = await this.findItemDocumentById(selectedId);
+    let doc = null;
+
+    try {
+      // Try to get by UUID first
+      if (selectedUUID) {
+        doc = await fromUuidSync(selectedUUID);
+      }
+
+      // If UUID fails, try by ID
+      if (!doc) {
+        doc = await this.findItemDocumentById(selectedId);
+      }
+    } catch (error) {
+      HM.log(1, `Error retrieving document for ${type}:`, error);
+    }
 
     if (doc) {
       this.proficiencies = await this.extractProficienciesFromAdvancements(doc.system.advancement || []);
-    } else {
-      HM.log(2, `No document found for type ${type} with selectedId ${selectedId}`, { doc: doc });
-    }
 
-    return doc?.system.startingEquipment || [];
+      if (doc.system.startingEquipment) {
+        return doc.system.startingEquipment;
+      } else {
+        HM.log(2, `Document found but has no startingEquipment property: ${doc.name}`);
+        return [];
+      }
+    } else {
+      HM.log(2, `No document found for type ${type} with selectedId ${selectedId}`);
+      return [];
+    }
   }
 
   /**
@@ -342,19 +370,23 @@ export class EquipmentParser {
         for (const currentType of typesToRender) {
           const items = this.equipmentData[currentType] || [];
 
-          // Pre-fetch all item documents in parallel
-          const itemDocs = await Promise.all(
-            items.map(async (item) => {
-              if (!item.key) return { item, doc: null };
-              try {
-                const doc = await fromUuidSync(item.key);
-                return { item, doc };
-              } catch (error) {
-                HM.log(2, `Error pre-fetching item document for ${item.key}:`, error);
-                return { item, doc: null };
-              }
-            })
-          );
+          // Get stored data for current type
+          const storedData = HM.CONFIG.SELECT_STORAGE[currentType] || {};
+          const selectedId = storedData.selectedId || '';
+          const selectedUUID = storedData.selectedUUID || '';
+
+          // Get document for potential equipment description extraction
+          let documentWithEquipment = null;
+
+          if (currentType === 'class' && selectedId) {
+            HM.log(3, `Attempting to get class document for ID: ${selectedId}, UUID: ${selectedUUID}`);
+            documentWithEquipment = await fromUuidSync(selectedUUID);
+            HM.log(3, `Retrieved class document: ${documentWithEquipment?.name || 'unknown'}`, { doc: documentWithEquipment });
+          } else if (currentType === 'background' && selectedId) {
+            HM.log(3, `Attempting to get background document for ID: ${selectedId}, UUID: ${selectedUUID}`);
+            documentWithEquipment = await fromUuidSync(selectedUUID);
+            HM.log(3, `Retrieved background document: ${documentWithEquipment?.name || 'unknown'}`, { doc: documentWithEquipment });
+          }
 
           // Create section container
           let sectionContainer = container.querySelector(`.${currentType}-equipment-section`);
@@ -378,11 +410,82 @@ export class EquipmentParser {
           header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
           sectionContainer.appendChild(header);
 
-          if (currentType === 'class' && this.classId) {
-            await this.renderClassWealthOption(this.classId, sectionContainer).catch((error) => {
+          if (currentType === 'class' && selectedId) {
+            await this.renderClassWealthOption(selectedId, sectionContainer).catch((error) => {
               HM.log(1, `Error rendering wealth option: ${error.message}`);
             });
           }
+
+          // Check if items array is empty
+          if (!items.length) {
+            const emptyNotice = document.createElement('div');
+            emptyNotice.classList.add('equipment-empty-notice');
+
+            // Localized message with format for currentType
+            const messageKey = 'hm.errors.missing-equipment';
+            const defaultMessage = "The selected {type} doesn't contain any Starting Equipment data. Please report this to the creator of the item, not Hero Mancer.";
+            const message = game.i18n.format(messageKey, { type: currentType }, { fallback: defaultMessage });
+
+            // Create the notice with warning icon
+            emptyNotice.innerHTML = `<div class="equipment-missing-warning"><i class="fa-solid fa-triangle-exclamation warning-icon"></i><p>${message}</p></div>`;
+
+            // Try to extract equipment description from document if available
+            if (documentWithEquipment) {
+              HM.log(3, `Attempting to extract equipment info from ${currentType} document:`, documentWithEquipment.name);
+
+              // Log the structure to help debugging
+              HM.log(3, 'Document structure:', {
+                id: documentWithEquipment.id,
+                name: documentWithEquipment.name,
+                hasDescription: !!documentWithEquipment.system?.description?.value,
+                descriptionLength: documentWithEquipment.system?.description?.value?.length || 0
+              });
+
+              const equipmentDescription = this.extractEquipmentDescription(documentWithEquipment);
+              const divider = document.createElement('hr');
+              const extractedInfo = document.createElement('div');
+              extractedInfo.classList.add('extracted-equipment-info');
+              emptyNotice.appendChild(divider);
+
+              if (equipmentDescription) {
+                HM.log(3, `Successfully extracted equipment description for ${currentType}`);
+                extractedInfo.innerHTML = `<h4>${game.i18n.localize('hm.equipment.extracted-info')}</h4>${equipmentDescription}`;
+                emptyNotice.appendChild(extractedInfo);
+              } else {
+                extractedInfo.innerHTML = `<h4>${game.i18n.localize('hm.equipment.extracted-info')}</h4>${game.i18n.localize('hm.equipment.no-equipment-notice')}`;
+                emptyNotice.appendChild(extractedInfo);
+                HM.log(3, `No equipment description could be extracted from ${currentType} document`);
+
+                // Check if the document likely has equipment info but couldn't be extracted
+                const description = documentWithEquipment.system?.description?.value || '';
+                if (description.toLowerCase().includes('equipment')) {
+                  const noExtractionNote = document.createElement('p');
+                  noExtractionNote.classList.add('equipment-extraction-failed');
+                  noExtractionNote.innerHTML = 'Note: The document contains equipment information, but it could not be automatically extracted due to its format.';
+                  emptyNotice.appendChild(noExtractionNote);
+                }
+              }
+            } else {
+              HM.log(3, `No document found for ${currentType} to extract equipment description`);
+            }
+
+            sectionContainer.appendChild(emptyNotice);
+            continue; // Skip to the next type
+          }
+
+          // Pre-fetch all item documents in parallel
+          const itemDocs = await Promise.all(
+            items.map(async (item) => {
+              if (!item.key) return { item, doc: null };
+              try {
+                const doc = await fromUuidSync(item.key);
+                return { item, doc };
+              } catch (error) {
+                HM.log(2, `Error pre-fetching item document for ${item.key}:`, error);
+                return { item, doc: null };
+              }
+            })
+          );
 
           // Process all items with their pre-fetched documents
           const processedItems = new Set();
@@ -449,6 +552,190 @@ export class EquipmentParser {
         this._renderInProgress = false;
       }
     }
+  }
+
+  /**
+   * Extract equipment description from document HTML
+   * @param {Document} document - The document to extract equipment info from
+   * @returns {string|null} - HTML string with equipment description or null if not found
+   */
+  extractEquipmentDescription(document) {
+    HM.log(3, 'Attempting to extract equipment description from document:', document?.name || 'unnamed document');
+
+    if (!document) {
+      HM.log(3, 'No document provided to extract equipment from');
+      return null;
+    }
+
+    // Get the document's description
+    const description = document.system?.description?.value;
+    if (!description) {
+      HM.log(3, 'Document has no description (system.description.value is empty)');
+      return null;
+    }
+
+    HM.log(3, `Found description with length ${description.length} characters`);
+
+    // Create a temporary div to parse the HTML - use global document object
+    const tempDiv = window.document.createElement('div');
+    tempDiv.innerHTML = description;
+
+    // Helper function to check if an element is about equipment
+    const isEquipmentHeading = (element) => {
+      const text = element.textContent.toLowerCase();
+      const isEquipment = text.includes('equipment') || text.includes('starting equipment');
+      if (isEquipment) {
+        HM.log(3, `Found equipment heading: "${element.textContent}"`);
+      }
+      return isEquipment;
+    };
+
+    // Custom function to find elements with specific text
+    const findElementsWithText = (parent, selector, text) => {
+      const elements = parent.querySelectorAll(selector);
+      return Array.from(elements).filter((el) => el.textContent.toLowerCase().includes(text.toLowerCase()));
+    };
+
+    // Case 1: Check for "Starting Equipment" pattern (like Artificer)
+    const startingEquipmentElements = findElementsWithText(tempDiv, 'b, strong', 'Starting Equipment');
+
+    if (startingEquipmentElements.length > 0) {
+      HM.log(3, 'Found Starting Equipment heading');
+
+      const element = startingEquipmentElements[0];
+      let container = element.closest('p') || element.parentElement;
+
+      if (container) {
+        // Start with the heading paragraph
+        let combinedContent = container.outerHTML;
+        let currentElement = container.nextElementSibling;
+
+        // Gather additional related elements (paragraph, list, paragraph)
+        let elementsToInclude = 0;
+
+        // Include up to 3 following elements that could be part of the equipment description
+        while (currentElement && elementsToInclude < 3) {
+          // Always include an immediate list after the heading
+          if (currentElement.tagName === 'UL' || currentElement.tagName === 'OL') {
+            combinedContent += currentElement.outerHTML;
+            elementsToInclude++;
+          }
+          // Include paragraphs that are likely related to equipment
+          else if (currentElement.tagName === 'P') {
+            // Check if the paragraph is likely part of the equipment description
+            const text = currentElement.textContent.toLowerCase();
+            if (text.includes('equipment') || text.includes('background') || text.includes('gp to buy') || text.includes('gold') || text.includes('starting')) {
+              combinedContent += currentElement.outerHTML;
+              elementsToInclude++;
+            } else {
+              // Stop if we encounter an unrelated paragraph
+              break;
+            }
+          } else if (currentElement.tagName.match(/^H[1-6]$/)) {
+            break;
+          }
+          currentElement = currentElement.nextElementSibling;
+        }
+
+        HM.log(3, `Extracted complete equipment section: ${combinedContent.substring(0, 100)}...`);
+        return combinedContent;
+      }
+    }
+
+    // Case 2: Look for the specific PHB background format with Equipment: label
+    const equipmentLabels = findElementsWithText(tempDiv, '.Serif-Character-Style_Bold-Serif, .Bold-Serif, strong, b, span[class*="bold"], span[style*="font-weight"]', 'Equipment:');
+
+    if (equipmentLabels.length > 0) {
+      HM.log(3, 'Found PHB background format with Equipment: label');
+
+      // Find the containing paragraph
+      const equipmentLabel = equipmentLabels[0];
+      const parentParagraph = equipmentLabel.closest('p');
+
+      if (parentParagraph) {
+        // Extract just this single paragraph with the equipment info
+        const paragraphHTML = parentParagraph.outerHTML;
+        HM.log(3, `Extracted equipment paragraph: ${paragraphHTML.substring(0, 100)}...`);
+        return paragraphHTML;
+      }
+    }
+
+    // Case 3: Look for definition list (dt/dd) format
+    const definitionTerms = tempDiv.querySelectorAll('dt');
+    for (const dt of definitionTerms) {
+      if (dt.textContent.toLowerCase().includes('equipment:')) {
+        HM.log(3, 'Found equipment in definition list');
+        return dt.outerHTML;
+      }
+    }
+
+    // Case 4: Look for equipment headings (h1-h6)
+    const headings = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    for (const heading of headings) {
+      if (isEquipmentHeading(heading)) {
+        HM.log(3, `Found equipment heading: ${heading.outerHTML}`);
+
+        let content = heading.outerHTML;
+        let currentElement = heading.nextElementSibling;
+
+        // Include relevant content after the heading
+        while (currentElement && !currentElement.tagName.match(/^H[1-6]$/) && content.length < 1000) {
+          // Include paragraphs and lists that are likely related
+          if (['P', 'UL', 'OL'].includes(currentElement.tagName)) {
+            content += currentElement.outerHTML;
+          } else {
+            break;
+          }
+
+          currentElement = currentElement.nextElementSibling;
+        }
+
+        HM.log(3, `Extracted equipment section from heading: ${content.substring(0, 100)}...`);
+        return content;
+      }
+    }
+
+    // Case 5: Generic search for paragraphs that contain equipment
+    const paragraphs = tempDiv.querySelectorAll('p');
+    for (const para of paragraphs) {
+      if (isEquipmentHeading(para)) {
+        HM.log(3, `Found paragraph with equipment: ${para.textContent.substring(0, 40)}...`);
+
+        let content = para.outerHTML;
+        let nextElement = para.nextElementSibling;
+
+        // Check if there's a list right after this paragraph
+        if (nextElement && (nextElement.tagName === 'UL' || nextElement.tagName === 'OL')) {
+          content += nextElement.outerHTML;
+
+          // Also include a follow-up paragraph if it appears to be related
+          let afterList = nextElement.nextElementSibling;
+          if (
+            afterList &&
+            afterList.tagName === 'P' &&
+            (afterList.textContent.toLowerCase().includes('equipment') || afterList.textContent.toLowerCase().includes('gold') || afterList.textContent.toLowerCase().includes('gp'))
+          ) {
+            content += afterList.outerHTML;
+          }
+        }
+
+        HM.log(3, `Extracted equipment paragraph and related content: ${content.substring(0, 100)}...`);
+        return content;
+      }
+    }
+
+    // Final fallback - check for plain text mentions of equipment
+    const equipmentRegex = /equipment:([^<]+)(?:<\/|<br|$)/i;
+    const match = description.match(equipmentRegex);
+
+    if (match) {
+      const equipmentText = match[1].trim();
+      HM.log(3, `Found equipment via regex: "${equipmentText.substring(0, 40)}..."`);
+      return `<p><strong>Equipment:</strong> ${equipmentText}</p>`;
+    }
+
+    HM.log(3, 'Failed to extract equipment description using any method');
+    return null;
   }
 
   /* -------------------------------------------- */
@@ -542,7 +829,14 @@ export class EquipmentParser {
         switch (item.type) {
           case 'OR':
             HM.log(3, `DEBUG: Rendering OR block for item: ${item._source?.key}`, { item: item });
-            result = await this.#renderOrBlock(item, itemContainer);
+
+            // System bug in PHB Premium Module
+            if (!item.group) {
+              HM.log(2, `Empty OR block detected, treating as AND: ${item._source?.key}`, { item: item });
+              result = await this.#renderAndBlock(item, itemContainer);
+            } else {
+              result = await this.#renderOrBlock(item, itemContainer);
+            }
             break;
           case 'AND':
             HM.log(3, `DEBUG: Rendering AND block for item: ${item._source?.key || item.type}`, { item: item });

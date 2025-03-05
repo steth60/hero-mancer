@@ -120,9 +120,11 @@ export class Listeners {
 
       classDropdown._equipmentChangeHandler = async (event) => {
         const selectedValue = event.target.value;
+
         HM.CONFIG.SELECT_STORAGE.class = {
           selectedValue,
-          selectedId: selectedValue.split(' ')[0]
+          selectedId: selectedValue.split(' ')[0],
+          selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
         };
 
         // Create a new parser for this update
@@ -142,9 +144,11 @@ export class Listeners {
 
       backgroundDropdown._equipmentChangeHandler = async (event) => {
         const selectedValue = event.target.value;
+
         HM.CONFIG.SELECT_STORAGE.background = {
           selectedValue,
-          selectedId: selectedValue.split(' ')[0]
+          selectedId: selectedValue.split(' ')[0],
+          selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
         };
 
         // Create a new parser for this update

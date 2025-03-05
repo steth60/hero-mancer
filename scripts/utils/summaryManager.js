@@ -105,10 +105,10 @@ class TableManager {
    */
   static updateRollButtonsAvailability(foundTableTypes) {
     const typeToFieldMap = {
-      'Personality Traits': 'traits',
-      'Ideals': 'ideals',
-      'Bonds': 'bonds',
-      'Flaws': 'flaws'
+      [game.i18n.localize('DND5E.PersonalityTraits')]: 'traits',
+      [game.i18n.localize('DND5E.Ideals')]: 'ideals',
+      [game.i18n.localize('DND5E.Bonds')]: 'bonds',
+      [game.i18n.localize('DND5E.Flaws')]: 'flaws'
     };
 
     // Collect all DOM updates
@@ -357,8 +357,7 @@ export class SummaryManager {
     const [itemId, packId] = selectedOption.value.split(' (');
     if (!itemId || !packId) return;
 
-    const cleanPackId = packId.slice(0, -1);
-    const uuid = `Compendium.${cleanPackId}.Item.${itemId}`;
+    const uuid = HM.CONFIG.SELECT_STORAGE.background.selectedUUID;
     const backgroundName = selectedOption.text;
     const article = /^[aeiou]/i.test(backgroundName) ? game.i18n.localize('hm.app.equipment.article-plural') : game.i18n.localize('hm.app.equipment.article');
 
@@ -385,10 +384,19 @@ export class SummaryManager {
       const option = select.options[select.selectedIndex];
       if (!option?.value) return null;
 
+      // Extract UUID directly from square brackets if present
+      const uuidMatch = option.value.match(/\[(.*?)]/);
+      if (uuidMatch && uuidMatch[1]) {
+        HM.log(3, 'Extracted UUID directly:', uuidMatch[1]);
+        return `@UUID[${uuidMatch[1]}]{${option.text}}`;
+      }
+
+      // Fall back to original parsing method if no UUID in brackets
       const [itemId, packId] = option.value.split(' (');
       if (!itemId || !packId) return null;
 
-      const cleanPackId = packId.slice(0, -1);
+      const cleanPackId = packId.replace(')', '');
+      HM.log(3, 'Created UUID from parts:', { itemId, cleanPackId });
       const uuid = `Compendium.${cleanPackId}.Item.${itemId}`;
       return `@UUID[${uuid}]{${option.text}}`;
     };
@@ -641,9 +649,7 @@ export class SummaryManager {
       return;
     }
 
-    const [itemId, packId] = selectedBackground.selectedValue.split(' (');
-    const cleanPackId = packId.slice(0, -1);
-    const uuid = `Compendium.${cleanPackId}.Item.${itemId}`;
+    const uuid = HM.CONFIG.SELECT_STORAGE.background.selectedUUID;
 
     try {
       const background = await fromUuid(uuid);

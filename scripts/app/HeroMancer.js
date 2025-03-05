@@ -25,6 +25,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static selectedAbilities = [];
 
+  static ORIGINAL_PLAYER_COLOR = '';
+
   /** @override */
   static DEFAULT_OPTIONS = {
     id: `${HM.CONFIG.ID}-app`,
@@ -340,6 +342,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
+  _preRender(context, options) {
+    HeroMancer.ORIGINAL_PLAYER_COLOR = game.user.color.css;
+    HM.log(3, 'Original Player Color Recorded', HeroMancer.ORIGINAL_PLAYER_COLOR);
+  }
+
   /**
    * Actions performed after any render of the Application.
    * Post-render steps are not awaited by the render process.
@@ -401,6 +408,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   async _onClose() {
     HM.log(3, 'Closing application.');
+    await game.user.update({
+      color: HeroMancer.ORIGINAL_PLAYER_COLOR
+    });
     await HeroMancer.cleanupEventListeners(this);
     EventDispatcher.clearAll();
     HtmlManipulator.registerButton(); // Clears and recreates button listener
@@ -737,12 +747,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         HM.log(1, 'Error cleaning up ability blocks:', error);
         cleanupIssues.push('ability blocks');
       }
-
-      // Check mandatory fields
-      const missingFields = mandatoryFields.filter((field) => {
-        const value = formData.object[field];
-        return value === undefined || value === null || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0);
-      });
 
       // Clean up equipment container
       try {
@@ -1405,7 +1409,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       '#FF9D33' // Bright amber
     ];
 
-    // Randomly select a color from the list
-    return safeColorList[Math.floor(Math.random() * safeColorList.length)];
+    if (game.user.color.css === '' || game.user.color.css === '#FFFFFF' || game.user.color.css === '#000000') {
+      return safeColorList[Math.floor(Math.random() * safeColorList.length)];
+    } else {
+      return game.user.color.css;
+    }
   }
 }

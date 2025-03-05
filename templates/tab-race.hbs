@@ -17,7 +17,7 @@
           {{#if this.folderName}}
             <optgroup label='{{this.folderName}}'>
               {{#each this.docs}}
-                <option value='{{this.id}} ({{this.packId}})'>
+                <option value='{{this.id}} ({{this.packId}}) [{{this.uuid}}]'>
                   {{this.name}}
                   ({{this.packName}})
                 </option>

@@ -69,10 +69,11 @@ export class DocumentService {
           documents.forEach((doc) => {
             if (!doc) return;
 
-            const packName = this.#determinePackName(pack.metadata.id);
+            const packName = this.#determinePackName(pack.metadata.label, pack.metadata.id);
             validPacks.add({
               doc,
               packName,
+              uuid: doc.uuid,
               packId: pack.metadata.id,
               description: doc.system.description?.value || game.i18n.localize('hm.app.no-description'),
               folderName: doc.folder?.name || null
@@ -100,22 +101,23 @@ export class DocumentService {
   }
 
   /**
-   * Determines pack name based on id
+   * Determines pack name based on id/label
+   * @param {string} label - Pack label
    * @param {string} id - Pack id
    * @returns {string} Formatted pack name
    * @private
    * @static
    */
-  static #determinePackName(id) {
-    if (id.includes('players-handbook')) return game.i18n.localize('hm.app.document-service.phb'); // Shorthand for 2024 PHB
-    if (id.includes('dnd5e')) return game.i18n.localize('hm.app.document-service.srd'); // Shorthand for SRD
-    if (id.includes('forge')) return game.i18n.localize('hm.app.document-service.forge'); // Shorthand for Forge
-    if (id.includes('ddb')) return game.i18n.localize('hm.app.document-service.dndbeyond-importer'); // Shorthand for DDB
-    if (/[./_-]home[\s_-]?brew[./_-]/i.test(id)) return game.i18n.localize('hm.app.document-service.homebrew'); // Shorthand for Homebrew
+  static #determinePackName(label, id) {
+    if (label.includes('PHB')) return game.i18n.localize('hm.app.document-service.phb'); // Shorthand for 2024 PHB
+    if (label.includes('SRD')) return game.i18n.localize('hm.app.document-service.srd'); // Shorthand for SRD
+    if (id.includes('Forge')) return game.i18n.localize('hm.app.document-service.forge'); // Shorthand for Forge
+    if (label.includes('DDB')) return game.i18n.localize('hm.app.document-service.dndbeyond-importer'); // Shorthand for DDB
+    if (/[./_-]home[\s_-]?brew[./_-]/i.test(label)) return game.i18n.localize('hm.app.document-service.homebrew'); // Shorthand for Homebrew
     if (game.modules.get('elkan5e')?.active) {
-      if (id.includes('elkan5e')) return game.i18n.localize('hm.app.document-service.elkan5e'); // Shorthand for Elkan 5e
+      if (label.includes('Elkan')) return game.i18n.localize('hm.app.document-service.elkan5e'); // Shorthand for Elkan 5e
     }
-    return id;
+    return label;
   }
 
   /**
@@ -127,13 +129,14 @@ export class DocumentService {
    */
   static #sortDocumentsByNameAndPack(documents) {
     return documents
-      .map(({ doc, packName, packId, description, folderName }) => ({
+      .map(({ doc, packName, packId, description, folderName, uuid }) => ({
         id: doc.id,
         name: doc.name,
         description,
         folderName,
         packName,
-        packId
+        packId,
+        uuid
       }))
       .sort((a, b) => {
         const nameCompare = a.name.localeCompare(b.name);
@@ -152,7 +155,7 @@ export class DocumentService {
   static #organizeDocumentsIntoGroups(documents, key) {
     const uniqueMap = new Map();
 
-    documents.forEach(({ id, name, description, packName, packId, folderName }) => {
+    documents.forEach(({ id, name, description, packName, packId, folderName, uuid }) => {
       const groupKey = key === 'folderName' ? folderName || name : packName;
 
       if (!uniqueMap.has(groupKey)) {
@@ -161,10 +164,11 @@ export class DocumentService {
           docs: [],
           packName,
           packId,
+          uuid,
           ...(folderName && { folderName })
         });
       }
-      uniqueMap.get(groupKey).docs.push({ id, name, description, packName, packId });
+      uniqueMap.get(groupKey).docs.push({ id, name, description, packName, packId, uuid });
     });
 
     return Array.from(uniqueMap.values())

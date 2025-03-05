@@ -258,9 +258,14 @@ export class DropdownHandler {
   static async handleDropdownChange(type, html, context, event) {
     try {
       const selectedValue = event.target.value;
-      const selectedId = selectedValue.replace(/\s?\(.*?\)/, '');
 
-      HM.CONFIG.SELECT_STORAGE[type] = { selectedValue, selectedId };
+      // Extract the ID (everything before the first space)
+      const selectedId = selectedValue.split(' ')[0].trim();
+
+      // Extract the UUID (content inside square brackets)
+      const selectedUUID = selectedValue.match(/\[(.*?)]/)?.[1] || '';
+
+      HM.CONFIG.SELECT_STORAGE[type] = { selectedValue, selectedId, selectedUUID };
       await this.updateDescription(type, selectedId, context);
     } catch (error) {
       HM.log(1, `Error handling dropdown change for ${type}:`, error);

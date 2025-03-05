@@ -95,7 +95,6 @@ export class HM {
       this.documents = { race: raceDocs, class: classDocs, background: backgroundDocs };
 
       const allDocs = [...(raceDocs?.flatMap((folder) => folder.docs) || []), ...(classDocs?.flatMap((pack) => pack.docs) || []), ...(backgroundDocs?.flatMap((pack) => pack.docs) || [])];
-
       await Promise.all(
         allDocs.map(async (doc) => {
           if (doc?.description) {
@@ -127,9 +126,9 @@ export class HM {
 }
 
 HM.CONFIG.SELECT_STORAGE = {
-  class: { selectedValue: '', selectedId: '' },
-  race: { selectedValue: '', selectedId: '' },
-  background: { selectedValue: '', selectedId: '' }
+  class: { selectedValue: '', selectedId: '', selectedUUID: '' },
+  race: { selectedValue: '', selectedId: '', selectedUUID: '' },
+  background: { selectedValue: '', selectedId: '', selectedUUID: '' }
 };
 
 /* -------------------------------------------- */

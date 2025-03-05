@@ -238,7 +238,8 @@
 .application.hm-app .fa-egg,
 .application.hm-app .fa-dice,
 .application.hm-app .fa-list-check,
-.application.hm-app .fa-atlas {
+.application.hm-app .fa-atlas,
+.hm-compendiums-popup-dialog .fa-solid {
   color: var(--user-color);
 }
 
@@ -829,7 +830,7 @@
 
 /* Wealth option container */
 .wealth-option-container {
-  margin: 0 0 2rem;
+  margin: 0 0 10px;
   padding: 0.625rem;
   border: 1px solid var(--color-border-light-tertiary);
   border-radius: 4px;
@@ -863,6 +864,35 @@
   margin-bottom: 0.5rem;
   color: var(--color-text-dark-secondary);
   font-size: var(--font-size-14);
+}
+
+.equipment-empty-notice {
+  padding: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid var(--color-level-error-border);
+}
+
+.equipment-missing-warning {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  display: flex;
+}
+
+.warning-icon {
+  color: var(--color-level-error);
+  font-size: 2rem;
+}
+
+.extracted-equipment-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-left: 2px solid #a0a0a0;
+}
+
+.extracted-equipment-info h4 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
 }
 
 /* ==========================================================================
@@ -1036,9 +1066,16 @@
 }
 
 /* Dialog styling */
-.hm-compendiums-popup-dialog .dialog-content {
+.hm-compendiums-popup-dialog .dialog-content,
+.hm-compendiums-popup-dialog .window-content form {
   padding: 0.5rem;
   overflow: hidden;
+  height: fit-content;
+}
+
+.hm-compendiums-popup-dialog .window-content {
+  height: fit-content;
+  max-height: calc(100vh - 200px);
 }
 
 /* Multi-checkbox layout */
@@ -1060,6 +1097,30 @@
 .hm-compendiums-popup-dialog multi-checkbox label.checkbox input[type='checkbox'] {
   order: 1;
   margin-left: 10px;
+}
+
+.hm-compendium-groups {
+  overflow-y: auto;
+}
+
+.hm-compendium-global-header {
+  font-weight: bold;
+}
+
+.hm-compendium-group-header {
+  padding: 0.1rem 0.5rem;
+  font-weight: bold;
+}
+
+.hm-compendium-group-items {
+  margin-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.hm-compendium-group .hm-compendium-group-items .hm-compendium-item {
+  margin: 0.1rem;
+  padding: 0;
 }
 
 /* Mandatory fields popup */

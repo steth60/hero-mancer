@@ -180,6 +180,7 @@
       "equipment-rendering": "There was an error loading equipment. Please try a different selection or refresh the application.",
       "event-handler-error": "An error occurred while processing an event.",
       "failed-compendium-retrieval": "Failed to retrieve documents from compendium pack: {type}",
+      "fetch-fail": "Failed to fetch some documents, please check console for errors.",
       "form-submission": "There was an error submitting the form. Please try again.",
       "missing-mandatory-fields": "Required fields missing: {fields}",
       "no-background": "The selected background could not be found.",
@@ -190,7 +191,8 @@
       "select-background": "Please select a background before submitting.",
       "select-class": "Please select a class before submitting.",
       "select-race": "Please select a race before submitting.",
-      "tab-navigation": "There was an error navigating to the selected tab."
+      "tab-navigation": "There was an error navigating to the selected tab.",
+      "missing-equipment": "The selected {type} doesn't contain any Starting Equipment data. Please report this to the creator of the item, not Hero Mancer."
     },
     "settings": {
       "alignments": {
@@ -238,7 +240,8 @@
         "race": "Race",
         "races-label": "Set Race Compendiums:",
         "saved": "{type} compendium settings have been saved.",
-        "title": "Select your {type} compendiums!"
+        "title": "Select your {type} compendiums!",
+        "select-all": "Select All"
       },
       "custom-point-buy-total": {
         "hint": "Specify the point buy total if not using standard calculations.",
@@ -340,6 +343,10 @@
       "advancement-timeout": "The advancement process for {item} took too long and was skipped.",
       "partial-cleanup": "Some resources could not be properly cleaned up.",
       "select-background": "You must select a valid background first."
+    },
+    "equipment": {
+      "extracted-info": "Equipment found in description:",
+      "no-equipment-notice": "Unable to find any starting equipment data in the raw description, you're on your own!"
     }
   }
 }

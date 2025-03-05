@@ -16,7 +16,7 @@
         {{#each classDocs}}
           <optgroup label='{{this.packName}}'>
             {{#each this.docs}}
-              <option value='{{this.id}} ({{this.packId}})'>
+              <option value='{{this.id}} ({{this.packId}}) [{{this.uuid}}]'>
                 {{this.name}}
               </option>
             {{/each}}
