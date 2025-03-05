@@ -1402,7 +1402,7 @@ export class EquipmentParser {
     labelElement.prepend(linkedCheckbox);
     itemContainer.appendChild(labelElement);
 
-    // Only mark as rendered after successful creation
+    this.#addFavoriteStar(itemContainer, item);
     EquipmentParser.renderedItems.add(item._id);
 
     HM.log(3, `Completed linked item render: ${item._id}`);
@@ -1683,6 +1683,7 @@ export class EquipmentParser {
     }
 
     HM.log(3, `Completed OR block render: ${item._id}`);
+    this.#addFavoriteStar(itemContainer, item);
     return itemContainer;
   }
 
@@ -1716,6 +1717,53 @@ export class EquipmentParser {
 
     // Top-level OR blocks should be dropdowns
     return item.type === 'OR';
+  }
+
+  /**
+   * Creates and adds a favorite star checkbox to an equipment item container
+   * @param {HTMLElement} container - The item container element
+   * @param {object} item - The item data object
+   * @returns {HTMLElement} The created favorite checkbox
+   * @private
+   */
+  #addFavoriteStar(container, item) {
+    // Create the favorite container
+    const favoriteContainer = document.createElement('div');
+    favoriteContainer.classList.add('equipment-favorite-container');
+
+    // Create the label for the checkbox
+    const favoriteLabel = document.createElement('label');
+    favoriteLabel.classList.add('equipment-favorite-label');
+    favoriteLabel.title = 'Add to favorites';
+
+    // Create the checkbox (hidden)
+    const favoriteCheckbox = document.createElement('input');
+    favoriteCheckbox.type = 'checkbox';
+    favoriteCheckbox.classList.add('equipment-favorite-checkbox');
+    favoriteCheckbox.dataset.itemName = item.name || item.label || '';
+    favoriteCheckbox.dataset.itemId = item._id || item._source?.key || '';
+
+    // Create the star icon
+    const starIcon = document.createElement('i');
+    starIcon.classList.add('fas', 'fa-star', 'equipment-favorite-star');
+
+    // Assemble the components
+    favoriteLabel.appendChild(favoriteCheckbox);
+    favoriteLabel.appendChild(starIcon);
+    favoriteContainer.appendChild(favoriteLabel);
+
+    // Find where to append the star
+    if (container.querySelector('label')) {
+      const itemLabel = container.querySelector('label');
+      itemLabel.appendChild(favoriteContainer);
+    } else if (container.querySelector('h4')) {
+      const itemHeader = container.querySelector('h4');
+      itemHeader.appendChild(favoriteContainer);
+    } else {
+      container.appendChild(favoriteContainer);
+    }
+
+    return favoriteCheckbox;
   }
 
   /* -------------------------------------------- */
@@ -1824,6 +1872,8 @@ export class EquipmentParser {
 
             const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
             const optionText = selectedOption?.textContent || '';
+            const favoriteCheckbox = dropdown.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
+            const isFavorite = favoriteCheckbox?.checked || false;
 
             const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
             const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i);
@@ -1846,7 +1896,8 @@ export class EquipmentParser {
                   ...itemData.system,
                   quantity: quantity,
                   equipped: true
-                }
+                },
+                favorite: isFavorite
               });
             }
           } catch (error) {
@@ -1870,6 +1921,8 @@ export class EquipmentParser {
             const itemIds = checkbox.id.split(',').filter((id) => id);
             // Split on '+' and trim each part
             const entries = fullLabel.split('+').map((entry) => entry.trim());
+            const favoriteCheckbox = checkbox.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
+            const isFavorite = favoriteCheckbox?.checked || false;
 
             // Fetch all items in parallel
             const items = await Promise.all(
@@ -1912,7 +1965,8 @@ export class EquipmentParser {
                     ...itemData.system,
                     quantity: quantity,
                     equipped: true
-                  }
+                  },
+                  favorite: isFavorite
                 });
                 HM.log(3, `Added item to equipment: ${item.name} (qty: ${quantity})`);
               }

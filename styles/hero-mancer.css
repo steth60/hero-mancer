@@ -895,6 +895,44 @@
   font-size: 1rem;
 }
 
+/* Favorite star styling */
+.equipment-favorite-container {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.equipment-favorite-label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.equipment-favorite-checkbox {
+  position: absolute;
+  opacity: 0; /* Hide actual checkbox */
+  width: 0;
+  height: 0;
+}
+
+.equipment-favorite-star {
+  color: #aaa;
+  font-size: 1.2em;
+  transition: color 0.2s ease;
+}
+
+.equipment-favorite-checkbox:checked + .equipment-favorite-star {
+  color: #ffd700;
+}
+
+.equipment-favorite-checkbox:focus + .equipment-favorite-star {
+  outline: 1px solid #4d90fe;
+}
+
+.equipment-favorite-checkbox:hover + .equipment-favorite-star {
+  color: #f0b400;
+}
+
 /* ==========================================================================
     Finalize Tab - Summary Section
    ========================================================================== */

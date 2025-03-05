@@ -972,8 +972,10 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       // Extract itemId and packId from the formData
       const extractIds = (itemString) => {
-        const regex = /^(.+?)\s\((.+)\)$/;
+        const regex = /^([\dA-Za-z]+)\s\(([^)]+)\)/;
         const match = itemString.match(regex);
+        HM.log(1, 'MATCH:', { match, itemString });
+
         return match ? { itemId: match[1], packId: match[2] } : null;
       };
 
@@ -981,7 +983,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       const raceData = extractIds(formData.object.race);
       const classData = extractIds(formData.object.class);
 
-      HM.log(3, 'Extracted Item Data:', { backgroundData, raceData, classData });
+      HM.log(3, 'Extracted Item Data:', { backgroundData, raceData, classData, formData });
 
       // Extract abilities from formData with default 10
       HM.log(3, 'ABILITIES: Initializing abilities object');
@@ -1204,45 +1206,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
             HM.log(3, `Processing ${items[itemIndex].name}`);
 
             return new Promise((resolve) => {
-              // Set up a timeout to handle stuck advancement process
-              const timeoutId = setTimeout(() => {
-                HM.log(1, `Advancement process timeout for ${items[itemIndex].name}`);
-                ui.notifications.warn(
-                  game.i18n.format('hm.warnings.advancement-timeout', {
-                    item: items[itemIndex].name
-                  })
-                );
-
-                // Try to move to next item
-                if (currentManager) {
-                  try {
-                    currentManager.close().catch((err) => HM.log(1, 'Error closing timed out manager:', err));
-                  } catch (error) {
-                    HM.log(1, 'Error closing timed out manager:', error);
-                  }
-                  currentManager = null;
-                }
-
-                if (itemIndex + 1 < items.length) {
-                  createAdvancementManager(items[itemIndex + 1])
-                    .then((manager) => {
-                      currentManager = manager;
-                      manager.render(true);
-                      doAdvancement(itemIndex + 1).then(resolve);
-                    })
-                    .catch((error) => {
-                      HM.log(1, `Error creating manager after timeout for ${items[itemIndex + 1].name}:`, error);
-                      newActor.sheet.render(true);
-                      resolve();
-                    });
-                } else {
-                  newActor.sheet.render(true);
-                  resolve();
-                }
-              }, HeroMancer.ADVANCEMENT_DELAY.renderTimeout * 2);
-
               Hooks.once('dnd5e.advancementManagerComplete', async () => {
-                clearTimeout(timeoutId);
                 HM.log(3, `Completed ${items[itemIndex].name}`);
 
                 await new Promise((resolve) => {
