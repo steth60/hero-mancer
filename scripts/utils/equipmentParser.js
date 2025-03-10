@@ -103,6 +103,10 @@ export class EquipmentParser {
    */
   classId;
 
+  /**
+   * UUID of the selected class
+   * @type {string}
+   */
   classUUID;
 
   /**
@@ -111,6 +115,10 @@ export class EquipmentParser {
    */
   backgroundId;
 
+  /**
+   * UUID of the selected background
+   * @type {string}
+   */
   backgroundUUID;
 
   /**
@@ -216,7 +224,7 @@ export class EquipmentParser {
     try {
       // Try to get by UUID first
       if (selectedUUID) {
-        HM.log(1, `Attempting to get document for ${type} by UUID: ${selectedUUID}`);
+        HM.log(3, `Attempting to get document for ${type} by UUID: ${selectedUUID}`);
         doc = await fromUuidSync(selectedUUID);
       }
 
@@ -251,13 +259,15 @@ export class EquipmentParser {
    * @param {HTMLElement} sectionContainer - Section container element
    * @throws {Error} If wealth option rendering fails
    */
-  async renderClassWealthOption(classId, sectionContainer) {
+  async renderClassWealthOption(classId, classUUID, sectionContainer) {
     if (foundry.utils.isNewerVersion('4.0.0', game.system.version)) {
       return;
     } else if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
       return;
     }
-
+    const classItem = await fromUuidSync(classUUID);
+    const rulesVersion = classItem?.system?.source?.rules;
+    if (rulesVersion === '2024') return;
     try {
       const classDoc = await this.findItemDocumentById(classId);
       if (!classDoc || !classDoc.system.wealth) return;
@@ -413,7 +423,7 @@ export class EquipmentParser {
           sectionContainer.appendChild(header);
 
           if (currentType === 'class' && selectedId) {
-            await this.renderClassWealthOption(selectedId, sectionContainer).catch((error) => {
+            await this.renderClassWealthOption(selectedId, selectedUUID, sectionContainer).catch((error) => {
               HM.log(1, `Error rendering wealth option: ${error.message}`);
             });
           }
@@ -795,16 +805,16 @@ export class EquipmentParser {
             }
 
             if (itemDoc) {
-              labelElement.innerHTML = item.label || `${item.count || ''} ${itemDoc.name}`;
+              labelElement.innerHTML = `[buildElement-itemDoc] ${item.label || `${item.count || ''} ${itemDoc.name}`}`;
               shouldAddLabel = true;
             } else {
               HM.log(2, `No document found for item key: ${item.key}`, { item, labelElement });
-              labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+              labelElement.innerHTML = `[buildElement-noDoc] ${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
               shouldAddLabel = true;
             }
           } catch (error) {
             HM.log(1, `Error getting label for item ${item._source?.key}: ${error.message}`, { item, labelElement });
-            labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+            labelElement.innerHTML = `[buildElement-error] ${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
             shouldAddLabel = true;
           }
         }
@@ -831,14 +841,7 @@ export class EquipmentParser {
         switch (item.type) {
           case 'OR':
             HM.log(3, `DEBUG: Rendering OR block for item: ${item._source?.key}`, { item: item });
-
-            // System bug in PHB Premium Module
-            if (!item.group) {
-              HM.log(2, `Empty OR block detected, treating as AND: ${item._source?.key}`, { item: item });
-              result = await this.#renderAndBlock(item, itemContainer);
-            } else {
-              result = await this.#renderOrBlock(item, itemContainer);
-            }
+            result = await this.#renderOrBlock(item, itemContainer);
             break;
           case 'AND':
             HM.log(3, `DEBUG: Rendering AND block for item: ${item._source?.key || item.type}`, { item: item });
@@ -876,10 +879,10 @@ export class EquipmentParser {
         result = itemContainer;
       }
 
-      if (result) {
-        EquipmentParser.renderedItems.add(item._id);
+      if (result.innerHTML === '') {
+        return;
       }
-
+      EquipmentParser.renderedItems.add(item._id);
       return result;
     } catch (error) {
       HM.log(1, 'Critical error creating equipment element:', error);
@@ -905,7 +908,7 @@ export class EquipmentParser {
    * @private
    */
   #findWeaponTypeChild(item) {
-    return item.children.find((child) => child.type === 'weapon' && child.key === 'simpleM');
+    return item.children.find((child) => child.type === 'weapon' && ['simpleM', 'simpleR', 'martialM', 'martialR', 'sim', 'mar'].includes(child.key));
   }
 
   /**
@@ -1001,7 +1004,7 @@ export class EquipmentParser {
     if (item.group) {
       const andLabelElement = document.createElement('h4');
       andLabelElement.classList.add('parent-label');
-      andLabelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-all');
+      andLabelElement.innerHTML = `[andBlock] ${item.label || game.i18n.localize('hm.app.equipment.choose-all')}`;
       itemContainer.appendChild(andLabelElement);
     }
 
@@ -1014,9 +1017,17 @@ export class EquipmentParser {
         })
       );
 
-      const hasWeapon = itemDocs.some((doc) => doc?.type === 'weapon' || (doc?.system?.properties && Array.from(doc.system.properties).includes('amm')));
+      const hasWeapon = itemDocs.some((doc) => doc?.type === 'weapon' && doc?.system?.properties && Array.from(doc.system.properties).includes('amm'));
       const hasAmmo = itemDocs.some((doc) => doc?.system?.type?.value === 'ammo');
-      const hasContainer = itemDocs.some((doc) => doc?.type === 'container');
+      const hasContainer = itemDocs.some((doc) => {
+        // Check if it's a container type
+        if (doc?.type !== 'container') return false;
+
+        // Filter out packs by identifier
+        const identifier = doc?.system?.identifier?.toLowerCase();
+        HM.log(3, 'Container identifier:', identifier);
+        return !identifier || !identifier.includes('pack');
+      });
 
       const shouldGroup = hasWeapon || hasAmmo || hasContainer;
       HM.log(3, 'Group check result:', { hasWeapon: hasWeapon, hasAmmo: hasAmmo, hasContainer: hasContainer, shouldGroup: shouldGroup });
@@ -1094,13 +1105,16 @@ export class EquipmentParser {
       }
 
       if (combinedLabel && group.length > 1) {
+        const h4 = document.createElement('h4');
+        h4.innerHTML = `${combinedLabel}`;
         const label = document.createElement('label');
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = combinedIds.join(',');
         checkbox.checked = true;
-        label.innerHTML = combinedLabel;
+        label.innerHTML = `${combinedLabel}`;
         label.prepend(checkbox);
+        itemContainer.appendChild(h4);
         itemContainer.appendChild(label);
       } else {
         for (const child of group) {
@@ -1127,7 +1141,7 @@ export class EquipmentParser {
 
       lookupOptions.forEach((weapon) => {
         const option = document.createElement('option');
-        option.value = weapon._source?.key;
+        option.value = weapon?._source?.key;
         option.innerHTML = weapon.name;
         select.appendChild(option);
       });
@@ -1168,7 +1182,8 @@ export class EquipmentParser {
         if (lookupKeys.includes(subChild.key)) {
           if (combinedLabel) combinedLabel += ' + ';
           const lookupLabel = this.#getLookupKeyLabel(subChild.key);
-          combinedLabel += `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} ${lookupLabel}`.trim();
+          combinedLabel +=
+            `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} <a class="content-link" draggable="true" data-uuid="${subChild.key}" data-source="andGroup">${subChildItem.name}</a>`.trim();
           combinedIds.push(subChild._id);
 
           if (isPartOfOrChoice) {
@@ -1292,7 +1307,7 @@ export class EquipmentParser {
 
     const label = document.createElement('h4');
     label.htmlFor = select.id;
-    label.innerHTML = focusConfig.label;
+    label.innerHTML = `${focusConfig.label}`;
 
     itemContainer.appendChild(label);
     itemContainer.appendChild(select);
@@ -1324,7 +1339,7 @@ export class EquipmentParser {
 
       const optionElement = document.createElement('option');
       optionElement.value = child._source.key;
-      optionElement.innerHTML = count > 1 || count !== null ? `${count} ${displayName}` : displayName;
+      optionElement.innerHTML = `${count > 1 ? `${count} ${displayName}` : displayName}`;
 
       if (select.options.length === 0) {
         optionElement.selected = true;
@@ -1497,13 +1512,13 @@ export class EquipmentParser {
   async #renderOrBlock(item, itemContainer) {
     if (!item?.children?.length) {
       HM.log(1, 'Invalid OR block item:', item);
-      this.#addFavoriteStar(itemContainer, item);
+      // this.#addFavoriteStar(itemContainer, item);
       return itemContainer;
     }
 
     if (!item._source) {
       HM.log(1, 'Missing _source property on OR block item:', item);
-      this.#addFavoriteStar(itemContainer, item);
+      // this.#addFavoriteStar(itemContainer, item);
       return itemContainer;
     }
 
@@ -1511,7 +1526,38 @@ export class EquipmentParser {
 
     const labelElement = document.createElement('h4');
     labelElement.classList.add('parent-label');
-    labelElement.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+
+    // Determine if this is a weapon-or-lookup case
+    const hasLinkedItem = item.children.some((child) => child.type === 'linked');
+    const hasWeaponLookup = item.children.some((child) => child.type === 'weapon' && ['simpleM', 'simpleR', 'martialM', 'martialR', 'sim', 'mar'].includes(child.key));
+    HM.log(3, 'OR BLOCK:', { hasLinkedItem, hasWeaponLookup });
+
+    if (hasLinkedItem && hasWeaponLookup) {
+      // Create a more descriptive label for this case
+      const linkedItem = item.children.find((child) => child.type === 'linked');
+      const weaponItem = item.children.find((child) => child.type === 'weapon' && ['simpleM', 'simpleR', 'martialM', 'martialR', 'sim', 'mar'].includes(child.key));
+
+      if (linkedItem && weaponItem) {
+        try {
+          const itemDoc = await fromUuidSync(linkedItem._source?.key);
+          if (itemDoc) {
+            // Format: "Greataxe or any Martial Melee Weapon"
+            const lookupLabel = this.#getLookupKeyLabel(weaponItem.key);
+            labelElement.innerHTML = `${itemDoc.name} or any ${lookupLabel}`;
+          } else {
+            labelElement.innerHTML = `${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
+          }
+        } catch (error) {
+          HM.log(2, `Error getting name for linked item in OR block: ${error.message}`);
+          labelElement.innerHTML = `${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
+        }
+      } else {
+        labelElement.innerHTML = `${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
+      }
+    } else {
+      labelElement.innerHTML = `${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
+    }
+
     itemContainer.appendChild(labelElement);
 
     const select = document.createElement('select');
@@ -1559,7 +1605,7 @@ export class EquipmentParser {
       // Add weapons to first dropdown and select the first one
       weaponOptions.forEach((weapon, index) => {
         const option = document.createElement('option');
-        option.value = weapon._id || weapon.uuid || `weapon-${index}`;
+        option.value = weapon?._id || weapon?.uuid || `weapon-${index}`;
         option.innerHTML = weapon.name;
         if (index === 0) option.selected = true; // Select first weapon
         select.appendChild(option);
@@ -1569,7 +1615,7 @@ export class EquipmentParser {
         secondSelect.innerHTML = '';
         weaponOptions.forEach((weapon, index) => {
           const option = document.createElement('option');
-          option.value = weapon._id || weapon.uuid || `weapon-${index}`;
+          option.value = weapon?._id || weapon?.uuid || `weapon-${index}`;
           option.innerHTML = weapon.name;
           if (index === 0) option.selected = true; // Select first weapon
           secondSelect.appendChild(option);
@@ -1581,7 +1627,7 @@ export class EquipmentParser {
 
         shieldOptions.forEach((shield) => {
           const option = document.createElement('option');
-          option.value = shield._id || shield.uuid || `shield-${index}`;
+          option.value = shield?._id || shield?.uuid || `shield-${index}`;
           option.innerHTML = shield.name;
           secondSelect.appendChild(option);
         });
@@ -1658,7 +1704,7 @@ export class EquipmentParser {
           renderedItemNames.add('Component Pouch');
 
           const pouchOption = document.createElement('option');
-          pouchOption.value = pouchItem._source.key;
+          pouchOption.value = pouchItem?._source?.key;
           pouchOption.innerHTML = pouchItem.label || pouchItem.name;
           pouchOption.selected = true;
           select.appendChild(pouchOption);
@@ -1688,6 +1734,13 @@ export class EquipmentParser {
         await this.#renderAndGroup(child, select, renderedItemNames);
       } else if (['linked', 'weapon', 'tool', 'armor'].includes(child.type)) {
         await this.#renderIndividualItem(child, select, renderedItemNames);
+      } else if (child.key && !child.type) {
+        // Handle edge case of items with key but no type
+        const optionElement = document.createElement('option');
+        optionElement.value = child.key || child._id;
+        optionElement.innerHTML = `[orBlock-keyOnly] ${child.label || child.name || child.key || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
+        select.appendChild(optionElement);
+        renderedItemNames.add(optionElement.innerHTML);
       }
     }
 
@@ -1803,16 +1856,16 @@ export class EquipmentParser {
 
     // Create the star icon
     const starIcon = document.createElement('i');
-    starIcon.classList.add('fa-star', 'equipment-favorite-star', 'fa-light');
+    starIcon.classList.add('fa-bookmark', 'equipment-favorite-star', 'fa-thin');
 
     // Add event listener to update icon when checkbox state changes
     favoriteCheckbox.addEventListener('change', function () {
       if (this.checked) {
-        starIcon.classList.remove('fa-light');
+        starIcon.classList.remove('fa-thin');
         starIcon.classList.add('fa-solid');
       } else {
         starIcon.classList.remove('fa-solid');
-        starIcon.classList.add('fa-light');
+        starIcon.classList.add('fa-thin');
       }
     });
 
@@ -1835,7 +1888,6 @@ export class EquipmentParser {
     return favoriteCheckbox;
   }
 
-  // Add this helper method
   extractUUIDsFromContent(content) {
     const uuidRegex = /data-uuid="([^"]+)"/g;
     const uuids = [];
