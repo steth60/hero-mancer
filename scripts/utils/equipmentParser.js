@@ -216,11 +216,13 @@ export class EquipmentParser {
     try {
       // Try to get by UUID first
       if (selectedUUID) {
+        HM.log(1, `Attempting to get document for ${type} by UUID: ${selectedUUID}`);
         doc = await fromUuidSync(selectedUUID);
       }
 
       // If UUID fails, try by ID
       if (!doc) {
+        HM.log(1, `Attempting to get document for ${type} by ID: ${selectedId}`);
         doc = await this.findItemDocumentById(selectedId);
       }
     } catch (error) {
@@ -233,7 +235,7 @@ export class EquipmentParser {
       if (doc.system.startingEquipment) {
         return doc.system.startingEquipment;
       } else {
-        HM.log(2, `Document found but has no startingEquipment property: ${doc.name}`);
+        HM.log(2, `Document found but has no startingEquipment property: ${doc.name}`, { doc: doc });
         return [];
       }
     } else {
@@ -852,6 +854,9 @@ export class EquipmentParser {
             HM.log(3, `DEBUG: Rendering focus item: ${item._source?.key}`, { item: item });
             result = await this.#renderFocusItem(item, itemContainer);
             break;
+          case 'tool':
+            HM.log(2, 'Tools are not yet setup with equipmentParser. Coming soon.');
+            break;
           case 'weapon':
           case 'armor':
             break;
@@ -1035,6 +1040,7 @@ export class EquipmentParser {
 
     if (!item?.children?.length) {
       HM.log(1, 'Invalid AND block item:', item);
+      this.#addFavoriteStar(itemContainer, item);
       return itemContainer;
     }
 
@@ -1128,7 +1134,7 @@ export class EquipmentParser {
 
       itemContainer.appendChild(select);
     }
-
+    this.#addFavoriteStar(itemContainer, item);
     return itemContainer;
   }
 
@@ -1292,6 +1298,7 @@ export class EquipmentParser {
     itemContainer.appendChild(select);
 
     HM.log(3, `Rendered focus item ${item.key}`);
+    this.#addFavoriteStar(itemContainer, item);
     return itemContainer;
   }
 
@@ -1402,10 +1409,10 @@ export class EquipmentParser {
     labelElement.prepend(linkedCheckbox);
     itemContainer.appendChild(labelElement);
 
-    this.#addFavoriteStar(itemContainer, item);
     EquipmentParser.renderedItems.add(item._id);
 
     HM.log(3, `Completed linked item render: ${item._id}`);
+    this.#addFavoriteStar(itemContainer, item);
     return itemContainer;
   }
 
@@ -1490,11 +1497,13 @@ export class EquipmentParser {
   async #renderOrBlock(item, itemContainer) {
     if (!item?.children?.length) {
       HM.log(1, 'Invalid OR block item:', item);
+      this.#addFavoriteStar(itemContainer, item);
       return itemContainer;
     }
 
     if (!item._source) {
       HM.log(1, 'Missing _source property on OR block item:', item);
+      this.#addFavoriteStar(itemContainer, item);
       return itemContainer;
     }
 
@@ -1580,7 +1589,7 @@ export class EquipmentParser {
 
       populateSecondDropdown();
       select.addEventListener('change', populateSecondDropdown);
-
+      this.#addFavoriteStar(itemContainer, item);
       return itemContainer;
     }
     // Handle regular weapon quantity choices
@@ -1727,25 +1736,85 @@ export class EquipmentParser {
    * @private
    */
   #addFavoriteStar(container, item) {
-    // Create the favorite container
+    if (container.innerHTML === '') return;
+
     const favoriteContainer = document.createElement('div');
     favoriteContainer.classList.add('equipment-favorite-container');
 
-    // Create the label for the checkbox
     const favoriteLabel = document.createElement('label');
     favoriteLabel.classList.add('equipment-favorite-label');
     favoriteLabel.title = 'Add to favorites';
 
-    // Create the checkbox (hidden)
     const favoriteCheckbox = document.createElement('input');
     favoriteCheckbox.type = 'checkbox';
     favoriteCheckbox.classList.add('equipment-favorite-checkbox');
-    favoriteCheckbox.dataset.itemName = item.name || item.label || '';
-    favoriteCheckbox.dataset.itemId = item._id || item._source?.key || '';
+
+    // Extract display name from container
+    let itemName = '';
+    const itemHeader = container.querySelector('h4');
+    const itemLabel = container.querySelector('label');
+
+    if (itemHeader && itemHeader.textContent) {
+      itemName = itemHeader.textContent.trim();
+    } else if (itemLabel && itemLabel.textContent) {
+      itemName = itemLabel.textContent.trim();
+    } else {
+      itemName = item.name || item.label || '';
+    }
+
+    // Clean up the name
+    itemName = itemName.replace(/^\s*☐\s*|\s*☑\s*/g, '').trim();
+    favoriteCheckbox.dataset.itemName = itemName;
+
+    // Check for combined items first (these have comma-separated UUIDs in the ID)
+    const parentCheckbox = container.querySelector('input[type="checkbox"]');
+    if (parentCheckbox && parentCheckbox.id && parentCheckbox.id.includes(',')) {
+      // This is a combined item with multiple UUIDs in the ID
+      favoriteCheckbox.dataset.itemUuids = parentCheckbox.id;
+      favoriteCheckbox.id = parentCheckbox.id;
+
+      HM.log(3, `Setting up favorite for combined item "${itemName}" with IDs:`, parentCheckbox.id);
+    } else {
+      // Check for data-uuid attributes in the container
+      const uuids = this.extractUUIDsFromContent(container.innerHTML);
+
+      if (uuids.length > 0) {
+        // Store all UUIDs for multi-item favorites
+        favoriteCheckbox.dataset.itemUuids = uuids.join(',');
+        favoriteCheckbox.id = uuids.join(',');
+
+        HM.log(3, `Setting up favorite for "${itemName}" with ${uuids.length} UUIDs:`, uuids);
+      } else if (item._source?.key) {
+        // For linked items that have a source key
+        const sourceKey = item._source.key;
+        favoriteCheckbox.dataset.itemUuids = sourceKey;
+        favoriteCheckbox.id = sourceKey;
+
+        HM.log(3, `Setting up favorite for "${itemName}" with source key:`, sourceKey);
+      } else {
+        // Fallback for other items
+        const itemId = item._id || '';
+        favoriteCheckbox.dataset.itemId = itemId;
+        favoriteCheckbox.id = itemId;
+
+        HM.log(3, `Setting up favorite for "${itemName}" with ID:`, itemId);
+      }
+    }
 
     // Create the star icon
     const starIcon = document.createElement('i');
-    starIcon.classList.add('fas', 'fa-star', 'equipment-favorite-star');
+    starIcon.classList.add('fa-star', 'equipment-favorite-star', 'fa-light');
+
+    // Add event listener to update icon when checkbox state changes
+    favoriteCheckbox.addEventListener('change', function () {
+      if (this.checked) {
+        starIcon.classList.remove('fa-light');
+        starIcon.classList.add('fa-solid');
+      } else {
+        starIcon.classList.remove('fa-solid');
+        starIcon.classList.add('fa-light');
+      }
+    });
 
     // Assemble the components
     favoriteLabel.appendChild(favoriteCheckbox);
@@ -1754,16 +1823,29 @@ export class EquipmentParser {
 
     // Find where to append the star
     if (container.querySelector('label')) {
-      const itemLabel = container.querySelector('label');
-      itemLabel.appendChild(favoriteContainer);
+      container.querySelector('label').insertAdjacentElement('afterend', favoriteContainer);
     } else if (container.querySelector('h4')) {
-      const itemHeader = container.querySelector('h4');
-      itemHeader.appendChild(favoriteContainer);
+      container.querySelector('h4').insertAdjacentElement('afterend', favoriteContainer);
+    } else if (container.querySelector('select')) {
+      container.querySelector('select').insertAdjacentElement('afterend', favoriteContainer);
     } else {
       container.appendChild(favoriteContainer);
     }
 
     return favoriteCheckbox;
+  }
+
+  // Add this helper method
+  extractUUIDsFromContent(content) {
+    const uuidRegex = /data-uuid="([^"]+)"/g;
+    const uuids = [];
+    let match;
+
+    while ((match = uuidRegex.exec(content)) !== null) {
+      uuids.push(match[1]);
+    }
+
+    return uuids;
   }
 
   /* -------------------------------------------- */

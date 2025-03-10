@@ -201,9 +201,9 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
 
         if (element.localName === 'prose-mirror') {
           HM.log(3, 'Finding label for ProseMirror element:', { element: element });
-          let h3Element = element.closest('.notes-section')?.querySelector('h3');
-          HM.log(3, 'Found h3 element:', { h3Element: h3Element });
-          return h3Element;
+          let h2Element = element.closest('.notes-section')?.querySelector('h2');
+          HM.log(3, 'Found h2 element:', { h2Element: h2Element });
+          return h2Element;
         }
       };
 
@@ -395,9 +395,9 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     // HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
     if (element.localName === 'prose-mirror') {
       HM.log(3, 'Finding label for ProseMirror element:', { element: element });
-      let h3Element = element.closest('.notes-section')?.querySelector('h3');
-      HM.log(3, 'Found h3 element:', { h3Element: h3Element });
-      return h3Element;
+      let h2Element = element.closest('.notes-section')?.querySelector('h2');
+      HM.log(3, 'Found h2 element:', { h2Element: h2Element });
+      return h2Element;
     }
 
     return element

@@ -24,6 +24,7 @@ export function registerSettings() {
     config: true,
     restricted: true,
     type: String,
+    filePicker: 'folder',
     default: '/',
     onChange: (value) => {
       CharacterArtPicker.rootDirectory = value;

@@ -63,7 +63,7 @@ export class ProgressBar {
       const [filledCount, totalFields] = this.#calculateCompletionFromForm(form);
       const percentage = (filledCount / totalFields) * 100;
 
-      //  HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${percentage.toFixed(2)}%)`);
+      HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${percentage.toFixed(2)}%)`);
 
       // Batch DOM updates
       requestAnimationFrame(() => {
@@ -172,7 +172,8 @@ export class ProgressBar {
     if (equipmentContainer) {
       const equipmentInputs = equipmentContainer.querySelectorAll('input[type="checkbox"], select');
       equipmentInputs.forEach((input) => {
-        if (input.disabled || input.closest('.equipment-section')?.classList.contains('disabled')) {
+        // Filter out disabled and favorite checkbox inputs
+        if (input.disabled || input.closest('.equipment-section')?.classList.contains('disabled') || input.className.includes('equipment-favorite-checkbox')) {
           return;
         }
 
@@ -197,7 +198,6 @@ export class ProgressBar {
         if (isFilled) filledCount++;
       });
     }
-
     return [filledCount, totalFields];
   }
 

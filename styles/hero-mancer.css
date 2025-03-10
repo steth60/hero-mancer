@@ -30,8 +30,8 @@
 .field-column {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   height: 100%;
+  overflow-y: auto;
 }
 
 .field-column .field-group {
@@ -243,6 +243,15 @@
   color: var(--user-color);
 }
 
+#hero-mancer-app .hm-app-tab-content h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: unset;
+}
+
 /* ==========================================================================
     Form Elements
    ========================================================================== */
@@ -298,11 +307,11 @@
   min-height: 0;
   max-height: 100%;
   margin: 1rem 0;
+  padding: 2rem;
   border: 1px solid var(--user-color);
   border-radius: 0.375rem;
   overflow: auto;
   overflow-x: hidden;
-  padding: 2rem;
 }
 
 .application.hm-app fieldset > legend {
@@ -331,7 +340,6 @@
   gap: 0.313rem;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
 }
 
 .hm-app .form-group select {
@@ -476,8 +484,8 @@
 }
 
 .hm-app-tab-content .equipment-choices h3 {
-  font-family: 'modesto condensed', serif;
   font-size: 1.75rem;
+  font-family: 'modesto condensed', serif;
 }
 
 /* ==========================================================================
@@ -752,10 +760,10 @@
 .equipment-item {
   display: flex;
   flex-direction: column;
+  width: 100%;
   max-width: 100%;
   padding: 0.75rem 0;
   border-bottom: 1px solid var(--color-border-dark-secondary);
-  width: 100%;
 }
 
 .equipment-item label,
@@ -867,16 +875,22 @@
 }
 
 .equipment-empty-notice {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   padding: 0.5rem;
-  border-radius: 5px;
   border: 1px solid var(--color-level-error-border);
+  border-radius: 5px;
 }
 
 .equipment-missing-warning {
+  display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   text-align: center;
-  display: flex;
 }
 
 .warning-icon {
@@ -885,37 +899,71 @@
 }
 
 .extracted-equipment-info {
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  max-width: 100%;
   margin-top: 0.5rem;
   padding: 0.5rem;
   border-left: 2px solid #a0a0a0;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-all;
+  word-wrap: break-word;
+}
+
+.extracted-equipment-info p {
+  overflow-wrap: break-word;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-all;
+  word-wrap: break-word;
 }
 
 .extracted-equipment-info h4 {
+  margin-top: 0;
   margin-bottom: 0.5rem;
   font-size: 1rem;
 }
 
-/* Favorite star styling */
+/* Favorite star styling - revised for consistent positioning */
 .equipment-favorite-container {
   display: inline-flex;
+  position: relative;
   align-items: center;
-  margin-left: 8px;
+  width: 1.2em; /* Add positioning context */
+  height: 1.2em;
+  margin-left: auto; /* Prevent line height issues */
+  line-height: 1; /* Consistent height */
+  vertical-align: baseline;
 }
 
 .equipment-favorite-label {
-  cursor: pointer;
   display: flex;
+  justify-content: center;
   align-items: center;
+  height: 100%;
+  cursor: pointer;
 }
 
 .equipment-favorite-checkbox {
-  position: absolute;
-  opacity: 0; /* Hide actual checkbox */
+  opacity: 0;
+  position: absolute; /* Hide actual checkbox */
   width: 0;
   height: 0;
 }
 
+.equipment-choices .equipment-favorite-container .equipment-favorite-label .equipment-favorite-checkbox {
+  position: absolute;
+}
+
 .equipment-favorite-star {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 1em;
+  height: 1em;
   color: #aaa;
   font-size: 1.2em;
   transition: color 0.2s ease;
@@ -931,6 +979,20 @@
 
 .equipment-favorite-checkbox:hover + .equipment-favorite-star {
   color: #f0b400;
+}
+
+/* Special handling for checkbox labels */
+.equipment-item label .equipment-favorite-container {
+  position: absolute;
+  top: 50%;
+  right: -24px;
+  transform: translateY(-50%);
+}
+
+/* Special handling for select elements */
+.equipment-item select + .equipment-favorite-container {
+  display: inline-flex;
+  margin-left: 8px;
 }
 
 /* ==========================================================================
@@ -1106,9 +1168,9 @@
 /* Dialog styling */
 .hm-compendiums-popup-dialog .dialog-content,
 .hm-compendiums-popup-dialog .window-content form {
+  height: fit-content;
   padding: 0.5rem;
   overflow: hidden;
-  height: fit-content;
 }
 
 .hm-compendiums-popup-dialog .window-content {
@@ -1151,9 +1213,9 @@
 }
 
 .hm-compendium-group-items {
-  margin-left: 1.5rem;
   display: flex;
   flex-direction: column;
+  margin-left: 1.5rem;
 }
 
 .hm-compendium-group .hm-compendium-group-items .hm-compendium-item {
@@ -1266,6 +1328,7 @@
   display: flex;
   position: relative;
   align-items: center;
+  margin-top: 0.5rem;
 }
 
 .notes-section:has(prose-mirror.mandatory-field) > h3 {

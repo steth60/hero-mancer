@@ -900,6 +900,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @static
    */
   static async formHandler(event, form, formData) {
+    // Process "Save for Later" action
+    if (event.submitter?.dataset.action === 'saveOptions') {
+      try {
+        await SavedOptions.saveOptions(formData.object);
+        ui.notifications.info('hm.app.optionsSaved', { localize: true });
+      } catch (error) {
+        HM.log(1, 'Error saving options:', error);
+        ui.notifications.error('hm.errors.save-options-failed', { localize: true });
+      }
+      return;
+    }
     try {
       const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
 
@@ -919,18 +930,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       }
 
       HM.log(3, 'FORMHANDLER:', { event: event, form: form, formData: formData });
-
-      // Process "Save for Later" action
-      if (event.submitter?.dataset.action === 'saveOptions') {
-        try {
-          await SavedOptions.saveOptions(formData.object);
-          ui.notifications.info('hm.app.optionsSaved', { localize: true });
-        } catch (error) {
-          HM.log(1, 'Error saving options:', error);
-          ui.notifications.error('hm.errors.save-options-failed', { localize: true });
-        }
-        return;
-      }
 
       HM.log(3, 'Processing form data...');
       HM.log(3, formData);
@@ -1097,8 +1096,142 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       try {
         // First handle equipment and wealth
+        let createdItems = [];
         if (equipmentItems.length) {
-          await actor.createEmbeddedDocuments('Item', equipmentItems, { keepId: true });
+          createdItems = await actor.createEmbeddedDocuments('Item', equipmentItems, { keepId: true });
+        }
+
+        // Process favorites
+        try {
+          HM.log(3, 'Starting favorites processing');
+
+          // Find all favorited checkboxes
+          const favoriteCheckboxes = event.srcElement.querySelectorAll('.equipment-favorite-checkbox:checked');
+          HM.log(3, `Found ${favoriteCheckboxes.length} favorited checkboxes`);
+
+          if (favoriteCheckboxes.length > 0) {
+            // Get current actor favorites
+            const currentActorFavorites = actor.system.favorites || [];
+            const newFavorites = [];
+
+            for (const checkbox of favoriteCheckboxes) {
+              const itemName = checkbox.dataset.itemName;
+              HM.log(3, `Processing favorited item: ${itemName}`);
+
+              let itemUuids = [];
+
+              // Get UUIDs from the appropriate attribute
+              if (checkbox.dataset.itemUuids) {
+                itemUuids = checkbox.dataset.itemUuids.split(',');
+              } else if (checkbox.id && checkbox.id.includes(',')) {
+                // For combined items that have comma-separated UUIDs in ID
+                itemUuids = checkbox.id.split(',');
+              } else if (checkbox.dataset.itemId) {
+                // Legacy approach
+                itemUuids = [checkbox.dataset.itemId];
+              } else {
+                HM.log(2, `No UUIDs or itemId found for "${itemName}"`);
+                continue;
+              }
+
+              HM.log(3, `Processing ${itemUuids.length} UUIDs for "${itemName}":`, itemUuids);
+
+              let processedAnyItem = false;
+
+              // Process each UUID
+              for (const uuid of itemUuids) {
+                try {
+                  // For full UUIDs, look up the item directly
+                  if (uuid.startsWith('Compendium.')) {
+                    const sourceItem = await fromUuid(uuid);
+                    if (!sourceItem) {
+                      HM.log(3, `Could not resolve UUID: ${uuid}`);
+                      continue;
+                    }
+
+                    // Find the created item in the actor's inventory
+                    const matchedItem = createdItems.find(
+                      (item) =>
+                        // Match by name
+                        item.name === sourceItem.name ||
+                        // Match by source ID if available
+                        (item.flags?.core?.sourceId && item.flags.core.sourceId.includes(sourceItem.id))
+                    );
+
+                    if (matchedItem) {
+                      const favoriteEntry = {
+                        type: 'item',
+                        id: `.Item.${matchedItem.id}`,
+                        sort: 100000 + newFavorites.length
+                      };
+
+                      newFavorites.push(favoriteEntry);
+                      processedAnyItem = true;
+                      HM.log(3, `Added favorite for ${sourceItem.name} (${matchedItem.id})`);
+                    } else {
+                      HM.log(2, `Could not find created item for ${sourceItem.name}`);
+                    }
+                  }
+                  // For legacy itemId, try to match directly
+                  else {
+                    const itemId = uuid;
+
+                    // Try to find by item name match (for combined items)
+                    let matchedItems = [];
+
+                    if (itemName.includes('Dagger')) {
+                      matchedItems = createdItems.filter((item) => item.name === 'Dagger');
+                    } else if (itemName.includes('Pouch')) {
+                      matchedItems = createdItems.filter((item) => item.name === 'Pouch');
+                    } else {
+                      // Try direct match
+                      matchedItems = createdItems.filter((item) => item.id === itemId || (item.flags?.core?.sourceId && item.flags.core.sourceId.includes(itemId)));
+                    }
+
+                    for (const matchedItem of matchedItems) {
+                      const favoriteEntry = {
+                        type: 'item',
+                        id: `.Item.${matchedItem.id}`,
+                        sort: 100000 + newFavorites.length
+                      };
+
+                      newFavorites.push(favoriteEntry);
+                      processedAnyItem = true;
+                      HM.log(3, `Added favorite for ${matchedItem.name} (${matchedItem.id})`);
+                    }
+                  }
+                } catch (error) {
+                  HM.log(2, `Error processing UUID ${uuid}:`, error);
+                }
+              }
+
+              if (!processedAnyItem) {
+                HM.log(2, `Could not process any items for "${itemName}"`);
+              }
+            }
+
+            HM.log(3, `Total new favorites to add: ${newFavorites.length}`, newFavorites);
+
+            if (newFavorites.length > 0) {
+              // Combine with existing favorites (avoiding duplicates)
+              const combinedFavorites = [...currentActorFavorites];
+
+              for (const newFav of newFavorites) {
+                if (!combinedFavorites.some((fav) => fav.id === newFav.id)) {
+                  combinedFavorites.push(newFav);
+                }
+              }
+
+              // Update actor's favorites
+              await actor.update({
+                'system.favorites': combinedFavorites
+              });
+
+              HM.log(3, 'Successfully updated actor favorites');
+            }
+          }
+        } catch (error) {
+          HM.log(1, 'Error processing favorites:', error);
         }
 
         if (startingWealth) {
