@@ -53,6 +53,20 @@ export class EquipmentParser {
   static martialR = new Set();
 
   /**
+   * Set of artisan's tools
+   * @type {Set<object>}
+   * @static
+   */
+  static art = new Set();
+
+  /**
+   * Set of gaming sets
+   * @type {Set<object>}
+   * @static
+   */
+  static game = new Set();
+
+  /**
    * Set of musical instruments
    * @type {Set<object>}
    * @static
@@ -858,7 +872,8 @@ export class EquipmentParser {
             result = await this.#renderFocusItem(item, itemContainer);
             break;
           case 'tool':
-            HM.log(2, 'Tools are not yet setup with equipmentParser. Coming soon.');
+            HM.log(3, `DEBUG: Rendering tool item: ${item._source?.key}`, { item: item });
+            result = await this.#renderToolItem(item, itemContainer);
             break;
           case 'weapon':
           case 'armor':
@@ -926,7 +941,10 @@ export class EquipmentParser {
       simpleR: 'Simple Ranged Weapon',
       martialM: 'Martial Melee Weapon',
       martialR: 'Martial Ranged Weapon',
-      shield: 'Shield'
+      shield: 'Shield',
+      art: "Artisan's Tools",
+      game: 'Gaming Set',
+      music: 'Musical Instrument'
     };
     return labels[key] || key;
   }
@@ -1313,6 +1331,65 @@ export class EquipmentParser {
     itemContainer.appendChild(select);
 
     HM.log(3, `Rendered focus item ${item.key}`);
+    this.#addFavoriteStar(itemContainer, item);
+    return itemContainer;
+  }
+
+  /**
+   * Renders tool equipment selection
+   * @param {object} item - Tool item data
+   * @param {HTMLElement} itemContainer - Container element
+   * @returns {HTMLElement|null} Modified container or null if invalid
+   * @private
+   */
+  async #renderToolItem(item, itemContainer) {
+    if (!item?.key) {
+      HM.log(1, 'Invalid tool item:', item);
+      return null;
+    }
+
+    if (this.#shouldItemUseDropdownDisplay(item)) return null;
+
+    const toolType = item.key;
+    const toolConfig = CONFIG.DND5E.toolTypes[toolType];
+
+    if (!toolConfig) {
+      HM.log(2, `No tool configuration found for type: ${toolType}`);
+      return null;
+    }
+
+    const select = document.createElement('select');
+    select.id = `${item.key}-tool`;
+
+    // Get tools of this specific type
+    const toolItems = Array.from(EquipmentParser.lookupItems[toolType] || []);
+    toolItems.sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const tool of toolItems) {
+      const option = document.createElement('option');
+      option.value = tool.uuid || tool._source?.key;
+      option.innerHTML = tool.name;
+
+      if (select.options.length === 0) {
+        option.selected = true;
+      }
+
+      select.appendChild(option);
+    }
+
+    if (select.options.length === 0) {
+      HM.log(2, `No valid tool items found for type: ${toolType}`);
+      return null;
+    }
+
+    const label = document.createElement('h4');
+    label.htmlFor = select.id;
+    label.innerHTML = `${toolConfig}`;
+
+    itemContainer.appendChild(label);
+    itemContainer.appendChild(select);
+
+    HM.log(3, `Rendered tool item ${item.key}`);
     this.#addFavoriteStar(itemContainer, item);
     return itemContainer;
   }
@@ -2174,6 +2251,8 @@ export class EquipmentParser {
         martialM: new Set(),
         martialR: new Set(),
         music: new Set(),
+        art: new Set(),
+        game: new Set(),
         shield: new Set(),
         armor: new Set(),
         focus: new Set()
@@ -2205,7 +2284,8 @@ export class EquipmentParser {
       this.lookupItems = {
         ...categories,
         sim: new Set([...categories.simpleM, ...categories.simpleR]),
-        mar: new Set([...categories.martialM, ...categories.martialR])
+        mar: new Set([...categories.martialM, ...categories.martialR]),
+        tool: new Set([...categories.art, ...categories.game, ...categories.music])
       };
 
       const endTime = performance.now();
@@ -2329,6 +2409,13 @@ export class EquipmentParser {
 
             if (focusItemIds.has(item._id)) {
               item.system.type.value = 'focus';
+            }
+
+            if (item.type === 'tool' && item.system?.type?.value) {
+              const toolType = item.system.type.value;
+              if (Object.keys(CONFIG.DND5E.toolTypes).includes(toolType)) {
+                item.system.type.value = toolType;
+              }
             }
 
             packItems.push(item);
