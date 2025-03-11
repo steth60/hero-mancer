@@ -190,7 +190,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         id: user.id,
         name: user.name,
         color: user.color.css
-      }))
+      })),
+      chainedRolls: game.settings.get(HM.CONFIG.ID, 'chainedRolls')
     };
   }
 

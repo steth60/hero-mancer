@@ -113,6 +113,7 @@ export class StatRoller {
       } else {
         HM.log(2, `No input field found for ability index ${index}.`);
       }
+      this.chainRollEnabled = false;
     } catch (error) {
       HM.log(1, `Failed to roll ${rollFormula}:`, error);
       ui.notifications.error('hm.errors.roll-failed', { localize: true });
@@ -165,6 +166,7 @@ export class StatRoller {
       ui.notifications.error('hm.errors.roll-failed', { localize: true });
     } finally {
       this.isRolling = false;
+      this.chainRollEnabled = false;
     }
   }
 

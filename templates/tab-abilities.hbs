@@ -114,7 +114,12 @@
               role='button' aria-label='{{localize "hm.app.abilities.roll-dice"}}' tabindex='0'></i>
           </div>
         {{/each}}
+
       </div>
+      {{#if chainedRolls}}
+        <hr />
+        <p>{{localize "hm.app.abilities.instructions.chained-rolls"}}</p>
+      {{/if}}
     {{else}}
       <p>{{localize 'hm.app.abilities.instructions.no-roll-method'}}</p>
     {{/if}}

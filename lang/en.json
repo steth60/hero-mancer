@@ -29,7 +29,8 @@
             "description": "For each ability below, choose a value from the dropdown. Keep in mind your class and character goals when deciding. You can only use a value once.",
             "preamble": "The Standard Array allows you to assign a set of predefined scores to your character's ability scores, designed to keep characters balanced and simplify character creation. This method is ideal for new players or those wanting a consistent, balanced setup across the party, ensuring each character begins on the same power level. Remember, your racial bonuses will still influence your final ability scores. Consider your class and racial bonuses carefully as you place these scores to optimize your character’s performance in their primary role.",
             "title": "Stat Generation Method: Standard Array"
-          }
+          },
+          "chained-rolls": "Your DM has enabled Chained Rolls. Simply click on one of the dice above to roll all your stats. Don't worry! You can individually re-roll entries, assuming your DM allows it."
         },
         "label": "Ability",
         "methods": {
