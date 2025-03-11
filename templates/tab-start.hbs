@@ -15,6 +15,17 @@
         data-type="character-name" placeholder="{{localize 'hm.app.start.name-placeholder'}}"
         aria-label="{{localize 'hm.app.start.name-label'}}" />
     </div>
+    {{#if isGM}}
+      <div class="form-row flex items-center gap-sm mb-sm">
+        <label for="player-assignment" class="label-15">{{localize 'hm.app.start.player-assignment-label'}}</label>
+        <select id="player-assignment" name="player" class="input-35 form-select">
+          <option value="">{{localize 'hm.app.start.player-assignment-placeholder'}}</option>
+          {{#each players}}
+            <option value="{{this.id}}">{{this.name}}</option>
+          {{/each}}
+        </select>
+      </div>
+    {{/if}}
 
     <div class="art-selection-row flex items-center gap-sm">
       <label for="character-art-path" class="label-15">{{localize 'hm.app.start.character-art-label'}}</label>
@@ -42,7 +53,7 @@
       <hr />
       <div class="customization-row flex items-center gap-sm mb-sm" id="color-row">
         <label for="player-color" class="label-15">{{localize 'hm.app.start.player-color'}}</label>
-        <color-picker id="player-color" name="player-color" class="input-35" value="{{randomSafeColor}}" />
+        <color-picker id="player-color" name="player-color" class="input-35" value="#FF0000" />
       </div>
       <div class="customization-row flex items-center gap-sm mb-sm" id="pronoun-row">
         <label for="player-pronouns" class="label-15">{{localize 'hm.app.start.player-pronouns'}}</label>
@@ -100,7 +111,7 @@
 
       <div class="customization-row flex items-center gap-sm mb-sm">
         <label for="ring-color" class="label-15">{{localize "TOKEN.FIELDS.ring.colors.ring.label"}}</label>
-        <color-picker id="ring-color" name="ring.color" class="input-35" value="{{randomSafeColor}}" />
+        <color-picker id="ring-color" name="ring.color" class="input-35" value="" />
       </div>
 
       <div class="customization-row flex items-center gap-sm mb-sm">

@@ -1,6 +1,6 @@
 <footer>
   <div class='hm-app-footer-actions'>
-    <button type='submit' class='hm-app-footer-submit' data-tooltip='{{localize "hm.app.submit-description"}}'
+    <button type='submit' data-action="submit" class='hm-app-footer-submit' data-tooltip='{{localize "hm.app.submit-description"}}'
       aria-label='{{localize "hm.app.submit"}}' aria-describedby='submit-description' role='button'>
       {{localize 'hm.app.submit'}}
     </button>
@@ -20,7 +20,7 @@
     </button>
     <span id='reset-description' class='sr-only'>{{localize 'hm.app.reset-description'}}</span>
 
-    <button type='button' data-action='close' class='hm-app-footer-cancel'
+    <button type='button' data-action='nosubmit' class='hm-app-footer-cancel'
       data-tooltip='{{localize "hm.app.cancel-description"}}' aria-label='{{localize "hm.app.cancel"}}'
       aria-describedby='cancel-description' role='button'>
       {{localize 'hm.app.cancel'}}

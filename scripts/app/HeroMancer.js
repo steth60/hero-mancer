@@ -25,7 +25,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static selectedAbilities = [];
 
-  static ORIGINAL_PLAYER_COLOR = '';
+  static ORIGINAL_PLAYER_COLORS = new Map();
 
   /** @override */
   static DEFAULT_OPTIONS = {
@@ -44,7 +44,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       selectTokenArt: CharacterArtPicker.selectTokenArt,
       selectPlayerAvatar: CharacterArtPicker.selectPlayerAvatar,
       resetOptions: HeroMancer.resetOptions,
-      switchToTab: HeroMancer.switchToTab
+      switchToTab: HeroMancer.switchToTab,
+      nosubmit: HeroMancer.noSubmit
     },
     classes: ['hm-app'],
     position: {
@@ -148,6 +149,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       ui.notifications.info('hm.actortab-button.loading', { localize: true });
     }
 
+    game.users.forEach((user) => {
+      HeroMancer.ORIGINAL_PLAYER_COLORS.set(user.id, user.color.css);
+    });
+    HM.log(3, 'Original Player Colors', HeroMancer.ORIGINAL_PLAYER_COLORS);
+
     // Initialize abilities and related data
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     HeroMancer.selectedAbilities = Array(abilitiesCount).fill(8);
@@ -180,7 +186,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
       token: this.#getTokenConfig(),
       mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields'),
-      randomSafeColor: HeroMancer.#randomSafeColor()
+      isGM: game.user.isGM,
+      players: game.users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        color: user.color.css
+      }))
     };
   }
 
@@ -342,11 +353,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  _preRender(context, options) {
-    HeroMancer.ORIGINAL_PLAYER_COLOR = game.user.color.css;
-    HM.log(3, 'Original Player Color Recorded', HeroMancer.ORIGINAL_PLAYER_COLOR);
-  }
-
   /**
    * Actions performed after any render of the Application.
    * Post-render steps are not awaited by the render process.
@@ -378,6 +384,28 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       // Now initialize form validation listeners after the initial check
       Listeners.initializeFormValidationListeners(this.element);
+
+      // Store original colors
+      const playerElement = this.element?.querySelector('#player-assignment');
+
+      // Add player dropdown change handler for GMs
+      if (game.user.isGM && playerElement) {
+        playerElement.addEventListener('change', (event) => {
+          const playerId = event.currentTarget.value;
+          const targetUser = HeroMancer.#getTargetUser(playerId);
+
+          HM.log(3, '_onRender:', { element: playerElement, playerId, targetUser });
+
+          // Update color picker with the selected user's color
+          const colorPicker = this.element.querySelector('#player-color');
+          if (colorPicker) {
+            // Use the original color for the user instead of generating a new one
+            colorPicker.value = HeroMancer.ORIGINAL_PLAYER_COLORS.get(playerId);
+          }
+
+          HM.log(3, `Updated to user: ${targetUser.name} with color: ${colorPicker?.value || 'none'}`);
+        });
+      }
     } finally {
       this.#isRendering = false;
     }
@@ -406,12 +434,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @protected
    * @override
    */
-  async _onClose() {
+  _onClose() {
     HM.log(3, 'Closing application.');
-    await game.user.update({
-      color: HeroMancer.ORIGINAL_PLAYER_COLOR
-    });
-    await HeroMancer.cleanupEventListeners(this);
+    HeroMancer.cleanupEventListeners(this);
     EventDispatcher.clearAll();
     HtmlManipulator.registerButton(); // Clears and recreates button listener
     HM.heroMancer = null; // Clear the instance
@@ -567,10 +592,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!form) return;
 
     form.querySelectorAll('select, input').forEach((elem) => {
-      if (elem.parentElement.localName === 'color-picker') {
-        elem.value = HeroMancer.#randomSafeColor();
-        elem.parentElement.value = HeroMancer.#randomSafeColor();
-      } else if (elem.type === 'checkbox') {
+      if (elem.type === 'checkbox') {
         elem.checked = false;
         elem.dispatchEvent(new Event('change'));
       } else if (elem.tagName === 'SELECT') {
@@ -659,7 +681,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @returns {Promise<void>}
    * @static
    */
-  static async cleanupEventListeners(instance) {
+  static cleanupEventListeners(instance) {
     try {
       const html = instance.element;
       if (!html) {
@@ -890,6 +912,33 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     return EquipmentParser.collectEquipmentSelections(event, options);
   }
 
+  static async noSubmit(event, options) {
+    HM.log(1, 'No submit event:', { event });
+    HM.log(1, 'Original Entries:', HeroMancer.ORIGINAL_PLAYER_COLORS);
+    for (const [userId, originalColor] of HeroMancer.ORIGINAL_PLAYER_COLORS.entries()) {
+      HM.log(1, 'Restoring color for user:', { userId, originalColor });
+      const user = game.users.get(userId);
+      HM.log(1, 'User:', user.name);
+      if (user) {
+        HM.log(1, 'User found, color:', user.color.css);
+        await user.update({
+          color: originalColor
+        });
+        HM.log(1, 'Color restored:', user.color.css);
+      }
+    }
+    // Clear the map for next time
+    HeroMancer.ORIGINAL_PLAYER_COLORS.clear();
+    if (event.target.className === 'hm-app-footer-cancel') {
+      HM.log(1, 'ATTEMPTING TO CLOSE');
+      await this.close(options);
+    }
+  }
+
+  async close(options = {}) {
+    return super.close(options);
+  }
+
   /**
    * Main form submission handler for character creation
    * Validates input, creates actor, and applies advancements
@@ -900,9 +949,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @static
    */
   static async formHandler(event, form, formData) {
+    const targetUserId = game.user.isGM ? formData.object.player : null;
+    const targetUser = HeroMancer.#getTargetUser(targetUserId);
+    HM.log(1, 'FormHandler User:', { targetUserId, targetUser });
+    HM.log(1, 'FORMHANLDER', event.submitter?.dataset.action);
     // Process "Save for Later" action
     if (event.submitter?.dataset.action === 'saveOptions') {
       try {
+        await HeroMancer.noSubmit(event);
         await SavedOptions.saveOptions(formData.object);
         ui.notifications.info('hm.app.optionsSaved', { localize: true });
       } catch (error) {
@@ -962,7 +1016,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         for (const property of validProperties) {
           const value = formData.object[property];
           if (value === null || value === undefined || value === '') {
-            HM.log(2, `Missing required field: ${property}`);
+            HM.log(3, `Missing field: ${property}`);
           }
         }
       } catch (err) {
@@ -973,7 +1027,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       const extractIds = (itemString) => {
         const regex = /^([\dA-Za-z]+)\s\(([^)]+)\)/;
         const match = itemString.match(regex);
-        HM.log(1, 'MATCH:', { match, itemString });
 
         return match ? { itemId: match[1], packId: match[2] } : null;
       };
@@ -982,35 +1035,18 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       const raceData = extractIds(formData.object.race);
       const classData = extractIds(formData.object.class);
 
-      HM.log(3, 'Extracted Item Data:', { backgroundData, raceData, classData, formData });
-
-      // Extract abilities from formData with default 10
-      HM.log(3, 'ABILITIES: Initializing abilities object');
       let abilities = {};
 
-      HM.log(3, 'ABILITIES: Starting to iterate over formData.object keys');
       for (const key in formData.object) {
-        HM.log(3, `ABILITIES: Inspecting key: ${key}`);
-
         const abilityMatch = key.match(/^abilities\[(\w+)]\.score$/) || key.match(/^abilities\[(\w+)]$/);
         if (abilityMatch) {
-          HM.log(3, `ABILITIES: Key matches abilities pattern: ${key}`);
-
           const abilityKey = abilityMatch[1];
-          HM.log(3, `ABILITIES: Extracted abilityKey: ${abilityKey}`);
-
           abilities[abilityKey] = formData.object[key] || 10;
-          HM.log(3, `ABILITIES: Set abilities[${abilityKey}] to ${abilities[abilityKey]}`);
-        } else {
-          HM.log(3, `ABILITIES: Key does not match abilities pattern: ${key}`);
         }
       }
-      HM.log(3, 'ABILITIES: Finished processing formData.object keys');
-
-      HM.log(3, 'ABILITIES: Abilities extracted:', abilities);
 
       // Create the new actor
-      let actorName = formData.object.name || game.user.name; // Handling for blank hero name.
+      let actorName = formData.object.name || targetUser.name;
       let actorData = {
         name: actorName,
         img: formData.object['character-art'],
@@ -1039,6 +1075,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           }
         }
       };
+
+      // Set ownership appropriately when character is created by GM
+      if (game.user.isGM && targetUserId) {
+        actorData.ownership = {
+          default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE,
+          [game.user.id]: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER,
+          [targetUserId]: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
+        };
+      }
+
       ui.notifications.info('hm.actortab-button.creating', { localize: true });
       let actor = await Actor.create(actorData);
       let newActor = game.actors.getName(actorName);
@@ -1245,16 +1291,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
         // Then let advancement manager handle race/background
         await processAdvancements([classItem, raceItem, backgroundItem], actor);
-
-        // Update some user stuff
-        if (game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')) {
-          await game.user.update({
-            color: formData.object['player-color'],
-            pronouns: formData.object['player-pronouns'],
-            avatar: formData.object['player-avatar']
-          });
+        if (game.user.isGM && formData.object.player && formData.object.player !== game.user.id) {
+          try {
+            await game.users.get(formData.object.player).update({ character: actor.id });
+            HM.log(3, `Character assigned to player: ${game.users.get(formData.object.player).name}`);
+          } catch (error) {
+            HM.log(1, 'Error assigning character to player:', error);
+          }
+        } else {
+          // Set as active character for the target user
+          await targetUser.update({ character: actor.id });
         }
-        await game.user.update({ character: actor.id });
       } catch (error) {
         HM.log(1, 'Error during character creation:', error);
       }
@@ -1410,6 +1457,34 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       HM.log(1, 'Error in form submission:', error);
       ui.notifications.error('hm.errors.form-submission', { localize: true });
     }
+
+    if (game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')) {
+      try {
+        HM.log(1, `Attempting to update user ${targetUser.name} with color: ${formData.object['player-color']}`);
+        await targetUser.update({
+          color: formData.object['player-color'],
+          pronouns: formData.object['player-pronouns'],
+          avatar: formData.object['player-avatar']
+        });
+
+        // Restore colors for all other users in ORIGINAL_PLAYER_COLORS
+        for (const [userId, originalColor] of HeroMancer.ORIGINAL_PLAYER_COLORS.entries()) {
+          if (userId !== targetUser.id) {
+            const user = game.users.get(userId);
+            if (user) {
+              HM.log(1, `Restoring color for user ${user.name}: ${originalColor}`);
+              await user.update({
+                color: originalColor
+              });
+            }
+          }
+        }
+
+        HM.log(1, 'Successfully updated user colors');
+      } catch (error) {
+        HM.log(1, `Error updating user ${targetUser.name}:`, error);
+      }
+    }
   }
 
   /* -------------------------------------------- */
@@ -1488,28 +1563,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /**
-   * Generates a random color from a predefined list of visually distinct, easy-to-see colors
-   * @returns {string} A hex color code string (e.g. '#FF5733')
-   * @private
+   * Gets a user by ID from the form data or defaults to current user
+   * @param {string|null} userId - User ID to get
+   * @returns {User} The target user object
    * @static
    */
-  static #randomSafeColor() {
-    // Pre-defined list of visually distinct, easy-to-see colors
-    const safeColorList = [
-      '#FF5733', // Bright orange-red
-      '#33FF57', // Bright green
-      '#3357FF', // Bright blue
-      '#FF33F5', // Bright pink
-      '#F5FF33', // Bright yellow
-      '#33FFF5', // Bright cyan
-      '#9D33FF', // Bright purple
-      '#FF9D33' // Bright amber
-    ];
-
-    if (game.user.color.css === '' || game.user.color.css === '#FFFFFF' || game.user.color.css === '#000000') {
-      return safeColorList[Math.floor(Math.random() * safeColorList.length)];
-    } else {
-      return game.user.color.css;
-    }
+  static #getTargetUser(userId = null) {
+    const targetUser = game.user.isGM && userId && game.users.has(userId) ? game.users.get(userId) : game.user;
+    HM.log(3, '#getTargetUser:', targetUser.name);
+    return targetUser;
   }
 }

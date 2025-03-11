@@ -251,9 +251,9 @@ export class ProgressBar {
    * @static
    */
   static #isFormFieldPopulated(key, value, form) {
-    // Handle starting wealth toggle first
-    if (key === 'use-starting-wealth') {
-      return true; // Always count this as filled since it's a boolean toggle
+    // Skip progress tracking for specific fields
+    if (key === 'use-starting-wealth' || key === 'player') {
+      return true;
     }
 
     // Handle abilities fields
