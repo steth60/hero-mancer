@@ -9,13 +9,12 @@
         <span class='character-name text-lg'>{{name}}</span>
       </div>
       <div class='character-summary p-sm'>
-        <span class='background-summary'>Starting as <a data-action='switchToTab' data-tab='background'>an
-            adventurer</a>,</span>
-        <span class='class-race-summary'>this
-          <a data-action='switchToTab' data-tab='race'>unknown race</a>
-          <a data-action='switchToTab' data-tab='class'>unknown class</a></span>
-        <span class='abilities-summary'>prides themself on their impressive abilities</span>
-        <span class='equipment-summary'>and begins their adventure.</span>
+        <div class='character-summary p-sm'>
+          <span class='background-summary'>{{localize "hm.app.finalize.summary.backgroundDefault"}}</span>
+          <span class='class-race-summary'>{{localize "hm.app.finalize.summary.classRaceDefault"}}</span>
+          <span class='abilities-summary'>{{localize "hm.app.finalize.summary.abilitiesDefault"}}</span>
+          <span class='equipment-summary'>{{localize "hm.app.finalize.summary.equipmentDefault"}}</span>
+        </div>
       </div>
     </div>
 

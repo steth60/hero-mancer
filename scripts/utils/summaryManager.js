@@ -288,6 +288,7 @@ export class SummaryManager {
 
     if (classDropdown) {
       classDropdown._summaryChangeHandler = (event) => {
+        HM.log(3, 'Class dropdown changed:', event.target.value);
         this.updateClassRaceSummary();
         this.updateEquipmentSummary();
       };
@@ -296,6 +297,7 @@ export class SummaryManager {
 
     if (backgroundDropdown) {
       backgroundDropdown._summaryChangeHandler = (event) => {
+        HM.log(3, 'Background dropdown changed:', event.target.value);
         this.updateBackgroundSummary();
         this.updateEquipmentSummary();
       };
@@ -350,7 +352,10 @@ export class SummaryManager {
     // Handle default/no selection case
     if (!selectedOption?.value || selectedOption.value === '') {
       const article = game.i18n.localize('hm.app.equipment.article-plural');
-      summary.innerHTML = game.i18n.format('hm.app.background.default', { article });
+      summary.innerHTML = game.i18n.format('hm.app.finalize.summary.background', {
+        article: article,
+        background: game.i18n.localize('hm.app.background.adventurer')
+      });
       return;
     }
 
@@ -361,9 +366,9 @@ export class SummaryManager {
     const backgroundName = selectedOption.text;
     const article = /^[aeiou]/i.test(backgroundName) ? game.i18n.localize('hm.app.equipment.article-plural') : game.i18n.localize('hm.app.equipment.article');
 
-    const content = game.i18n.format('hm.app.background.summary', {
+    const content = game.i18n.format('hm.app.finalize.summary.background', {
       article: article,
-      name: `@UUID[${uuid}]{${backgroundName}}`
+      background: `@UUID[${uuid}]{${backgroundName}}`
     });
     summary.innerHTML = await TextEditor.enrichHTML(content);
   }
@@ -380,34 +385,48 @@ export class SummaryManager {
 
     if (!summary || !raceSelect || !classSelect) return;
 
-    const createLink = (select) => {
-      const option = select.options[select.selectedIndex];
-      if (!option?.value) return null;
+    // Debug both select elements and storage
+    HM.log(1, 'Race storage:', HM.CONFIG.SELECT_STORAGE.race);
+    HM.log(1, 'Class storage:', HM.CONFIG.SELECT_STORAGE.class);
 
-      // Extract UUID directly from square brackets if present
-      const uuidMatch = option.value.match(/\[(.*?)]/);
-      if (uuidMatch && uuidMatch[1]) {
-        HM.log(3, 'Extracted UUID directly:', uuidMatch[1]);
-        return `@UUID[${uuidMatch[1]}]{${option.text}}`;
+    // Get race details
+    let raceLink = game.i18n.format('hm.unknown', { type: 'race' });
+    if (HM.CONFIG.SELECT_STORAGE.race?.selectedUUID) {
+      // Get the race name directly from the dropdown if possible
+      const selectedRaceOption = raceSelect.selectedIndex > 0 ? raceSelect.options[raceSelect.selectedIndex] : null;
+
+      // If dropdown selection doesn't match stored UUID, try to find matching option
+      let raceName;
+      if (selectedRaceOption) {
+        raceName = selectedRaceOption.text;
+      } else {
+        // Look for option that contains the UUID
+        for (let i = 0; i < raceSelect.options.length; i++) {
+          if (raceSelect.options[i].value.includes(HM.CONFIG.SELECT_STORAGE.race.selectedUUID)) {
+            raceName = raceSelect.options[i].text;
+            break;
+          }
+        }
       }
 
-      // Fall back to original parsing method if no UUID in brackets
-      const [itemId, packId] = option.value.split(' (');
-      if (!itemId || !packId) return null;
+      // If we found a name, create the link
+      if (raceName) {
+        raceLink = `@UUID[${HM.CONFIG.SELECT_STORAGE.race.selectedUUID}]{${raceName}}`;
+      }
+    }
 
-      const cleanPackId = packId.replace(')', '');
-      HM.log(3, 'Created UUID from parts:', { itemId, cleanPackId });
-      const uuid = `Compendium.${cleanPackId}.Item.${itemId}`;
-      return `@UUID[${uuid}]{${option.text}}`;
-    };
+    // Similar process for class
+    let classLink = game.i18n.format('hm.unknown', { type: 'class' });
+    if (HM.CONFIG.SELECT_STORAGE.class?.selectedUUID) {
+      const className = classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].text : 'unknown class';
+      classLink = `@UUID[${HM.CONFIG.SELECT_STORAGE.class.selectedUUID}]{${className}}`;
+    }
 
-    const raceLink = createLink(raceSelect) || game.i18n.format('hm.unknown', { type: 'race' });
-    const classLink = createLink(classSelect) || game.i18n.format('hm.unknown', { type: 'class' });
-
-    const content = game.i18n.format('hm.app.finalize.class-race-summary', {
+    const content = game.i18n.format('hm.app.finalize.summary.classRace', {
       race: raceLink,
       class: classLink
     });
+
     summary.innerHTML = await TextEditor.enrichHTML(content);
   }
 
@@ -449,7 +468,7 @@ export class SummaryManager {
         return `${article} ${item}`;
       });
 
-      const content = game.i18n.format('hm.app.equipment.summary', {
+      const content = game.i18n.format('hm.app.finalize.summary.equipment', {
         items:
           formattedItems.slice(0, -1).join(game.i18n.localize('hm.app.equipment.separator')) + (formattedItems.length > 1 ? game.i18n.localize('hm.app.equipment.and') : '') + formattedItems.slice(-1)
       });
@@ -490,14 +509,13 @@ export class SummaryManager {
 
     const abilitiesSummary = document.querySelector('.abilities-summary');
     if (abilitiesSummary && sortedAbilities.length >= 2) {
-      const content = game.i18n.format('hm.app.abilities.summary', {
-        action: game.i18n.localize('hm.app.abilities.excels'),
+      const content = game.i18n.format('hm.app.finalize.summary.abilities', {
         first: `&Reference[${sortedAbilities[0]}]`,
         second: `&Reference[${sortedAbilities[1]}]`
       });
       abilitiesSummary.innerHTML = await TextEditor.enrichHTML(content);
     } else if (abilitiesSummary) {
-      abilitiesSummary.innerHTML = game.i18n.localize('hm.app.abilities.default');
+      abilitiesSummary.innerHTML = game.i18n.localize('hm.app.finalize.summary.abilitiesDefault');
     }
   }
 

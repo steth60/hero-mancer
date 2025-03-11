@@ -44,7 +44,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       selectTokenArt: CharacterArtPicker.selectTokenArt,
       selectPlayerAvatar: CharacterArtPicker.selectPlayerAvatar,
       resetOptions: HeroMancer.resetOptions,
-      switchToTab: HeroMancer.switchToTab,
       nosubmit: HeroMancer.noSubmit
     },
     classes: ['hm-app'],
@@ -374,7 +373,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       DropdownHandler.initializeDropdown({ type: 'background', html: this.element, context });
 
       // Initialize non-validation listeners and summaries
-      SummaryManager.initializeSummaryListeners();
+
       Listeners.initializeListeners(this.element, context, HeroMancer.selectedAbilities);
 
       // Initial check of mandatory fields
@@ -403,6 +402,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           HM.log(3, `Updated to user: ${targetUser.name} with color: ${colorPicker?.value || 'none'}`);
         });
       }
+      SummaryManager.initializeSummaryListeners();
     } finally {
       this.#isRendering = false;
     }
@@ -603,37 +603,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     SummaryManager.updateClassRaceSummary();
     this.render(true);
     ui.notifications.info('hm.app.optionsReset', { localize: true });
-  }
-
-  /**
-   * Handles tab switching in the HeroMancer interface
-   * Updates the active tab and re-renders the application
-   * @param {Event} _event - The click event
-   * @param {HTMLElement} target - The clicked element with data-tab attribute
-   * @returns {void}
-   * @static
-   */
-  static switchToTab(_event, target) {
-    try {
-      const tabId = target.dataset.tab;
-      HM.log(3, 'TAB ID:', tabId);
-
-      if (!tabId) {
-        HM.log(2, 'No tab ID found in target');
-        return;
-      }
-
-      const app = HM.heroMancer;
-      if (!app) {
-        HM.log(2, 'No active Hero Mancer instance found');
-        return;
-      }
-
-      app.tabGroups['hero-mancer-tabs'] = tabId;
-      app.render(false);
-    } catch (error) {
-      HM.log(1, 'Error switching tab:', error);
-    }
   }
 
   /**

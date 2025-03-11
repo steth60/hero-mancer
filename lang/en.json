@@ -47,7 +47,6 @@
         "tooltip": "Select and assign abilities"
       },
       "background": {
-        "default": "Starting as <a data-action='switchToTab' data-tab='background'>{article} adventurer</a>",
         "none": "No backgrounds available.",
         "preamble": "Choose your character's background from the available options.",
         "select-label": "Background",
@@ -107,6 +106,17 @@
         "personality-traits": "Personality Traits",
         "physical-characteristics": "Physical Characteristics",
         "physical-description": "Physical Description",
+        "summary": {
+          "abilities": "prides themself on their impressive {first} and {second}",
+          "abilitiesDefault": "prides themself on their impressive abilities",
+          "background": "Starting as {article} {background},",
+          "backgroundDefault": "Starting as an adventurer,",
+          "classRace": "this {race} {class}",
+          "classRaceDefault": "this unknown race unknown class",
+          "default": "Starting as an adventurer, this unknown race unknown class prides themself on their impressive abilities and begins their adventure.",
+          "equipment": "and begins their adventure with {items}.",
+          "equipmentDefault": "and begins their adventure."
+        },
         "tooltip": "Finalize your character creation",
         "traits-placeholder": "Describe your character's personality. How do their abilities shape who they are? Are they wise and contemplative, or charismatic and outgoing? Press the Roll button to draw from personality traits suggested by your background.",
         "traits-placeholder-alt": "Describe your character's personality. How do their abilities shape who they are? Are they wise and contemplative, or charismatic and outgoing?"

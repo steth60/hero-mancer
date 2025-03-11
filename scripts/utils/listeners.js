@@ -97,6 +97,7 @@ export class Listeners {
     const equipmentContainer = document.querySelector('#equipment-container');
     const classDropdown = document.querySelector('#class-dropdown');
     const backgroundDropdown = document.querySelector('#background-dropdown');
+    const raceDropdown = document.querySelector('#race-dropdown');
 
     // Create a new instance for this render cycle
     const equipment = new EquipmentParser(classDropdown?.value, backgroundDropdown?.value);
@@ -161,6 +162,28 @@ export class Listeners {
 
       backgroundDropdown.addEventListener('change', backgroundDropdown._equipmentChangeHandler);
     }
+
+    if (raceDropdown) {
+      // Clean up existing handler first
+      if (raceDropdown._raceChangeHandler) {
+        raceDropdown.removeEventListener('change', raceDropdown._raceChangeHandler);
+      }
+
+      raceDropdown._raceChangeHandler = async (event) => {
+        const selectedValue = event.target.value;
+
+        HM.CONFIG.SELECT_STORAGE.race = {
+          selectedValue,
+          selectedId: selectedValue.split(' ')[0],
+          selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
+        };
+
+        // Additional race-specific updates if needed
+        SummaryManager.updateClassRaceSummary();
+      };
+
+      raceDropdown.addEventListener('change', raceDropdown._raceChangeHandler);
+    }
   }
 
   /**
@@ -182,8 +205,6 @@ export class Listeners {
     // Character name change listener
     const characterNameInput = document.querySelector('#character-name');
     if (characterNameInput) {
-      HM.log(1, 'Found character-name input, attaching title update listener');
-
       // Remove any existing listener to prevent duplicates
       if (characterNameInput._titleUpdateHandler) {
         characterNameInput.removeEventListener('blur', characterNameInput._titleUpdateHandler);
