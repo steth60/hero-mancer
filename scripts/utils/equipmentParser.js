@@ -1410,13 +1410,14 @@ export class EquipmentParser {
       const label = child.label.trim();
       const [, count, name] = label.match(/^(\d+)\s*(.+)$/) || [null, null, label];
       const displayName = name || label.replace(/\s*\(.*?\)\s*/g, '');
+      const cleanDisplayName = displayName.replace(/\s*\(if proficient\)\s*/gi, '');
 
       if (renderedItemNames.has(displayName) || EquipmentParser.combinedItemIds.has(child._source.key)) return;
       renderedItemNames.add(displayName);
 
       const optionElement = document.createElement('option');
       optionElement.value = child._source.key;
-      optionElement.innerHTML = `${count > 1 ? `${count} ${displayName}` : displayName}`;
+      optionElement.innerHTML = `${count > 1 ? `${count} ${cleanDisplayName}` : cleanDisplayName}`;
 
       if (select.options.length === 0) {
         optionElement.selected = true;
@@ -1815,7 +1816,7 @@ export class EquipmentParser {
         // Handle edge case of items with key but no type
         const optionElement = document.createElement('option');
         optionElement.value = child.key || child._id;
-        optionElement.innerHTML = `[orBlock-keyOnly] ${child.label || child.name || child.key || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
+        optionElement.innerHTML = `${child.label || child.name || child.key || game.i18n.localize('hm.app.equipment.unknown-choice')}`;
         select.appendChild(optionElement);
         renderedItemNames.add(optionElement.innerHTML);
       }

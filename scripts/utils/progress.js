@@ -60,10 +60,17 @@ export class ProgressBar {
     if (!element || !form) return;
 
     try {
-      const [filledCount, totalFields] = this.#calculateCompletionFromForm(form);
+      const [filledCount, totalFields, unfilledFields, filledFields] = this.#calculateCompletionFromForm(form);
       const percentage = (filledCount / totalFields) * 100;
 
       HM.log(3, `Progress Update: ${filledCount}/${totalFields} fields filled (${percentage.toFixed(2)}%)`);
+
+      if (unfilledFields.length > 0) {
+        HM.log(3, 'Unfilled fields:', unfilledFields);
+      }
+      if (filledFields.length > 0) {
+        HM.log(3, 'Filled fields:', filledFields);
+      }
 
       // Batch DOM updates
       requestAnimationFrame(() => {
@@ -145,6 +152,8 @@ export class ProgressBar {
   static #calculateCompletionFromForm(form) {
     let totalFields = 0;
     let filledCount = 0;
+    let unfilledFields = [];
+    let filledFields = [];
 
     // Process named form elements
     const namedInputs = form.querySelectorAll('[name]');
@@ -164,7 +173,22 @@ export class ProgressBar {
         isFilled = this.#isFormFieldPopulated(input.name, input.value, form);
       }
 
-      if (isFilled) filledCount++;
+      if (isFilled) {
+        filledCount++;
+        filledFields.push({
+          name: input.name,
+          type: input.type,
+          value: input.value,
+          element: input
+        });
+      } else {
+        unfilledFields.push({
+          name: input.name,
+          type: input.type,
+          value: input.value,
+          element: input
+        });
+      }
     });
 
     // Process equipment container inputs
@@ -195,10 +219,26 @@ export class ProgressBar {
           isFilled: isFilled
         });
 
-        if (isFilled) filledCount++;
+        if (isFilled) {
+          filledCount++;
+          filledFields.push({
+            name: input.name,
+            type: input.type,
+            value: input.value,
+            element: input
+          });
+        } else {
+          unfilledFields.push({
+            name: input.name || 'equipment-item',
+            type: input.type,
+            value: input.value,
+            id: input.id,
+            element: input
+          });
+        }
       });
     }
-    return [filledCount, totalFields];
+    return [filledCount, totalFields, unfilledFields, filledFields];
   }
 
   /**
