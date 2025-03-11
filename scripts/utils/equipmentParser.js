@@ -1111,7 +1111,7 @@ export class EquipmentParser {
         const count = child._source?.count > 1 || child._source?.count !== null ? child._source?.count : '';
         combinedIds.push(child._source?.key);
 
-        if (combinedLabel) combinedLabel += ' + ';
+        if (combinedLabel) combinedLabel += ', ';
         combinedLabel += `${count ? `${count} ` : ''}${linkedItem.name}`.trim();
 
         // Add to tracking sets immediately
@@ -1198,7 +1198,7 @@ export class EquipmentParser {
         if (processedIds.has(subChild._id)) continue;
         processedIds.add(subChild._id);
         if (lookupKeys.includes(subChild.key)) {
-          if (combinedLabel) combinedLabel += ' + ';
+          if (combinedLabel) combinedLabel += ', ';
           const lookupLabel = this.#getLookupKeyLabel(subChild.key);
           combinedLabel +=
             `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} <a class="content-link" draggable="true" data-uuid="${subChild.key}" data-source="andGroup">${subChildItem.name}</a>`.trim();
@@ -1215,7 +1215,7 @@ export class EquipmentParser {
         const subChildItem = await fromUuidSync(subChild.key);
         if (!subChildItem) throw new Error(`Item not found for UUID: ${subChild.key}`);
 
-        if (combinedLabel) combinedLabel += ' + ';
+        if (combinedLabel) combinedLabel += ', ';
         // Create proper HTML link
         combinedLabel += `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} <a class="content-link" draggable="true" data-uuid="${subChild.key}">${subChildItem.name}</a>`.trim();
         combinedIds.push(subChild._id);

@@ -770,6 +770,8 @@ h6 {
 .equipment-item input,
 .equipment-item select {
   margin-top: 4px;
+  margin-right: auto;
+  width: fit-content;
 }
 
 .equipment-choices h3 {
@@ -784,12 +786,12 @@ h6 {
   margin: 1rem 0 0.5rem;
 }
 
-.equipment-choices label {
+/* .equipment-choices label {
   display: inline-flex;
   align-items: flex-end;
   font-size: var(--font-size-14);
   line-height: 1.4;
-}
+} */
 
 .equipment-choices input[type='checkbox'] {
   flex-shrink: 0;
