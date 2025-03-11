@@ -361,9 +361,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @protected
    * @override
    */
-  async _onRender(context, _options) {
+  async _onRender(context, options) {
     if (this.#isRendering) return;
-
     try {
       this.#isRendering = true;
       await HeroMancer.cleanupEventListeners(this);
@@ -393,8 +392,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         playerElement.addEventListener('change', (event) => {
           const playerId = event.currentTarget.value;
           const targetUser = HeroMancer.#getTargetUser(playerId);
-
-          HM.log(3, '_onRender:', { element: playerElement, playerId, targetUser });
 
           // Update color picker with the selected user's color
           const colorPicker = this.element.querySelector('#player-color');
@@ -913,29 +910,23 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   static async noSubmit(event, options) {
-    HM.log(1, 'No submit event:', { event });
-    HM.log(1, 'Original Entries:', HeroMancer.ORIGINAL_PLAYER_COLORS);
     for (const [userId, originalColor] of HeroMancer.ORIGINAL_PLAYER_COLORS.entries()) {
-      HM.log(1, 'Restoring color for user:', { userId, originalColor });
       const user = game.users.get(userId);
-      HM.log(1, 'User:', user.name);
       if (user) {
-        HM.log(1, 'User found, color:', user.color.css);
         await user.update({
           color: originalColor
         });
-        HM.log(1, 'Color restored:', user.color.css);
       }
     }
     // Clear the map for next time
     HeroMancer.ORIGINAL_PLAYER_COLORS.clear();
     if (event.target.className === 'hm-app-footer-cancel') {
-      HM.log(1, 'ATTEMPTING TO CLOSE');
-      await this.close(options);
+      await this.close('Closing via noSubmit', options);
     }
   }
 
-  async close(options = {}) {
+  async close(message = '', options = {}) {
+    if (message) HM.log(2, message);
     return super.close(options);
   }
 

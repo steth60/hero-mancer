@@ -170,6 +170,110 @@ export class Listeners {
   static initializeCharacterListeners() {
     const tokenArtCheckbox = document.querySelector('#link-token-art');
     tokenArtCheckbox?.addEventListener('change', CharacterArtPicker._toggleTokenArtRowVisibility);
+
+    this.initializeTitleListeners();
+  }
+
+  /**
+   * Initializes listeners for updating the application title
+   * @static
+   */
+  static initializeTitleListeners() {
+    // Character name change listener
+    const characterNameInput = document.querySelector('#character-name');
+    if (characterNameInput) {
+      HM.log(1, 'Found character-name input, attaching title update listener');
+
+      // Remove any existing listener to prevent duplicates
+      if (characterNameInput._titleUpdateHandler) {
+        characterNameInput.removeEventListener('blur', characterNameInput._titleUpdateHandler);
+      }
+
+      characterNameInput._titleUpdateHandler = (event) => {
+        requestAnimationFrame(() => {
+          this.updateTitleFromFormState();
+        });
+      };
+
+      characterNameInput.addEventListener('blur', characterNameInput._titleUpdateHandler);
+    }
+
+    const classDropdown = document.querySelector('#class-dropdown');
+    const raceDropdown = document.querySelector('#race-dropdown');
+    const backgroundDropdown = document.querySelector('#background-dropdown');
+    const dropdowns = [classDropdown, raceDropdown, backgroundDropdown].filter((el) => el);
+
+    dropdowns.forEach((dropdown) => {
+      if (dropdown._titleUpdateHandler) {
+        dropdown.removeEventListener('change', dropdown._titleUpdateHandler);
+      }
+
+      dropdown._titleUpdateHandler = (event) => {
+        requestAnimationFrame(() => {
+          this.updateTitleFromFormState();
+        });
+      };
+
+      dropdown.addEventListener('change', dropdown._titleUpdateHandler);
+    });
+
+    this.updateTitleFromFormState();
+  }
+
+  /**
+   * Updates the application title based on the current form state
+   * @static
+   */
+  static updateTitleFromFormState() {
+    if (!HM.heroMancer) return;
+
+    // Get character name or default to user name
+    const characterNameInput = document.querySelector('#character-name');
+    const characterName = characterNameInput?.value?.trim() || game.user.name;
+
+    // Character description components
+    let race = '';
+    let background = '';
+    let charClass = '';
+
+    // Check if we have SELECT_STORAGE data
+    if (HM.CONFIG.SELECT_STORAGE) {
+      // Get document names from UUIDs
+      try {
+        if (HM.CONFIG.SELECT_STORAGE.race?.selectedUUID) {
+          const raceDoc = fromUuidSync(HM.CONFIG.SELECT_STORAGE.race.selectedUUID);
+          race = raceDoc?.name || '';
+        }
+
+        if (HM.CONFIG.SELECT_STORAGE.class?.selectedUUID) {
+          const classDoc = fromUuidSync(HM.CONFIG.SELECT_STORAGE.class.selectedUUID);
+          charClass = classDoc?.name || '';
+        }
+
+        if (HM.CONFIG.SELECT_STORAGE.background?.selectedUUID) {
+          const backgroundDoc = fromUuidSync(HM.CONFIG.SELECT_STORAGE.background.selectedUUID);
+          background = backgroundDoc?.name || '';
+        }
+      } catch (error) {
+        HM.log(2, `Error getting document: ${error}`);
+      }
+    }
+
+    let characterDescription = characterName;
+    const components = [race, background, charClass].filter((c) => c);
+
+    if (components.length > 0) {
+      characterDescription += `, ${game.i18n.format('hm.app.title', { components: components.join(' ') })}`;
+      characterDescription += '.';
+    }
+
+    const newTitle = `${HM.CONFIG.TITLE} | ${characterDescription}`;
+
+    HM.heroMancer._updateFrame({
+      window: {
+        title: newTitle
+      }
+    });
   }
 
   /**

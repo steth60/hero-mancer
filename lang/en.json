@@ -131,6 +131,8 @@
         "character-art-placeholder": "Choose art for your character",
         "name-label": "Character Name",
         "name-placeholder": "Choose a name for your character",
+        "player-assignment-label": "Assign to Player",
+        "player-assignment-placeholder": "Select a Player",
         "player-avatar": "Player Avatar",
         "player-avatar-placeholder": "Choose art for your player",
         "player-color": "Player Color",
@@ -138,20 +140,18 @@
         "player-pronouns": "Player Pronouns",
         "player-pronouns-placeholder": "Choose your preferred pronouns",
         "preamble": {
-          "title": "Welcome to Hero Mancer!",
+          "conclusion": "The more detail you provide, the richer your character will be in your DM's world. Your journey begins now!",
           "description": "This interactive character creator will guide you through building your perfect character for FoundryVTT.",
           "features": "During this process, you'll choose attributes, race, class, and background; select your preferred stat rolling method; customize starting equipment; and develop your character's personality.",
           "navigation": "Navigate between sections freely - your progress is saved automatically. Use 'Save for Later' to continue another time.",
-          "conclusion": "The more detail you provide, the richer your character will be in your DM's world. Your journey begins now!"
+          "title": "Welcome to Hero Mancer!"
         },
         "select-art": "Select",
         "token-art-label": "Token Art",
         "token-art-placeholder": "Choose token art for your character",
         "token-same-as-character": "Use same image for token?",
         "token-visibility-placeholder": "Choose display status",
-        "tooltip": "Start your character creation",
-        "player-assignment-placeholder": "Select a Player",
-        "player-assignment-label": "Assign to Player"
+        "tooltip": "Start your character creation"
       },
       "submit": "Submit",
       "submit-description": "Submit your Hero Mancer",
@@ -164,7 +164,8 @@
         "race": "Race",
         "start": "Start"
       },
-      "tabs": "Hero Mancer Navigation Tabs"
+      "tabs": "Hero Mancer Navigation Tabs",
+      "title": "the {components}"
     },
     "dialogs": {
       "reroll": {
@@ -174,6 +175,10 @@
         "content": "One or more ability scores already have values. Are you sure you want to reroll? This action cannot be undone.",
         "title": "Reroll stat?"
       }
+    },
+    "equipment": {
+      "extracted-info": "Equipment found in description:",
+      "no-equipment-notice": "Unable to find any starting equipment data in the raw description, you're on your own!"
     },
     "errors": {
       "advancement-process": "There was an error applying character advancements. Your character may be incomplete.",
@@ -187,6 +192,7 @@
       "failed-compendium-retrieval": "Failed to retrieve documents from compendium pack: {type}",
       "fetch-fail": "Failed to fetch some documents, please check console for errors.",
       "form-submission": "There was an error submitting the form. Please try again.",
+      "missing-equipment": "The selected {type} doesn't contain any Starting Equipment data. Please report this to the creator of the item, not Hero Mancer.",
       "missing-mandatory-fields": "Required fields missing: {fields}",
       "no-background": "The selected background could not be found.",
       "no-class": "The selected class could not be found.",
@@ -196,8 +202,7 @@
       "select-background": "Please select a background before submitting.",
       "select-class": "Please select a class before submitting.",
       "select-race": "Please select a race before submitting.",
-      "tab-navigation": "There was an error navigating to the selected tab.",
-      "missing-equipment": "The selected {type} doesn't contain any Starting Equipment data. Please report this to the creator of the item, not Hero Mancer."
+      "tab-navigation": "There was an error navigating to the selected tab."
     },
     "settings": {
       "alignments": {
@@ -245,8 +250,8 @@
         "race": "Race",
         "races-label": "Set Race Compendiums:",
         "saved": "{type} compendium settings have been saved.",
-        "title": "Select your {type} compendiums!",
-        "select-all": "Select All"
+        "select-all": "Select All",
+        "title": "Select your {type} compendiums!"
       },
       "custom-point-buy-total": {
         "hint": "Specify the point buy total if not using standard calculations.",
@@ -348,10 +353,6 @@
       "advancement-timeout": "The advancement process for {item} took too long and was skipped.",
       "partial-cleanup": "Some resources could not be properly cleaned up.",
       "select-background": "You must select a valid background first."
-    },
-    "equipment": {
-      "extracted-info": "Equipment found in description:",
-      "no-equipment-notice": "Unable to find any starting equipment data in the raw description, you're on your own!"
     }
   }
 }
