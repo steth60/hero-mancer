@@ -305,8 +305,33 @@ export class SummaryManager {
     }
 
     if (equipmentContainer) {
-      // Register equipment container observer with MutationObserverRegistry
-      MutationObserverRegistry.register('summary-equipment', equipmentContainer, { childList: true, subtree: true }, () => this.updateEquipmentSummary());
+      MutationObserverRegistry.register('summary-equipment', equipmentContainer, { childList: true, subtree: true, attributes: true }, (mutations) => {
+        for (const mutation of mutations) {
+          // If nodes were added, check for new favorite checkboxes
+          if (mutation.type === 'childList' && mutation.addedNodes.length) {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                // Find any new favorite checkboxes
+                const newCheckboxes = node.querySelectorAll?.('.equipment-favorite-checkbox') || [];
+                newCheckboxes.forEach((checkbox) => {
+                  if (!checkbox._favoriteChangeHandler) {
+                    checkbox._favoriteChangeHandler = () => this.updateEquipmentSummary();
+                    checkbox.addEventListener('change', checkbox._favoriteChangeHandler);
+                  }
+                });
+              }
+            });
+          }
+
+          // If attribute changed on a favorite checkbox
+          if (mutation.type === 'attributes' && mutation.attributeName === 'checked' && mutation.target.classList.contains('equipment-favorite-checkbox')) {
+            this.updateEquipmentSummary();
+          }
+        }
+
+        // Update summary regardless of mutation type
+        this.updateEquipmentSummary();
+      });
     }
 
     if (abilityBlocks) {
@@ -385,10 +410,6 @@ export class SummaryManager {
 
     if (!summary || !raceSelect || !classSelect) return;
 
-    // Debug both select elements and storage
-    HM.log(1, 'Race storage:', HM.CONFIG.SELECT_STORAGE.race);
-    HM.log(1, 'Class storage:', HM.CONFIG.SELECT_STORAGE.class);
-
     // Get race details
     let raceLink = game.i18n.format('hm.unknown', { type: 'race' });
     if (HM.CONFIG.SELECT_STORAGE.race?.selectedUUID) {
@@ -440,32 +461,81 @@ export class SummaryManager {
 
     let selectedEquipment = Array.from(document.querySelectorAll('#equipment-container select, #equipment-container input[type="checkbox"]:checked'))
       .map((el) => {
-        const link = el.type === 'checkbox' ? el.parentElement?.querySelector('.content-link') : el.options?.[el.selectedIndex];
-        const uuid = el.type === 'checkbox' ? link?.dataset?.uuid : el.value;
+        // For selects
+        if (el.tagName === 'SELECT') {
+          const selectedOption = el.options[el.selectedIndex];
+          if (!selectedOption || !selectedOption.value || !selectedOption.value.includes('Compendium')) return null;
 
-        if (!link || !uuid || uuid.includes(',') || !uuid.includes('Compendium')) return null;
+          const favoriteCheckbox = el.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
+          const isFavorite = favoriteCheckbox?.checked || false;
 
-        return {
-          type: link.dataset.tooltip?.toLowerCase() || '',
-          uuid: uuid,
-          text: link.textContent?.trim()
-        };
+          return {
+            type: selectedOption.dataset.tooltip?.toLowerCase() || '',
+            uuid: selectedOption.value,
+            text: selectedOption.textContent?.trim(),
+            favorite: isFavorite
+          };
+        }
+        // For checkboxes
+        else {
+          const link = el.parentElement?.querySelector('.content-link');
+          const uuid = link?.dataset?.uuid;
+
+          if (!link || !uuid || uuid.includes(',') || !uuid.includes('Compendium')) return null;
+
+          const favoriteCheckbox = el.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
+          const isFavorite = favoriteCheckbox?.checked || false;
+
+          HM.log(3, `Processing checkbox item: ${link.textContent?.trim()}, favorite: ${isFavorite}`, {
+            checkbox: el,
+            favoriteBox: favoriteCheckbox,
+            checked: favoriteCheckbox?.checked
+          });
+
+          return {
+            type: link.dataset.tooltip?.toLowerCase() || '',
+            uuid: uuid,
+            text: link.textContent?.trim(),
+            favorite: isFavorite
+          };
+        }
       })
-      .filter(Boolean)
-      .sort((a, b) => {
-        const aIndex = priorityTypes.indexOf(a.type);
-        const bIndex = priorityTypes.indexOf(b.type);
-        return (bIndex === -1 ? -999 : bIndex) - (aIndex === -1 ? -999 : aIndex);
-      })
-      .map((item) => `@UUID[${item.uuid}]{${item.text}}`);
+      .filter(Boolean);
+
+    // Debug logging
+    HM.log(
+      3,
+      'Before sorting:',
+      selectedEquipment.map((item) => `${item.text} (favorite: ${item.favorite})`)
+    );
+
+    // Fix the sorting to ensure favorites come first
+    selectedEquipment.sort((a, b) => {
+      if (a.favorite && !b.favorite) return -1;
+      if (!a.favorite && b.favorite) return 1;
+
+      // If both have same favorite status, use the type priority
+      const aIndex = priorityTypes.indexOf(a.type);
+      const bIndex = priorityTypes.indexOf(b.type);
+      return (bIndex === -1 ? -999 : bIndex) - (aIndex === -1 ? -999 : aIndex);
+    });
+
+    // Debug logging
+    HM.log(
+      3,
+      'After sorting:',
+      selectedEquipment.map((item) => `${item.text} (favorite: ${item.favorite})`)
+    );
+
+    // Take up to 3 items
+    const displayEquipment = selectedEquipment.slice(0, 3);
 
     const summary = document.querySelector('.equipment-summary');
-    if (summary && selectedEquipment.length) {
-      const randomEquipment = selectedEquipment.slice(0, 3);
-      const formattedItems = randomEquipment.map((item) => {
-        const itemName = item.match(/{([^}]+)}/)[1];
+    if (summary && displayEquipment.length) {
+      const formattedItems = displayEquipment.map((item) => {
+        const itemName = item.text;
         const article = /^[aeiou]/i.test(itemName) ? game.i18n.localize('hm.app.equipment.article-plural') : game.i18n.localize('hm.app.equipment.article');
-        return `${article} ${item}`;
+        return `${article} @UUID[${item.uuid}]{${item.text}}`;
       });
 
       const content = game.i18n.format('hm.app.finalize.summary.equipment', {
@@ -473,6 +543,8 @@ export class SummaryManager {
           formattedItems.slice(0, -1).join(game.i18n.localize('hm.app.equipment.separator')) + (formattedItems.length > 1 ? game.i18n.localize('hm.app.equipment.and') : '') + formattedItems.slice(-1)
       });
       summary.innerHTML = await TextEditor.enrichHTML(content);
+    } else if (summary) {
+      summary.innerHTML = game.i18n.localize('hm.app.finalize.summary.equipmentDefault');
     }
   }
 
@@ -736,6 +808,7 @@ export class SummaryManager {
         dropdown._summaryChangeHandler = null;
       }
     });
+
     document.querySelectorAll('.ability-block .ability-dropdown, .ability-block .ability-score').forEach((input) => {
       if (input._summarySummaryHandler) {
         input.removeEventListener('change', input._summarySummaryHandler);
