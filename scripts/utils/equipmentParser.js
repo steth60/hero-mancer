@@ -819,16 +819,16 @@ export class EquipmentParser {
             }
 
             if (itemDoc) {
-              labelElement.innerHTML = `[buildElement-itemDoc] ${item.label || `${item.count || ''} ${itemDoc.name}`}`;
+              labelElement.innerHTML = `${item.label || `${item.count || ''} ${itemDoc.name}`}`;
               shouldAddLabel = true;
             } else {
               HM.log(2, `No document found for item key: ${item.key}`, { item, labelElement });
-              labelElement.innerHTML = `[buildElement-noDoc] ${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
+              labelElement.innerHTML = `${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
               shouldAddLabel = true;
             }
           } catch (error) {
             HM.log(1, `Error getting label for item ${item._source?.key}: ${error.message}`, { item, labelElement });
-            labelElement.innerHTML = `[buildElement-error] ${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
+            labelElement.innerHTML = `${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
             shouldAddLabel = true;
           }
         }
@@ -894,7 +894,7 @@ export class EquipmentParser {
         result = itemContainer;
       }
 
-      if (result.innerHTML === '') {
+      if (!result || result.innerHTML === '') {
         return;
       }
       EquipmentParser.renderedItems.add(item._id);
@@ -1022,7 +1022,7 @@ export class EquipmentParser {
     if (item.group) {
       const andLabelElement = document.createElement('h4');
       andLabelElement.classList.add('parent-label');
-      andLabelElement.innerHTML = `[andBlock] ${item.label || game.i18n.localize('hm.app.equipment.choose-all')}`;
+      andLabelElement.innerHTML = `${item.label || game.i18n.localize('hm.app.equipment.choose-all')}`;
       itemContainer.appendChild(andLabelElement);
     }
 
@@ -1145,6 +1145,11 @@ export class EquipmentParser {
     }
 
     for (const lookupItem of lookupItems) {
+      const lookupLabel = this.#getLookupKeyLabel(lookupItem.key);
+      const header = document.createElement('h4');
+      header.innerHTML = lookupLabel;
+      itemContainer.appendChild(header);
+
       const select = document.createElement('select');
       select.id = lookupItem._source.key;
 

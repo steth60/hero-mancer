@@ -513,6 +513,10 @@ h6 {
   padding: 0.2rem 0 0.3rem;
 }
 
+fieldset#start > h2 {
+  margin: 0;
+}
+
 .hm-app p {
   display: block;
   line-height: var(--line-height-20);
@@ -744,22 +748,23 @@ h6 {
   box-shadow: 0 2px 4px #0003;
 }
 
-.class-equipment-section h3,
-.background-equipment-section h3 {
+.hm-app-tab-content .class-equipment-section h3,
+.hm-app-tab-content .background-equipment-section h3 {
   width: 100%;
-  margin-bottom: 10px;
   text-align: center;
+  margin-bottom: unset;
 }
 
-.class-equipment-section h4,
-.background-equipment-section h4 {
-  font-size: var(--font-size-16);
+.hm-app-tab-content .class-equipment-section h4,
+.hm-app-tab-content .background-equipment-section h4 {
+  font-size: var(--font-size-15);
   font-family: signika, sans-serif;
 }
 
 .equipment-item {
   display: flex;
-  flex-direction: column;
+  flex-flow: row wrap;
+  align-items: baseline;
   width: 100%;
   max-width: 100%;
   padding: 0.75rem 0;
@@ -772,11 +777,10 @@ h6 {
   margin-top: 4px;
   margin-right: auto;
   width: fit-content;
+  vertical-align: middle;
 }
 
 .equipment-choices h3 {
-  margin: 0 0 1.5rem;
-  padding-bottom: 0.75rem;
   border-bottom: 2px solid var(--color-border-light-primary);
   font-size: var(--font-size-20);
   text-align: center;
@@ -784,24 +788,26 @@ h6 {
 
 .equipment-choices h4 {
   margin: 1rem 0 0.5rem;
+  width: 92%;
 }
 
-/* .equipment-choices label {
-  display: inline-flex;
-  align-items: flex-end;
-  font-size: var(--font-size-14);
-  line-height: 1.4;
-} */
+.equipment-choices .parent-label {
+  width: fit-content;
+  min-width: 140px;
+  max-width: 240px;
+  margin-right: 0;
+  margin-left: 0;
+}
 
 .equipment-choices input[type='checkbox'] {
   flex-shrink: 0;
-  margin: 0.2rem 0.5rem 0 0;
+  margin: 0 0.5rem 0.2rem 0;
 }
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select {
   width: fit-content;
   min-width: 140px;
-  max-width: 100%;
+  max-width: 240px;
   margin-right: 0;
   margin-left: 0;
   overflow: hidden;
@@ -840,7 +846,7 @@ h6 {
 
 /* Wealth option container */
 .wealth-option-container {
-  margin: 0 0 10px;
+  margin: 10px 0 0;
   padding: 0.625rem;
   border: 1px solid var(--color-border-light-tertiary);
   border-radius: 4px;
@@ -866,7 +872,7 @@ h6 {
 }
 
 .dual-weapon-selection {
-  margin-top: 1rem;
+  margin-left: 10px;
 }
 
 .second-weapon-label {
@@ -883,6 +889,7 @@ h6 {
   padding: 0.5rem;
   border: 1px solid var(--color-level-error-border);
   border-radius: 5px;
+  margin: 10px 0;
 }
 
 .equipment-missing-warning {
@@ -973,10 +980,6 @@ h6 {
 
 .equipment-favorite-checkbox:checked + .equipment-favorite-star {
   color: #ffd700;
-}
-
-.equipment-favorite-checkbox:focus + .equipment-favorite-star {
-  outline: 1px solid #4d90fe;
 }
 
 .equipment-favorite-checkbox:hover + .equipment-favorite-star {
