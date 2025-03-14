@@ -44,7 +44,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
   /* -------------------------------------------- */
 
   get title() {
-    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.mandatory-fields.menu.name')}`;
+    return `${HM.NAME} | ${game.i18n.localize('hm.settings.mandatory-fields.menu.name')}`;
   }
 
   /* -------------------------------------------- */
@@ -61,7 +61,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   async _prepareContext(_options) {
     const fieldCategories = await this.getAllFormFields();
-    const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
+    const mandatoryFields = game.settings.get(HM.ID, 'mandatoryFields') || [];
 
     // Process each category to add mandatory status
     const processedFields = {};
@@ -80,8 +80,8 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
 
     return {
       fields: processedFields,
-      playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
-      tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')
+      playerCustomizationEnabled: game.settings.get(HM.ID, 'enablePlayerCustomization'),
+      tokenCustomizationEnabled: game.settings.get(HM.ID, 'enableTokenCustomization')
     };
   }
 
@@ -107,7 +107,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
         { key: 'token-art', label: `${game.i18n.localize('hm.app.start.token-art-label')}`, default: false }
       ],
       player:
-        game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization') ?
+        game.settings.get(HM.ID, 'enablePlayerCustomization') ?
           [
             { key: 'player-color', label: `${game.i18n.localize('hm.app.start.player-color')}`, default: false },
             { key: 'player-pronouns', label: `${game.i18n.localize('hm.app.start.player-pronouns')}`, default: false },
@@ -115,7 +115,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
           ]
         : [],
       token:
-        game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization') ?
+        game.settings.get(HM.ID, 'enableTokenCustomization') ?
           [
             { key: 'displayName', label: `${game.i18n.localize('TOKEN.CharShowNameplate')}`, default: false },
             { key: 'displayBars', label: `${game.i18n.localize('TOKEN.ResourceDisplay')}`, default: false },
@@ -177,7 +177,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
         .filter((checkbox) => checkbox.checked)
         .map((checkbox) => checkbox.name);
 
-      await game.settings.set(HM.CONFIG.ID, 'mandatoryFields', mandatoryFields);
+      await game.settings.set(HM.ID, 'mandatoryFields', mandatoryFields);
 
       this.constructor.reloadConfirm({ world: requiresWorldReload });
 
@@ -196,7 +196,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
    * @static
    */
   static async checkMandatoryFields(form) {
-    const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
+    const mandatoryFields = game.settings.get(HM.ID, 'mandatoryFields') || [];
     const submitButton = form.querySelector('.hm-app-footer-submit');
 
     if (!submitButton || !mandatoryFields.length) return true;

@@ -381,7 +381,7 @@ export class SummaryManager {
     const [itemId, packId] = selectedOption.value.split(' (');
     if (!itemId || !packId) return;
 
-    const uuid = HM.CONFIG.SELECT_STORAGE.background.selectedUUID;
+    const uuid = HM.SELECT_STORAGE.background.selectedUUID;
     const backgroundName = selectedOption.text;
     const article = /^[aeiou]/i.test(backgroundName) ? game.i18n.localize('hm.app.equipment.article-plural') : game.i18n.localize('hm.app.equipment.article');
 
@@ -406,7 +406,7 @@ export class SummaryManager {
 
     // Get race details
     let raceLink = game.i18n.format('hm.unknown', { type: 'race' });
-    if (HM.CONFIG.SELECT_STORAGE.race?.selectedUUID) {
+    if (HM.SELECT_STORAGE.race?.selectedUUID) {
       // Get the race name directly from the dropdown if possible
       const selectedRaceOption = raceSelect.selectedIndex > 0 ? raceSelect.options[raceSelect.selectedIndex] : null;
 
@@ -417,7 +417,7 @@ export class SummaryManager {
       } else {
         // Look for option that contains the UUID
         for (let i = 0; i < raceSelect.options.length; i++) {
-          if (raceSelect.options[i].value.includes(HM.CONFIG.SELECT_STORAGE.race.selectedUUID)) {
+          if (raceSelect.options[i].value.includes(HM.SELECT_STORAGE.race.selectedUUID)) {
             raceName = raceSelect.options[i].text;
             break;
           }
@@ -426,15 +426,15 @@ export class SummaryManager {
 
       // If we found a name, create the link
       if (raceName) {
-        raceLink = `@UUID[${HM.CONFIG.SELECT_STORAGE.race.selectedUUID}]{${raceName}}`;
+        raceLink = `@UUID[${HM.SELECT_STORAGE.race.selectedUUID}]{${raceName}}`;
       }
     }
 
     // Similar process for class
     let classLink = game.i18n.format('hm.unknown', { type: 'class' });
-    if (HM.CONFIG.SELECT_STORAGE.class?.selectedUUID) {
+    if (HM.SELECT_STORAGE.class?.selectedUUID) {
       const className = classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].text : 'unknown class';
-      classLink = `@UUID[${HM.CONFIG.SELECT_STORAGE.class.selectedUUID}]{${className}}`;
+      classLink = `@UUID[${HM.SELECT_STORAGE.class.selectedUUID}]{${className}}`;
     }
 
     const content = game.i18n.format('hm.app.finalize.summary.classRace', {
@@ -542,7 +542,7 @@ export class SummaryManager {
   static async updateAbilitiesSummary() {
     const abilityBlocks = document.querySelectorAll('.ability-block');
     const abilityScores = {};
-    const rollMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    const rollMethod = game.settings.get(HM.ID, 'diceRollingMethod');
 
     abilityBlocks.forEach((block) => {
       let score = 0;
@@ -710,7 +710,7 @@ export class SummaryManager {
       return;
     }
 
-    const uuid = HM.CONFIG.SELECT_STORAGE.background.selectedUUID;
+    const uuid = HM.SELECT_STORAGE.background.selectedUUID;
 
     try {
       const background = await fromUuid(uuid);

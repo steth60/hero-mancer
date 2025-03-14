@@ -20,7 +20,7 @@ export class SavedOptions {
   static async saveOptions(formData) {
     HM.log(3, 'Saving form data:', formData);
     const data = { ...formData };
-    const result = await game.user.setFlag(HM.CONFIG.ID, this.FLAG, data);
+    const result = await game.user.setFlag(HM.ID, this.FLAG, data);
     return result;
   }
 
@@ -31,7 +31,7 @@ export class SavedOptions {
    */
   static async loadOptions() {
     HM.log(3, 'Loading saved options');
-    const data = await game.user.getFlag(HM.CONFIG.ID, this.FLAG);
+    const data = await game.user.getFlag(HM.ID, this.FLAG);
     HM.log(3, 'Loaded flag data:', data);
     return data || {};
   }
@@ -42,6 +42,6 @@ export class SavedOptions {
    * @static
    */
   static async resetOptions() {
-    return game.user.setFlag(HM.CONFIG.ID, this.FLAG, null);
+    return game.user.setFlag(HM.ID, this.FLAG, null);
   }
 }

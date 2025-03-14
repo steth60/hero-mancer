@@ -27,7 +27,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   static DEFAULT_OPTIONS = {
-    id: `${HM.CONFIG.ID}-app`,
+    id: `${HM.ID}-app`,
     tag: 'form',
     form: {
       handler: HeroMancer.formHandler,
@@ -59,16 +59,16 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   static PARTS = {
-    header: { template: `${HM.CONFIG.TEMPLATES}/app-header.hbs`, classes: ['hm-app-header'] },
-    tabs: { template: `${HM.CONFIG.TEMPLATES}/app-nav.hbs`, classes: ['hm-app-nav'] },
-    start: { template: `${HM.CONFIG.TEMPLATES}/tab-start.hbs`, classes: ['hm-app-tab-content'] },
-    background: { template: `${HM.CONFIG.TEMPLATES}/tab-background.hbs`, classes: ['hm-app-tab-content'] },
-    race: { template: `${HM.CONFIG.TEMPLATES}/tab-race.hbs`, classes: ['hm-app-tab-content'] },
-    class: { template: `${HM.CONFIG.TEMPLATES}/tab-class.hbs`, classes: ['hm-app-tab-content'] },
-    abilities: { template: `${HM.CONFIG.TEMPLATES}/tab-abilities.hbs`, classes: ['hm-app-tab-content'] },
-    equipment: { template: `${HM.CONFIG.TEMPLATES}/tab-equipment.hbs`, classes: ['hm-app-tab-content'] },
-    finalize: { template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`, classes: ['hm-app-tab-content'] },
-    footer: { template: `${HM.CONFIG.TEMPLATES}/app-footer.hbs`, classes: ['hm-app-footer'] }
+    header: { template: 'modules/hero-mancer/templates/app-header.hbs', classes: ['hm-app-header'] },
+    tabs: { template: 'modules/hero-mancer/templates/app-nav.hbs', classes: ['hm-app-nav'] },
+    start: { template: 'modules/hero-mancer/templates/tab-start.hbs', classes: ['hm-app-tab-content'] },
+    background: { template: 'modules/hero-mancer/templates/tab-background.hbs', classes: ['hm-app-tab-content'] },
+    race: { template: 'modules/hero-mancer/templates/tab-race.hbs', classes: ['hm-app-tab-content'] },
+    class: { template: 'modules/hero-mancer/templates/tab-class.hbs', classes: ['hm-app-tab-content'] },
+    abilities: { template: 'modules/hero-mancer/templates/tab-abilities.hbs', classes: ['hm-app-tab-content'] },
+    equipment: { template: 'modules/hero-mancer/templates/tab-equipment.hbs', classes: ['hm-app-tab-content'] },
+    finalize: { template: 'modules/hero-mancer/templates/tab-finalize.hbs', classes: ['hm-app-tab-content'] },
+    footer: { template: 'modules/hero-mancer/templates/app-footer.hbs', classes: ['hm-app-footer'] }
   };
 
   static ADVANCEMENT_DELAY = { transitionDelay: 1000, renderTimeout: 5000, retryAttempts: 3 };
@@ -92,7 +92,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /* -------------------------------------------- */
 
   get title() {
-    return `${HM.CONFIG.TITLE} | ${game.user.name}`;
+    return `${HM.NAME} | ${game.user.name}`;
   }
 
   /* -------------------------------------------- */
@@ -139,22 +139,22 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       rollStat: this.rollStat,
       rollMethods: this.#getRollMethods(),
       diceRollMethod: diceRollMethod,
-      allowedMethods: game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
+      allowedMethods: game.settings.get(HM.ID, 'allowedMethods'),
       standardArray: this.#getStandardArrayValues(diceRollMethod),
       selectedAbilities: HeroMancer.selectedAbilities,
       remainingPoints: Listeners.updateRemainingPointsDisplay(HeroMancer.selectedAbilities),
       totalPoints: StatRoller.getTotalPoints(),
-      playerCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization'),
-      tokenCustomizationEnabled: game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization'),
+      playerCustomizationEnabled: game.settings.get(HM.ID, 'enablePlayerCustomization'),
+      tokenCustomizationEnabled: game.settings.get(HM.ID, 'enableTokenCustomization'),
       token: this.#getTokenConfig(),
-      mandatoryFields: game.settings.get(HM.CONFIG.ID, 'mandatoryFields'),
+      mandatoryFields: game.settings.get(HM.ID, 'mandatoryFields'),
       isGM: game.user.isGM,
       players: game.users.map((user) => ({
         id: user.id,
         name: user.name,
         color: user.color.css
       })),
-      chainedRolls: game.settings.get(HM.CONFIG.ID, 'chainedRolls')
+      chainedRolls: game.settings.get(HM.ID, 'chainedRolls')
     };
   }
 
@@ -193,12 +193,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           context.tab = context.tabs[partId];
           context.alignments =
             game.settings
-              .get(HM.CONFIG.ID, 'alignments')
+              .get(HM.ID, 'alignments')
               .split(',')
               .map((d) => d.trim()) || [];
           context.deities =
             game.settings
-              .get(HM.CONFIG.ID, 'deities')
+              .get(HM.ID, 'deities')
               .split(',')
               .map((d) => d.trim()) || [];
           break;
@@ -435,11 +435,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @private
    */
   #getDiceRollingMethod() {
-    let diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    let diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
     HM.log(3, 'Initial dice rolling method:', diceRollingMethod);
 
     // Get the allowed methods configuration
-    const allowedMethods = game.settings.get(HM.CONFIG.ID, 'allowedMethods');
+    const allowedMethods = game.settings.get(HM.ID, 'allowedMethods');
 
     // Map from setting keys to method names
     const methodMapping = {
@@ -478,7 +478,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     const method = diceRollingMethod || this.#getDiceRollingMethod();
 
     if (method === 'standardArray') {
-      const customArray = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
+      const customArray = game.settings.get(HM.ID, 'customStandardArray');
       if (customArray) {
         const parsedArray = customArray.split(',').map(Number);
         // Check if the custom array has enough values for all abilities
@@ -539,7 +539,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   static async resetOptions(event, target) {
     HM.log(3, 'Resetting options.', { event: event, target: target });
-    await game.user.setFlag(HM.CONFIG.ID, SavedOptions.FLAG, null);
+    await game.user.setFlag(HM.ID, SavedOptions.FLAG, null);
 
     const form = target.ownerDocument.getElementById('hero-mancer-app');
     if (!form) return;
@@ -865,7 +865,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
     try {
-      const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
+      const mandatoryFields = game.settings.get(HM.ID, 'mandatoryFields') || [];
 
       // Check mandatory fields
       const missingFields = mandatoryFields.filter((field) => {
@@ -1342,7 +1342,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       ui.notifications.error('hm.errors.form-submission', { localize: true });
     }
 
-    if (game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization')) {
+    if (game.settings.get(HM.ID, 'enablePlayerCustomization')) {
       try {
         HM.log(1, `Attempting to update user ${targetUser.name} with color: ${formData.object['player-color']}`);
         await targetUser.update({
@@ -1396,7 +1396,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       };
 
       // Only add token customization properties if enabled
-      if (game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization')) {
+      if (game.settings.get(HM.ID, 'enableTokenCustomization')) {
         // Display settings
         if (formData.displayName) tokenData.displayName = parseInt(formData.displayName);
         if (formData.displayBars) tokenData.displayBars = parseInt(formData.displayBars);

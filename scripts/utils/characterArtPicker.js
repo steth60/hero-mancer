@@ -15,7 +15,7 @@ export class CharacterArtPicker {
    * @static
    */
   static get rootDirectory() {
-    return game.settings.get(HM.CONFIG.ID, 'artPickerRoot');
+    return game.settings.get(HM.ID, 'artPickerRoot');
   }
 
   /**
@@ -29,7 +29,7 @@ export class CharacterArtPicker {
       return;
     }
     // Update the game setting instead of a static property
-    game.settings.set(HM.CONFIG.ID, 'artPickerRoot', path);
+    game.settings.set(HM.ID, 'artPickerRoot', path);
     HM.log(3, `rootDirectory setting updated to: ${path}`);
   }
 

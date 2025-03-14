@@ -44,7 +44,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
   /* -------------------------------------------- */
 
   get title() {
-    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.dice-rolling.menu.name')}`;
+    return `${HM.NAME} | ${game.i18n.localize('hm.settings.dice-rolling.menu.name')}`;
   }
 
   /* -------------------------------------------- */
@@ -59,12 +59,12 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   async _prepareContext(_options) {
     const context = {
-      allowedMethods: await game.settings.get(HM.CONFIG.ID, 'allowedMethods'),
-      customRollFormula: game.settings.get(HM.CONFIG.ID, 'customRollFormula'),
-      chainedRolls: game.settings.get(HM.CONFIG.ID, 'chainedRolls'),
-      rollDelay: game.settings.get(HM.CONFIG.ID, 'rollDelay'),
-      customStandardArray: game.settings.get(HM.CONFIG.ID, 'customStandardArray'),
-      customPointBuyTotal: game.settings.get(HM.CONFIG.ID, 'customPointBuyTotal')
+      allowedMethods: await game.settings.get(HM.ID, 'allowedMethods'),
+      customRollFormula: game.settings.get(HM.ID, 'customRollFormula'),
+      chainedRolls: game.settings.get(HM.ID, 'chainedRolls'),
+      rollDelay: game.settings.get(HM.ID, 'rollDelay'),
+      customStandardArray: game.settings.get(HM.ID, 'customStandardArray'),
+      customPointBuyTotal: game.settings.get(HM.ID, 'customPointBuyTotal')
     };
 
     return context;
@@ -116,10 +116,10 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
 
       const settings = ['customRollFormula', 'chainedRolls', 'rollDelay', 'customStandardArray', 'customPointBuyTotal'];
       for (const setting of settings) {
-        await game.settings.set(HM.CONFIG.ID, setting, formData.object[setting]);
+        await game.settings.set(HM.ID, setting, formData.object[setting]);
       }
 
-      await game.settings.set(HM.CONFIG.ID, 'allowedMethods', allowedMethods);
+      await game.settings.set(HM.ID, 'allowedMethods', allowedMethods);
 
       if (formData.object.customStandardArray) {
         StatRoller.validateAndSetCustomStandardArray(formData.object.customStandardArray);

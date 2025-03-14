@@ -53,7 +53,7 @@ export class DocumentService {
       throw new Error('Invalid document type');
     }
 
-    const selectedPacks = game.settings.get(HM.CONFIG.ID, `${type}Packs`) || [];
+    const selectedPacks = game.settings.get(HM.ID, `${type}Packs`) || [];
     const packs = selectedPacks.length > 0 ? game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id)) : game.packs.filter((pack) => pack.metadata.type === 'Item');
 
     const validPacks = new Set();

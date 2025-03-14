@@ -257,7 +257,7 @@ export class DropdownHandler {
       // Extract the UUID (content inside square brackets)
       const selectedUUID = selectedValue.match(/\[(.*?)]/)?.[1] || '';
 
-      HM.CONFIG.SELECT_STORAGE[type] = { selectedValue, selectedId, selectedUUID };
+      HM.SELECT_STORAGE[type] = { selectedValue, selectedId, selectedUUID };
       await this.updateDescription(type, selectedId, context);
     } catch (error) {
       HM.log(1, `Error handling dropdown change for ${type}:`, error);
@@ -317,7 +317,7 @@ export class DropdownHandler {
     }
 
     if (!context[documentsKey] || !Array.isArray(context[documentsKey])) {
-      HM.log(1, `${HM.CONFIG.ID} | No documents found for type: ${documentsKey}`);
+      HM.log(1, `${HM.ID} | No documents found for type: ${documentsKey}`);
       return null;
     }
 

@@ -34,7 +34,7 @@ export class StatRoller {
 
     try {
       const rollFormula = await this.getAbilityScoreRollFormula();
-      const chainedRolls = await game.settings.get(HM.CONFIG.ID, 'chainedRolls');
+      const chainedRolls = await game.settings.get(HM.ID, 'chainedRolls');
       const index = form.getAttribute('data-index');
       const input = this.getAbilityInput(index);
       const hasExistingValue = !this.chainRollEnabled && input?.value?.trim() !== '';
@@ -59,10 +59,10 @@ export class StatRoller {
    * @static
    */
   static async getAbilityScoreRollFormula() {
-    let formula = game.settings.get(HM.CONFIG.ID, 'customRollFormula');
+    let formula = game.settings.get(HM.ID, 'customRollFormula');
     if (!formula?.trim()) {
       formula = '4d6kh3';
-      await game.settings.set(HM.CONFIG.ID, 'customRollFormula', formula);
+      await game.settings.set(HM.ID, 'customRollFormula', formula);
       HM.log(2, 'Roll formula was empty. Resetting to default:', formula);
     }
     return formula;
@@ -123,7 +123,7 @@ export class StatRoller {
    */
   static async rollAllStats(rollFormula) {
     const blocks = document.querySelectorAll('.ability-block');
-    const delay = game.settings.get(HM.CONFIG.ID, 'rollDelay') || 500;
+    const delay = game.settings.get(HM.ID, 'rollDelay') || 500;
     this.isRolling = true;
 
     try {
@@ -195,7 +195,7 @@ export class StatRoller {
       ui.notifications.info('hm.settings.custom-standard-array.reset-default', { localize: true });
     }
 
-    game.settings.set(HM.CONFIG.ID, 'customStandardArray', scores.sort((a, b) => b - a).join(','));
+    game.settings.set(HM.ID, 'customStandardArray', scores.sort((a, b) => b - a).join(','));
   }
 
   /**
@@ -215,7 +215,7 @@ export class StatRoller {
    * @static
    */
   static getTotalPoints() {
-    const customTotal = game.settings.get(HM.CONFIG.ID, 'customPointBuyTotal');
+    const customTotal = game.settings.get(HM.ID, 'customPointBuyTotal');
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     const extraPoints = Math.max(0, abilitiesCount - 6) * 3;
     const defaultTotal = 27 + extraPoints;
@@ -289,7 +289,7 @@ export class StatRoller {
    */
   static #getRerollDialogContent() {
     // Only show the chain roll checkbox if chain rolls are enabled in settings
-    const chainedRolls = game.settings.get(HM.CONFIG.ID, 'chainedRolls');
+    const chainedRolls = game.settings.get(HM.ID, 'chainedRolls');
     const chainRollCheckbox =
       chainedRolls ?
         `

@@ -54,7 +54,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   /* -------------------------------------------- */
 
   get title() {
-    return `${HM.CONFIG.TITLE} | ${game.i18n.localize('hm.settings.custom-compendiums.menu.name')}`;
+    return `${HM.NAME} | ${game.i18n.localize('hm.settings.custom-compendiums.menu.name')}`;
   }
 
   /* -------------------------------------------- */
@@ -89,7 +89,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
    * @throws {Error} Throws an error if type parameter is invalid.
    */
   static async getSelectedPacksByType(type, validPacks) {
-    let selectedPacks = await game.settings.get(HM.CONFIG.ID, `${type}Packs`);
+    let selectedPacks = await game.settings.get(HM.ID, `${type}Packs`);
 
     // If no packs are selected, return empty array
     if (!selectedPacks) {
@@ -141,7 +141,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
    * @param {Array} selectedValues Array of selected pack IDs.
    */
   static async setSelectedPacksByType(type, selectedValues) {
-    await game.settings.set(HM.CONFIG.ID, `${type}Packs`, selectedValues);
+    await game.settings.set(HM.ID, `${type}Packs`, selectedValues);
   }
 
   /**
@@ -165,7 +165,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       // Then update the settings
       const settingPromises = types.map((type) => {
         const packs = validPacksMap.get(type);
-        return CustomCompendiums.getSelectedPacksByType(type, packs).then((selectedPacks) => game.settings.set(HM.CONFIG.ID, `${type}Packs`, selectedPacks));
+        return CustomCompendiums.getSelectedPacksByType(type, packs).then((selectedPacks) => game.settings.set(HM.ID, `${type}Packs`, selectedPacks));
       });
       await Promise.all(settingPromises);
 

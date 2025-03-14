@@ -7,7 +7,7 @@ import { CharacterArtPicker, CustomCompendiums, DiceRolling, HM, MandatoryFields
  * @function
  */
 export function registerSettings() {
-  game.settings.register(HM.CONFIG.ID, 'enable', {
+  game.settings.register(HM.ID, 'enable', {
     name: 'hm.settings.enable.name',
     hint: 'hm.settings.enable.hint',
     default: true,
@@ -17,7 +17,7 @@ export function registerSettings() {
     requiresReload: true
   });
 
-  game.settings.register(HM.CONFIG.ID, 'artPickerRoot', {
+  game.settings.register(HM.ID, 'artPickerRoot', {
     name: 'hm.settings.art-picker-root.name',
     hint: 'hm.settings.art-picker-root.hint',
     scope: 'world',
@@ -31,7 +31,7 @@ export function registerSettings() {
     }
   });
 
-  game.settings.register(HM.CONFIG.ID, 'enablePlayerCustomization', {
+  game.settings.register(HM.ID, 'enablePlayerCustomization', {
     name: 'hm.settings.player-customization.name',
     hint: 'hm.settings.player-customization.hint',
     default: false,
@@ -41,7 +41,7 @@ export function registerSettings() {
     requiresReload: true
   });
 
-  game.settings.register(HM.CONFIG.ID, 'enableTokenCustomization', {
+  game.settings.register(HM.ID, 'enableTokenCustomization', {
     name: 'hm.settings.token-customization.name',
     hint: 'hm.settings.token-customization.hint',
     default: false,
@@ -51,7 +51,7 @@ export function registerSettings() {
     requiresReload: true
   });
 
-  game.settings.registerMenu(HM.CONFIG.ID, 'customCompendiumMenu', {
+  game.settings.registerMenu(HM.ID, 'customCompendiumMenu', {
     name: 'hm.settings.custom-compendiums.menu.name',
     hint: 'hm.settings.custom-compendiums.menu.hint',
     icon: 'fa-solid fa-atlas',
@@ -61,7 +61,7 @@ export function registerSettings() {
     requiresReload: true
   });
 
-  game.settings.registerMenu(HM.CONFIG.ID, 'diceRollingMenu', {
+  game.settings.registerMenu(HM.ID, 'diceRollingMenu', {
     name: 'hm.settings.dice-rolling.menu.name',
     hint: 'hm.settings.dice-rolling.menu.hint',
     icon: 'fa-solid fa-dice',
@@ -70,7 +70,7 @@ export function registerSettings() {
     restricted: true
   });
 
-  game.settings.registerMenu(HM.CONFIG.ID, 'mandatoryFieldsMenu', {
+  game.settings.registerMenu(HM.ID, 'mandatoryFieldsMenu', {
     name: 'hm.settings.mandatory-fields.menu.name',
     hint: 'hm.settings.mandatory-fields.menu.hint',
     icon: 'fa-solid fa-list-check',
@@ -79,7 +79,7 @@ export function registerSettings() {
     restricted: true
   });
 
-  game.settings.register(HM.CONFIG.ID, 'alignments', {
+  game.settings.register(HM.ID, 'alignments', {
     name: 'hm.settings.alignments.name',
     hint: 'hm.settings.alignments.hint',
     scope: 'world',
@@ -89,7 +89,7 @@ export function registerSettings() {
     restricted: true
   });
 
-  game.settings.register(HM.CONFIG.ID, 'deities', {
+  game.settings.register(HM.ID, 'deities', {
     name: 'hm.settings.deities.name',
     hint: 'hm.settings.deities.hint',
     scope: 'world',
@@ -99,7 +99,7 @@ export function registerSettings() {
     restricted: true
   });
 
-  game.settings.register(HM.CONFIG.ID, 'loggingLevel', {
+  game.settings.register(HM.ID, 'loggingLevel', {
     name: 'hm.settings.logger.name',
     hint: 'hm.settings.logger.hint',
     scope: 'client',
@@ -121,7 +121,7 @@ export function registerSettings() {
   });
 
   if (game.modules.get('elkan5e')?.active) {
-    game.settings.register(HM.CONFIG.ID, 'elkanCompatibility', {
+    game.settings.register(HM.ID, 'elkanCompatibility', {
       name: 'hm.settings.elkan.name',
       hint: 'hm.settings.elkan.hint',
       scope: 'client',
@@ -134,14 +134,14 @@ export function registerSettings() {
 
   /** These settings are within menus so their order is based on their class structure. */
 
-  game.settings.register(HM.CONFIG.ID, 'diceRollingMethod', {
+  game.settings.register(HM.ID, 'diceRollingMethod', {
     scope: 'client',
     config: false,
     type: String,
     default: 'standardArray'
   });
 
-  game.settings.register(HM.CONFIG.ID, 'allowedMethods', {
+  game.settings.register(HM.ID, 'allowedMethods', {
     scope: 'world',
     config: false,
     type: Object,
@@ -152,7 +152,7 @@ export function registerSettings() {
     }
   });
 
-  game.settings.register(HM.CONFIG.ID, 'customRollFormula', {
+  game.settings.register(HM.ID, 'customRollFormula', {
     name: 'hm.settings.custom-roll-formula.name',
     hint: 'hm.settings.custom-roll-formula.hint',
     scope: 'world',
@@ -162,7 +162,7 @@ export function registerSettings() {
     default: '4d6kh3'
   });
 
-  game.settings.register(HM.CONFIG.ID, 'customPointBuyTotal', {
+  game.settings.register(HM.ID, 'customPointBuyTotal', {
     name: 'hm.settings.custom-point-buy-total.name',
     hint: 'hm.settings.custom-point-buy-total.hint',
     scope: 'world',
@@ -171,7 +171,7 @@ export function registerSettings() {
     default: 0
   });
 
-  game.settings.register(HM.CONFIG.ID, 'chainedRolls', {
+  game.settings.register(HM.ID, 'chainedRolls', {
     name: 'hm.settings.chained-rolls.name',
     hint: 'hm.settings.chained-rolls.hint',
     scope: 'world',
@@ -180,7 +180,7 @@ export function registerSettings() {
     default: false
   });
 
-  game.settings.register(HM.CONFIG.ID, 'rollDelay', {
+  game.settings.register(HM.ID, 'rollDelay', {
     name: 'hm.settings.roll-delay.name',
     hint: 'hm.settings.roll-delay.hint',
     scope: 'world',
@@ -194,7 +194,7 @@ export function registerSettings() {
     default: 500
   });
 
-  game.settings.register(HM.CONFIG.ID, 'customStandardArray', {
+  game.settings.register(HM.ID, 'customStandardArray', {
     name: 'hm.settings.custom-standard-array.name',
     hint: 'hm.settings.custom-standard-array.hint',
     scope: 'world',
@@ -205,7 +205,7 @@ export function registerSettings() {
     onChange: (value) => StatRoller.validateAndSetCustomStandardArray(value || StatRoller.getStandardArrayDefault())
   });
 
-  game.settings.register(HM.CONFIG.ID, 'classPacks', {
+  game.settings.register(HM.ID, 'classPacks', {
     name: 'hm.settings.class-packs.name',
     scope: 'world',
     config: false,
@@ -213,7 +213,7 @@ export function registerSettings() {
     default: []
   });
 
-  game.settings.register(HM.CONFIG.ID, 'racePacks', {
+  game.settings.register(HM.ID, 'racePacks', {
     name: 'hm.settings.race-packs.name',
     scope: 'world',
     config: false,
@@ -221,7 +221,7 @@ export function registerSettings() {
     default: []
   });
 
-  game.settings.register(HM.CONFIG.ID, 'backgroundPacks', {
+  game.settings.register(HM.ID, 'backgroundPacks', {
     name: 'hm.settings.background-packs.name',
     scope: 'world',
     config: false,
@@ -229,7 +229,7 @@ export function registerSettings() {
     default: []
   });
 
-  game.settings.register(HM.CONFIG.ID, 'itemPacks', {
+  game.settings.register(HM.ID, 'itemPacks', {
     name: 'hm.settings.item-packs.name',
     scope: 'world',
     config: false,
@@ -237,7 +237,7 @@ export function registerSettings() {
     default: []
   });
 
-  game.settings.register(HM.CONFIG.ID, 'mandatoryFields', {
+  game.settings.register(HM.ID, 'mandatoryFields', {
     name: 'hm.settings.mandatory-fields.name',
     scope: 'world',
     config: false,

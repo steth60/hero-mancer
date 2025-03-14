@@ -10,17 +10,13 @@ export class HM {
   /*  Static Properties                           */
   /* -------------------------------------------- */
 
-  static CONFIG = {
-    ID: 'hero-mancer',
-    TITLE: 'Hero Mancer',
-    TEMPLATES: 'modules/hero-mancer/templates',
-    DOCUMENTS: {
-      race: null,
-      class: null,
-      background: null
-    },
-    COMPAT: {}
-  };
+  static ID = 'hero-mancer';
+
+  static NAME = 'Hero Mancer';
+
+  static DOCS = { race: null, class: null, background: null };
+
+  static COMPAT = {};
 
   static logLevel = 0;
 
@@ -30,8 +26,8 @@ export class HM {
 
   static init() {
     this.initSettings();
-    this.logLevel = parseInt(game.settings.get(this.CONFIG.ID, 'loggingLevel'));
-    this.CONFIG.DOCUMENTS = { ...this.CONFIG.DOCUMENTS }; // Clone default structure
+    this.logLevel = parseInt(game.settings.get(this.ID, 'loggingLevel'));
+    this.DOCS = { ...this.DOCS }; // Clone default structure
 
     // Logging setup
     if (this.logLevel > 0) {
@@ -46,7 +42,7 @@ export class HM {
 
   /* Register Settings */
   static initSettings() {
-    console.log(`${HM.CONFIG.ID} | Registering module settings.`);
+    console.log(`${HM.ID} | Registering module settings.`);
     registerSettings();
 
     Hooks.once('renderSettingConfig', () => {
@@ -64,14 +60,14 @@ export class HM {
     if (this.logLevel > 0 && level <= this.logLevel) {
       switch (level) {
         case 1:
-          console.error(`${HM.CONFIG.ID} |`, ...args);
+          console.error(`${HM.ID} |`, ...args);
           break;
         case 2:
-          console.warn(`${HM.CONFIG.ID} |`, ...args);
+          console.warn(`${HM.ID} |`, ...args);
           break;
         case 3:
         default:
-          console.log(`${HM.CONFIG.ID} |`, ...args);
+          console.log(`${HM.ID} |`, ...args);
           break;
       }
     }
@@ -121,11 +117,11 @@ export class HM {
   }
 
   static updateStoredSelection(type, selection) {
-    this.CONFIG.SELECT_STORAGE[type] = selection;
+    this.SELECT_STORAGE[type] = selection;
   }
 }
 
-HM.CONFIG.SELECT_STORAGE = {
+HM.SELECT_STORAGE = {
   class: { selectedValue: '', selectedId: '', selectedUUID: '' },
   race: { selectedValue: '', selectedId: '', selectedUUID: '' },
   background: { selectedValue: '', selectedId: '', selectedUUID: '' }
@@ -141,21 +137,21 @@ Hooks.on('init', () => {
 });
 
 Hooks.once('ready', async () => {
-  if (!game.settings.get(HM.CONFIG.ID, 'enable')) return;
+  if (!game.settings.get(HM.ID, 'enable')) return;
   for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
     await pack.getIndex();
   }
-  if (game.modules.get('elkan5e')?.active && game.settings.get(HM.CONFIG.ID, 'elkanCompatibility')) {
+  if (game.modules.get('elkan5e')?.active && game.settings.get(HM.ID, 'elkanCompatibility')) {
     HM.COMPAT = { ELKAN: true };
     HM.log(3, 'Elkan Detected: Compatibility auto-enabled.');
   }
   await HM.loadAndEnrichDocuments();
 
   // Load compendium selections
-  CustomCompendiums.classPacks = game.settings.get(HM.CONFIG.ID, 'classPacks');
-  CustomCompendiums.racePacks = game.settings.get(HM.CONFIG.ID, 'racePacks');
-  CustomCompendiums.backgroundPacks = game.settings.get(HM.CONFIG.ID, 'backgroundPacks');
-  CustomCompendiums.itemPacks = game.settings.get(HM.CONFIG.ID, 'itemPacks');
+  CustomCompendiums.classPacks = game.settings.get(HM.ID, 'classPacks');
+  CustomCompendiums.racePacks = game.settings.get(HM.ID, 'racePacks');
+  CustomCompendiums.backgroundPacks = game.settings.get(HM.ID, 'backgroundPacks');
+  CustomCompendiums.itemPacks = game.settings.get(HM.ID, 'itemPacks');
 
   HM.log(3, {
     class: CustomCompendiums.classPacks,
@@ -166,9 +162,9 @@ Hooks.once('ready', async () => {
 
   await EquipmentParser.initializeLookupItems();
 
-  const customArraySetting = game.settings.get(HM.CONFIG.ID, 'customStandardArray');
+  const customArraySetting = game.settings.get(HM.ID, 'customStandardArray');
   if (!customArraySetting || customArraySetting.trim() === '') {
-    await game.settings.set(HM.CONFIG.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
+    await game.settings.set(HM.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
     HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
   }
 });

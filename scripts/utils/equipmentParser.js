@@ -151,10 +151,10 @@ export class EquipmentParser {
    */
   constructor() {
     this.equipmentData = null;
-    this.classId = HM.CONFIG.SELECT_STORAGE.class.selectedId;
-    this.classUUID = HM.CONFIG.SELECT_STORAGE.class.selectedUUID;
-    this.backgroundId = HM.CONFIG.SELECT_STORAGE.background.selectedId;
-    this.backgroundUUID = HM.CONFIG.SELECT_STORAGE.background.selectedUUID;
+    this.classId = HM.SELECT_STORAGE.class.selectedId;
+    this.classUUID = HM.SELECT_STORAGE.class.selectedUUID;
+    this.backgroundId = HM.SELECT_STORAGE.background.selectedId;
+    this.backgroundUUID = HM.SELECT_STORAGE.background.selectedUUID;
     this.proficiencies = new Set();
     EquipmentParser.preloadCompendiumIndices();
   }
@@ -224,7 +224,7 @@ export class EquipmentParser {
    * @throws {Error} If compendium lookup fails
    */
   async getStartingEquipment(type) {
-    const storedData = HM.CONFIG.SELECT_STORAGE[type] || {};
+    const storedData = HM.SELECT_STORAGE[type] || {};
     const selectedId = storedData.selectedId;
     const selectedUUID = storedData.selectedUUID;
 
@@ -397,7 +397,7 @@ export class EquipmentParser {
           const items = this.equipmentData[currentType] || [];
 
           // Get stored data for current type
-          const storedData = HM.CONFIG.SELECT_STORAGE[currentType] || {};
+          const storedData = HM.SELECT_STORAGE[currentType] || {};
           const selectedId = storedData.selectedId || '';
           const selectedUUID = storedData.selectedUUID || '';
 
@@ -1284,7 +1284,7 @@ export class EquipmentParser {
     const select = document.createElement('select');
     select.id = `${item.key}-focus`;
 
-    const itemPacks = game.settings.get(HM.CONFIG.ID, 'itemPacks');
+    const itemPacks = game.settings.get(HM.ID, 'itemPacks');
 
     for (const [focusName, itemId] of Object.entries(focusConfig.itemIds)) {
       let uuid = itemId.uuid || EquipmentParser.itemUuidMap.get(itemId);
@@ -2208,10 +2208,10 @@ export class EquipmentParser {
    * @static
    */
   static async getSelectedItemPacks() {
-    const itemPacks = (await game.settings.get(HM.CONFIG.ID, 'itemPacks')) || [];
-    const classPacks = (await game.settings.get(HM.CONFIG.ID, 'classPacks')) || [];
-    const backgroundPacks = (await game.settings.get(HM.CONFIG.ID, 'backgroundPacks')) || [];
-    const racePacks = (await game.settings.get(HM.CONFIG.ID, 'racePacks')) || [];
+    const itemPacks = (await game.settings.get(HM.ID, 'itemPacks')) || [];
+    const classPacks = (await game.settings.get(HM.ID, 'classPacks')) || [];
+    const backgroundPacks = (await game.settings.get(HM.ID, 'backgroundPacks')) || [];
+    const racePacks = (await game.settings.get(HM.ID, 'racePacks')) || [];
 
     return [...itemPacks, ...classPacks, ...backgroundPacks, ...racePacks];
   }

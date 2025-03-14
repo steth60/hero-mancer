@@ -38,7 +38,7 @@ export class Listeners {
     const abilityDropdowns = document.querySelectorAll('.ability-dropdown');
     const selectedValues = Array.from(abilityDropdowns).map(() => '');
     const totalPoints = StatRoller.getTotalPoints();
-    const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    const diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
 
     abilityDropdowns.forEach((dropdown, index) => {
       dropdown.addEventListener('change', (event) => {
@@ -122,14 +122,14 @@ export class Listeners {
       classDropdown._equipmentChangeHandler = async (event) => {
         const selectedValue = event.target.value;
 
-        HM.CONFIG.SELECT_STORAGE.class = {
+        HM.SELECT_STORAGE.class = {
           selectedValue,
           selectedId: selectedValue.split(' ')[0],
           selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
         };
 
         // Create a new parser for this update
-        const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
+        const updateEquipment = new EquipmentParser(HM.SELECT_STORAGE.class.selectedId, HM.SELECT_STORAGE.background.selectedId);
 
         await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'class');
       };
@@ -146,18 +146,18 @@ export class Listeners {
       backgroundDropdown._equipmentChangeHandler = async (event) => {
         const selectedValue = event.target.value;
 
-        HM.CONFIG.SELECT_STORAGE.background = {
+        HM.SELECT_STORAGE.background = {
           selectedValue,
           selectedId: selectedValue.split(' ')[0],
           selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
         };
 
         // Create a new parser for this update
-        const updateEquipment = new EquipmentParser(HM.CONFIG.SELECT_STORAGE.class.selectedId, HM.CONFIG.SELECT_STORAGE.background.selectedId);
+        const updateEquipment = new EquipmentParser(HM.SELECT_STORAGE.class.selectedId, HM.SELECT_STORAGE.background.selectedId);
 
         await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'background');
         SummaryManager.updateBackgroundSummary(event.target);
-        await SummaryManager.processBackgroundSelectionChange(HM.CONFIG.SELECT_STORAGE.background);
+        await SummaryManager.processBackgroundSelectionChange(HM.SELECT_STORAGE.background);
       };
 
       backgroundDropdown.addEventListener('change', backgroundDropdown._equipmentChangeHandler);
@@ -172,7 +172,7 @@ export class Listeners {
       raceDropdown._raceChangeHandler = async (event) => {
         const selectedValue = event.target.value;
 
-        HM.CONFIG.SELECT_STORAGE.race = {
+        HM.SELECT_STORAGE.race = {
           selectedValue,
           selectedId: selectedValue.split(' ')[0],
           selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
@@ -258,21 +258,21 @@ export class Listeners {
     let charClass = '';
 
     // Check if we have SELECT_STORAGE data
-    if (HM.CONFIG.SELECT_STORAGE) {
+    if (HM.SELECT_STORAGE) {
       // Get document names from UUIDs
       try {
-        if (HM.CONFIG.SELECT_STORAGE.race?.selectedUUID) {
-          const raceDoc = fromUuidSync(HM.CONFIG.SELECT_STORAGE.race.selectedUUID);
+        if (HM.SELECT_STORAGE.race?.selectedUUID) {
+          const raceDoc = fromUuidSync(HM.SELECT_STORAGE.race.selectedUUID);
           race = raceDoc?.name || '';
         }
 
-        if (HM.CONFIG.SELECT_STORAGE.class?.selectedUUID) {
-          const classDoc = fromUuidSync(HM.CONFIG.SELECT_STORAGE.class.selectedUUID);
+        if (HM.SELECT_STORAGE.class?.selectedUUID) {
+          const classDoc = fromUuidSync(HM.SELECT_STORAGE.class.selectedUUID);
           charClass = classDoc?.name || '';
         }
 
-        if (HM.CONFIG.SELECT_STORAGE.background?.selectedUUID) {
-          const backgroundDoc = fromUuidSync(HM.CONFIG.SELECT_STORAGE.background.selectedUUID);
+        if (HM.SELECT_STORAGE.background?.selectedUUID) {
+          const backgroundDoc = fromUuidSync(HM.SELECT_STORAGE.background.selectedUUID);
           background = backgroundDoc?.name || '';
         }
       } catch (error) {
@@ -288,7 +288,7 @@ export class Listeners {
       characterDescription += '.';
     }
 
-    const newTitle = `${HM.CONFIG.TITLE} | ${characterDescription}`;
+    const newTitle = `${HM.NAME} | ${characterDescription}`;
 
     HM.heroMancer._updateFrame({
       window: {
@@ -318,7 +318,7 @@ export class Listeners {
       const method = event.target.value;
       HM.log(3, `Roll method changed to: ${method}`);
 
-      await game.settings.set(HM.CONFIG.ID, 'diceRollingMethod', method);
+      await game.settings.set(HM.ID, 'diceRollingMethod', method);
 
       HeroMancer.selectedAbilities = Array(Object.keys(CONFIG.DND5E.abilities).length).fill(8);
 
@@ -343,7 +343,7 @@ export class Listeners {
    * @static
    */
   static initializeTokenCustomizationListeners() {
-    const ringEnabled = game.settings.get(HM.CONFIG.ID, 'enableTokenCustomization');
+    const ringEnabled = game.settings.get(HM.ID, 'enableTokenCustomization');
     if (!ringEnabled) return;
 
     const ringEnabledElement = document.querySelector('input[name="ring.enabled"]');
@@ -390,7 +390,7 @@ export class Listeners {
    * @static
    */
   static initializePlayerCustomizationListeners() {
-    const playerCustomization = game.settings.get(HM.CONFIG.ID, 'enablePlayerCustomization');
+    const playerCustomization = game.settings.get(HM.ID, 'enablePlayerCustomization');
     if (!playerCustomization) return;
 
     const colorInput = document.querySelector('color-picker[name="player-color"]');
@@ -455,7 +455,7 @@ export class Listeners {
    * @static
    */
   static initializeFormValidationListeners(html) {
-    const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
+    const mandatoryFields = game.settings.get(HM.ID, 'mandatoryFields') || [];
     if (mandatoryFields.length === 0) return;
 
     const formElements = html.querySelectorAll('input, select, textarea, color-picker');
@@ -529,7 +529,7 @@ export class Listeners {
     }
 
     // Second pass to handle ability dropdowns
-    const diceRollingMethod = game.settings.get(HM.CONFIG.ID, 'diceRollingMethod');
+    const diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
     if (diceRollingMethod === 'standardArray') {
       const abilityDropdowns = html.querySelectorAll('.ability-dropdown');
       const selectedValues = Array.from(abilityDropdowns).map((dropdown) => dropdown.value);
