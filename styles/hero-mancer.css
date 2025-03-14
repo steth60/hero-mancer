@@ -1285,6 +1285,16 @@ fieldset#start > h2 {
   font-size: 0.9em;
 }
 
+.mandatory-indicator.complete {
+  color: #4cae4f;
+  text-shadow: 0 0 8px #4cae4f80;
+}
+
+.mandatory-indicator.incomplete {
+  color: #ff6b6b;
+  text-shadow: 0 0 8px #ff6b6b80;
+}
+
 /* Input styling for color picker */
 .hm-app .hm-app-tab-content .input-35,
 .hm-app .hm-app-tab-content color-picker {

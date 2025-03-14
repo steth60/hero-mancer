@@ -1,5 +1,3 @@
-/* eslint-disable indent */
-
 import {
   CharacterArtPicker,
   DropdownHandler,
@@ -61,53 +59,19 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   static PARTS = {
-    header: {
-      template: `${HM.CONFIG.TEMPLATES}/app-header.hbs`,
-      classes: ['hm-app-header']
-    },
-    tabs: {
-      template: `${HM.CONFIG.TEMPLATES}/app-nav.hbs`,
-      classes: ['hm-app-nav']
-    },
-    start: {
-      template: `${HM.CONFIG.TEMPLATES}/tab-start.hbs`,
-      classes: ['hm-app-tab-content']
-    },
-    background: {
-      template: `${HM.CONFIG.TEMPLATES}/tab-background.hbs`,
-      classes: ['hm-app-tab-content']
-    },
-    race: {
-      template: `${HM.CONFIG.TEMPLATES}/tab-race.hbs`,
-      classes: ['hm-app-tab-content']
-    },
-    class: {
-      template: `${HM.CONFIG.TEMPLATES}/tab-class.hbs`,
-      classes: ['hm-app-tab-content']
-    },
-    abilities: {
-      template: `${HM.CONFIG.TEMPLATES}/tab-abilities.hbs`,
-      classes: ['hm-app-tab-content']
-    },
-    equipment: {
-      template: `${HM.CONFIG.TEMPLATES}/tab-equipment.hbs`,
-      classes: ['hm-app-tab-content']
-    },
-    finalize: {
-      template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`,
-      classes: ['hm-app-tab-content']
-    },
-    footer: {
-      template: `${HM.CONFIG.TEMPLATES}/app-footer.hbs`,
-      classes: ['hm-app-footer']
-    }
+    header: { template: `${HM.CONFIG.TEMPLATES}/app-header.hbs`, classes: ['hm-app-header'] },
+    tabs: { template: `${HM.CONFIG.TEMPLATES}/app-nav.hbs`, classes: ['hm-app-nav'] },
+    start: { template: `${HM.CONFIG.TEMPLATES}/tab-start.hbs`, classes: ['hm-app-tab-content'] },
+    background: { template: `${HM.CONFIG.TEMPLATES}/tab-background.hbs`, classes: ['hm-app-tab-content'] },
+    race: { template: `${HM.CONFIG.TEMPLATES}/tab-race.hbs`, classes: ['hm-app-tab-content'] },
+    class: { template: `${HM.CONFIG.TEMPLATES}/tab-class.hbs`, classes: ['hm-app-tab-content'] },
+    abilities: { template: `${HM.CONFIG.TEMPLATES}/tab-abilities.hbs`, classes: ['hm-app-tab-content'] },
+    equipment: { template: `${HM.CONFIG.TEMPLATES}/tab-equipment.hbs`, classes: ['hm-app-tab-content'] },
+    finalize: { template: `${HM.CONFIG.TEMPLATES}/tab-finalize.hbs`, classes: ['hm-app-tab-content'] },
+    footer: { template: `${HM.CONFIG.TEMPLATES}/app-footer.hbs`, classes: ['hm-app-footer'] }
   };
 
-  static ADVANCEMENT_DELAY = {
-    transitionDelay: 1000, // Time between advancements in ms
-    renderTimeout: 5000, // Max time to wait for render
-    retryAttempts: 3 // Number of retry attempts for failed managers
-  };
+  static ADVANCEMENT_DELAY = { transitionDelay: 1000, renderTimeout: 5000, retryAttempts: 3 };
 
   /* -------------------------------------------- */
   /*  Instance Properties                         */
@@ -138,6 +102,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /**
    * Prepares the main context data for the character creation application
    * Initializes abilities, processes compatibility settings, and prepares all tab data
+   * @async
    * @param {object} options - Application render options
    * @returns {Promise<object>} Complete context for character creation rendering
    * @protected
@@ -151,7 +116,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     game.users.forEach((user) => {
       HeroMancer.ORIGINAL_PLAYER_COLORS.set(user.id, user.color.css);
     });
-    HM.log(3, 'Original Player Colors', HeroMancer.ORIGINAL_PLAYER_COLORS);
 
     // Initialize abilities and related data
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
@@ -164,7 +128,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Get dice rolling method once and reuse it
     const diceRollMethod = this.#getDiceRollingMethod();
-    HM.log(3, 'Dice Roll Method in _prepareContext:', diceRollMethod);
 
     // Prepare context with all required data
     return {
@@ -206,8 +169,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   _preparePartContext(partId, context) {
     try {
-      HM.log(3, 'Preparing part context', { partId, context });
-
       switch (partId) {
         case 'header':
         case 'tabs':
@@ -340,7 +301,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     } catch (error) {
       HM.log(1, 'Error generating tabs:', error);
 
-      // Return minimal tabs as fallback
       return {
         start: {
           id: 'start',
@@ -378,7 +338,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       Listeners.initializeListeners(this.element, context, HeroMancer.selectedAbilities);
 
       // Initial check of mandatory fields
-      HM.log(3, 'Performing initial mandatory field check');
       await MandatoryFields.checkMandatoryFields(this.element);
 
       // Now initialize form validation listeners after the initial check
@@ -399,8 +358,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
             // Use the original color for the user instead of generating a new one
             colorPicker.value = HeroMancer.ORIGINAL_PLAYER_COLORS.get(playerId);
           }
-
-          HM.log(3, `Updated to user: ${targetUser.name} with color: ${colorPicker?.value || 'none'}`);
         });
       }
       SummaryManager.initializeSummaryListeners();
@@ -421,7 +378,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const form = event.currentTarget;
     if (!form) return;
-    // HM.log(3, 'All form elements:', form.elements);
     this.completionPercentage = ProgressBar.calculateAndUpdateProgress(this.element, form);
   }
 
@@ -457,8 +413,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       fullKey: value.fullKey.toUpperCase(),
       currentScore: 8
     }));
-
-    HM.log(3, 'ABILITIES:', abilities);
     return abilities;
   }
 
@@ -503,7 +457,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     // If the current method isn't valid or isn't allowed, select the first allowed method
     if (!diceRollingMethod || !validMethods.includes(diceRollingMethod)) {
       diceRollingMethod = validMethods[0];
-      HM.log(3, `Selected ${diceRollingMethod} as the default dice rolling method`);
     }
 
     return diceRollingMethod;
@@ -614,7 +567,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @static
    */
   static async rollStat(_event, form) {
-    HM.log(3, 'Rolling stats using user-defined formula.');
     await StatRoller.rollAbilityScore(form); // Use the utility function
   }
 
@@ -652,11 +604,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     try {
       const html = instance.element;
       if (!html) {
-        HM.log(3, 'No HTML element to clean up');
         return;
       }
-
-      HM.log(3, 'Starting comprehensive cleanup of HeroMancer instance');
 
       // Track items that had cleanup issues
       const cleanupIssues = [];
@@ -689,8 +638,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
               dropdown.removeEventListener('change', dropdown._summaryChangeHandler);
               dropdown._summaryChangeHandler = null;
             }
-
-            HM.log(3, `Cleaned up handlers for ${type} dropdown`);
           }
         } catch (error) {
           HM.log(1, `Error cleaning up ${type} dropdown:`, error);
@@ -729,8 +676,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
               cleanupIssues.push(`ability block ${index}`);
             }
           });
-
-          HM.log(3, 'Cleaned up ability block handlers and observers');
         }
       } catch (error) {
         HM.log(1, 'Error cleaning up ability blocks:', error);
@@ -750,8 +695,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
             equipmentContainer._summaryObserver.disconnect();
             equipmentContainer._summaryObserver = null;
           }
-
-          HM.log(3, 'Cleaned up equipment container handlers and observers');
         }
       } catch (error) {
         HM.log(1, 'Error cleaning up equipment container:', error);
@@ -778,8 +721,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
               cleanupIssues.push(`prose-mirror ${index}`);
             }
           });
-
-          HM.log(3, 'Cleaned up prose-mirror observers');
         }
       } catch (error) {
         HM.log(1, 'Error cleaning up prose-mirror elements:', error);
@@ -801,8 +742,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
               cleanupIssues.push(`roll button ${index}`);
             }
           });
-
-          HM.log(3, 'Cleaned up roll button handlers');
         }
       } catch (error) {
         HM.log(1, 'Error cleaning up roll buttons:', error);
@@ -827,8 +766,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
             cleanupIssues.push(`form element ${index}`);
           }
         });
-
-        HM.log(3, 'Cleaned up form validation handlers');
       } catch (error) {
         HM.log(1, 'Error cleaning up form validation handlers:', error);
         cleanupIssues.push('form validation handlers');
@@ -912,8 +849,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   static async formHandler(event, form, formData) {
     const targetUserId = game.user.isGM ? formData.object.player : null;
     const targetUser = HeroMancer.#getTargetUser(targetUserId);
-    HM.log(1, 'FormHandler User:', { targetUserId, targetUser });
-    HM.log(1, 'FORMHANLDER', event.submitter?.dataset.action);
+
     // Process "Save for Later" action
     if (event.submitter?.dataset.action === 'saveOptions') {
       try {
@@ -943,11 +879,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         );
         return;
       }
-
-      HM.log(3, 'FORMHANDLER:', { event: event, form: form, formData: formData });
-
-      HM.log(3, 'Processing form data...');
-      HM.log(3, formData);
 
       // Check if using starting wealth
       const useStartingWealth = formData.object['use-starting-wealth'];
@@ -1049,7 +980,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       ui.notifications.info('hm.actortab-button.creating', { localize: true });
       let actor = await Actor.create(actorData);
       let newActor = game.actors.getName(actorName);
-      HM.log(3, newActor);
       HM.log(3, 'Created Actor:', actor);
 
       // Declare the items outside the try block
@@ -1123,8 +1053,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
             for (const checkbox of favoriteCheckboxes) {
               const itemName = checkbox.dataset.itemName;
-              HM.log(3, `Processing favorited item: ${itemName}`);
-
               let itemUuids = [];
 
               // Get UUIDs from the appropriate attribute
@@ -1140,8 +1068,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
                 HM.log(2, `No UUIDs or itemId found for "${itemName}"`);
                 continue;
               }
-
-              HM.log(3, `Processing ${itemUuids.length} UUIDs for "${itemName}":`, itemUuids);
 
               let processedAnyItem = false;
 
@@ -1174,7 +1100,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
                       newFavorites.push(favoriteEntry);
                       processedAnyItem = true;
-                      HM.log(3, `Added favorite for ${sourceItem.name} (${matchedItem.id})`);
                     } else {
                       HM.log(2, `Could not find created item for ${sourceItem.name}`);
                     }
@@ -1204,7 +1129,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
                       newFavorites.push(favoriteEntry);
                       processedAnyItem = true;
-                      HM.log(3, `Added favorite for ${matchedItem.name} (${matchedItem.id})`);
                     }
                   }
                 } catch (error) {
@@ -1216,8 +1140,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
                 HM.log(2, `Could not process any items for "${itemName}"`);
               }
             }
-
-            HM.log(3, `Total new favorites to add: ${newFavorites.length}`, newFavorites);
 
             if (newFavorites.length > 0) {
               // Combine with existing favorites (avoiding duplicates)
@@ -1281,7 +1203,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           return;
         }
 
-        HM.log(3, 'Creating advancement manager');
         let currentManager;
 
         /**
@@ -1314,11 +1235,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
         try {
           currentManager = await createAdvancementManager(items[0]);
-          HM.log(
-            3,
-            'Initial clone items:',
-            currentManager?.clone?.items?.contents?.map((i) => i.name)
-          );
 
           /**
            * Recursively processes advancements for each item in the list.
@@ -1328,12 +1244,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
            */
           async function doAdvancement(itemIndex = 0) {
             if (itemIndex >= items.length) {
-              HM.log(
-                3,
-                'Final actor items:',
-                newActor.items.contents.map((i) => i.name)
-              );
-
               try {
                 if (currentManager) await currentManager.close();
               } catch (error) {
@@ -1461,8 +1371,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   static #transformTokenData(formData) {
     try {
-      HM.log(3, 'Transform Token Data - Input:', formData);
-
       const tokenData = {
         texture: {
           src: formData['token-art'] || formData['character-art'] || 'icons/svg/mystery-man.svg',
@@ -1531,7 +1439,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   static #getTargetUser(userId = null) {
     const targetUser = game.user.isGM && userId && game.users.has(userId) ? game.users.get(userId) : game.user;
-    HM.log(3, '#getTargetUser:', targetUser.name);
     return targetUser;
   }
 }

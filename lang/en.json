@@ -255,7 +255,7 @@
         "manage-races": "Manage Races",
         "menu": {
           "hint": "Open dialog to configure custom compendiums for all categories.",
-          "name": "Set Compendiums"
+          "name": "Configure Compendiums"
         },
         "no-valid-packs": "No valid compendium packs were found.",
         "race": "Race",

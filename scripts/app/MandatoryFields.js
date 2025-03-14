@@ -60,13 +60,8 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
    * @override
    */
   async _prepareContext(_options) {
-    // Get all valid form fields
     const fieldCategories = await this.getAllFormFields();
-
-    // Get currently selected mandatory fields
     const mandatoryFields = game.settings.get(HM.CONFIG.ID, 'mandatoryFields') || [];
-
-    HM.log(3, 'Loading mandatory fields:', mandatoryFields);
 
     // Process each category to add mandatory status
     const processedFields = {};
@@ -82,8 +77,6 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
         };
       });
     }
-
-    HM.log(3, 'Processed fields:', processedFields);
 
     return {
       fields: processedFields,
@@ -179,33 +172,12 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
   static async formHandler(_event, form, formData) {
     const requiresWorldReload = true; // Settings changes require world reload
     try {
-      HM.log(3, 'Raw form data:', formData);
-
-      // Get all checkboxes from the form
       const checkboxes = form.querySelectorAll('input[type="checkbox"]');
       const mandatoryFields = Array.from(checkboxes)
         .filter((checkbox) => checkbox.checked)
         .map((checkbox) => checkbox.name);
 
-      HM.log(3, 'Selected mandatory fields:', mandatoryFields);
-
-      // Save to settings
       await game.settings.set(HM.CONFIG.ID, 'mandatoryFields', mandatoryFields);
-
-      // Helper function to find label for an element
-      const findLabel = (element) => {
-        // Skip elements within the summary-section
-        if (element.closest('.summary-section')) {
-          return null;
-        }
-
-        if (element.localName === 'prose-mirror') {
-          HM.log(3, 'Finding label for ProseMirror element:', { element: element });
-          let h2Element = element.closest('.notes-section')?.querySelector('h2');
-          HM.log(3, 'Found h2 element:', { h2Element: h2Element });
-          return h2Element;
-        }
-      };
 
       this.constructor.reloadConfirm({ world: requiresWorldReload });
 
@@ -334,9 +306,7 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     else if (element.type === 'hidden' && abilityBlock.classList.contains('point-buy')) {
       const score = parseInt(element.value);
       return !isNaN(score) && score >= 8;
-    }
-    // Manual - dropdown + number input
-    else {
+    } else {
       const dropdown = abilityBlock.querySelector('.ability-dropdown');
       const scoreInput = abilityBlock.querySelector('.ability-score');
       return dropdown?.value && scoreInput?.value && dropdown.value !== '' && scoreInput.value !== '';
@@ -360,8 +330,6 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     const editorContent = element.querySelector('.editor-content.ProseMirror')?.innerHTML || '';
     const isComplete = !emptyStates.includes(proseMirrorValue) && proseMirrorValue.trim() !== '' && !emptyStates.includes(editorContent) && editorContent.trim() !== '';
 
-    // HM.log(3, 'Checking mandatory fields:', { element: element, type: type, value: value, checked: checked });
-
     switch (type) {
       case 'checkbox':
         return checked;
@@ -373,11 +341,6 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
       case 'select-one':
         return value && value !== '';
       case 'prose-mirror':
-        HM.log(3, 'Checking prose-mirror content:', {
-          value: proseMirrorValue,
-          editorContent: editorContent,
-          isComplete: isComplete
-        });
         return isComplete;
       default:
         return value && value.trim() !== '';
@@ -392,11 +355,8 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
    * @static
    */
   static findAssociatedLabel(element) {
-    // HM.log(3, 'PROSE MIRROR SEARCH:', { element: element });
     if (element.localName === 'prose-mirror') {
-      HM.log(3, 'Finding label for ProseMirror element:', { element: element });
       let h2Element = element.closest('.notes-section')?.querySelector('h2');
-      HM.log(3, 'Found h2 element:', { h2Element: h2Element });
       return h2Element;
     }
 
@@ -427,13 +387,9 @@ export class MandatoryFields extends HandlebarsApplicationMixin(ApplicationV2) {
     // Create new indicator
     const icon = document.createElement('i');
     if (isComplete) {
-      icon.className = 'fa-duotone fa-solid fa-circle-check mandatory-indicator';
-      icon.style.color = 'hsl(122deg 39% 49%)';
-      icon.style.textShadow = '0 0 8px hsla(122deg, 39%, 49%, 50%)';
+      icon.className = 'fa-duotone fa-solid fa-circle-check mandatory-indicator complete';
     } else {
-      icon.className = 'fa-duotone fa-solid fa-diamond-exclamation mandatory-indicator';
-      icon.style.color = 'hsl(0deg 100% 71%)';
-      icon.style.textShadow = '0 0 8px hsla(0deg, 100%, 71%, 50%)';
+      icon.className = 'fa-duotone fa-solid fa-diamond-exclamation mandatory-indicator incomplete';
     }
     labelElement.prepend(icon);
   }

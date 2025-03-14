@@ -58,36 +58,12 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   }
 
   /* -------------------------------------------- */
-  /*  Protected Methods                           */
-  /* -------------------------------------------- */
-
-  /**
-   * Prepares context data for the compendium configuration application
-   * @param {object} options - Application render options
-   * @returns {Promise<object>} Context data for template rendering
-   * @protected
-   */
-  async _prepareContext(options) {
-    HM.log(3, 'Preparing context with options:', options);
-    return context;
-  }
-
-  /**
-   * Actions to perform after the application renders
-   * @param {object} _context - The rendered context data
-   * @param {object} _options - The render options
-   * @protected
-   */
-  _onRender(_context, _options) {
-    HM.log(3, 'Rendering application with context and options.');
-  }
-
-  /* -------------------------------------------- */
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
 
   /**
    * Manages the compendium selection and handles validation.
+   * @async
    * @param {string} type The type of compendium to manage (class, race, or background)
    */
   static async manageCompendium(type) {
@@ -160,6 +136,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
 
   /**
    * Saves the selected packs for the given type.
+   * @async
    * @param {string} type The type of compendium.
    * @param {Array} selectedValues Array of selected pack IDs.
    */
@@ -169,6 +146,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
 
   /**
    * Form submission handler for compendium configuration
+   * @async
    * @param {Event} _event - The form submission event
    * @param {HTMLFormElement} _form - The form element
    * @param {FormDataExtended} _formData - The processed form data
@@ -196,7 +174,6 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       this.constructor.reloadConfirm({ world: requiresWorldReload });
 
       ui.notifications.info('hm.settings.custom-compendiums.form-saved', { localize: true });
-      HM.log(3, 'Form submitted and settings saved');
     } catch (error) {
       HM.log(1, 'Error in form submission:', error);
       ui.notifications.error('hm.settings.custom-compendiums.error-saving', { localize: true });
@@ -205,6 +182,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
 
   /**
    * Shows a confirmation dialog for reloading the world/application
+   * @async
    * @param {object} options - Configuration options
    * @param {boolean} options.world - Whether to reload the entire world
    * @returns {Promise<void>}
@@ -230,6 +208,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
 
   /**
    * Collects valid packs of a specified type from available compendiums.
+   * @async
    * @param {string} type The type of documents to collect
    * @param {boolean} useCache Whether to use cached results
    * @returns {Promise<Set>} A set of valid pack objects
@@ -285,6 +264,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
 
   /**
    * Renders a dialog for selecting compendium packs with grouped organization
+   * @async
    * @param {string} type - The type of compendium ('class', 'race', 'background', 'item')
    * @param {Set} validPacks - Set of valid pack objects
    * @param {Array<string>} selectedPacks - Array of currently selected pack IDs
@@ -322,58 +302,72 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       });
     });
 
-    // Build custom HTML
-    let html = '<div class="hm-compendium-groups">';
-
     // Add global "Select All" checkbox
     const allSelected = Array.from(validPacks).every((pack) => selectedPacks.includes(pack.packId));
-    html += `
-    <div class="hm-compendium-global-header">
-      <label class="checkbox">
-        <input type="checkbox" class="hm-select-all-global" ${allSelected ? 'checked' : ''}>
-        ${game.i18n.localize('hm.settings.custom-compendiums.select-all')}
-      </label>
-    </div>
-  `;
+    // Create a DocumentFragment
+    const fragment = document.createDocumentFragment();
+    const container = document.createElement('div');
+    fragment.appendChild(container);
+
+    // Add global header
+    const globalHeader = document.createElement('div');
+    globalHeader.className = 'hm-compendium-global-header';
+    globalHeader.innerHTML = `
+  <label class="checkbox">
+    <input type="checkbox" class="hm-select-all-global" ${allSelected ? 'checked' : ''}>
+    ${game.i18n.localize('hm.settings.custom-compendiums.select-all')}
+  </label>
+`;
+    container.appendChild(globalHeader);
 
     // Add each source group
     Object.entries(packsBySource).forEach(([source, data]) => {
       const allGroupSelected = data.packs.every((pack) => pack.selected);
 
-      html += `
-      <div class="hm-compendium-group">
-      <hr />
-        <div class="hm-compendium-group-header">
-          <label class="checkbox">
-            <input type="checkbox" class="hm-select-all" data-source="${source}" ${allGroupSelected ? 'checked' : ''}>
-            ${data.name}
-          </label>
-        </div>
-        <div class="hm-compendium-group-items">
-    `;
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'hm-compendium-group';
 
+      // Add divider
+      groupDiv.appendChild(document.createElement('hr'));
+
+      // Add group header
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'hm-compendium-group-header';
+      headerDiv.innerHTML = `
+    <label class="checkbox">
+      <input type="checkbox" class="hm-select-all" data-source="${source}" ${allGroupSelected ? 'checked' : ''}>
+      ${data.name}
+    </label>
+  `;
+      groupDiv.appendChild(headerDiv);
+
+      // Add group items container
+      const itemsDiv = document.createElement('div');
+      itemsDiv.className = 'hm-compendium-group-items';
+
+      // Add each pack as an item
       data.packs.forEach((pack) => {
-        html += `
-        <label class="checkbox hm-compendium-item">
-          <input type="checkbox" name="compendiumMultiSelect" value="${pack.value}" data-source="${source}" ${pack.selected ? 'checked' : ''}>
-          ${pack.label}
-        </label>
-      `;
+        const label = document.createElement('label');
+        label.className = 'checkbox hm-compendium-item';
+        label.innerHTML = `
+      <input type="checkbox" name="compendiumMultiSelect" value="${pack.value}" data-source="${source}" ${pack.selected ? 'checked' : ''}>
+      ${pack.label}
+    `;
+        itemsDiv.appendChild(label);
       });
 
-      html += `
-        </div>
-      </div>
-    `;
+      groupDiv.appendChild(itemsDiv);
+      container.appendChild(groupDiv);
     });
 
-    html += '</div>';
+    // Return the HTML string from the fragment
+    const content = container.outerHTML;
 
     const typeIcon = this.#getCompendiumTypeIcon(type);
     // Create dialog
     const dialog = new DialogV2({
       window: { title: game.i18n.format('hm.settings.custom-compendiums.title', { type }), icon: typeIcon },
-      content: html,
+      content: content,
       classes: ['hm-compendiums-popup-dialog'],
       buttons: [
         {
@@ -391,8 +385,6 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
                 type: game.i18n.localize(`hm.settings.custom-compendiums.${type}`)
               })
             );
-
-            HM.log(3, `Selected ${type} compendiums:`, selectedValues);
           }
         }
       ],

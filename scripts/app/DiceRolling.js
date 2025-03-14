@@ -66,7 +66,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       customStandardArray: game.settings.get(HM.CONFIG.ID, 'customStandardArray'),
       customPointBuyTotal: game.settings.get(HM.CONFIG.ID, 'customPointBuyTotal')
     };
-    HM.log(3, 'Context:', context);
+
     return context;
   }
 
@@ -120,8 +120,6 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       }
 
       await game.settings.set(HM.CONFIG.ID, 'allowedMethods', allowedMethods);
-      HM.log(3, `Processed allowedMethods: ${JSON.stringify(allowedMethods)}`);
-      HM.log(3, 'Saved allowedMethods:', game.settings.get(HM.CONFIG.ID, 'allowedMethods'));
 
       if (formData.object.customStandardArray) {
         StatRoller.validateAndSetCustomStandardArray(formData.object.customStandardArray);
@@ -130,7 +128,6 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       this.constructor.reloadConfirm({ world: requiresWorldReload });
 
       ui.notifications.info('hm.settings.dice-rolling.saved', { localize: true });
-      HM.log(3, 'Dice rolling settings saved');
     } catch (error) {
       HM.log(1, `Error in formHandler: ${error}`);
       ui.notifications.error('hm.settings.dice-rolling.error-saving', { localize: true });
