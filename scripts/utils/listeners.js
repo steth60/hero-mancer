@@ -60,8 +60,6 @@ export class Listeners {
             });
           });
         } else if (diceRollingMethod === 'standardArray') {
-          // Get previous value to update counts
-          const previousValue = selectedValues[index];
           const newValue = event.target.value;
 
           // Update our tracking array
@@ -324,13 +322,6 @@ export class Listeners {
       await game.settings.set(HM.ID, 'diceRollingMethod', method);
 
       HeroMancer.selectedAbilities = Array(Object.keys(CONFIG.DND5E.abilities).length).fill(8);
-
-      this.initializeAbilityListeners(
-        {
-          remainingPoints: StatRoller.getTotalPoints()
-        },
-        HeroMancer.selectedAbilities
-      );
 
       const app = HM.heroMancer;
       if (app) {
