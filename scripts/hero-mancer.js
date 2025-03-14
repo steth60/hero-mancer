@@ -116,7 +116,7 @@ export class HM {
       HM.log(3, 'Document preparation complete');
     } catch (error) {
       HM.log(1, 'Failed to prepare documents:', error.message);
-      throw error; // Re-throw to handle at caller level
+      throw error;
     }
   }
 
@@ -137,7 +137,7 @@ HM.CONFIG.SELECT_STORAGE = {
 
 Hooks.on('init', () => {
   HM.init();
-  CONFIG.Item.compendiumIndexFields = ['system.type.value', 'system.properties', 'system.identifier', 'system.description.value', 'type', 'name', '_id', 'uuid', 'pack'];
+  CONFIG.Item.compendiumIndexFields = ['_id', 'name', 'pack', 'system.description.value', 'system.identifier', 'system.properties', 'system.type.value', 'type', 'uuid'];
 });
 
 Hooks.once('ready', async () => {
@@ -155,11 +155,13 @@ Hooks.once('ready', async () => {
   CustomCompendiums.classPacks = game.settings.get(HM.CONFIG.ID, 'classPacks');
   CustomCompendiums.racePacks = game.settings.get(HM.CONFIG.ID, 'racePacks');
   CustomCompendiums.backgroundPacks = game.settings.get(HM.CONFIG.ID, 'backgroundPacks');
+  CustomCompendiums.itemPacks = game.settings.get(HM.CONFIG.ID, 'itemPacks');
 
   HM.log(3, {
-    classPacks: CustomCompendiums.classPacks,
-    racePacks: CustomCompendiums.racePacks,
-    backgroundPacks: CustomCompendiums.backgroundPacks
+    class: CustomCompendiums.classPacks,
+    race: CustomCompendiums.racePacks,
+    background: CustomCompendiums.backgroundPacks,
+    items: CustomCompendiums.itemPacks
   });
 
   await EquipmentParser.initializeLookupItems();
@@ -173,10 +175,4 @@ Hooks.once('ready', async () => {
 
 Hooks.on('renderActorDirectory', () => {
   HtmlManipulator.registerButton();
-  HM.log(3, 'Injecting button into Actor Directory');
-});
-
-Hooks.on('error', (location, error, data) => {
-  if (location !== 'TextEditor.enrichHTML') return;
-  HM.log(2, 'HERO MANCER: HTML Enricher Error: This error is not game-breaking, it can be safely ignored for now.', error.message);
 });
