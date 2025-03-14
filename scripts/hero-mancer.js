@@ -67,7 +67,7 @@ export class HM {
           break;
         case 3:
         default:
-          console.log(`${HM.ID} |`, ...args);
+          console.debug(`${HM.ID} |`, ...args);
           break;
       }
     }

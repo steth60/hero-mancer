@@ -321,7 +321,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
    * @protected
    * @override
    */
-  async _onRender(context, options) {
+  async _onRender(context, _options) {
     if (this.#isRendering) return;
     try {
       this.#isRendering = true;

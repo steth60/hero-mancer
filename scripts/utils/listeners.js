@@ -132,6 +132,9 @@ export class Listeners {
         const updateEquipment = new EquipmentParser(HM.SELECT_STORAGE.class.selectedId, HM.SELECT_STORAGE.background.selectedId);
 
         await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'class');
+
+        // Call SummaryManager to update abilities highlighting when class changes
+        SummaryManager.updateAbilitiesSummary();
       };
 
       classDropdown.addEventListener('change', classDropdown._equipmentChangeHandler);

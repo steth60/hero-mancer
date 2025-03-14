@@ -676,6 +676,41 @@ fieldset#start > h2 {
   text-align: center;
 }
 
+/* Primary ability highlight styling */
+.ability-block .ability-label.primary-ability {
+  color: #ffd700;
+  text-shadow: 0 -5px 20px #ffd70099;
+}
+
+.ability-block.point-buy .ability-label.primary-ability {
+  color: #ffd700;
+  text-shadow: 0 0 5px #ffd70099;
+}
+
+.ability-dropdown.primary-ability {
+  box-shadow: 0 0 5px 5px #ffd70099;
+}
+
+/* Add a slight animation for additional visual cue */
+@keyframes primary-ability-pulse {
+  0% {
+    text-shadow: 0 0 5px #ffd70099;
+  }
+
+  50% {
+    text-shadow: 0 0 10px #ffd700cc;
+  }
+
+  100% {
+    text-shadow: 0 0 5px #ffd70099;
+  }
+}
+
+.ability-block .ability-label.primary-ability,
+.ability-block.point-buy .ability-label.primary-ability {
+  animation: primary-ability-pulse 2s infinite ease-in-out;
+}
+
 /* Point buy remaining points display */
 .remaining-points-container {
   gap: 0.5rem;

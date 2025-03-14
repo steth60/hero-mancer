@@ -267,6 +267,7 @@ export class SummaryManager {
     const equipmentContainer = document.querySelector('#equipment-container');
     const abilityBlocks = document.querySelectorAll('.ability-block');
     const proseMirror = document.querySelector('prose-mirror[name="backstory"]');
+    const rollMethodSelect = document.querySelector('#roll-method');
 
     this.initializePortrait();
     this.initializeRollButtons();
@@ -298,6 +299,16 @@ export class SummaryManager {
         this.updateEquipmentSummary();
       };
       backgroundDropdown.addEventListener('change', backgroundDropdown._summaryChangeHandler);
+    }
+
+    if (rollMethodSelect) {
+      rollMethodSelect._summaryChangeHandler = (event) => {
+        HM.log(3, 'Roll method changed:', event.target.value);
+        requestAnimationFrame(() => {
+          this.updateAbilitiesSummary();
+        });
+      };
+      rollMethodSelect.addEventListener('change', rollMethodSelect._summaryChangeHandler);
     }
 
     if (equipmentContainer) {
@@ -535,41 +546,164 @@ export class SummaryManager {
   }
 
   /**
-   * Updates the abilities summary based on highest scores
+   * Updates the abilities summary based on class preferences and highest scores
    * @returns {Promise<void>}
    * @static
    */
   static async updateAbilitiesSummary() {
     const abilityBlocks = document.querySelectorAll('.ability-block');
     const abilityScores = {};
-    const rollMethod = game.settings.get(HM.ID, 'diceRollingMethod');
+    const rollMethodSelect = document.getElementById('roll-method');
+    const rollMethod = rollMethodSelect ? rollMethodSelect.value : 'standardArray'; // Default to standardArray if not found
 
+    // First, remove any existing highlights
+    document.querySelectorAll('.primary-ability').forEach((el) => {
+      el.classList.remove('primary-ability');
+    });
+
+    // Get the primary abilities from the class item
+    const primaryAbilities = new Set();
+    try {
+      const classUUID = HM.SELECT_STORAGE.class.selectedUUID;
+      if (classUUID) {
+        const classItem = fromUuidSync(classUUID);
+
+        // Get primary ability
+        if (classItem?.system?.primaryAbility?.value?.length) {
+          for (const ability of classItem.system.primaryAbility.value) {
+            primaryAbilities.add(ability.toLowerCase());
+          }
+        }
+
+        // Get spellcasting ability
+        if (classItem?.system?.spellcasting?.ability) {
+          primaryAbilities.add(classItem.system.spellcasting.ability.toLowerCase());
+        }
+
+        // Get saving throw proficiencies from level 1 traits
+        if (classItem?.advancement?.byType?.Trait) {
+          const level1Traits = classItem.advancement.byType.Trait.filter((entry) => entry.level === 1 && entry.configuration.grants);
+
+          for (const trait of level1Traits) {
+            const grants = trait.configuration.grants;
+            for (const grant of grants) {
+              if (grant.startsWith('saves:')) {
+                primaryAbilities.add(grant.split(':')[1].toLowerCase());
+              }
+            }
+          }
+        }
+
+        HM.log(3, 'Primary abilities for class:', Array.from(primaryAbilities));
+      }
+    } catch (error) {
+      HM.log(1, 'Error fetching class abilities:', error);
+    }
+
+    // Process each ability block
     abilityBlocks.forEach((block) => {
       let score = 0;
+      let abilityKey = '';
+
+      // Find which ability this block represents based on the roll method
       if (rollMethod === 'pointBuy') {
+        const hiddenInput = block.querySelector('input[type="hidden"]');
+        if (hiddenInput) {
+          const nameMatch = hiddenInput.name.match(/abilities\[(\w+)]/);
+          if (nameMatch && nameMatch[1]) {
+            abilityKey = nameMatch[1].toLowerCase();
+          }
+        }
         score = parseInt(block.querySelector('.current-score')?.innerHTML) || 0;
       } else if (rollMethod === 'standardArray') {
-        score = parseInt(block.querySelector('.ability-dropdown')?.value) || 0;
+        const dropdown = block.querySelector('.ability-dropdown');
+        if (dropdown) {
+          // Extract ability key from the dropdown name attribute
+          const nameMatch = dropdown.name.match(/abilities\[(\w+)]/);
+          if (nameMatch && nameMatch[1]) {
+            abilityKey = nameMatch[1].toLowerCase();
+          }
+          score = parseInt(dropdown.value) || 0;
+        }
       } else if (rollMethod === 'manualFormula') {
+        const dropdown = block.querySelector('.ability-dropdown');
+        if (dropdown && dropdown.value) {
+          abilityKey = dropdown.value.toLowerCase();
+        }
         score = parseInt(block.querySelector('.ability-score')?.value) || 0;
       }
 
-      const abilityKey = block.querySelector('.ability-label')?.innerHTML;
+      // Apply highlighting if this is a primary ability
+      if (abilityKey && primaryAbilities.has(abilityKey)) {
+        HM.log(3, `Highlighting ${rollMethod} ability: ${abilityKey} in block:`, block.id);
+
+        // For standardArray and pointBuy, highlight the label
+        const label = block.querySelector('.ability-label');
+        if (label) {
+          label.classList.add('primary-ability');
+        }
+
+        // For standardArray, also highlight the dropdown
+        if (rollMethod === 'standardArray') {
+          const dropdown = block.querySelector('.ability-dropdown');
+          if (dropdown) {
+            dropdown.classList.add('primary-ability');
+          }
+        }
+
+        // For manualFormula, highlight the dropdown only if it matches a primary ability
+        if (rollMethod === 'manualFormula') {
+          const dropdown = block.querySelector('.ability-dropdown');
+          if (dropdown && dropdown.value && primaryAbilities.has(dropdown.value.toLowerCase())) {
+            dropdown.classList.add('primary-ability');
+          }
+        }
+      }
+
+      // Store score for summary calculations
       if (abilityKey) {
         abilityScores[abilityKey] = score;
       }
     });
 
+    // Sort abilities by preference and then by score
     const sortedAbilities = Object.entries(abilityScores)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 2)
-      .map(([name]) => name.toLowerCase());
+      .sort(([abilityA, scoreA], [abilityB, scoreB]) => {
+        // First sort by preferred status
+        const preferredA = primaryAbilities.has(abilityA);
+        const preferredB = primaryAbilities.has(abilityB);
 
+        if (preferredA && !preferredB) return -1;
+        if (!preferredA && preferredB) return 1;
+
+        // Then sort by score
+        return scoreB - scoreA;
+      })
+      .map(([ability]) => ability.toLowerCase());
+
+    // Select the top 2 abilities
+    const selectedAbilities = [];
+    for (const ability of sortedAbilities) {
+      if (selectedAbilities.length < 2 && !selectedAbilities.includes(ability)) {
+        selectedAbilities.push(ability);
+      }
+    }
+
+    // If we still need more abilities, add highest scoring ones
+    if (selectedAbilities.length < 2) {
+      for (const [ability, score] of Object.entries(abilityScores).sort(([, a], [, b]) => b - a)) {
+        if (!selectedAbilities.includes(ability) && selectedAbilities.length < 2) {
+          selectedAbilities.push(ability);
+        }
+      }
+    }
+
+    // Update the summary HTML
     const abilitiesSummary = document.querySelector('.abilities-summary');
-    if (abilitiesSummary && sortedAbilities.length >= 2) {
+    if (abilitiesSummary && selectedAbilities.length >= 2) {
       const content = game.i18n.format('hm.app.finalize.summary.abilities', {
-        first: `&Reference[${sortedAbilities[0]}]`,
-        second: `&Reference[${sortedAbilities[1]}]`
+        first: `&Reference[${selectedAbilities[0]}]`,
+        second: `&Reference[${selectedAbilities[1]}]`
       });
       abilitiesSummary.innerHTML = await TextEditor.enrichHTML(content);
     } else if (abilitiesSummary) {

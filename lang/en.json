@@ -362,9 +362,9 @@
     "warnings": {
       "advancement-failed": "Failed to apply {item} advancement. Your character may be missing some features.",
       "advancement-timeout": "The advancement process for {item} took too long and was skipped.",
+      "equipment-extraction-failed": "Note: The document contains equipment information, but it could not be automatically extracted due to its format.",
       "partial-cleanup": "Some resources could not be properly cleaned up.",
-      "select-background": "You must select a valid background first.",
-      "equipment-extraction-failed": "Note: The document contains equipment information, but it could not be automatically extracted due to its format."
+      "select-background": "You must select a valid background first."
     }
   }
 }
