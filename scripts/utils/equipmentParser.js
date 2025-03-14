@@ -185,7 +185,7 @@ export class EquipmentParser {
    * @returns {Promise<Item|null>} Found item document or null
    */
   async findItemDocumentById(itemId) {
-    const selectedPacks = await EquipmentParser.getSelectedItemPacks();
+    const selectedPacks = await EquipmentParser.getSelectedPacks();
     for (const packId of selectedPacks) {
       const pack = game.packs.get(packId);
       if (pack?.documentName === 'Item') {
@@ -229,7 +229,6 @@ export class EquipmentParser {
     const selectedUUID = storedData.selectedUUID;
 
     if (!selectedId) {
-      HM.log(3, `No selection found for type: ${type}. Ignore this warning if first-render.`);
       return [];
     }
 
@@ -244,7 +243,7 @@ export class EquipmentParser {
 
       // If UUID fails, try by ID
       if (!doc) {
-        HM.log(1, `Attempting to get document for ${type} by ID: ${selectedId}`);
+        HM.log(2, `Attempting to get document for ${type} by ID: ${selectedId}`);
         doc = await this.findItemDocumentById(selectedId);
       }
     } catch (error) {
@@ -405,11 +404,9 @@ export class EquipmentParser {
           let documentWithEquipment = null;
 
           if (currentType === 'class' && selectedId) {
-            HM.log(3, `Attempting to get class document for ID: ${selectedId}, UUID: ${selectedUUID}`);
             documentWithEquipment = await fromUuidSync(selectedUUID);
             HM.log(3, `Retrieved class document: ${documentWithEquipment?.name || 'unknown'}`, { doc: documentWithEquipment });
           } else if (currentType === 'background' && selectedId) {
-            HM.log(3, `Attempting to get background document for ID: ${selectedId}, UUID: ${selectedUUID}`);
             documentWithEquipment = await fromUuidSync(selectedUUID);
             HM.log(3, `Retrieved background document: ${documentWithEquipment?.name || 'unknown'}`, { doc: documentWithEquipment });
           }
@@ -447,10 +444,8 @@ export class EquipmentParser {
             const emptyNotice = document.createElement('div');
             emptyNotice.classList.add('equipment-empty-notice');
 
-            // Localized message with format for currentType
-            const messageKey = 'hm.errors.missing-equipment';
-            const defaultMessage = "The selected {type} doesn't contain any Starting Equipment data. Please report this to the creator of the item, not Hero Mancer.";
-            const message = game.i18n.format(messageKey, { type: currentType }, { fallback: defaultMessage });
+            // Localized message for currentType
+            const message = game.i18n.format('hm.errors.missing-equipment', { type: currentType });
 
             // Create the notice with warning icon
             emptyNotice.innerHTML = `<div class="equipment-missing-warning"><i class="fa-solid fa-triangle-exclamation warning-icon"></i><p>${message}</p></div>`;
@@ -480,23 +475,21 @@ export class EquipmentParser {
               } else {
                 extractedInfo.innerHTML = `<h4>${game.i18n.localize('hm.equipment.extracted-info')}</h4>${game.i18n.localize('hm.equipment.no-equipment-notice')}`;
                 emptyNotice.appendChild(extractedInfo);
-                HM.log(3, `No equipment description could be extracted from ${currentType} document`);
+                HM.log(2, `No equipment description could be extracted from ${currentType} document`);
 
                 // Check if the document likely has equipment info but couldn't be extracted
                 const description = documentWithEquipment.system?.description?.value || '';
                 if (description.toLowerCase().includes('equipment')) {
                   const noExtractionNote = document.createElement('p');
                   noExtractionNote.classList.add('equipment-extraction-failed');
-                  noExtractionNote.innerHTML = 'Note: The document contains equipment information, but it could not be automatically extracted due to its format.';
+                  noExtractionNote.innerHTML = `${game.i18n.localize('hm.warnings.equipment-extraction-failed')}`;
                   emptyNotice.appendChild(noExtractionNote);
                 }
               }
-            } else {
-              HM.log(3, `No document found for ${currentType} to extract equipment description`);
             }
 
             sectionContainer.appendChild(emptyNotice);
-            continue; // Skip to the next type
+            continue;
           }
 
           // Pre-fetch all item documents in parallel
@@ -507,7 +500,7 @@ export class EquipmentParser {
                 const doc = await fromUuidSync(item.key);
                 return { item, doc };
               } catch (error) {
-                HM.log(2, `Error pre-fetching item document for ${item.key}:`, error);
+                HM.log(1, `Error pre-fetching item document for ${item.key}:`, error);
                 return { item, doc: null };
               }
             })
@@ -589,20 +582,17 @@ export class EquipmentParser {
     HM.log(3, 'Attempting to extract equipment description from document:', document?.name || 'unnamed document');
 
     if (!document) {
-      HM.log(3, 'No document provided to extract equipment from');
+      HM.log(2, 'No document provided to extract equipment from');
       return null;
     }
 
     // Get the document's description
     const description = document.system?.description?.value;
     if (!description) {
-      HM.log(3, 'Document has no description (system.description.value is empty)');
+      HM.log(2, 'Document has no description (system.description.value is empty)');
       return null;
     }
 
-    HM.log(3, `Found description with length ${description.length} characters`);
-
-    // Create a temporary div to parse the HTML - use global document object
     const tempDiv = window.document.createElement('div');
     tempDiv.innerHTML = description;
 
@@ -610,9 +600,11 @@ export class EquipmentParser {
     const isEquipmentHeading = (element) => {
       const text = element.textContent.toLowerCase();
       const isEquipment = text.includes('equipment') || text.includes('starting equipment');
-      if (isEquipment) {
-        HM.log(3, `Found equipment heading: "${element.textContent}"`);
+
+      if (!isEquipment) {
+        HM.log(3, `Skipping non-equipment heading: "${element.textContent}"`);
       }
+
       return isEquipment;
     };
 
@@ -632,29 +624,21 @@ export class EquipmentParser {
       let container = element.closest('p') || element.parentElement;
 
       if (container) {
-        // Start with the heading paragraph
         let combinedContent = container.outerHTML;
         let currentElement = container.nextElementSibling;
-
-        // Gather additional related elements (paragraph, list, paragraph)
         let elementsToInclude = 0;
 
         // Include up to 3 following elements that could be part of the equipment description
         while (currentElement && elementsToInclude < 3) {
-          // Always include an immediate list after the heading
           if (currentElement.tagName === 'UL' || currentElement.tagName === 'OL') {
             combinedContent += currentElement.outerHTML;
             elementsToInclude++;
-          }
-          // Include paragraphs that are likely related to equipment
-          else if (currentElement.tagName === 'P') {
-            // Check if the paragraph is likely part of the equipment description
+          } else if (currentElement.tagName === 'P') {
             const text = currentElement.textContent.toLowerCase();
             if (text.includes('equipment') || text.includes('background') || text.includes('gp to buy') || text.includes('gold') || text.includes('starting')) {
               combinedContent += currentElement.outerHTML;
               elementsToInclude++;
             } else {
-              // Stop if we encounter an unrelated paragraph
               break;
             }
           } else if (currentElement.tagName.match(/^H[1-6]$/)) {
@@ -668,18 +652,14 @@ export class EquipmentParser {
       }
     }
 
-    // Case 2: Look for the specific PHB background format with Equipment: label
+    // Case 2: Look for the specific PHB-style background format with Equipment: label
     const equipmentLabels = findElementsWithText(tempDiv, '.Serif-Character-Style_Bold-Serif, .Bold-Serif, strong, b, span[class*="bold"], span[style*="font-weight"]', 'Equipment:');
 
     if (equipmentLabels.length > 0) {
-      HM.log(3, 'Found PHB background format with Equipment: label');
-
-      // Find the containing paragraph
       const equipmentLabel = equipmentLabels[0];
       const parentParagraph = equipmentLabel.closest('p');
 
       if (parentParagraph) {
-        // Extract just this single paragraph with the equipment info
         const paragraphHTML = parentParagraph.outerHTML;
         HM.log(3, `Extracted equipment paragraph: ${paragraphHTML.substring(0, 100)}...`);
         return paragraphHTML;
@@ -706,7 +686,6 @@ export class EquipmentParser {
 
         // Include relevant content after the heading
         while (currentElement && !currentElement.tagName.match(/^H[1-6]$/) && content.length < 1000) {
-          // Include paragraphs and lists that are likely related
           if (['P', 'UL', 'OL'].includes(currentElement.tagName)) {
             content += currentElement.outerHTML;
           } else {
@@ -760,7 +739,7 @@ export class EquipmentParser {
       return `<p><strong>Equipment:</strong> ${equipmentText}</p>`;
     }
 
-    HM.log(3, 'Failed to extract equipment description using any method');
+    HM.log(1, 'Failed to extract equipment description using any method');
     return null;
   }
 
@@ -782,7 +761,6 @@ export class EquipmentParser {
     }
 
     if (this.#hasItemBeenRendered(item)) {
-      HM.log(3, `DEBUG: Skipping already rendered item: ${item._source?.key}`, { item: item });
       return null;
     }
 
@@ -822,7 +800,7 @@ export class EquipmentParser {
               labelElement.innerHTML = `${item.label || `${item.count || ''} ${itemDoc.name}`}`;
               shouldAddLabel = true;
             } else {
-              HM.log(2, `No document found for item key: ${item.key}`, { item, labelElement });
+              HM.log(1, `No document found for item key: ${item.key}`, { item, labelElement });
               labelElement.innerHTML = `${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
               shouldAddLabel = true;
             }
@@ -854,36 +832,30 @@ export class EquipmentParser {
       try {
         switch (item.type) {
           case 'OR':
-            HM.log(3, `DEBUG: Rendering OR block for item: ${item._source?.key}`, { item: item });
             result = await this.#renderOrBlock(item, itemContainer);
             break;
           case 'AND':
-            HM.log(3, `DEBUG: Rendering AND block for item: ${item._source?.key || item.type}`, { item: item });
             if (!item.group || this.#isStandaloneAndBlock(item)) {
               result = await this.#renderAndBlock(item, itemContainer);
             }
             break;
           case 'linked':
-            HM.log(3, `DEBUG: Rendering linked item: ${item._source?.key}`, { item: item });
             result = await this.#renderLinkedItem(item, itemContainer);
             break;
           case 'focus':
-            HM.log(3, `DEBUG: Rendering focus item: ${item._source?.key}`, { item: item });
             result = await this.#renderFocusItem(item, itemContainer);
             break;
           case 'tool':
-            HM.log(3, `DEBUG: Rendering tool item: ${item._source?.key}`, { item: item });
             result = await this.#renderToolItem(item, itemContainer);
             break;
           case 'weapon':
           case 'armor':
             break;
           default:
-            HM.log(2, `Unsupported item type: ${item.type}`, { item: item });
             return null;
         }
       } catch (error) {
-        HM.log(2, `Error rendering item ${item.type}:`, error);
+        HM.log(1, `Error rendering item ${item.type}:`, error);
 
         // Create a simple fallback element
         const errorElement = document.createElement('div');
@@ -944,7 +916,8 @@ export class EquipmentParser {
       shield: 'Shield',
       art: "Artisan's Tools",
       game: 'Gaming Set',
-      music: 'Musical Instrument'
+      music: 'Musical Instrument',
+      armor: 'Armor'
     };
     return labels[key] || key;
   }
@@ -1016,7 +989,7 @@ export class EquipmentParser {
    * @private
    */
   async #renderAndBlock(item, itemContainer) {
-    HM.log(3, `Processing AND block: ${item._id}`);
+    HM.log(3, `Processing AND block: ${item._id}`, { item, itemContainer });
 
     const processedIds = new Set();
     if (item.group) {
@@ -1030,7 +1003,6 @@ export class EquipmentParser {
       const itemDocs = await Promise.all(
         items.map(async (item) => {
           const doc = await fromUuidSync(item._source?.key);
-          HM.log(3, 'Got item doc:', doc);
           return doc;
         })
       );
@@ -1043,12 +1015,10 @@ export class EquipmentParser {
 
         // Filter out packs by identifier
         const identifier = doc?.system?.identifier?.toLowerCase();
-        HM.log(3, 'Container identifier:', identifier);
         return !identifier || !identifier.includes('pack');
       });
 
       const shouldGroup = hasWeapon || hasAmmo || hasContainer;
-      HM.log(3, 'Group check result:', { hasWeapon: hasWeapon, hasAmmo: hasAmmo, hasContainer: hasContainer, shouldGroup: shouldGroup });
       return shouldGroup;
     };
 
@@ -1068,7 +1038,6 @@ export class EquipmentParser {
     const processedItems = new Set();
 
     if (!item?.children?.length) {
-      HM.log(1, 'Invalid AND block item:', item);
       this.#addFavoriteStar(itemContainer, item);
       return itemContainer;
     }
@@ -1184,6 +1153,7 @@ export class EquipmentParser {
    * @private
    */
   async #renderAndGroup(child, select, renderedItemNames) {
+    HM.log(3, 'Processing AND group', { child, select, renderedItemNames });
     let combinedLabel = '';
     const combinedIds = [];
     const lookupKeys = ['sim', 'mar', 'simpleM', 'simpleR', 'martialM', 'martialR', 'shield'];
@@ -1194,7 +1164,6 @@ export class EquipmentParser {
       (child.group && this.equipmentData.class.some((p) => p._id === child.group && p.type === 'OR')) || this.equipmentData.background.some((p) => p._id === child.group && p.type === 'OR');
 
     if (!child?.children?.length) {
-      HM.log(1, 'Invalid AND group child:', child);
       return;
     }
 
@@ -1221,7 +1190,6 @@ export class EquipmentParser {
         if (!subChildItem) throw new Error(`Item not found for UUID: ${subChild.key}`);
 
         if (combinedLabel) combinedLabel += ', ';
-        // Create proper HTML link
         combinedLabel += `${subChild.count > 1 || subChild.count !== null ? subChild.count : ''} <a class="content-link" draggable="true" data-uuid="${subChild.key}">${subChildItem.name}</a>`.trim();
         combinedIds.push(subChild._id);
 
@@ -1254,8 +1222,6 @@ export class EquipmentParser {
         child.isSpecialCase = true;
       }
     }
-
-    HM.log(3, `Completed rendering AND group ${child._id}`);
   }
 
   /**
@@ -1266,6 +1232,8 @@ export class EquipmentParser {
    * @private
    */
   async #renderFocusItem(item, itemContainer) {
+    HM.log(3, `Processing Focus Item: ${item._id}`, { item, itemContainer });
+
     if (!item?.key) {
       HM.log(1, 'Invalid focus item:', item);
       return null;
@@ -1290,8 +1258,6 @@ export class EquipmentParser {
       let uuid = itemId.uuid || EquipmentParser.itemUuidMap.get(itemId);
 
       if (!uuid) {
-        HM.log(3, `UUID lookup failed for ${focusName}, attempting name match`);
-
         for (const packId of itemPacks) {
           const pack = game.packs.get(packId);
           if (!pack) continue;
@@ -1324,7 +1290,7 @@ export class EquipmentParser {
     }
 
     if (select.options.length === 0) {
-      HM.log(2, `No valid focus items found for type: ${focusType}`);
+      HM.log(1, `No valid focus items found for type: ${focusType}`);
       return null;
     }
 
@@ -1335,7 +1301,6 @@ export class EquipmentParser {
     itemContainer.appendChild(label);
     itemContainer.appendChild(select);
 
-    HM.log(3, `Rendered focus item ${item.key}`);
     this.#addFavoriteStar(itemContainer, item);
     return itemContainer;
   }
@@ -1348,6 +1313,7 @@ export class EquipmentParser {
    * @private
    */
   async #renderToolItem(item, itemContainer) {
+    HM.log(3, `Processing Tool: ${item._id}`, { item, itemContainer });
     if (!item?.key) {
       HM.log(1, 'Invalid tool item:', item);
       return null;
@@ -1394,7 +1360,6 @@ export class EquipmentParser {
     itemContainer.appendChild(label);
     itemContainer.appendChild(select);
 
-    HM.log(3, `Rendered tool item ${item.key}`);
     this.#addFavoriteStar(itemContainer, item);
     return itemContainer;
   }
@@ -1410,6 +1375,8 @@ export class EquipmentParser {
    * @private
    */
   async #renderIndividualItem(child, select, renderedItemNames) {
+    HM.log(3, 'Processing Individual Item', { child, select, renderedItemNames });
+
     if (child.type === 'linked') {
       if (EquipmentParser.combinedItemIds.has(child._source.key)) return;
       const label = child.label.trim();
@@ -1454,6 +1421,8 @@ export class EquipmentParser {
    * @private
    */
   #renderLinkedItem(item, itemContainer) {
+    HM.log(3, `Processing Linked item: ${item._id}`, { item, itemContainer });
+
     if (!item?._source?.key) {
       HM.log(1, 'Invalid linked item:', item);
       return null;
@@ -1466,18 +1435,7 @@ export class EquipmentParser {
       }
     }
     // Don't mark as rendered until we confirm the item should be displayed
-    if (EquipmentParser.combinedItemIds.has(item._source.key)) {
-      HM.log(3, 'Skipping item in combinedItems:', item._source.key);
-      return null;
-    }
-    if (this.#shouldItemUseDropdownDisplay(item)) {
-      HM.log(3, 'Skipping item that should be dropdown:', item._source.key);
-      return null;
-    }
-
-    // Only check renderedItems if we've confirmed it's not part of a combination
-    if (EquipmentParser.renderedItems.has(item._id)) {
-      HM.log(3, 'Skipping previously rendered item:', item._id);
+    if (EquipmentParser.combinedItemIds.has(item._source.key) || this.#shouldItemUseDropdownDisplay(item) || EquipmentParser.renderedItems.has(item._id)) {
       return null;
     }
 
@@ -1509,7 +1467,6 @@ export class EquipmentParser {
 
     EquipmentParser.renderedItems.add(item._id);
 
-    HM.log(3, `Completed linked item render: ${item._id}`);
     this.#addFavoriteStar(itemContainer, item);
     return itemContainer;
   }
@@ -1524,6 +1481,8 @@ export class EquipmentParser {
    * @private
    */
   async #renderLookupOptions(child, select, renderedItemNames) {
+    HM.log(3, 'Processing Lookup Options', { child, select, renderedItemNames });
+
     try {
       const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key] || []);
       lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
@@ -1593,19 +1552,17 @@ export class EquipmentParser {
    * @private
    */
   async #renderOrBlock(item, itemContainer) {
+    HM.log(3, `Processing OR block: ${item._id}`, { item, itemContainer });
+
     if (!item?.children?.length) {
       HM.log(1, 'Invalid OR block item:', item);
-      // this.#addFavoriteStar(itemContainer, item);
       return itemContainer;
     }
 
     if (!item._source) {
       HM.log(1, 'Missing _source property on OR block item:', item);
-      // this.#addFavoriteStar(itemContainer, item);
       return itemContainer;
     }
-
-    HM.log(3, `Rendering OR block: ${item._id}`);
 
     const labelElement = document.createElement('h4');
     labelElement.classList.add('parent-label');
@@ -1613,7 +1570,6 @@ export class EquipmentParser {
     // Determine if this is a weapon-or-lookup case
     const hasLinkedItem = item.children.some((child) => child.type === 'linked');
     const hasWeaponLookup = item.children.some((child) => child.type === 'weapon' && ['simpleM', 'simpleR', 'martialM', 'martialR', 'sim', 'mar'].includes(child.key));
-    HM.log(3, 'OR BLOCK:', { hasLinkedItem, hasWeaponLookup });
 
     if (hasLinkedItem && hasWeaponLookup) {
       // Create a more descriptive label for this case
@@ -1807,12 +1763,6 @@ export class EquipmentParser {
     }
 
     for (const child of nonFocusItems) {
-      HM.log(3, 'Processing nonFocusItem child:', {
-        type: child.type,
-        key: child.key,
-        _source: child._source,
-        label: child.label
-      });
       if (child.type === 'AND') {
         await this.#renderAndGroup(child, select, renderedItemNames);
       } else if (['linked', 'weapon', 'tool', 'armor'].includes(child.type)) {
@@ -1827,7 +1777,6 @@ export class EquipmentParser {
       }
     }
 
-    HM.log(3, `Completed OR block render: ${item._id}`);
     this.#addFavoriteStar(itemContainer, item);
     return itemContainer;
   }
@@ -1839,9 +1788,6 @@ export class EquipmentParser {
    * @private
    */
   #shouldItemUseDropdownDisplay(item) {
-    HM.log(3, `Checking dropdown render for ${item._id}: type=${item.type}, group=${item.group}`);
-
-    // Check for items that are part of an OR block
     if (item.group) {
       const parentItem = this.equipmentData.class.find((p) => p._source.key === item.group) || this.equipmentData.background.find((p) => p._source.key === item.group);
       return parentItem?.type === 'OR';
@@ -2003,8 +1949,6 @@ export class EquipmentParser {
 
     async function findItemInPacks(itemId) {
       if (!itemId) return null;
-
-      HM.log(3, `Searching for item ID: ${itemId}`);
       try {
         const indexItem = fromUuidSync(itemId);
         if (indexItem) {
@@ -2016,10 +1960,10 @@ export class EquipmentParser {
             return fullItem;
           }
         }
-        HM.log(3, `Could not find item ${itemId} in any pack`);
+        HM.log(2, `Could not find item ${itemId} in any pack`);
         return null;
       } catch (error) {
-        HM.log(2, `Error finding item ${itemId}:`, error);
+        HM.log(1, `Error finding item ${itemId}:`, error);
         return null;
       }
     }
@@ -2077,7 +2021,6 @@ export class EquipmentParser {
 
         // Process dropdowns in parallel
         const dropdowns = Array.from(section.querySelectorAll('select'));
-        HM.log(3, `Found ${dropdowns.length} dropdowns in section`);
 
         const dropdownPromises = dropdowns.map(async (dropdown) => {
           const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
@@ -2118,7 +2061,7 @@ export class EquipmentParser {
               });
             }
           } catch (error) {
-            HM.log(2, `Error processing dropdown ${dropdown.id}:`, error);
+            HM.log(1, `Error processing dropdown ${dropdown.id}:`, error);
           }
         });
 
@@ -2126,14 +2069,12 @@ export class EquipmentParser {
 
         // Process checkboxes in parallel
         const checkboxes = Array.from(section.querySelectorAll('input[type="checkbox"]')).filter((cb) => cb.checked);
-        HM.log(3, `Found ${checkboxes.length} checked checkboxes in section`);
 
         const checkboxPromises = checkboxes.map(async (checkbox) => {
           try {
             // Get the actual label text
             const labelElement = checkbox.parentElement;
             const fullLabel = labelElement.textContent.trim();
-            HM.log(3, 'Processing checkbox with label:', fullLabel);
 
             const itemIds = checkbox.id.split(',').filter((id) => id);
             // Split on '+' and trim each part
@@ -2154,7 +2095,7 @@ export class EquipmentParser {
             // Process each found item
             for (const { itemId, item } of items) {
               if (!item) {
-                HM.log(2, `Could not find item for ID: ${itemId}`);
+                HM.log(1, `Could not find item for ID: ${itemId}`);
                 continue;
               }
 
@@ -2167,7 +2108,6 @@ export class EquipmentParser {
 
                 if (match) {
                   quantity = parseInt(match[1]);
-                  HM.log(3, `Found quantity ${quantity} for ${item.name}`);
                   break;
                 }
               }
@@ -2189,7 +2129,7 @@ export class EquipmentParser {
               }
             }
           } catch (error) {
-            HM.log(2, 'Error processing checkbox:', error);
+            HM.log(1, 'Error processing checkbox:', error);
           }
         });
 
@@ -2207,7 +2147,7 @@ export class EquipmentParser {
    * @returns {Promise<string[]>} Array of compendium pack IDs
    * @static
    */
-  static async getSelectedItemPacks() {
+  static async getSelectedPacks() {
     const itemPacks = (await game.settings.get(HM.ID, 'itemPacks')) || [];
     const classPacks = (await game.settings.get(HM.ID, 'classPacks')) || [];
     const backgroundPacks = (await game.settings.get(HM.ID, 'backgroundPacks')) || [];
@@ -2223,7 +2163,7 @@ export class EquipmentParser {
    * @throws {Error} If pack index loading fails
    */
   static async preloadCompendiumIndices() {
-    const selectedPacks = await this.getSelectedItemPacks();
+    const selectedPacks = await this.getSelectedPacks();
     const packs = selectedPacks.map((id) => game.packs.get(id)).filter((p) => p?.documentName === 'Item');
     await Promise.all(packs.map((p) => p.getIndex({ fields: ['system.contents', 'uuid'] })));
     HM.log(3, `EquipmentParser cache initialized with ${this.contentCache.size} entries`);
@@ -2242,7 +2182,7 @@ export class EquipmentParser {
     this.lookupItemsInitialized = true;
     this.itemUuidMap = new Map();
 
-    const selectedPacks = await this.getSelectedItemPacks();
+    const selectedPacks = await this.getSelectedPacks();
 
     try {
       const allItems = await this.#collectAllItems(selectedPacks);
@@ -2295,10 +2235,10 @@ export class EquipmentParser {
       };
 
       const endTime = performance.now();
-      HM.log(3, `Equipment lookup initialized in ${(endTime - startTime).toFixed(2)}ms. ${categorizedCount} items categorized.`);
+      HM.log(3, `Equipment lookup initialized in ${(endTime - startTime).toFixed(0)}ms. ${categorizedCount} items categorized.`);
     } catch (error) {
       const endTime = performance.now();
-      HM.log(1, `Equipment lookup initialization failed after ${(endTime - startTime).toFixed(2)}ms:`, error);
+      HM.log(1, `Equipment lookup initialization failed after ${(endTime - startTime).toFixed(0)}ms:`, error);
     }
   }
 
@@ -2363,8 +2303,6 @@ export class EquipmentParser {
         }
       }
     });
-
-    HM.log(3, 'Processed starting wealth:', currencies);
     return currencies;
   }
 
@@ -2431,7 +2369,7 @@ export class EquipmentParser {
           return { packItems, processedCount, skippedCount };
         })
       );
-      HM.log(1, 'Collection finished:', { itemProcessingResults });
+      HM.log(3, 'Collection finished:', { itemProcessingResults });
 
       // Combine results
       const items = [];
@@ -2445,11 +2383,11 @@ export class EquipmentParser {
       }
 
       const endTime = performance.now();
-      HM.log(3, `Items collected in ${(endTime - startTime).toFixed(2)}ms. Processed: ${totalProcessed}, Included: ${items.length}, Skipped: ${totalSkipped}`);
+      HM.log(3, `Items collected in ${(endTime - startTime).toFixed(0)}ms. Processed: ${totalProcessed}, Included: ${items.length}, Skipped: ${totalSkipped}`);
       return items;
     } catch (error) {
       const endTime = performance.now();
-      HM.log(1, `Item collection failed after ${(endTime - startTime).toFixed(2)}ms:`, error);
+      HM.log(1, `Item collection failed after ${(endTime - startTime).toFixed(0)}ms:`, error);
       return [];
     }
   }
