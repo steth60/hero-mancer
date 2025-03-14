@@ -49,6 +49,7 @@
   align-items: center;
 }
 
+.form-group.items-start,
 .items-start {
   align-items: flex-start;
 }
@@ -96,6 +97,13 @@
 
 .mb-lg {
   margin-bottom: 1.5rem;
+}
+
+.m-lr {
+  margin-right: 0.25rem;
+  margin-left: 0.25rem;
+  padding-right: 0.25rem;
+  padding-left: 0.25rem;
 }
 
 .p-sm {

@@ -216,6 +216,21 @@
       "tab-navigation": "There was an error navigating to the selected tab."
     },
     "settings": {
+      "ability-scores": {
+        "default": {
+          "hint": "The starting value for ability scores when creating a new character.",
+          "name": "Default Ability Score"
+        },
+        "invalid-range": "Invalid ability score range. Please ensure Min ≤ Default ≤ Max.",
+        "max": {
+          "hint": "The highest value allowed for ability scores during character creation.",
+          "name": "Maximum Ability Score"
+        },
+        "min": {
+          "hint": "The lowest value allowed for ability scores during character creation.",
+          "name": "Minimum Ability Score"
+        }
+      },
       "alignments": {
         "hint": "Comma-separated list of alignments available for character creation.",
         "name": "Available Alignments"

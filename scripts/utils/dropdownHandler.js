@@ -1,16 +1,6 @@
 import { HM, Listeners, StatRoller } from './index.js';
 
 /**
- * Constants for ability score limits and validations
- * @constant {object}
- */
-const ABILITY_SCORES = {
-  DEFAULT: 8,
-  MIN: 8,
-  MAX: 15
-};
-
-/**
  * Constants for dropdown modes
  * @constant {object}
  */
@@ -389,7 +379,7 @@ export class DropdownHandler {
     const remainingPoints = totalPoints - pointsSpent;
 
     abilityDropdowns.forEach((dropdown) => {
-      const currentValue = parseInt(dropdown.value, 10) || ABILITY_SCORES.DEFAULT;
+      const currentValue = parseInt(dropdown.value, 10) || HM.ABILITY_SCORES.DEFAULT;
 
       // Add the update to our batch rather than executing immediately
       dropdownUpdates.push(() => {
@@ -461,7 +451,7 @@ export class DropdownHandler {
   static updateDropdownSelectionAvailability(dropdown, currentValue, remainingPoints) {
     dropdown.querySelectorAll('option').forEach((option) => {
       const optionValue = parseInt(option.value, 10);
-      if (optionValue < ABILITY_SCORES.MIN || optionValue > ABILITY_SCORES.MAX) return;
+      if (optionValue < HM.ABILITY_SCORES.MIN || optionValue > HM.ABILITY_SCORES.MAX) return;
 
       const optionCost = StatRoller.getPointBuyCostForScore(optionValue);
       const canAffordOption = optionCost <= remainingPoints + StatRoller.getPointBuyCostForScore(currentValue);
@@ -485,7 +475,7 @@ export class DropdownHandler {
       dropdownUpdates.push(() => {
         dropdown.querySelectorAll('option').forEach((option) => {
           const optionValue = option.value;
-          option.disabled = selectedValues.has(optionValue) && optionValue !== currentValue && parseInt(optionValue, 10) >= ABILITY_SCORES.MIN;
+          option.disabled = selectedValues.has(optionValue) && optionValue !== currentValue && parseInt(optionValue, 10) >= HM.ABILITY_SCORES.MIN;
         });
       });
     });

@@ -18,7 +18,9 @@ export class HM {
 
   static COMPAT = {};
 
-  static logLevel = 0;
+  static ABILITY_SCORES = {};
+
+  static LOG_LEVEL = 0;
 
   /* -------------------------------------------- */
   /*  Static Public Methods                       */
@@ -26,14 +28,20 @@ export class HM {
 
   static init() {
     this.initSettings();
-    this.logLevel = parseInt(game.settings.get(this.ID, 'loggingLevel'));
+    this.LOG_LEVEL = parseInt(game.settings.get(this.ID, 'loggingLevel'));
     this.DOCS = { ...this.DOCS }; // Clone default structure
+    this.ABILITY_SCORES = {
+      DEFAULT: game.settings.get(this.ID, 'abilityScoreDefault') || 8,
+      MIN: game.settings.get(this.ID, 'abilityScoreMin') || 8,
+      MAX: game.settings.get(this.ID, 'abilityScoreMax') || 15
+    };
+    HM.log(3, `Ability score configuration: Default=${this.ABILITY_SCORES.DEFAULT}, Min=${this.ABILITY_SCORES.MIN}, Max=${this.ABILITY_SCORES.MAX}`);
 
     // Logging setup
-    if (this.logLevel > 0) {
+    if (this.LOG_LEVEL > 0) {
       const logMessage = `Logging level set to ${
-        this.logLevel === 1 ? 'Errors'
-        : this.logLevel === 2 ? 'Warnings'
+        this.LOG_LEVEL === 1 ? 'Errors'
+        : this.LOG_LEVEL === 2 ? 'Warnings'
         : 'Verbose'
       }`;
       HM.log(3, logMessage); // Log at verbose level
@@ -57,7 +65,7 @@ export class HM {
    * @param {any} args Strings, variables to log to console.
    */
   static log(level, ...args) {
-    if (this.logLevel > 0 && level <= this.logLevel) {
+    if (this.LOG_LEVEL > 0 && level <= this.LOG_LEVEL) {
       switch (level) {
         case 1:
           console.error(`${HM.ID} |`, ...args);

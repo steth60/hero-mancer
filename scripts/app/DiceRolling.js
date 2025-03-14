@@ -64,7 +64,10 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       chainedRolls: game.settings.get(HM.ID, 'chainedRolls'),
       rollDelay: game.settings.get(HM.ID, 'rollDelay'),
       customStandardArray: game.settings.get(HM.ID, 'customStandardArray'),
-      customPointBuyTotal: game.settings.get(HM.ID, 'customPointBuyTotal')
+      customPointBuyTotal: game.settings.get(HM.ID, 'customPointBuyTotal'),
+      abilityScoreDefault: game.settings.get(HM.ID, 'abilityScoreDefault'),
+      abilityScoreMin: game.settings.get(HM.ID, 'abilityScoreMin'),
+      abilityScoreMax: game.settings.get(HM.ID, 'abilityScoreMax')
     };
 
     return context;
@@ -101,7 +104,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
    * @static
    */
   static async formHandler(_event, form, formData) {
-    const requiresWorldReload = true; // Settings changes require world reload
+    const requiresWorldReload = true;
     try {
       const allowedMethods = {
         standardArray: form.elements.standardArray?.checked ?? false,
@@ -114,7 +117,18 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
         return false;
       }
 
-      const settings = ['customRollFormula', 'chainedRolls', 'rollDelay', 'customStandardArray', 'customPointBuyTotal'];
+      const settings = ['customRollFormula', 'chainedRolls', 'rollDelay', 'customStandardArray', 'customPointBuyTotal', 'abilityScoreDefault', 'abilityScoreMin', 'abilityScoreMax'];
+
+      // Validate ability score ranges
+      const min = parseInt(formData.object.abilityScoreMin);
+      const max = parseInt(formData.object.abilityScoreMax);
+      const defaultScore = parseInt(formData.object.abilityScoreDefault);
+
+      if (min > defaultScore || defaultScore > max || min > max) {
+        ui.notifications.error('hm.settings.ability-scores.invalid-range', { localize: true });
+        return false;
+      }
+
       for (const setting of settings) {
         await game.settings.set(HM.ID, setting, formData.object[setting]);
       }
@@ -124,6 +138,12 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       if (formData.object.customStandardArray) {
         StatRoller.validateAndSetCustomStandardArray(formData.object.customStandardArray);
       }
+
+      HM.ABILITY_SCORES = {
+        DEFAULT: formData.object.abilityScoreDefault,
+        MIN: formData.object.abilityScoreMin,
+        MAX: formData.object.abilityScoreMax
+      };
 
       this.constructor.reloadConfirm({ world: requiresWorldReload });
 

@@ -205,6 +205,48 @@ export function registerSettings() {
     onChange: (value) => StatRoller.validateAndSetCustomStandardArray(value || StatRoller.getStandardArrayDefault())
   });
 
+  game.settings.register(HM.ID, 'abilityScoreDefault', {
+    name: 'hm.settings.ability-scores.default.name',
+    hint: 'hm.settings.ability-scores.default.hint',
+    scope: 'world',
+    config: false,
+    type: Number,
+    default: 8,
+    range: {
+      min: 3,
+      max: 20,
+      step: 1
+    }
+  });
+
+  game.settings.register(HM.ID, 'abilityScoreMin', {
+    name: 'hm.settings.ability-scores.min.name',
+    hint: 'hm.settings.ability-scores.min.hint',
+    scope: 'world',
+    config: false,
+    type: Number,
+    default: 8,
+    range: {
+      min: 3,
+      max: 18,
+      step: 1
+    }
+  });
+
+  game.settings.register(HM.ID, 'abilityScoreMax', {
+    name: 'hm.settings.ability-scores.max.name',
+    hint: 'hm.settings.ability-scores.max.hint',
+    scope: 'world',
+    config: false,
+    type: Number,
+    default: 15,
+    range: {
+      min: 10,
+      max: 20,
+      step: 1
+    }
+  });
+
   game.settings.register(HM.ID, 'classPacks', {
     name: 'hm.settings.class-packs.name',
     scope: 'world',
