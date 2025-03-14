@@ -29,10 +29,8 @@ export const EventDispatcher = {
   /*  Static Properties                           */
   /* -------------------------------------------- */
 
-  /** @type {Map<string, Set<Function>>} */
   listeners: new Map(),
 
-  /** @type {Map<string, Map<Function, object>>} */
   listenerSources: new Map(),
 
   /* -------------------------------------------- */
@@ -146,7 +144,6 @@ class DocumentCache {
    */
   static get(context, documentsKey) {
     const result = this.cache.get(this.getKey(context, documentsKey));
-    HM.log(3, 'Cache hit:', !!result);
     return result;
   }
 
@@ -187,12 +184,9 @@ export class DropdownHandler {
   static async initializeDropdown({ type, html, context }) {
     const dropdown = this.findDropdownElementByType(html, type);
     if (!dropdown) {
-      HM.log(2, `Dropdown for ${type} not found.`);
+      HM.log(1, `Dropdown for ${type} not found.`);
       return;
     }
-
-    HM.log(3, `Initializing dropdown for ${type}`);
-
     try {
       // Clean up existing listeners
       if (dropdown._descriptionUpdateHandler) {
@@ -202,7 +196,6 @@ export class DropdownHandler {
         dropdown.removeEventListener('change', dropdown._changeHandler);
       }
 
-      // Create new handlers - bind to keep proper scope
       dropdown._descriptionUpdateHandler = function ({ elementId, content }) {
         try {
           const element = html.querySelector(elementId);
@@ -214,7 +207,6 @@ export class DropdownHandler {
         }
       };
 
-      // Bind the handler directly to avoid closure issues
       dropdown._changeHandler = this.handleDropdownChange.bind(this, type, html, context);
 
       // Add new listeners

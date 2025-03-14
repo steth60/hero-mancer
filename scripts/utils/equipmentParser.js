@@ -2208,10 +2208,10 @@ export class EquipmentParser {
    * @static
    */
   static async getSelectedItemPacks() {
-    const itemPacks = (await game.settings.get('hero-mancer', 'itemPacks')) || [];
-    const classPacks = (await game.settings.get('hero-mancer', 'classPacks')) || [];
-    const backgroundPacks = (await game.settings.get('hero-mancer', 'backgroundPacks')) || [];
-    const racePacks = (await game.settings.get('hero-mancer', 'racePacks')) || [];
+    const itemPacks = (await game.settings.get(HM.CONFIG.ID, 'itemPacks')) || [];
+    const classPacks = (await game.settings.get(HM.CONFIG.ID, 'classPacks')) || [];
+    const backgroundPacks = (await game.settings.get(HM.CONFIG.ID, 'backgroundPacks')) || [];
+    const racePacks = (await game.settings.get(HM.CONFIG.ID, 'racePacks')) || [];
 
     return [...itemPacks, ...classPacks, ...backgroundPacks, ...racePacks];
   }

@@ -456,7 +456,9 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // If the current method isn't valid or isn't allowed, select the first allowed method
     if (!diceRollingMethod || !validMethods.includes(diceRollingMethod)) {
+      const previousMethod = diceRollingMethod || 'none';
       diceRollingMethod = validMethods[0];
+      HM.log(3, `Invalid dice rolling method '${previousMethod}' - falling back to '${diceRollingMethod}'`);
     }
 
     return diceRollingMethod;
@@ -985,33 +987,44 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       // Declare the items outside the try block
       let backgroundItem, raceItem, classItem;
 
-      try {
-        // Check if each required item is selected before fetching
-        if (!backgroundData?.packId || !backgroundData?.itemId) {
-          ui.notifications.warn('hm.errors.select-background', { localize: true });
-          return;
-        }
-        if (!raceData?.packId || !raceData?.itemId) {
-          ui.notifications.warn('hm.errors.select-race', { localize: true });
-          return;
-        }
-        if (!classData?.packId || !classData?.itemId) {
-          ui.notifications.warn('hm.errors.select-class', { localize: true });
-          return;
-        }
+      // Check if each required item is selected before fetching
+      if (!backgroundData?.packId || !backgroundData?.itemId) {
+        ui.notifications.warn('hm.errors.select-background', { localize: true });
+        return;
+      }
+      if (!raceData?.packId || !raceData?.itemId) {
+        ui.notifications.warn('hm.errors.select-race', { localize: true });
+        return;
+      }
+      if (!classData?.packId || !classData?.itemId) {
+        ui.notifications.warn('hm.errors.select-class', { localize: true });
+        return;
+      }
 
+      try {
         // Fetch documents after confirming all selections are valid
         backgroundItem = await game.packs.get(backgroundData.packId)?.getDocument(backgroundData.itemId);
         raceItem = await game.packs.get(raceData.packId)?.getDocument(raceData.itemId);
         classItem = await game.packs.get(classData.packId)?.getDocument(classData.itemId);
 
-        // If any document fetch fails (e.g., item was removed from the compendium)
-        if (!backgroundItem) throw new Error(game.i18n.localize('hm.errors.no-background'));
-        if (!raceItem) throw new Error(game.i18n.localize('hm.errors.no-race'));
-        if (!classItem) throw new Error(game.i18n.localize('hm.errors.no-class'));
+        // Show specific errors for missing documents
+        if (!backgroundItem) {
+          ui.notifications.error('hm.errors.no-background', { localize: true });
+          return;
+        }
+        if (!raceItem) {
+          ui.notifications.error('hm.errors.no-race', { localize: true });
+          return;
+        }
+        if (!classItem) {
+          ui.notifications.error('hm.errors.no-class', { localize: true });
+          return;
+        }
       } catch (error) {
+        // This now only catches actual exceptions in the API calls
         HM.log(1, error);
         ui.notifications.error('hm.errors.fetch-fail', { localize: true });
+        return;
       }
 
       if (!backgroundItem || !raceItem || !classItem) {

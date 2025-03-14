@@ -24,7 +24,6 @@ export class CharacterArtPicker {
    * @static
    */
   static set rootDirectory(path) {
-    HM.log(3, `CharacterArtPicker.rootDirectory setter called with path: ${path}`);
     if (!path) {
       HM.log(2, 'Attempted to set rootDirectory to empty path');
       return;
@@ -47,8 +46,6 @@ export class CharacterArtPicker {
    */
   static async selectCharacterArt(_event, _target) {
     const rootDir = CharacterArtPicker.rootDirectory;
-    HM.log(3, `CharacterArtPicker.selectCharacterArt using rootDirectory: ${rootDir}`);
-
     const inputField = document.getElementById('character-art-path');
     const currentPath = inputField.value || rootDir;
 
@@ -62,7 +59,6 @@ export class CharacterArtPicker {
       current: currentPath,
       root: rootDir,
       callback: (path) => {
-        HM.log(3, `FilePicker callback with path: ${path}`);
         inputField.value = path;
         inputField.dispatchEvent(new Event('change', { bubbles: true }));
         const portraitImg = document.querySelector('.character-portrait img');
@@ -76,7 +72,6 @@ export class CharacterArtPicker {
       }
     };
 
-    HM.log(3, 'FilePicker final config:', pickerConfig);
     const filepicker = new FilePicker(pickerConfig);
     filepicker.render(true);
   }
@@ -90,8 +85,6 @@ export class CharacterArtPicker {
    */
   static async selectTokenArt(_event, _target) {
     const rootDir = CharacterArtPicker.rootDirectory;
-    HM.log(3, `CharacterArtPicker.selectTokenArt using rootDirectory: ${rootDir}`);
-
     const inputField = document.getElementById('token-art-path');
     const currentPath = inputField.value || rootDir;
 
@@ -105,13 +98,10 @@ export class CharacterArtPicker {
       current: currentPath,
       root: rootDir,
       callback: (path) => {
-        HM.log(3, `FilePicker callback with path: ${path}`);
         inputField.value = path;
         inputField.dispatchEvent(new Event('change', { bubbles: true }));
       }
     };
-
-    HM.log(3, 'FilePicker final config:', pickerConfig);
     const filepicker = new FilePicker(pickerConfig);
     filepicker.render(true);
   }
@@ -125,8 +115,6 @@ export class CharacterArtPicker {
    */
   static async selectPlayerAvatar(_event, _target) {
     const rootDir = CharacterArtPicker.rootDirectory;
-    HM.log(3, `CharacterArtPicker.selectPlayerAvatar using rootDirectory: ${rootDir}`);
-
     const inputField = document.getElementById('player-avatar-path');
     const currentPath = inputField.value || rootDir;
 
@@ -140,13 +128,11 @@ export class CharacterArtPicker {
       current: currentPath,
       root: rootDir,
       callback: (path) => {
-        HM.log(3, `FilePicker callback with path: ${path}`);
         inputField.value = path;
         inputField.dispatchEvent(new Event('change', { bubbles: true }));
       }
     };
 
-    HM.log(3, 'FilePicker final config:', pickerConfig);
     const filepicker = new FilePicker(pickerConfig);
     filepicker.render(true);
   }
@@ -162,7 +148,6 @@ export class CharacterArtPicker {
    * @static
    */
   static _toggleTokenArtRowVisibility() {
-    HM.log(3, 'Toggle token art row');
     const tokenArtRow = document.getElementById('token-art-row');
     const isLinked = document.getElementById('link-token-art').checked;
     tokenArtRow.style.display = isLinked ? 'none' : 'flex';

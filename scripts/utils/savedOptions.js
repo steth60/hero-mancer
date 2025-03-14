@@ -18,7 +18,7 @@ export class SavedOptions {
    * @static
    */
   static async saveOptions(formData) {
-    HM.log(3, 'SAVE: Saving form data:', formData);
+    HM.log(3, 'Saving form data:', formData);
     const data = { ...formData };
     const result = await game.user.setFlag(HM.CONFIG.ID, this.FLAG, data);
     return result;

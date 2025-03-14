@@ -576,7 +576,8 @@ fieldset#start > h2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 200px;
+  height: auto;
+  padding: 1rem 0;
 }
 
 .hm-app .ability-container.point-buy {
@@ -751,8 +752,8 @@ fieldset#start > h2 {
 .hm-app-tab-content .class-equipment-section h3,
 .hm-app-tab-content .background-equipment-section h3 {
   width: 100%;
-  text-align: center;
   margin-bottom: unset;
+  text-align: center;
 }
 
 .hm-app-tab-content .class-equipment-section h4,
@@ -774,9 +775,9 @@ fieldset#start > h2 {
 .equipment-item label,
 .equipment-item input,
 .equipment-item select {
+  width: fit-content;
   margin-top: 4px;
   margin-right: auto;
-  width: fit-content;
   vertical-align: middle;
 }
 
@@ -787,8 +788,8 @@ fieldset#start > h2 {
 }
 
 .equipment-choices h4 {
-  margin: 1rem 0 0.5rem;
   width: 92%;
+  margin: 1rem 0 0.5rem;
 }
 
 .equipment-choices .parent-label {
@@ -886,10 +887,10 @@ fieldset#start > h2 {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
+  margin: 10px 0;
   padding: 0.5rem;
   border: 1px solid var(--color-level-error-border);
   border-radius: 5px;
-  margin: 10px 0;
 }
 
 .equipment-missing-warning {

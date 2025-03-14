@@ -13,6 +13,7 @@
         "excels": "excels in",
         "increase": "+1",
         "instructions": {
+          "chained-rolls": "Your DM has enabled Chained Rolls. Simply click on one of the dice above to roll all your stats. Don't worry! You can individually re-roll entries, assuming your DM allows it.",
           "manual": {
             "description": "For each ability below, roll the designated formula (default is 4d6 drop the lowest), and enter the result as your ability score. Repeat for each ability.",
             "preamble": "The Manual Rolling method allows you to create a unique character profile by rolling dice to determine each ability score. By default, this uses the classic 4d6 drop the lowest method, but your DM may specify a custom rolling formula. While the results of this method can range from strong to average or even low scores, it adds an element of unpredictability to character building that can yield distinct strengths and weaknesses. This method is perfect for creating varied characters in short campaigns or one-shots, where surprising stats can inspire creative roleplaying. Embrace the randomness and enjoy the unique outcomes!",
@@ -29,8 +30,7 @@
             "description": "For each ability below, choose a value from the dropdown. Keep in mind your class and character goals when deciding. You can only use a value once.",
             "preamble": "The Standard Array allows you to assign a set of predefined scores to your character's ability scores, designed to keep characters balanced and simplify character creation. This method is ideal for new players or those wanting a consistent, balanced setup across the party, ensuring each character begins on the same power level. Remember, your racial bonuses will still influence your final ability scores. Consider your class and racial bonuses carefully as you place these scores to optimize your character’s performance in their primary role.",
             "title": "Stat Generation Method: Standard Array"
-          },
-          "chained-rolls": "Your DM has enabled Chained Rolls. Simply click on one of the dice above to roll all your stats. Don't worry! You can individually re-roll entries, assuming your DM allows it."
+          }
         },
         "label": "Ability",
         "methods": {
@@ -39,7 +39,6 @@
           "standardArray": "Standard Array"
         },
         "roll-dice": "Roll dice for ability",
-        "score-label": "Ability Score",
         "score-placeholder": "Enter score",
         "select-method": "Select stat method",
         "select-placeholder": "Choose",
@@ -48,6 +47,7 @@
         "tooltip": "Select and assign abilities"
       },
       "background": {
+        "adventurer": "an adventurer",
         "none": "No backgrounds available.",
         "preamble": "Choose your character's background from the available options.",
         "select-label": "Background",

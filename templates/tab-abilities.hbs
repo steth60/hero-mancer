@@ -94,7 +94,6 @@
       <div class='ability-container flex justify-between items-center'>
         {{#each abilities}}
           <div id='ability-block-{{@index}}' class='ability-block flex flex-col items-center gap-xs'>
-            <label for='ability-{{@index}}-score'>{{localize 'hm.app.abilities.score-label'}}</label>
             <select id='ability-{{@index}}-dropdown' name='abilities[{{this.key}}]'
               class='ability-dropdown form-select text-center' data-dtype='String'
               aria-label='{{localize "hm.app.abilities.tooltip"}}'>
@@ -110,7 +109,7 @@
               placeholder='{{localize "hm.app.abilities.score-placeholder"}}'
               aria-label='{{localize "hm.app.abilities.score-label"}}' />
 
-            <i class='fa-solid fa-dice-d6 fa-2xl' style='cursor: pointer' data-action='rollStat' data-index='{{@index}}'
+            <i class='fa-duotone fa-solid fa-dice-d6 fa-2xl' style='cursor: pointer' data-action='rollStat' data-index='{{@index}}'
               role='button' aria-label='{{localize "hm.app.abilities.roll-dice"}}' tabindex='0'></i>
           </div>
         {{/each}}

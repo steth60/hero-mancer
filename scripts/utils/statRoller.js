@@ -11,10 +11,8 @@ export class StatRoller {
   /*  Static Properties                           */
   /* -------------------------------------------- */
 
-  /** @type {boolean} Indicates if chain rolling is enabled for the current session */
   static chainRollEnabled = false;
 
-  /** @type {boolean} Tracks if rolling is currently in progress */
   static isRolling = false;
 
   /* -------------------------------------------- */
@@ -39,8 +37,6 @@ export class StatRoller {
       const chainedRolls = await game.settings.get(HM.CONFIG.ID, 'chainedRolls');
       const index = form.getAttribute('data-index');
       const input = this.getAbilityInput(index);
-
-      // Only check for existing value on the current input when not in a chain roll
       const hasExistingValue = !this.chainRollEnabled && input?.value?.trim() !== '';
 
       if (hasExistingValue) {
@@ -67,7 +63,7 @@ export class StatRoller {
     if (!formula?.trim()) {
       formula = '4d6kh3';
       await game.settings.set(HM.CONFIG.ID, 'customRollFormula', formula);
-      HM.log(3, 'Roll formula was empty. Resetting to default:', formula);
+      HM.log(2, 'Roll formula was empty. Resetting to default:', formula);
     }
     return formula;
   }
@@ -109,7 +105,6 @@ export class StatRoller {
       if (input) {
         input.value = roll.total;
         input.focus();
-        HM.log(3, `Updated input value for ability index ${index} with roll total:`, roll.total);
       } else {
         HM.log(2, `No input field found for ability index ${index}.`);
       }

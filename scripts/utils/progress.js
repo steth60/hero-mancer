@@ -10,46 +10,6 @@ export class ProgressBar {
   /* -------------------------------------------- */
 
   /**
-   * Updates the header progress bar and title
-   * @param {HTMLElement} element - The application element
-   * @param {number} completedSections - Number of completed sections
-   * @param {number} totalSections - Total number of sections
-   * @static
-   */
-  static updateHeader(element, completedSections, totalSections) {
-    if (!element || typeof completedSections !== 'number' || typeof totalSections !== 'number') return;
-
-    const headerElement = element.querySelector('.window-header');
-    if (!headerElement) return;
-
-    const progressPercentage = Math.min((completedSections / totalSections) * 100, 100);
-
-    // Update header background gradient
-    this.#updateHeaderGradient(headerElement, progressPercentage);
-
-    // Update title text
-    this.#updateHeaderTitle(headerElement, progressPercentage);
-  }
-
-  /**
-   * Clears the progress bar styling from the header
-   * @param {HTMLElement} element - The application element
-   * @static
-   */
-  static clearHeader(element) {
-    const headerElement = element?.querySelector('.window-header');
-    if (!headerElement) return;
-
-    headerElement.style.background = '';
-
-    const titleElement = headerElement.querySelector('.window-title');
-    if (titleElement && titleElement.dataset.baseTitle) {
-      titleElement.textContent = titleElement.dataset.baseTitle;
-      delete titleElement.dataset.baseTitle;
-    }
-  }
-
-  /**
    * Updates progress based on form data
    * @param {HTMLElement} element - The application element
    * @param {HTMLFormElement} form - The form data
@@ -97,50 +57,6 @@ export class ProgressBar {
   /* -------------------------------------------- */
   /*  Static Private Methods                      */
   /* -------------------------------------------- */
-
-  /**
-   * Updates the header gradient based on progress
-   * @param {HTMLElement} headerElement - The header element
-   * @param {number} progressPercentage - Current progress percentage
-   * @private
-   * @static
-   */
-  static #updateHeaderGradient(headerElement, progressPercentage) {
-    // Starting color: rgb(69, 99, 181) - blue
-    // End color: rgb(75, 181, blue: 69) - green
-    const startColor = { red: 69, green: 99, blue: 181 };
-    const endColor = { red: 75, green: 181, blue: 69 };
-
-    const currentRed = Math.floor(startColor.red + (progressPercentage / 100) * (endColor.red - startColor.red));
-    const currentGreen = Math.floor(startColor.green + (progressPercentage / 100) * (endColor.green - startColor.green));
-    const currentBlue = Math.floor(startColor.blue + (progressPercentage / 100) * (endColor.blue - startColor.blue));
-
-    const progressColor = `rgb(${currentRed}, ${currentGreen}, ${currentBlue})`;
-    const gradient = `linear-gradient(to right,
-      ${progressColor} 0%,
-      ${progressColor} ${progressPercentage}%,
-      rgba(0, 0, 0, 0.5) ${progressPercentage}%,
-      rgba(0, 0, 0, 0.5) 100%
-    )`;
-
-    headerElement.style.background = gradient;
-  }
-
-  /**
-   * Updates the header title with progress percentage
-   * @param {HTMLElement} headerElement - The header element
-   * @param {number} progressPercentage - Current progress percentage
-   * @private
-   * @static
-   */
-  static #updateHeaderTitle(headerElement, progressPercentage) {
-    const titleElement = headerElement.querySelector('.window-title');
-    if (!titleElement) return;
-
-    const originalTitle = titleElement.dataset.baseTitle || titleElement.textContent;
-    titleElement.dataset.baseTitle = originalTitle;
-    titleElement.textContent = `${originalTitle} (${Math.round(progressPercentage)}% Complete)`;
-  }
 
   /**
    * Processes form data to determine completion
@@ -267,10 +183,6 @@ export class ProgressBar {
     if (key === 'ring.effects') {
       const effectCheckboxes = form.querySelectorAll('input[name="ring.effects"]');
       const anyChecked = Array.from(effectCheckboxes).some((checkbox) => checkbox.checked);
-      HM.log(3, `Ring effects field check - any checked: ${anyChecked}`, {
-        total: effectCheckboxes.length,
-        checked: Array.from(effectCheckboxes).filter((c) => c.checked).length
-      });
       return anyChecked;
     }
 

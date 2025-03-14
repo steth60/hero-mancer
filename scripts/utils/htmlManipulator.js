@@ -99,15 +99,12 @@ export class HtmlManipulator {
    */
   static #addButtonListener() {
     const clickHandler = () => {
-      HM.log(3, 'Button clicked - direct handler');
-
       if (HM.heroMancer) {
         HM.log(3, 'Cleaning up existing instance');
         HM.heroMancer.close();
         HM.heroMancer = null;
       }
 
-      HM.log(3, 'Creating new instance');
       HM.heroMancer = new HeroMancer();
       HM.heroMancer.render(true);
     };
@@ -117,7 +114,7 @@ export class HtmlManipulator {
       this.button.addEventListener('click', clickHandler);
       this.button.clickHandler = clickHandler;
     } else {
-      HM.log(3, 'Button element not found');
+      HM.log(1, 'Button element not found');
     }
   }
 

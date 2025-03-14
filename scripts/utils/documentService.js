@@ -18,7 +18,7 @@ export class DocumentService {
    */
   static async prepareDocumentsByType(type) {
     try {
-      HM.log(3, `Starting prepDocs for type: ${type}`);
+      HM.log(3, `Starting document prep for type: ${type}`);
 
       const data = await this.#fetchTypeDocumentsFromCompendiums(type);
       const groupingField = type === 'race' ? 'folderName' : 'packName';
@@ -27,7 +27,7 @@ export class DocumentService {
 
       return { types: sortedUniqueFolders, dropdownHtml };
     } catch (error) {
-      HM.log(1, `Error: Failed to register ${type} documents`, error);
+      HM.log(1, `Error: Failed to prep ${type} documents`, error);
 
       return {
         types: [],
@@ -53,7 +53,7 @@ export class DocumentService {
       throw new Error('Invalid document type');
     }
 
-    const selectedPacks = game.settings.get('hero-mancer', `${type === 'species' ? 'race' : type}Packs`) || [];
+    const selectedPacks = game.settings.get(HM.CONFIG.ID, `${type}Packs`) || [];
     const packs = selectedPacks.length > 0 ? game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id)) : game.packs.filter((pack) => pack.metadata.type === 'Item');
 
     const validPacks = new Set();

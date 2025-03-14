@@ -303,15 +303,14 @@ export class Listeners {
    * @static
    */
   static initializeRollMethodListener(html) {
-    HM.log(3, 'Initializing roll method listener');
     if (!html) {
-      HM.log(3, 'HTML element is undefined');
+      HM.log(1, 'HTML element is undefined');
       return;
     }
 
     const rollSelect = document.getElementById('roll-method');
     if (!rollSelect) {
-      HM.log(3, 'Roll method select element not found');
+      HM.log(2, 'Roll method select element not found');
       return;
     }
 
@@ -320,10 +319,8 @@ export class Listeners {
       HM.log(3, `Roll method changed to: ${method}`);
 
       await game.settings.set(HM.CONFIG.ID, 'diceRollingMethod', method);
-      HM.log(3, 'Updated diceRollingMethod setting');
 
       HeroMancer.selectedAbilities = Array(Object.keys(CONFIG.DND5E.abilities).length).fill(8);
-      HM.log(3, 'Reset abilities array:', HeroMancer.selectedAbilities);
 
       this.initializeAbilityListeners(
         {
@@ -331,14 +328,12 @@ export class Listeners {
         },
         HeroMancer.selectedAbilities
       );
-      HM.log(3, 'Reinitialized ability listeners');
 
       const app = HM.heroMancer;
       if (app) {
-        HM.log(3, 'Triggering re-render');
         app.render({ parts: ['abilities'] });
       } else {
-        HM.log(3, 'App instance not found for re-render');
+        HM.log(1, 'App instance not found for re-render');
       }
     });
   }
@@ -361,8 +356,6 @@ export class Listeners {
       return;
     }
 
-    // Initial state
-    HM.log(3, 'Setting initial token ring states');
     ringOptions.forEach((option) => {
       option.style.display = ringEnabledElement.checked ? 'flex' : 'none';
     });
@@ -486,7 +479,6 @@ export class Listeners {
       // Add input listener for real-time validation
       if (element.tagName.toLowerCase() === 'input' || element.tagName.toLowerCase() === 'textarea') {
         element._mandatoryFieldInputHandler = async (event) => {
-          HM.log(3, `Field input: ${element.name || element.id}`);
           await MandatoryFields.checkMandatoryFields(html);
         };
         element.addEventListener('input', element._mandatoryFieldInputHandler);
@@ -579,13 +571,12 @@ export class Listeners {
    */
   static changeAbilityScoreValue(index, change, selectedAbilities) {
     if (!Array.isArray(selectedAbilities)) {
-      HM.log(2, 'selectedAbilities must be an array');
+      HM.log(1, 'selectedAbilities must be an array');
       return;
     }
     const abilityScoreElement = document.getElementById(`ability-score-${index}`);
     const currentScore = parseInt(abilityScoreElement.innerHTML, 10);
     const newScore = Math.min(15, Math.max(8, currentScore + change));
-
     const totalPoints = StatRoller.getTotalPoints();
     const pointsSpent = StatRoller.calculateTotalPointsSpent(selectedAbilities);
 

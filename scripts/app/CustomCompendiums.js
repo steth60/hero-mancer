@@ -89,7 +89,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
    * @throws {Error} Throws an error if type parameter is invalid.
    */
   static async getSelectedPacksByType(type, validPacks) {
-    let selectedPacks = await game.settings.get('hero-mancer', `${type}Packs`);
+    let selectedPacks = await game.settings.get(HM.CONFIG.ID, `${type}Packs`);
 
     // If no packs are selected, return empty array
     if (!selectedPacks) {
@@ -141,7 +141,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
    * @param {Array} selectedValues Array of selected pack IDs.
    */
   static async setSelectedPacksByType(type, selectedValues) {
-    await game.settings.set('hero-mancer', `${type}Packs`, selectedValues);
+    await game.settings.set(HM.CONFIG.ID, `${type}Packs`, selectedValues);
   }
 
   /**

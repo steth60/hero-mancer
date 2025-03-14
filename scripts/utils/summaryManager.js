@@ -39,7 +39,7 @@ class TableManager {
       const matches = [...description.matchAll(uuidPattern)];
 
       if (!matches.length) {
-        HM.log(3, 'No RollTable UUIDs found in background description, hiding UI elements.');
+        HM.log(2, 'No RollTable UUIDs found in background description, hiding UI elements.');
         TableManager.updateRollButtonsAvailability(null);
         return;
       }
@@ -87,7 +87,6 @@ class TableManager {
         );
 
         this.currentTables.set(background.id, validTables);
-        HM.log(3, 'Tables initialized and stored for background:', background.id);
       }
 
       // Update UI based on which table types were found
@@ -149,7 +148,6 @@ class TableManager {
    */
   static async rollOnBackgroundCharacteristicTable(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
-    HM.log(3, 'Found tables for background:', tables);
 
     if (!tables) return null;
 
@@ -158,8 +156,6 @@ class TableManager {
       const searchTerm = characteristicType.toLowerCase();
       return tableName.includes(searchTerm) || (searchTerm === 'traits' && tableName.includes('personality'));
     });
-
-    HM.log(3, 'Found matching table for type:', characteristicType, table);
 
     if (!table) return null;
 
@@ -185,7 +181,7 @@ class TableManager {
 
       return results[0]?.text || null;
     } catch (error) {
-      console.error('Error rolling for characteristic:', error);
+      HM.log(1, 'Error rolling for characteristic:', error);
       return null;
     }
   }
@@ -226,7 +222,7 @@ class TableManager {
     try {
       await Promise.all(tables.map((table) => table.resetResults()));
     } catch (error) {
-      console.error('Error resetting tables:', error);
+      HM.log(1, 'Error resetting tables:', error);
     }
   }
 
@@ -307,11 +303,9 @@ export class SummaryManager {
     if (equipmentContainer) {
       MutationObserverRegistry.register('summary-equipment', equipmentContainer, { childList: true, subtree: true, attributes: true }, (mutations) => {
         for (const mutation of mutations) {
-          // If nodes were added, check for new favorite checkboxes
           if (mutation.type === 'childList' && mutation.addedNodes.length) {
             mutation.addedNodes.forEach((node) => {
               if (node.nodeType === Node.ELEMENT_NODE) {
-                // Find any new favorite checkboxes
                 const newCheckboxes = node.querySelectorAll?.('.equipment-favorite-checkbox') || [];
                 newCheckboxes.forEach((checkbox) => {
                   if (!checkbox._favoriteChangeHandler) {
@@ -486,12 +480,6 @@ export class SummaryManager {
           const favoriteCheckbox = el.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
           const isFavorite = favoriteCheckbox?.checked || false;
 
-          HM.log(3, `Processing checkbox item: ${link.textContent?.trim()}, favorite: ${isFavorite}`, {
-            checkbox: el,
-            favoriteBox: favoriteCheckbox,
-            checked: favoriteCheckbox?.checked
-          });
-
           return {
             type: link.dataset.tooltip?.toLowerCase() || '',
             uuid: uuid,
@@ -502,7 +490,6 @@ export class SummaryManager {
       })
       .filter(Boolean);
 
-    // Debug logging
     HM.log(
       3,
       'Before sorting:',
@@ -520,7 +507,6 @@ export class SummaryManager {
       return (bIndex === -1 ? -999 : bIndex) - (aIndex === -1 ? -999 : aIndex);
     });
 
-    // Debug logging
     HM.log(
       3,
       'After sorting:',
@@ -611,10 +597,10 @@ export class SummaryManager {
     const portraitContainer = document.querySelector('.character-portrait');
     if (portraitContainer) {
       const abilities = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
-      const randomAbility = abilities[Math.floor(Math.random() * abilities.length)];
+      const randomAbility = abilities[Math.floor(Math.random() * 6)];
       const defaultImage = `systems/dnd5e/icons/svg/abilities/${randomAbility}.svg`;
-
       const portraitImg = portraitContainer.querySelector('img');
+
       if (portraitImg) {
         portraitImg.src = defaultImage;
 
@@ -671,9 +657,6 @@ export class SummaryManager {
     const rollButtons = document.querySelectorAll('.roll-btn');
     const backgroundSelect = document.querySelector('#background-dropdown');
 
-    HM.log(3, 'Found roll buttons:', rollButtons);
-    HM.log(3, 'Found background select:', backgroundSelect);
-
     // Batch disable all buttons initially
     if (rollButtons.length) {
       requestAnimationFrame(() => {
@@ -683,7 +666,6 @@ export class SummaryManager {
 
     backgroundSelect?.addEventListener('change', (event) => {
       const backgroundId = event.target.value.split(' (')[0];
-      HM.log(3, 'Background changed to:', backgroundId);
 
       // Batch button updates
       requestAnimationFrame(() => {
@@ -692,19 +674,10 @@ export class SummaryManager {
     });
 
     rollButtons.forEach((button) => {
-      HM.log(3, 'Adding click listener to button:', button);
-
       button.addEventListener('click', async (event) => {
-        HM.log(3, 'Roll button clicked');
-
         const tableType = event.currentTarget.dataset.table;
         const textarea = event.currentTarget.closest('.input-with-roll').querySelector('textarea');
-
-        HM.log(3, 'Table type:', tableType);
-        HM.log(3, 'Found textarea:', textarea);
-
         const backgroundId = backgroundSelect?.value.split(' (')[0];
-        HM.log(3, 'Current background ID:', backgroundId);
 
         if (!backgroundId) {
           ui.notifications.warn(game.i18n.localize('hm.warnings.select-background'));
@@ -716,8 +689,6 @@ export class SummaryManager {
 
         if (result) {
           textarea.value = textarea.value ? `${textarea.value} ${result}` : result;
-
-          // Trigger change event on textarea to update form data
           textarea.dispatchEvent(new Event('change', { bubbles: true }));
 
           if (TableManager.areAllTableResultsDrawn(backgroundId, tableType)) {
