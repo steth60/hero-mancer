@@ -2382,6 +2382,7 @@ export class EquipmentParser {
    */
   static async #collectAllItems(selectedPacks) {
     const startTime = performance.now();
+    const skipTypes = ['race', 'feat', 'background', 'class', 'natural', 'spell'];
     const packs = selectedPacks.map((id) => game.packs.get(id)).filter((p) => p?.documentName === 'Item');
     const focusItemIds = new Set();
 
@@ -2399,6 +2400,7 @@ export class EquipmentParser {
       const itemProcessingResults = await Promise.all(
         packIndices.map(async (index) => {
           const packItems = [];
+          const skipItems = [];
           let processedCount = 0;
           let skippedCount = 0;
 
@@ -2406,10 +2408,10 @@ export class EquipmentParser {
             const isMagic = Array.isArray(item.system?.properties) && item.system.properties.includes('mgc');
 
             this.itemUuidMap.set(item._id, item.uuid);
-            processedCount++;
 
-            if (item.system?.identifier === 'unarmed-strike' || isMagic) {
+            if (skipTypes.includes(item.type) || skipTypes.includes(item.system?.type?.value) || item.system?.identifier === 'unarmed-strike' || isMagic) {
               skippedCount++;
+              skipItems.push(item);
               continue;
             }
 
@@ -2423,13 +2425,13 @@ export class EquipmentParser {
                 item.system.type.value = toolType;
               }
             }
-
+            processedCount++;
             packItems.push(item);
           }
-
           return { packItems, processedCount, skippedCount };
         })
       );
+      HM.log(1, 'Collection finished:', { itemProcessingResults });
 
       // Combine results
       const items = [];
