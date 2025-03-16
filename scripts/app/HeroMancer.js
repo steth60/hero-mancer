@@ -119,7 +119,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Initialize abilities and related data
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
-    HeroMancer.selectedAbilities = Array(abilitiesCount).fill(8);
+    HeroMancer.selectedAbilities = Array(abilitiesCount).fill(HM.ABILITY_SCORES.DEFAULT);
 
     // Handle ELKAN compatibility
     if (HM.COMPAT?.ELKAN) {
@@ -411,7 +411,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       key,
       abbreviation: value.abbreviation.toUpperCase(),
       fullKey: value.fullKey.toUpperCase(),
-      currentScore: 8
+      currentScore: HM.ABILITY_SCORES.DEFAULT
     }));
     return abilities;
   }
@@ -473,6 +473,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   #getStandardArrayValues(diceRollingMethod) {
     const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
     const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
+    const { MIN, MAX } = HM.ABILITY_SCORES;
 
     // Use provided method or get it if not provided
     const method = diceRollingMethod || this.#getDiceRollingMethod();
@@ -483,12 +484,15 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         const parsedArray = customArray.split(',').map(Number);
         // Check if the custom array has enough values for all abilities
         if (parsedArray.length >= abilitiesCount) {
-          return parsedArray;
+          // Ensure all values are within min/max
+          return parsedArray.map((val) => Math.max(MIN, Math.min(MAX, val)));
         }
       }
     }
 
-    return StatRoller.getStandardArray(extraAbilities);
+    const standardArray = StatRoller.getStandardArray(extraAbilities);
+    // Ensure all values are within min/max
+    return standardArray.map((val) => Math.max(MIN, Math.min(MAX, val)));
   }
 
   /**
@@ -1344,7 +1348,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     if (game.settings.get(HM.ID, 'enablePlayerCustomization')) {
       try {
-        HM.log(1, `Attempting to update user ${targetUser.name} with color: ${formData.object['player-color']}`);
         await targetUser.update({
           color: formData.object['player-color'],
           pronouns: formData.object['player-pronouns'],
@@ -1356,15 +1359,12 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           if (userId !== targetUser.id) {
             const user = game.users.get(userId);
             if (user) {
-              HM.log(1, `Restoring color for user ${user.name}: ${originalColor}`);
               await user.update({
                 color: originalColor
               });
             }
           }
         }
-
-        HM.log(1, 'Successfully updated user colors');
       } catch (error) {
         HM.log(1, `Error updating user ${targetUser.name}:`, error);
       }

@@ -219,17 +219,22 @@
       "ability-scores": {
         "default": {
           "hint": "The starting value for ability scores when creating a new character.",
-          "name": "Default Ability Score"
+          "name": "Default"
         },
+        "invalid-point-buy": "Point buy total is too low. With minimum score of {min}, you need at least {totalNeeded} points.",
         "invalid-range": "Invalid ability score range. Please ensure Min ≤ Default ≤ Max.",
+        "invalid-standard-array": "Standard array values {values} are outside the allowed range ({min}-{max}).",
         "max": {
           "hint": "The highest value allowed for ability scores during character creation.",
-          "name": "Maximum Ability Score"
+          "name": "Max"
         },
         "min": {
           "hint": "The lowest value allowed for ability scores during character creation.",
-          "name": "Minimum Ability Score"
-        }
+          "name": "Min"
+        },
+        "standard-array-adjusted": "Some standard array values were outside the allowed range ({min}-{max}) and have been adjusted.",
+        "standard-array-fixed": "Standard array values {original} were outside the allowed range ({min}-{max}) and have been adjusted automatically.",
+        "header": "Ability Score Limits"
       },
       "alignments": {
         "hint": "Comma-separated list of alignments available for character creation.",

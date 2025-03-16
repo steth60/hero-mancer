@@ -18,31 +18,29 @@
     <p class='hint'>{{localize 'hm.settings.dice-rolling-method.hint'}}</p>
   </div>
 
-  <div class="form-group flex flex-col  items-start">
-    <label class="font-bold">{{localize 'hm.settings.ability-scores.default.name'}}</label>
-    <div class="flex items-center ">
-      <input type="number" name="abilityScoreDefault" class="form-input" value="{{abilityScoreDefault}}" min="3"
-        max="20" step="1">
-    </div>
-    <p class="hint">{{localize 'hm.settings.ability-scores.default.hint'}}</p>
-  </div>
+  <div class="form-group flex flex-col items-start">
+    <label class="font-bold">{{localize 'hm.settings.ability-scores.header'}}</label>
 
-  <div class="form-group flex flex-col  items-start">
-    <label class="font-bold">{{localize 'hm.settings.ability-scores.min.name'}}</label>
-    <div class="flex items-center ">
-      <input type="number" name="abilityScoreMin" class="form-input" value="{{abilityScoreMin}}" min="3" max="18"
-        step="1">
-    </div>
-    <p class="hint">{{localize 'hm.settings.ability-scores.min.hint'}}</p>
-  </div>
+    <div class="ability-scores-container grid grid-3-col">
+      <label class="font-bold text-center">{{localize 'hm.settings.ability-scores.min.name'}}</label>
+      <label class="font-bold text-center">{{localize 'hm.settings.ability-scores.default.name'}}</label>
+      <label class="font-bold text-center">{{localize 'hm.settings.ability-scores.max.name'}}</label>
 
-  <div class="form-group flex flex-col  items-start">
-    <label class="font-bold">{{localize 'hm.settings.ability-scores.max.name'}}</label>
-    <div class="flex items-center ">
-      <input type="number" name="abilityScoreMax" class="form-input" value="{{abilityScoreMax}}" min="10" max="20"
-        step="1">
+      <div class="flex items-center justify-center">
+        <input type="number" name="abilityScoreMin" class="form-input" value="{{abilityScoreMin}}" min="3" max="18" step="1">
+        <i class="fa-solid fa-circle-info ml-xs tooltip-icon" data-tooltip="{{localize 'hm.settings.ability-scores.min.hint'}}"></i>
+      </div>
+
+      <div class="flex items-center justify-center">
+        <input type="number" name="abilityScoreDefault" class="form-input" value="{{abilityScoreDefault}}" min="3" max="20" step="1">
+        <i class="fa-solid fa-circle-info ml-xs tooltip-icon" data-tooltip="{{localize 'hm.settings.ability-scores.default.hint'}}"></i>
+      </div>
+
+      <div class="flex items-center justify-center">
+        <input type="number" name="abilityScoreMax" class="form-input" value="{{abilityScoreMax}}" min="10" max="20" step="1">
+        <i class="fa-solid fa-circle-info ml-xs tooltip-icon" data-tooltip="{{localize 'hm.settings.ability-scores.max.hint'}}"></i>
+      </div>
     </div>
-    <p class="hint">{{localize 'hm.settings.ability-scores.max.hint'}}</p>
   </div>
 
   <div class="form-group flex flex-col  items-start">

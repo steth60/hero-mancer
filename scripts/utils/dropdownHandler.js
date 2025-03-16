@@ -449,9 +449,11 @@ export class DropdownHandler {
    * @static
    */
   static updateDropdownSelectionAvailability(dropdown, currentValue, remainingPoints) {
+    const { MIN, MAX } = HM.ABILITY_SCORES;
+
     dropdown.querySelectorAll('option').forEach((option) => {
       const optionValue = parseInt(option.value, 10);
-      if (optionValue < HM.ABILITY_SCORES.MIN || optionValue > HM.ABILITY_SCORES.MAX) return;
+      if (optionValue < MIN || optionValue > MAX) return;
 
       const optionCost = StatRoller.getPointBuyCostForScore(optionValue);
       const canAffordOption = optionCost <= remainingPoints + StatRoller.getPointBuyCostForScore(currentValue);

@@ -65,9 +65,9 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
       rollDelay: game.settings.get(HM.ID, 'rollDelay'),
       customStandardArray: game.settings.get(HM.ID, 'customStandardArray'),
       customPointBuyTotal: game.settings.get(HM.ID, 'customPointBuyTotal'),
-      abilityScoreDefault: game.settings.get(HM.ID, 'abilityScoreDefault'),
-      abilityScoreMin: game.settings.get(HM.ID, 'abilityScoreMin'),
-      abilityScoreMax: game.settings.get(HM.ID, 'abilityScoreMax')
+      abilityScoreDefault: game.settings.get(HM.ID, 'abilityScoreDefault') || 8,
+      abilityScoreMin: game.settings.get(HM.ID, 'abilityScoreMin') || 8,
+      abilityScoreMax: game.settings.get(HM.ID, 'abilityScoreMax') || 15
     };
 
     return context;
@@ -106,6 +106,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
   static async formHandler(_event, form, formData) {
     const requiresWorldReload = true;
     try {
+      // First handle allowed methods
       const allowedMethods = {
         standardArray: form.elements.standardArray?.checked ?? false,
         manual: form.elements.manual?.checked ?? false,
@@ -117,17 +118,68 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
         return false;
       }
 
-      const settings = ['customRollFormula', 'chainedRolls', 'rollDelay', 'customStandardArray', 'customPointBuyTotal', 'abilityScoreDefault', 'abilityScoreMin', 'abilityScoreMax'];
+      // Apply default values for empty fields
+      formData.object.abilityScoreDefault = formData.object.abilityScoreDefault || 8;
+      formData.object.abilityScoreMin = formData.object.abilityScoreMin || 8;
+      formData.object.abilityScoreMax = formData.object.abilityScoreMax || 15;
 
-      // Validate ability score ranges
+      // Parse to integers after ensuring defaults
       const min = parseInt(formData.object.abilityScoreMin);
       const max = parseInt(formData.object.abilityScoreMax);
       const defaultScore = parseInt(formData.object.abilityScoreDefault);
 
+      // Validate ability score ranges
       if (min > defaultScore || defaultScore > max || min > max) {
         ui.notifications.error('hm.settings.ability-scores.invalid-range', { localize: true });
         return false;
       }
+
+      // Update ABILITY_SCORES first before any standard array validation
+      HM.ABILITY_SCORES = {
+        DEFAULT: defaultScore,
+        MIN: min,
+        MAX: max
+      };
+
+      // Validate and fix standard array if needed
+      if (allowedMethods.standardArray && formData.object.customStandardArray) {
+        const standardArrayValues = formData.object.customStandardArray.split(',').map(Number);
+        const outOfRangeValues = standardArrayValues.filter((val) => val < min || val > max);
+
+        if (outOfRangeValues.length > 0) {
+          // Fix values instead of erroring
+          const fixedArray = standardArrayValues.map((val) => Math.max(min, Math.min(max, val)));
+          formData.object.customStandardArray = fixedArray.join(',');
+
+          ui.notifications.warn(
+            game.i18n.format('hm.settings.ability-scores.standard-array-fixed', {
+              original: outOfRangeValues.join(', '),
+              min: min,
+              max: max
+            })
+          );
+        }
+      }
+
+      // Validate point buy total allows viable builds with min/max settings
+      if (allowedMethods.pointBuy) {
+        const pointBuyTotal = parseInt(formData.object.customPointBuyTotal);
+        const minPointCost = StatRoller.getPointBuyCostForScore(min);
+        const abilityCount = Object.keys(CONFIG.DND5E.abilities).length;
+        const minTotalCost = minPointCost * abilityCount;
+
+        if (pointBuyTotal < minTotalCost && pointBuyTotal !== 0) {
+          ui.notifications.error(
+            game.i18n.format('hm.settings.ability-scores.invalid-point-buy', {
+              min: min,
+              totalNeeded: minTotalCost
+            })
+          );
+          return false;
+        }
+      }
+
+      const settings = ['customRollFormula', 'chainedRolls', 'rollDelay', 'customStandardArray', 'customPointBuyTotal', 'abilityScoreDefault', 'abilityScoreMin', 'abilityScoreMax'];
 
       for (const setting of settings) {
         await game.settings.set(HM.ID, setting, formData.object[setting]);
@@ -135,15 +187,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
 
       await game.settings.set(HM.ID, 'allowedMethods', allowedMethods);
 
-      if (formData.object.customStandardArray) {
-        StatRoller.validateAndSetCustomStandardArray(formData.object.customStandardArray);
-      }
-
-      HM.ABILITY_SCORES = {
-        DEFAULT: formData.object.abilityScoreDefault,
-        MIN: formData.object.abilityScoreMin,
-        MAX: formData.object.abilityScoreMax
-      };
+      // Don't call validateAndSetCustomStandardArray separately, we already fixed it above
 
       this.constructor.reloadConfirm({ world: requiresWorldReload });
 

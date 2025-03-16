@@ -570,7 +570,8 @@ export class Listeners {
     }
     const abilityScoreElement = document.getElementById(`ability-score-${index}`);
     const currentScore = parseInt(abilityScoreElement.innerHTML, 10);
-    const newScore = Math.min(15, Math.max(8, currentScore + change));
+    const { MIN, MAX } = HM.ABILITY_SCORES;
+    const newScore = Math.min(MAX, Math.max(MIN, currentScore + change));
     const totalPoints = StatRoller.getTotalPoints();
     const pointsSpent = StatRoller.calculateTotalPointsSpent(selectedAbilities);
 
@@ -601,11 +602,12 @@ export class Listeners {
   static updatePlusButtonState(selectedAbilities, remainingPoints) {
     // Create a document fragment for batch processing
     const updates = [];
+    const { MAX } = HM.ABILITY_SCORES;
 
     document.querySelectorAll('.plus-button').forEach((button, index) => {
       const currentScore = selectedAbilities[index];
       const pointCostForNextIncrease = StatRoller.getPointBuyCostForScore(currentScore + 1) - StatRoller.getPointBuyCostForScore(currentScore);
-      const shouldDisable = currentScore >= 15 || remainingPoints < pointCostForNextIncrease;
+      const shouldDisable = currentScore >= MAX || remainingPoints < pointCostForNextIncrease;
 
       // Only update if the state actually changes
       if (button.disabled !== shouldDisable) {
@@ -631,10 +633,11 @@ export class Listeners {
    */
   static updateMinusButtonState(selectedAbilities) {
     const updates = [];
+    const { MIN } = HM.ABILITY_SCORES;
 
     document.querySelectorAll('.minus-button').forEach((button, index) => {
       const currentScore = selectedAbilities[index];
-      const shouldDisable = currentScore <= 8;
+      const shouldDisable = currentScore <= MIN;
 
       // Only update if the state actually changes
       if (button.disabled !== shouldDisable) {

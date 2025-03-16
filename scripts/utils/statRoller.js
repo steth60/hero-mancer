@@ -100,10 +100,20 @@ export class StatRoller {
     try {
       const roll = new Roll(rollFormula);
       await roll.evaluate();
-      HM.log(3, 'Roll result:', roll.total);
+
+      // Apply min/max constraints to roll result
+      const { MIN, MAX } = HM.ABILITY_SCORES;
+      const constrainedResult = Math.max(MIN, Math.min(MAX, roll.total));
+
+      // Log original and constrained values if different
+      if (roll.total !== constrainedResult) {
+        HM.log(3, `Roll result: ${roll.total} (constrained to ${constrainedResult})`);
+      } else {
+        HM.log(3, 'Roll result:', roll.total);
+      }
 
       if (input) {
-        input.value = roll.total;
+        input.value = constrainedResult;
         input.focus();
       } else {
         HM.log(2, `No input field found for ability index ${index}.`);
@@ -125,6 +135,7 @@ export class StatRoller {
     const blocks = document.querySelectorAll('.ability-block');
     const delay = game.settings.get(HM.ID, 'rollDelay') || 500;
     this.isRolling = true;
+    const { MIN, MAX } = HM.ABILITY_SCORES;
 
     try {
       for (let i = 0; i < blocks.length; i++) {
@@ -133,9 +144,12 @@ export class StatRoller {
           const roll = new Roll(rollFormula);
           await roll.evaluate();
 
+          // Apply min/max constraints
+          const constrainedResult = Math.max(MIN, Math.min(MAX, roll.total));
+
           const input = block.querySelector('.ability-score');
           if (input) {
-            input.value = roll.total;
+            input.value = constrainedResult;
             input.focus();
 
             const diceIcon = block.querySelector('.fa-dice-d6');
@@ -195,6 +209,26 @@ export class StatRoller {
       ui.notifications.info('hm.settings.custom-standard-array.reset-default', { localize: true });
     }
 
+    // Check values against min/max
+    const { MIN, MAX } = HM.ABILITY_SCORES;
+    const outOfRangeValues = scores.filter((val) => val < MIN || val > MAX);
+
+    if (outOfRangeValues.length > 0) {
+      // Only show the warning if there are actual values to adjust
+      if (outOfRangeValues.some((val) => val !== 0 && !isNaN(val))) {
+        ui.notifications.warn(
+          game.i18n.format('hm.settings.ability-scores.standard-array-fixed', {
+            original: outOfRangeValues.join(', '),
+            min: MIN,
+            max: MAX
+          })
+        );
+      }
+
+      // Adjust values to stay within constraints
+      scores = scores.map((val) => Math.max(MIN, Math.min(MAX, val)));
+    }
+
     game.settings.set(HM.ID, 'customStandardArray', scores.sort((a, b) => b - a).join(','));
   }
 
@@ -205,8 +239,15 @@ export class StatRoller {
    * @static
    */
   static getStandardArray(extraAbilities) {
-    const scores = [15, 14, 13, 12, 10, 8, ...Array(extraAbilities).fill(11)];
-    return scores.sort((a, b) => b - a);
+    // Use default D&D 5e standard array adjusted for constraints
+    const standardArray = [15, 14, 13, 12, 10, 8];
+    const extraValues = Array(extraAbilities).fill(11);
+
+    // Apply min/max constraints
+    const { MIN, MAX } = HM.ABILITY_SCORES;
+    const adjustedArray = [...standardArray, ...extraValues].map((val) => Math.max(MIN, Math.min(MAX, val)));
+
+    return adjustedArray.sort((a, b) => b - a);
   }
 
   /**
@@ -237,6 +278,22 @@ export class StatRoller {
    */
   static getPointBuyCostForScore(score) {
     const costs = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
+
+    // Handle scores outside the standard scale but within our min/max
+    const { MIN, MAX } = HM.ABILITY_SCORES;
+
+    // For scores lower than standard minimum
+    if (score < 8 && score >= MIN) {
+      // Negative costs for lower scores (saves points)
+      return -1 * (8 - score);
+    }
+
+    // For scores higher than standard maximum
+    if (score > 15 && score <= MAX) {
+      // Exponential cost increase for higher scores
+      return 9 + (score - 15) * 2;
+    }
+
     return costs[score] ?? 0;
   }
 
@@ -247,7 +304,21 @@ export class StatRoller {
    * @static
    */
   static calculateTotalPointsSpent(scores) {
-    return scores.reduce((total, score) => total + this.getPointBuyCostForScore(score), 0);
+    const { MIN } = HM.ABILITY_SCORES;
+    let total = 0;
+
+    scores.forEach((score) => {
+      // When MIN is higher than standard 8, adjust total calculation
+      if (MIN > 8) {
+        // Calculate cost as if starting from standard minimum
+        const standardMinCost = this.getPointBuyCostForScore(MIN) - this.getPointBuyCostForScore(8);
+        total += this.getPointBuyCostForScore(score) - standardMinCost;
+      } else {
+        total += this.getPointBuyCostForScore(score);
+      }
+    });
+
+    return total;
   }
 
   /* -------------------------------------------- */

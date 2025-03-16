@@ -99,6 +99,10 @@
   margin-bottom: 1.5rem;
 }
 
+.ml-xs {
+  margin-left: 0.35rem;
+}
+
 .m-lr {
   margin-right: 0.25rem;
   margin-left: 0.25rem;
@@ -214,6 +218,10 @@
 
 .grid-2-col {
   grid-template-columns: 1fr 1fr;
+}
+
+.grid-3-col {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .grid-4-col {
@@ -1179,6 +1187,26 @@ fieldset#start > h2 {
     Settings Pages
    ========================================================================== */
 
+.ability-scores-container {
+  width: 60%;
+}
+
+.ability-scores-container input[type='number'] {
+  width: 40px;
+  text-align: center;
+}
+
+/* Tooltip functionality */
+.tooltip-icon {
+  color: var(--color-text-dark-secondary);
+  cursor: help;
+  transition: color 0.2s ease;
+}
+
+.tooltip-icon:hover {
+  color: var(--user-color);
+}
+
 /* Popup sections */
 .hm-compendiums-popup-section {
   display: flex;
@@ -1503,6 +1531,15 @@ fieldset#start > h2 {
 
   .wealth-roll-container input[type='text'] {
     width: 100%;
+  }
+
+  .ability-scores-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .ability-scores-container label.font-bold {
+    margin-bottom: 0.25rem;
   }
 }
 
