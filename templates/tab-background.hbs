@@ -1,36 +1,23 @@
 <div class='tab {{tabs.background.cssClass}}' data-tab='background' data-group='hero-mancer-tabs'>
   <fieldset>
     <legend>{{localize 'hm.app.background.tooltip'}}</legend>
-    <p>
-      {{localize 'hm.app.background.preamble'}}
-    </p>
+    <p>{{localize 'hm.app.background.preamble'}}</p>
     <hr />
 
     <div class="form-row flex items-center gap-sm mb-sm">
-      <!-- Label for the background dropdown -->
       <label for='background-dropdown'>{{localize 'hm.app.background.select-label'}}</label>
-
-      <!-- Background Dropdown -->
       <select id='background-dropdown' name='background' class="form-select" data-dtype='String'
         aria-describedby='background-description' aria-label='{{localize "hm.app.background.select-label"}}'>
         <option value=''>{{localize 'hm.app.background.select-placeholder'}}</option>
 
         {{#each backgroundDocs}}
-          <optgroup label='{{this.packName}}'>
-            <!-- Each option for a background -->
-            {{#each this.docs}}
-              <option value='{{this.id}} ({{this.packId}}) [{{this.uuid}}]'>
-                {{this.name}}
-              </option>
-            {{/each}}
-          </optgroup>
+          <option value='{{this.id}} [{{this.uuid}}]'>{{this.name}}</option>
         {{else}}
           <option>{{localize 'hm.app.background.none'}}</option>
         {{/each}}
       </select>
     </div>
 
-    <!-- Enriched Description Section -->
     <div id='background-description' class="overflow-vert-only" role='region' aria-live='polite' aria-atomic='true'>
       {{{enrichedDescription}}}
     </div>

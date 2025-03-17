@@ -94,18 +94,25 @@ export class HM {
         DocumentService.prepareDocumentsByType('race'),
         DocumentService.prepareDocumentsByType('class'),
         DocumentService.prepareDocumentsByType('background')
-      ]).then((results) => results.map((r) => r.types));
+      ]);
 
+      // Debug the returned structures
+      HM.log(3, 'Race result:', raceDocs);
+      HM.log(3, 'Class result:', classDocs);
+      HM.log(3, 'Background result:', backgroundDocs);
+
+      // Store in HM.documents
       this.documents = { race: raceDocs, class: classDocs, background: backgroundDocs };
 
-      const allDocs = [...(raceDocs?.flatMap((folder) => folder.docs) || []), ...(classDocs?.flatMap((pack) => pack.docs) || []), ...(backgroundDocs?.flatMap((pack) => pack.docs) || [])];
+      // Handle different structures for collection
+      const allDocs = [...(raceDocs?.flatMap((folder) => folder.docs) || []), ...(classDocs || []), ...(backgroundDocs || [])];
+
+      // Enrich descriptions
       await Promise.all(
         allDocs.map(async (doc) => {
           if (doc?.description) {
             try {
               doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
-
-              // Replace h3 with h2 tags for nicer styling.
               doc.enrichedDescription = doc.enrichedDescription
                 .replace(/<h3/g, '<h2')
                 .replace(/<\/h3/g, '</h2')

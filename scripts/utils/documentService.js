@@ -1,4 +1,4 @@
-import { DropdownHandler, HM } from './index.js';
+import { HM } from './index.js';
 
 /**
  * Service for managing game document preparation and processing
@@ -13,26 +13,19 @@ export class DocumentService {
    * Fetches and prepares documents based on the specified type for dropdown use
    * @param {'race'|'class'|'background'|'species'} type - Document type to register
    * @returns {Promise<{types: Array, dropdownHtml: string}>}
-   * @throws {Error} If type is invalid or document retrieval fails
    * @static
    */
   static async prepareDocumentsByType(type) {
     try {
-      HM.log(3, `Starting document prep for type: ${type}`);
-
       const data = await this.#fetchTypeDocumentsFromCompendiums(type);
-      const groupingField = type === 'race' ? 'folderName' : 'packName';
-      const sortedUniqueFolders = this.#organizeDocumentsIntoGroups(data.documents, groupingField);
-      const dropdownHtml = DropdownHandler.generateDropdownHTML(sortedUniqueFolders, groupingField);
 
-      return { types: sortedUniqueFolders, dropdownHtml };
+      if (type === 'race' || type === 'species') {
+        return this.#organizeRacesByTypeIdentifier(data.documents);
+      } else {
+        return this.#getFlatDocuments(data.documents);
+      }
     } catch (error) {
-      HM.log(1, `Error: Failed to prep ${type} documents`, error);
-
-      return {
-        types: [],
-        dropdownHtml: `<option value="">${game.i18n.localize(`hm.app.${type}.none`)}</option>`
-      };
+      return [];
     }
   }
 
@@ -41,12 +34,84 @@ export class DocumentService {
   /* -------------------------------------------- */
 
   /**
+   * Formats race type identifier into proper display name
+   * @param {string} identifier - Race type identifier
+   * @returns {string} Formatted display name
+   * @private
+   */
+  static #formatRaceTypeIdentifier(identifier) {
+    if (!identifier) return 'Other';
+    return identifier
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  /**
+   * Extracts race type identifier from document
+   * @param {Object} doc - Document to extract type from
+   * @returns {string} Type identifier
+   * @private
+   */
+  static #extractRaceTypeIdentifier(doc) {
+    return doc.system?.type?.subtype || doc.system?.type?.value || doc.system?.traits?.type?.value || doc.system?.details?.race || doc.system?.details?.species || 'other';
+  }
+
+  /**
+   * Organizes races into groups based on their type identifier
+   * @param {Array} documents - Race documents to organize
+   * @returns {Array} Grouped race documents
+   * @private
+   */
+  static #organizeRacesByTypeIdentifier(documents) {
+    const typeGroups = new Map();
+
+    documents.forEach((doc) => {
+      const typeId = this.#extractRaceTypeIdentifier(doc);
+      const typeName = this.#formatRaceTypeIdentifier(typeId);
+
+      if (!typeGroups.has(typeName)) {
+        typeGroups.set(typeName, {
+          folderName: typeName,
+          docs: []
+        });
+      }
+
+      typeGroups.get(typeName).docs.push({
+        id: doc.id,
+        name: doc.name,
+        packName: doc.packName,
+        packId: doc.packId,
+        uuid: doc.uuid,
+        description: doc.system.description?.value || game.i18n.localize('hm.app.no-description')
+      });
+    });
+
+    typeGroups.forEach((group) => {
+      group.docs.sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+    return Array.from(typeGroups.values()).sort((a, b) => a.folderName.localeCompare(b.folderName));
+  }
+
+  static #getFlatDocuments(documents) {
+    return documents
+      .map((doc) => ({
+        id: doc.id,
+        name: `${doc.name} (${doc.packName || 'Unknown'})`,
+        description: doc.description,
+        packName: doc.packName,
+        packId: doc.packId,
+        uuid: doc.uuid
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
    * Fetches documents from compendiums based on type
    * @param {'race'|'class'|'background'|'species'} type - Document type
-   * @returns {Promise<{documents: Array, uniqueFolders: Array}>}
-   * @throws {Error} If type is invalid or retrieval fails
+   * @returns {Promise<{documents: Array}>}
    * @private
-   * @static
    */
   static async #fetchTypeDocumentsFromCompendiums(type) {
     if (!['race', 'class', 'background', 'species'].includes(type)) {
@@ -59,10 +124,8 @@ export class DocumentService {
     const validPacks = new Set();
     const failedPacks = [];
 
-    // Process all packs in parallel for better performance
     await Promise.all(
       packs.map(async (pack) => {
-        HM.log(3, 'Fetching documents from pack:', pack);
         try {
           const documents = await pack.getDocuments({ type });
 
@@ -76,7 +139,8 @@ export class DocumentService {
               uuid: doc.uuid,
               packId: pack.metadata.id,
               description: doc.system.description?.value || game.i18n.localize('hm.app.no-description'),
-              folderName: doc.folder?.name || null
+              folderName: doc.folder?.name || null,
+              system: doc.system
             });
           });
         } catch (error) {
@@ -95,8 +159,7 @@ export class DocumentService {
     }
 
     return {
-      documents: this.#sortDocumentsByNameAndPack([...validPacks]),
-      uniqueFolders: []
+      documents: this.#sortDocumentsByNameAndPack([...validPacks])
     };
   }
 
@@ -106,16 +169,15 @@ export class DocumentService {
    * @param {string} id - Pack id
    * @returns {string} Formatted pack name
    * @private
-   * @static
    */
   static #determinePackName(label, id) {
-    if (label.includes('PHB')) return game.i18n.localize('hm.app.document-service.phb'); // Shorthand for 2024 PHB
-    if (label.includes('SRD')) return game.i18n.localize('hm.app.document-service.srd'); // Shorthand for SRD
-    if (id.includes('Forge')) return game.i18n.localize('hm.app.document-service.forge'); // Shorthand for Forge
-    if (label.includes('DDB')) return game.i18n.localize('hm.app.document-service.dndbeyond-importer'); // Shorthand for DDB
-    if (/[./_-]home[\s_-]?brew[./_-]/i.test(label)) return game.i18n.localize('hm.app.document-service.homebrew'); // Shorthand for Homebrew
+    if (label.includes('PHB')) return game.i18n.localize('hm.app.document-service.phb');
+    if (label.includes('SRD')) return game.i18n.localize('hm.app.document-service.srd');
+    if (id.includes('Forge')) return game.i18n.localize('hm.app.document-service.forge');
+    if (label.includes('DDB')) return game.i18n.localize('hm.app.document-service.dndbeyond-importer');
+    if (/[./_-]home[\s_-]?brew[./_-]/i.test(label)) return game.i18n.localize('hm.app.document-service.homebrew');
     if (game.modules.get('elkan5e')?.active) {
-      if (label.includes('Elkan')) return game.i18n.localize('hm.app.document-service.elkan5e'); // Shorthand for Elkan 5e
+      if (label.includes('Elkan')) return game.i18n.localize('hm.app.document-service.elkan5e');
     }
     return label;
   }
@@ -125,57 +187,22 @@ export class DocumentService {
    * @param {Array} documents - Documents to sort
    * @returns {Array} Sorted documents
    * @private
-   * @static
    */
   static #sortDocumentsByNameAndPack(documents) {
     return documents
-      .map(({ doc, packName, packId, description, folderName, uuid }) => ({
+      .map(({ doc, packName, packId, description, folderName, uuid, system }) => ({
         id: doc.id,
         name: doc.name,
         description,
         folderName,
         packName,
         packId,
-        uuid
+        uuid,
+        system
       }))
       .sort((a, b) => {
         const nameCompare = a.name.localeCompare(b.name);
         return nameCompare || a.packName.localeCompare(b.packName);
       });
-  }
-
-  /**
-   * Groups and sorts documents by specified key
-   * @param {Array} documents - Documents to process
-   * @param {'folderName'|'packName'} key - Key to group by
-   * @returns {Array} Sorted array of grouped documents
-   * @private
-   * @static
-   */
-  static #organizeDocumentsIntoGroups(documents, key) {
-    const uniqueMap = new Map();
-
-    documents.forEach(({ id, name, description, packName, packId, folderName, uuid }) => {
-      const groupKey = key === 'folderName' ? folderName || name : packName;
-
-      if (!uniqueMap.has(groupKey)) {
-        uniqueMap.set(groupKey, {
-          groupKey,
-          docs: [],
-          packName,
-          packId,
-          uuid,
-          ...(folderName && { folderName })
-        });
-      }
-      uniqueMap.get(groupKey).docs.push({ id, name, description, packName, packId, uuid });
-    });
-
-    return Array.from(uniqueMap.values())
-      .sort((a, b) => a.groupKey.localeCompare(b.groupKey))
-      .map((group) => ({
-        ...group,
-        docs: group.docs.sort((a, b) => a.name.localeCompare(b.name))
-      }));
   }
 }

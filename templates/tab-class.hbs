@@ -5,29 +5,19 @@
     <hr />
 
     <div class="form-row flex items-center gap-sm mb-sm">
-      <!-- Label for the class dropdown -->
       <label for='class-dropdown'>{{localize 'hm.app.class.select-label'}}</label>
-
-      <!-- Class Dropdown -->
       <select id='class-dropdown' name='class' class="form-select" data-dtype='String'
         aria-describedby='class-description' aria-label='{{localize "hm.app.class.select-label"}}'>
         <option value=''>{{localize 'hm.app.class.select-placeholder'}}</option>
 
         {{#each classDocs}}
-          <optgroup label='{{this.packName}}'>
-            {{#each this.docs}}
-              <option value='{{this.id}} ({{this.packId}}) [{{this.uuid}}]'>
-                {{this.name}}
-              </option>
-            {{/each}}
-          </optgroup>
+          <option value='{{this.id}} [{{this.uuid}}]'>{{this.name}}</option>
         {{else}}
           <option>{{localize 'hm.app.class.none'}}</option>
         {{/each}}
       </select>
     </div>
 
-    <!-- Enriched Description Section for the selected class -->
     <div id='class-description' class="overflow-vert-only" role='region' aria-live='polite' aria-atomic='true'>
       {{{enrichedDescription}}}
     </div>

@@ -60,11 +60,11 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
   async _prepareContext(_options) {
     const context = {
       allowedMethods: await game.settings.get(HM.ID, 'allowedMethods'),
-      customRollFormula: game.settings.get(HM.ID, 'customRollFormula'),
+      customRollFormula: game.settings.get(HM.ID, 'customRollFormula') || '4d6kh3',
       chainedRolls: game.settings.get(HM.ID, 'chainedRolls'),
       rollDelay: game.settings.get(HM.ID, 'rollDelay'),
-      customStandardArray: game.settings.get(HM.ID, 'customStandardArray'),
-      customPointBuyTotal: game.settings.get(HM.ID, 'customPointBuyTotal'),
+      customStandardArray: game.settings.get(HM.ID, 'customStandardArray') || '15,14,13,12,10,8',
+      customPointBuyTotal: game.settings.get(HM.ID, 'customPointBuyTotal') || 27,
       abilityScoreDefault: game.settings.get(HM.ID, 'abilityScoreDefault') || 8,
       abilityScoreMin: game.settings.get(HM.ID, 'abilityScoreMin') || 8,
       abilityScoreMax: game.settings.get(HM.ID, 'abilityScoreMax') || 15

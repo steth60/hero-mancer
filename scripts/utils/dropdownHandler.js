@@ -246,7 +246,7 @@ export class DropdownHandler {
 
       // Extract the UUID (content inside square brackets)
       const selectedUUID = selectedValue.match(/\[(.*?)]/)?.[1] || '';
-
+      HM.log(3, { selectedValue: selectedValue, selectedId: selectedId, selectedUUID: selectedUUID });
       HM.SELECT_STORAGE[type] = { selectedValue, selectedId, selectedUUID };
       await this.updateDescription(type, selectedId, context);
     } catch (error) {
@@ -278,6 +278,8 @@ export class DropdownHandler {
 
       const selectedDoc = docs.find((doc) => doc.id === selectedId);
       const content = selectedDoc?.enrichedDescription || '';
+
+      HM.log(3, { selectedDoc: selectedDoc, content: content });
 
       EventDispatcher.emit('description-update', {
         elementId: `#${type}-description`,
@@ -481,38 +483,5 @@ export class DropdownHandler {
         });
       });
     });
-  }
-
-  /**
-   * Generates HTML for dropdown options
-   * @param {Array} items - Grouped data for races, classes, or backgrounds
-   * @param {string} groupKey - Key for group labeling
-   * @returns {string} HTML string for dropdown options
-   * @static
-   */
-  static generateDropdownHTML(items, groupKey) {
-    return items
-      .map((group) => {
-        if (group.docs.length === 1) {
-          return this.createOptionHTML(group.docs[0]);
-        }
-
-        return `
-        <optgroup label="${group[groupKey]}">
-          ${group.docs.map((doc) => this.createOptionHTML(doc)).join('')}
-        </optgroup>
-      `;
-      })
-      .join('');
-  }
-
-  /**
-   * Creates HTML for individual option
-   * @param {object} doc - Document object containing id and name
-   * @returns {string} HTML string for option
-   * @static
-   */
-  static createOptionHTML(doc) {
-    return `<option value="${doc.id}">${doc.name}</option>`;
   }
 }
