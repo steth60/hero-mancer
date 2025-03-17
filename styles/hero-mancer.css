@@ -912,15 +912,17 @@ fieldset#start > h2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 0.2rem;
   padding: 0 0.625rem;
   border-radius: 4px;
 }
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices .wealth-roll-container input[type='text'] {
-  width: 85px;
+  width: fit-content;
   min-width: 0.001rem;
+  max-width: 65px;
   padding-right: 0.625rem;
-  text-align: right;
+  text-align: center;
 }
 
 .dual-weapon-selection {
@@ -1010,9 +1012,13 @@ fieldset#start > h2 {
 
 .equipment-favorite-checkbox {
   opacity: 0;
-  position: absolute; /* Hide actual checkbox */
+  position: absolute;
   width: 0;
   height: 0;
+}
+
+.equipment-item.disabled .equipment-favorite-container {
+  display: none !important;
 }
 
 .equipment-choices .equipment-favorite-container .equipment-favorite-label .equipment-favorite-checkbox {
@@ -1522,20 +1528,9 @@ fieldset#start > h2 {
     grid-template-columns: 1fr;
   }
 
-  /* Wealth container */
-  .wealth-roll-container {
-    gap: 0.75rem;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .wealth-roll-container input[type='text'] {
-    width: 100%;
-  }
-
   .ability-scores-container {
-    grid-template-columns: 1fr;
     gap: 1rem;
+    grid-template-columns: 1fr;
   }
 
   .ability-scores-container label.font-bold {

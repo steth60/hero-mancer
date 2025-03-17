@@ -265,8 +265,12 @@ export class EquipmentParser {
         equipmentElements.forEach((el) => {
           if (event.target.checked) {
             el.classList.add('disabled');
-            el.querySelectorAll('select, input[type="checkbox"], label').forEach((input) => {
+            el.querySelectorAll('select, input[type="checkbox"]:not(.equipment-favorite-checkbox), label').forEach((input) => {
               input.disabled = true;
+            });
+            // Also disable favorite checkboxes
+            el.querySelectorAll('.equipment-favorite-checkbox').forEach((fav) => {
+              fav.disabled = true;
             });
           } else {
             el.classList.remove('disabled');

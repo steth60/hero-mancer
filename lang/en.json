@@ -39,13 +39,13 @@
           "standardArray": "Standard Array"
         },
         "roll-dice": "Roll dice for ability",
+        "score-label": "Ability Scores",
         "score-placeholder": "Enter score",
         "select-method": "Select stat method",
         "select-placeholder": "Choose",
         "select-value": "Select a value",
         "summary": "{action} {first} and {second}",
-        "tooltip": "Select and assign abilities",
-        "score-label": "Ability Scores"
+        "tooltip": "Select and assign abilities"
       },
       "background": {
         "adventurer": "an adventurer",
@@ -81,23 +81,23 @@
         "choose-all": "Select all of the following:",
         "choose-one": "Choose one (1) from:",
         "choose-second-weapon": "Choose second weapon",
+        "failed-to-load": "Failed to load {count} equipment items.",
+        "gptobuy": "gp to buy",
         "lacks-proficiency": "not proficient",
+        "pouch": "component pouch",
         "preamble": "The equipment tab in the Hero Mancer character creation tool now allows players to fully manage their character's gear and starting resources. Players can select class, background, and race-specific equipment, as well as choose from starting equipment packages or starting wealth rules. This provides a comprehensive workflow for equipping the character during the creation process.",
-        "roll-wealth": "Roll Starting Wealth",
+        "roll-wealth": "Roll Wealth",
         "select-weapon": "Select weapon",
         "separator": ", ",
-        "summary": "wielding {items} on their journey.",
-        "tooltip": "Manage your character's equipment",
-        "unknown-choice": "Unknown linked item.",
-        "use-starting-wealth": "Use starting wealth instead",
-        "wealth-placeholder": "0 gp",
-        "gptobuy": "gp to buy",
         "starting": "starting",
         "starting-equipment": "starting equipment",
-        "failed-to-load": "Failed to load {count} equipment items.",
-        "unnamed": "unnamed item",
+        "summary": "wielding {items} on their journey.",
+        "tooltip": "Manage your character's equipment",
         "type-equipment": "{type} Equipment",
-        "pouch": "component pouch"
+        "unknown-choice": "Unknown linked item.",
+        "unnamed": "unnamed item",
+        "use-starting-wealth": "Use starting wealth",
+        "wealth-placeholder": "0 gp"
       },
       "finalize": {
         "backstory": "Backstory",
@@ -229,6 +229,7 @@
           "hint": "The starting value for ability scores when creating a new character.",
           "name": "Default"
         },
+        "header": "Ability Score Limits",
         "invalid-point-buy": "Point buy total is too low. With minimum score of {min}, you need at least {totalNeeded} points.",
         "invalid-range": "Invalid ability score range. Please ensure Min ≤ Default ≤ Max.",
         "invalid-standard-array": "Standard array values {values} are outside the allowed range ({min}-{max}).",
@@ -241,8 +242,7 @@
           "name": "Min"
         },
         "standard-array-adjusted": "Some standard array values were outside the allowed range ({min}-{max}) and have been adjusted.",
-        "standard-array-fixed": "Standard array values {original} were outside the allowed range ({min}-{max}) and have been adjusted automatically.",
-        "header": "Ability Score Limits"
+        "standard-array-fixed": "Standard array values {original} were outside the allowed range ({min}-{max}) and have been adjusted automatically."
       },
       "alignments": {
         "hint": "Comma-separated list of alignments available for character creation.",
