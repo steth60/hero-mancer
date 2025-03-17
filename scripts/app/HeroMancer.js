@@ -923,10 +923,29 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       // Extract itemId and packId from the formData
       const extractIds = (itemString) => {
-        const regex = /^([\dA-Za-z]+)\s\(([^)]+)\)/;
-        const match = itemString.match(regex);
+        // Extract the ID (everything before first space or bracket)
+        const idMatch = itemString.match(/^([^\s[]+)/);
+        const itemId = idMatch ? idMatch[1] : null;
 
-        return match ? { itemId: match[1], packId: match[2] } : null;
+        // Extract the UUID (content inside square brackets)
+        const uuidMatch = itemString.match(/\[(.*?)]/);
+        const uuid = uuidMatch ? uuidMatch[1] : null;
+
+        // Extract packId from parentheses if available, or from UUID
+        let packId = null;
+        const packMatch = itemString.match(/\(([^)]+)\)/);
+        if (packMatch) {
+          packId = packMatch[1];
+        } else if (uuid && uuid.startsWith('Compendium.')) {
+          // Extract packId between "Compendium." and ".Item"
+          const parts = uuid.split('.');
+          if (parts.length >= 4 && parts[3] === 'Item') {
+            packId = `${parts[1]}.${parts[2]}`;
+          }
+        }
+
+        HM.log(3, { itemString, itemId, packId, uuid });
+        return itemId ? { itemId, packId, uuid } : null;
       };
 
       const backgroundData = extractIds(formData.object.background);
@@ -985,7 +1004,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
       ui.notifications.info('hm.actortab-button.creating', { localize: true });
       let actor = await Actor.create(actorData);
-      let newActor = game.actors.getName(actorName);
       HM.log(3, 'Created Actor:', actor);
 
       // Declare the items outside the try block
