@@ -862,7 +862,7 @@ export class EquipmentParser {
    * @returns {string} The label for the key
    */
   #getLookupKeyLabel(key) {
-    return this.lookupItems[key]?.label || key;
+    return EquipmentParser.lookupItems[key]?.label;
   }
 
   /**

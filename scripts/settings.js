@@ -201,7 +201,7 @@ export function registerSettings() {
     config: false,
     type: String,
     restricted: true,
-    default: () => StatRoller.getStandardArrayDefault(),
+    default: '15,14,13,12,10,8',
     onChange: (value) => StatRoller.validateAndSetCustomStandardArray(value || StatRoller.getStandardArrayDefault())
   });
 

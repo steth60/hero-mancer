@@ -1,5 +1,5 @@
 import { registerSettings } from './settings.js';
-import { CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HtmlManipulator } from './utils/index.js';
+import { CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HtmlManipulator, StatRoller } from './utils/index.js';
 
 /**
  * Main Hero Mancer class, define some statics that will be used everywhere in the module.
@@ -177,7 +177,7 @@ Hooks.once('ready', async () => {
 
   await EquipmentParser.initializeLookupItems();
 
-  const customArraySetting = game.settings.get(HM.ID, 'customStandardArray');
+  const customArraySetting = game.settings.get(HM.ID, 'customStandardArray') || StatRoller.getStandardArrayDefault();
   if (!customArraySetting || customArraySetting.trim() === '') {
     await game.settings.set(HM.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
     HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');

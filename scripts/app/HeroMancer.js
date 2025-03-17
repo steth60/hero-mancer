@@ -1049,11 +1049,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         return;
       }
 
-      if (!backgroundItem || !raceItem || !classItem) {
-        HM.log(1, 'Error: One or more items could not be fetched.');
-        return;
-      }
-
       const equipmentItems = equipmentSelections.map((item) => {
         // Item should already be in the correct format from collectEquipmentSelections
         return {
@@ -1078,7 +1073,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           HM.log(3, 'Starting favorites processing');
 
           // Find all favorited checkboxes
-          const favoriteCheckboxes = event.srcElement.querySelectorAll('.equipment-favorite-checkbox:checked');
+          const favoriteCheckboxes = event.target.querySelectorAll('.equipment-favorite-checkbox:checked');
           HM.log(3, `Found ${favoriteCheckboxes.length} favorited checkboxes`);
 
           if (favoriteCheckboxes.length > 0) {
@@ -1238,6 +1233,29 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           return;
         }
 
+        // Process items with and without advancements differently
+        const itemsWithoutAdvancements = [];
+        const itemsWithAdvancements = [];
+
+        // Sort items based on whether they have advancements
+        for (const item of items) {
+          const hasAdvancements = item.advancement?.byId && Object.keys(item.advancement.byId).length > 0;
+          if (hasAdvancements) {
+            itemsWithAdvancements.push(item);
+          } else {
+            itemsWithoutAdvancements.push(item);
+            HM.log(3, `Adding ${item.name} directly - no advancements needed`);
+          }
+        }
+
+        // If no items with advancements, we're done
+        if (!itemsWithAdvancements.length) {
+          HM.log(2, 'No items with advancements to process');
+          newActor.sheet.render(true);
+          return;
+        }
+
+        // Process items with advancements - rest of your existing code
         let currentManager;
 
         /**
@@ -1269,7 +1287,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         }
 
         try {
-          currentManager = await createAdvancementManager(items[0]);
+          currentManager = await createAdvancementManager(itemsWithAdvancements[0]);
 
           /**
            * Recursively processes advancements for each item in the list.
@@ -1278,7 +1296,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
            * @returns {Promise<void>} A promise that resolves when processing is complete.
            */
           async function doAdvancement(itemIndex = 0) {
-            if (itemIndex >= items.length) {
+            HM.log(1, itemsWithAdvancements);
+            if (itemIndex >= itemsWithAdvancements.length) {
               try {
                 if (currentManager) await currentManager.close();
               } catch (error) {
@@ -1289,11 +1308,11 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
               return;
             }
 
-            HM.log(3, `Processing ${items[itemIndex].name}`);
+            HM.log(3, `Processing ${itemsWithAdvancements[itemIndex].name}`);
 
             return new Promise((resolve) => {
               Hooks.once('dnd5e.advancementManagerComplete', async () => {
-                HM.log(3, `Completed ${items[itemIndex].name}`);
+                HM.log(3, `Completed ${itemsWithAdvancements[itemIndex].name}`);
 
                 await new Promise((resolve) => {
                   setTimeout(() => {
@@ -1303,17 +1322,17 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
 
                 currentManager = null;
 
-                if (itemIndex + 1 < items.length) {
+                if (itemIndex + 1 < itemsWithAdvancements.length) {
                   try {
-                    currentManager = await createAdvancementManager(items[itemIndex + 1]);
+                    currentManager = await createAdvancementManager(itemsWithAdvancements[itemIndex + 1]);
                     currentManager.render(true);
                     await doAdvancement(itemIndex + 1);
                     resolve();
                   } catch (error) {
-                    HM.log(1, `Error creating manager for ${items[itemIndex + 1].name}:`, error);
+                    HM.log(1, `Error creating manager for ${itemsWithAdvancements[itemIndex + 1].name}:`, error);
                     ui.notifications.warn(
                       game.i18n.format('hm.warnings.advancement-failed', {
-                        item: items[itemIndex + 1].name
+                        item: itemsWithAdvancements[itemIndex + 1].name
                       })
                     );
                     newActor.sheet.render(true);
@@ -1332,6 +1351,32 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
           }
 
           await doAdvancement();
+          // Create items without advancements directly
+          if (itemsWithoutAdvancements.length > 0) {
+            try {
+              HM.log(
+                2,
+                `Attempting to add ${itemsWithoutAdvancements.length} items without advancements:`,
+                itemsWithoutAdvancements.map((item) => item.name)
+              );
+
+              const itemData = itemsWithoutAdvancements.map((item) => {
+                const obj = item.toObject();
+                HM.log(3, `Item data for ${item.name}:`, obj);
+                return obj;
+              });
+
+              const created = await newActor.createEmbeddedDocuments('Item', itemData);
+              HM.log(
+                2,
+                `Successfully added ${created.length} items:`,
+                created.map((i) => i)
+              );
+            } catch (error) {
+              HM.log(1, 'Error adding items without advancements:', error);
+              ui.notifications.error(`Failed to add items: ${error.message}`);
+            }
+          }
         } catch (error) {
           HM.log(1, 'Error in advancement process:', error);
           ui.notifications.error(game.i18n.localize('hm.errors.advancement-process'));
