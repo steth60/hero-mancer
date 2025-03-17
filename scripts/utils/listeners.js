@@ -673,12 +673,14 @@ export class Listeners {
     try {
       // Reset rendered flags on all items before updating
       if (EquipmentParser.lookupItems) {
-        Object.values(EquipmentParser.lookupItems).forEach((itemSet) => {
-          itemSet.forEach((item) => {
-            delete item.rendered;
-            delete item.isSpecialCase;
-            delete item.specialGrouping;
-          });
+        Object.values(EquipmentParser.lookupItems).forEach((category) => {
+          if (category.items && category.items.forEach) {
+            category.items.forEach((item) => {
+              delete item.rendered;
+              delete item.isSpecialCase;
+              delete item.specialGrouping;
+            });
+          }
         });
       }
 

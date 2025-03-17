@@ -11,13 +11,6 @@ export class EquipmentParser {
   /* -------------------------------------------- */
 
   /**
-   * Set of armor items for lookup
-   * @type {Set<object>}
-   * @static
-   */
-  static armor = new Set();
-
-  /**
    * Set of item IDs that have been combined in UI display
    * @type {Set<string>}
    * @static
@@ -32,74 +25,11 @@ export class EquipmentParser {
   static contentCache = new Map();
 
   /**
-   * Set of arcane focus items
-   * @type {Set<object>}
-   * @static
-   */
-  static focus = new Set();
-
-  /**
-   * Set of martial melee weapons
-   * @type {Set<object>}
-   * @static
-   */
-  static martialM = new Set();
-
-  /**
-   * Set of martial ranged weapons
-   * @type {Set<object>}
-   * @static
-   */
-  static martialR = new Set();
-
-  /**
-   * Set of artisan's tools
-   * @type {Set<object>}
-   * @static
-   */
-  static art = new Set();
-
-  /**
-   * Set of gaming sets
-   * @type {Set<object>}
-   * @static
-   */
-  static game = new Set();
-
-  /**
-   * Set of musical instruments
-   * @type {Set<object>}
-   * @static
-   */
-  static music = new Set();
-
-  /**
    * Set of items that have been rendered in the UI
    * @type {Set<string>}
    * @static
    */
   static renderedItems = new Set();
-
-  /**
-   * Set of shield items
-   * @type {Set<object>}
-   * @static
-   */
-  static shield = new Set();
-
-  /**
-   * Set of simple melee weapons
-   * @type {Set<object>}
-   * @static
-   */
-  static simpleM = new Set();
-
-  /**
-   * Set of simple ranged weapons
-   * @type {Set<object>}
-   * @static
-   */
-  static simpleR = new Set();
 
   /* -------------------------------------------- */
   /*  Instance Properties                         */
@@ -911,27 +841,12 @@ export class EquipmentParser {
   }
 
   /**
-   * Gets label for weapon/armor lookup key
-   * @param {string} key - Lookup key (e.g. 'sim', 'mar', 'shield')
-   * @returns {string} Human-readable label
-   * @private
+   * Gets the label for a lookup key using CONFIG.DND5E values
+   * @param {string} key - The lookup key
+   * @returns {string} The label for the key
    */
   #getLookupKeyLabel(key) {
-    /* TODO: Get this data from CONFIG.DND5E instead. */
-    const labels = {
-      sim: 'Simple Weapon',
-      mar: 'Martial Weapon',
-      simpleM: 'Simple Melee Weapon',
-      simpleR: 'Simple Ranged Weapon',
-      martialM: 'Martial Melee Weapon',
-      martialR: 'Martial Ranged Weapon',
-      shield: 'Shield',
-      art: "Artisan's Tools",
-      game: 'Gaming Set',
-      music: 'Musical Instrument',
-      armor: 'Armor'
-    };
-    return labels[key] || key;
+    return this.lookupItems[key]?.label || key;
   }
 
   /**
@@ -1140,7 +1055,7 @@ export class EquipmentParser {
         : lookupItem.key === 'simpleR' ? 'simpleR'
         : lookupItem.key;
 
-      const lookupOptions = Array.from(EquipmentParser.lookupItems[lookupKey] || []);
+      const lookupOptions = Array.from(EquipmentParser.lookupItems[lookupKey].items || []);
       lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
       lookupOptions.forEach((weapon) => {
@@ -1345,7 +1260,7 @@ export class EquipmentParser {
     select.id = `${item.key}-tool`;
 
     // Get tools of this specific type
-    const toolItems = Array.from(EquipmentParser.lookupItems[toolType] || []);
+    const toolItems = Array.from(EquipmentParser.lookupItems[toolType].items || []);
     toolItems.sort((a, b) => a.name.localeCompare(b.name));
 
     for (const tool of toolItems) {
@@ -1496,7 +1411,7 @@ export class EquipmentParser {
     HM.log(3, 'Processing Lookup Options', { child, select, renderedItemNames });
 
     try {
-      const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key] || []);
+      const lookupOptions = Array.from(EquipmentParser.lookupItems[child.key].items || []);
       lookupOptions.sort((a, b) => a.name.localeCompare(b.name));
 
       let defaultSelection = select.parentElement.querySelector(`#\\3${select.id}-default`);
@@ -1650,7 +1565,7 @@ export class EquipmentParser {
       const weaponLookupKey = weaponChild.key;
 
       // Populate first dropdown with weapons
-      const weaponOptions = Array.from(EquipmentParser.lookupItems[weaponLookupKey] || []);
+      const weaponOptions = Array.from(EquipmentParser.lookupItems[weaponLookupKey].items || []);
       weaponOptions.sort((a, b) => a.name.localeCompare(b.name));
 
       // Add weapons to first dropdown and select the first one
@@ -1673,7 +1588,7 @@ export class EquipmentParser {
         });
 
         // Add shield options
-        const shieldOptions = Array.from(EquipmentParser.lookupItems.shield || []);
+        const shieldOptions = Array.from(EquipmentParser.lookupItems.shield.items || []);
         shieldOptions.sort((a, b) => a.name.localeCompare(b.name));
 
         shieldOptions.forEach((shield) => {
@@ -2203,17 +2118,27 @@ export class EquipmentParser {
         return;
       }
 
+      // Create categories for all item types we care about
       const categories = {
-        simpleM: new Set(),
-        simpleR: new Set(),
-        martialM: new Set(),
-        martialR: new Set(),
-        music: new Set(),
-        art: new Set(),
-        game: new Set(),
-        shield: new Set(),
-        armor: new Set(),
-        focus: new Set()
+        // Weapons
+        simpleM: { items: new Set(), label: game.i18n.localize('DND5E.WeaponSimpleM') },
+        simpleR: { items: new Set(), label: game.i18n.localize('DND5E.WeaponSimpleR') },
+        martialM: { items: new Set(), label: game.i18n.localize('DND5E.WeaponMartialM') },
+        martialR: { items: new Set(), label: game.i18n.localize('DND5E.WeaponMartialR') },
+
+        // Tools
+        art: { items: new Set(), label: game.i18n.localize('DND5E.ToolArtisans') },
+        game: { items: new Set(), label: game.i18n.localize('DND5E.ToolGamingSet') },
+        music: { items: new Set(), label: game.i18n.localize('DND5E.ToolMusicalInstrument') },
+
+        // Armor types
+        light: { items: new Set(), label: game.i18n.localize('DND5E.EquipmentLight') },
+        medium: { items: new Set(), label: game.i18n.localize('DND5E.EquipmentMedium') },
+        heavy: { items: new Set(), label: game.i18n.localize('DND5E.EquipmentHeavy') },
+        shield: { items: new Set(), label: game.i18n.localize('DND5E.EquipmentShield') },
+
+        // Other
+        focus: { items: new Set(), label: game.i18n.localize('DND5E.Item.Property.Focus') }
       };
 
       // Process in chunks to avoid overwhelming the event loop
@@ -2229,25 +2154,72 @@ export class EquipmentParser {
       await Promise.all(
         chunks.map(async (chunk) => {
           chunk.forEach((item) => {
-            const type = item.system?.type?.value || item.type;
-            if (categories[type]) {
-              categories[type].add(item);
+            const itemType = item.type;
+            const subType = item.system?.type?.value;
+
+            // Categorize based on item type and subtype
+            if (itemType === 'weapon') {
+              const weaponType = subType;
+              if (categories[weaponType]) {
+                categories[weaponType].items.add(item);
+                categorizedCount++;
+              }
+            } else if (itemType === 'equipment') {
+              // Check if it's an armor type
+              if (Object.keys(CONFIG.DND5E.armorTypes).includes(subType)) {
+                categories[subType].items.add(item);
+                categorizedCount++;
+              }
+            } else if (itemType === 'tool') {
+              const toolType = subType;
+              if (categories[toolType]) {
+                categories[toolType].items.add(item);
+                categorizedCount++;
+              }
+            } else if (itemType === 'consumable' && subType === 'focus') {
+              categories.focus.items.add(item);
               categorizedCount++;
             }
           });
         })
       );
 
-      Object.assign(this, categories);
-      this.lookupItems = {
-        ...categories,
-        sim: new Set([...categories.simpleM, ...categories.simpleR]),
-        mar: new Set([...categories.martialM, ...categories.martialR]),
-        tool: new Set([...categories.art, ...categories.game, ...categories.music])
+      // Create aggregated categories
+      const aggregatedCategories = {
+        // Weapon proficiency groups
+        sim: {
+          items: new Set([...categories.simpleM.items, ...categories.simpleR.items]),
+          label: game.i18n.format('DND5E.WeaponCategory', { category: game.i18n.localize('DND5E.WeaponSimpleProficiency') })
+        },
+        mar: {
+          items: new Set([...categories.martialM.items, ...categories.martialR.items]),
+          label: game.i18n.format('DND5E.WeaponCategory', { category: game.i18n.localize('DND5E.WeaponMartialProficiency') })
+        },
+
+        // Tool category
+        tool: {
+          items: new Set([...categories.art.items, ...categories.game.items, ...categories.music.items]),
+          label: game.i18n.localize('TYPES.Item.tool')
+        },
+        // Armor category
+        armor: {
+          items: new Set([...categories.light.items, ...categories.medium.items, ...categories.heavy.items]),
+          label: game.i18n.localize('DND5E.Armor')
+        }
       };
 
+      // Combine all categories
+      const allCategories = { ...categories, ...aggregatedCategories };
+
+      // Store the item sets directly
+      Object.entries(allCategories).forEach(([key, value]) => {
+        this[key] = value.items;
+      });
+
+      // Store the complete lookup structure
+      this.lookupItems = allCategories;
       const endTime = performance.now();
-      HM.log(3, `Equipment lookup initialized in ${(endTime - startTime).toFixed(0)}ms. ${categorizedCount} items categorized.`);
+      HM.log(3, `Equipment lookup initialized in ${(endTime - startTime).toFixed(0)}ms. ${categorizedCount} items categorized.`, { lookup: this.lookupItems });
     } catch (error) {
       const endTime = performance.now();
       HM.log(1, `Equipment lookup initialization failed after ${(endTime - startTime).toFixed(0)}ms:`, error);
