@@ -44,7 +44,8 @@
         "select-placeholder": "Choose",
         "select-value": "Select a value",
         "summary": "{action} {first} and {second}",
-        "tooltip": "Select and assign abilities"
+        "tooltip": "Select and assign abilities",
+        "score-label": "Ability Scores"
       },
       "background": {
         "adventurer": "an adventurer",
@@ -89,7 +90,14 @@
         "tooltip": "Manage your character's equipment",
         "unknown-choice": "Unknown linked item.",
         "use-starting-wealth": "Use starting wealth instead",
-        "wealth-placeholder": "0 gp"
+        "wealth-placeholder": "0 gp",
+        "gptobuy": "gp to buy",
+        "starting": "starting",
+        "starting-equipment": "starting equipment",
+        "failed-to-load": "Failed to load {count} equipment items.",
+        "unnamed": "unnamed item",
+        "type-equipment": "{type} Equipment",
+        "pouch": "component pouch"
       },
       "finalize": {
         "backstory": "Backstory",

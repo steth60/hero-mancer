@@ -430,7 +430,10 @@ export class EquipmentParser {
 
           // Add a header for the section
           const header = document.createElement('h3');
-          header.innerHTML = isPlaceholder ? `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Equipment` : `${dropdownText} Equipment`;
+          header.innerHTML =
+            isPlaceholder ?
+              game.i18n.format('hm.app.equipment.type-equipment', { type: currentType.charAt(0).toUpperCase() + currentType.slice(1) })
+            : game.i18n.format('hm.app.equipment.type-equipment', { type: dropdownText });
           sectionContainer.appendChild(header);
 
           if (currentType === 'class' && selectedId) {
@@ -479,7 +482,7 @@ export class EquipmentParser {
 
                 // Check if the document likely has equipment info but couldn't be extracted
                 const description = documentWithEquipment.system?.description?.value || '';
-                if (description.toLowerCase().includes('equipment')) {
+                if (description.toLowerCase().includes(game.i18n.localize('TYPES.Item.equipment').toLowerCase())) {
                   const noExtractionNote = document.createElement('p');
                   noExtractionNote.classList.add('equipment-extraction-failed');
                   noExtractionNote.innerHTML = `${game.i18n.localize('hm.warnings.equipment-extraction-failed')}`;
@@ -531,14 +534,14 @@ export class EquipmentParser {
               }
             } catch (error) {
               HM.log(1, `Failed to create equipment element for ${item.name || item.key}:`, error);
-              failedItems.push(item.name || item.key || 'unnamed item');
+              failedItems.push(item.name || item.key || game.i18n.localize('hm.app.equipment.unnamed'));
             }
           }
 
           if (failedItems.length > 0) {
             const errorMessage = document.createElement('div');
             errorMessage.classList.add('equipment-error');
-            errorMessage.textContent = `Failed to load ${failedItems.length} equipment items.`;
+            errorMessage.textContent = game.i18n.format('hm.app.equipment.failed-to-load', { count: failedItems.length });
             sectionContainer.appendChild(errorMessage);
           }
         }
@@ -579,7 +582,7 @@ export class EquipmentParser {
    * @returns {string|null} - HTML string with equipment description or null if not found
    */
   extractEquipmentDescription(document) {
-    HM.log(3, 'Attempting to extract equipment description from document:', document?.name || 'unnamed document');
+    HM.log(3, 'Attempting to extract equipment description from document:', document?.name, document);
 
     if (!document) {
       HM.log(2, 'No document provided to extract equipment from');
@@ -599,7 +602,8 @@ export class EquipmentParser {
     // Helper function to check if an element is about equipment
     const isEquipmentHeading = (element) => {
       const text = element.textContent.toLowerCase();
-      const isEquipment = text.includes('equipment') || text.includes('starting equipment');
+      const isEquipment =
+        text.includes(game.i18n.localize('TYPES.Item.equipment').toLowerCase()) || text.toLowerCase().includes(game.i18n.localize('hm.app.equipment.starting-equipment').toLowerCase());
 
       if (!isEquipment) {
         HM.log(3, `Skipping non-equipment heading: "${element.textContent}"`);
@@ -635,7 +639,13 @@ export class EquipmentParser {
             elementsToInclude++;
           } else if (currentElement.tagName === 'P') {
             const text = currentElement.textContent.toLowerCase();
-            if (text.includes('equipment') || text.includes('background') || text.includes('gp to buy') || text.includes('gold') || text.includes('starting')) {
+            if (
+              text.includes(game.i18n.localize('TYPES.Item.equipment').toLowerCase()) ||
+              text.includes(game.i18n.localize('DND5E.Background').toLowerCase()) ||
+              text.includes(game.i18n.localize('hm.app.equipment.gptobuy').toLowerCase()) ||
+              text.includes(game.i18n.localize('DND5E.CurrencyGP').toLowerCase()) ||
+              text.includes(game.i18n.localize('hm.app.equipment.starting').toLowerCase())
+            ) {
               combinedContent += currentElement.outerHTML;
               elementsToInclude++;
             } else {
@@ -669,7 +679,7 @@ export class EquipmentParser {
     // Case 3: Look for definition list (dt/dd) format
     const definitionTerms = tempDiv.querySelectorAll('dt');
     for (const dt of definitionTerms) {
-      if (dt.textContent.toLowerCase().includes('equipment:')) {
+      if (dt.textContent.toLowerCase().includes(`${game.i18n.localize('TYPES.Item.equipment').toLowerCase()}:`)) {
         HM.log(3, 'Found equipment in definition list');
         return dt.outerHTML;
       }
@@ -718,7 +728,9 @@ export class EquipmentParser {
           if (
             afterList &&
             afterList.tagName === 'P' &&
-            (afterList.textContent.toLowerCase().includes('equipment') || afterList.textContent.toLowerCase().includes('gold') || afterList.textContent.toLowerCase().includes('gp'))
+            (afterList.textContent.toLowerCase().includes(game.i18n.localize('TYPES.Item.equipment').toLowerCase()) ||
+              afterList.textContent.toLowerCase().includes(game.i18n.localize('DND5E.CurrencyGP').toLowerCase()) ||
+              afterList.textContent.toLowerCase().includes(game.i18n.localize('DND5E.CurrencyAbbrGP').toLowerCase()))
           ) {
             content += afterList.outerHTML;
           }
@@ -736,7 +748,7 @@ export class EquipmentParser {
     if (match) {
       const equipmentText = match[1].trim();
       HM.log(3, `Found equipment via regex: "${equipmentText.substring(0, 40)}..."`);
-      return `<p><strong>Equipment:</strong> ${equipmentText}</p>`;
+      return `<p><strong>${game.i18n.localize('TYPES.Item.equipment')}:</strong> ${equipmentText}</p>`;
     }
 
     HM.log(1, 'Failed to extract equipment description using any method');
@@ -1491,7 +1503,7 @@ export class EquipmentParser {
       if (!defaultSelection) {
         defaultSelection = document.createElement('input');
         defaultSelection.type = 'hidden';
-        defaultSelection.id = `${select.id}-default`; // Note: Using underscore instead of dash
+        defaultSelection.id = `${select.id}-default`;
         select.parentElement.appendChild(defaultSelection);
       }
 
@@ -1737,7 +1749,7 @@ export class EquipmentParser {
       const focusConfig = CONFIG.DND5E.focusTypes[focusType];
 
       if (focusConfig) {
-        const pouchItem = nonFocusItems.find((child) => child.type === 'linked' && child.label?.toLowerCase().includes('component pouch'));
+        const pouchItem = nonFocusItems.find((child) => child.type === 'linked' && child.label?.toLowerCase().includes(game.i18n.localize('hm.app.equipment.pouch').toLowerCase()));
         if (pouchItem) {
           pouchItem.rendered = true;
           renderedItemNames.add('Component Pouch');
@@ -1944,7 +1956,7 @@ export class EquipmentParser {
    */
   static async collectEquipmentSelections(event, options = { includeClass: true, includeBackground: true }) {
     const equipment = [];
-    const equipmentContainer = event.srcElement.querySelector('#equipment-container');
+    const equipmentContainer = event.target?.querySelector('#equipment-container');
     if (!equipmentContainer) return equipment;
 
     async function findItemInPacks(itemId) {
