@@ -196,24 +196,23 @@ export class EquipmentParser {
   }
 
   /**
-   * Renders starting wealth options for class
+   * Renders starting wealth options for class or background
    * @async
-   * @param {string} classId - Class document ID
-   * @param {HTMLElement} sectionContainer - Section container element
    * @throws {Error} If wealth option rendering fails
    */
-  async renderClassWealthOption(classId, classUUID, sectionContainer) {
-    if (foundry.utils.isNewerVersion('4.0.0', game.system.version)) {
-      return;
-    } else if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
-      return;
-    }
-    const classItem = await fromUuidSync(classUUID);
-    const rulesVersion = classItem?.system?.source?.rules;
-    if (rulesVersion === '2024') return;
+  async renderWealthOption(sectionContainer, type = 'class') {
     try {
-      const classDoc = await this.findItemDocumentById(classId);
-      if (!classDoc || !classDoc.system.wealth) return;
+      const itemUUID = HM.SELECT_STORAGE[type].selectedUUID;
+      if (!itemUUID) return;
+
+      const item = await fromUuidSync(itemUUID);
+      if (!item) return;
+
+      const rulesVersion = item?.system?.source?.rules;
+      const isModernRules = rulesVersion === '2024';
+      const wealthValue = item.system.wealth;
+
+      if (!wealthValue) return;
 
       const wealthContainer = document.createElement('div');
       wealthContainer.classList.add('wealth-option-container');
@@ -235,21 +234,31 @@ export class EquipmentParser {
       wealthInput.type = 'text';
       wealthInput.id = 'starting-wealth-amount';
       wealthInput.name = 'starting-wealth-amount';
-      wealthInput.readOnly = true;
       wealthInput.placeholder = game.i18n.localize('hm.app.equipment.wealth-placeholder');
 
-      const rollButton = document.createElement('button');
-      rollButton.type = 'button';
-      rollButton.innerHTML = game.i18n.localize('hm.app.equipment.roll-wealth');
-      rollButton.classList.add('wealth-roll-button');
+      if (isModernRules) {
+        // For 2024 rules, we show flat value without roll button
+        wealthInput.value = `${wealthValue} ${CONFIG.DND5E.currencies.gp.abbreviation}`;
+        wealthInput.readOnly = true;
+      } else {
+        // Legacy rules with dice roll
+        wealthInput.readOnly = true;
 
-      rollButton.addEventListener('click', async () => {
-        const formula = classDoc.system.wealth;
-        const roll = new Roll(formula);
-        await roll.evaluate();
-        wealthInput.value = `${roll.total} gp`;
-        wealthInput.dispatchEvent(new Event('change', { bubbles: true }));
-      });
+        const rollButton = document.createElement('button');
+        rollButton.type = 'button';
+        rollButton.innerHTML = game.i18n.localize('hm.app.equipment.roll-wealth');
+        rollButton.classList.add('wealth-roll-button');
+
+        rollButton.addEventListener('click', async () => {
+          const formula = wealthValue;
+          const roll = new Roll(formula);
+          await roll.evaluate();
+          wealthInput.value = `${roll.total} ${CONFIG.DND5E.currencies.gp.abbreviation}`;
+          wealthInput.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        wealthRollContainer.appendChild(rollButton);
+      }
 
       wealthCheckbox.addEventListener('change', (event) => {
         const equipmentElements = sectionContainer.querySelectorAll('.equipment-item');
@@ -268,22 +277,21 @@ export class EquipmentParser {
         });
         wealthRollContainer.style.display = event.target.checked ? 'flex' : 'none';
         if (!event.target.checked) {
-          wealthInput.value = '';
+          wealthInput.value = isModernRules ? `${wealthValue} ${CONFIG.DND5E.currencies.gp.abbreviation}` : '';
         }
       });
 
       wealthContainer.appendChild(wealthCheckbox);
       wealthContainer.appendChild(wealthLabel);
       wealthRollContainer.appendChild(wealthInput);
-      wealthRollContainer.appendChild(rollButton);
       wealthContainer.appendChild(wealthRollContainer);
 
       sectionContainer.appendChild(wealthContainer);
-    } catch (error) {
-      HM.log(1, 'Error rendering wealth option:', error);
-    }
 
-    HM.log(3, `Rendered wealth options for class ${classId}`);
+      HM.log(3, `Rendered wealth options for ${type}`);
+    } catch (error) {
+      HM.log(1, `Error rendering wealth option: ${error}`);
+    }
   }
 
   /**
@@ -367,8 +375,12 @@ export class EquipmentParser {
           sectionContainer.appendChild(header);
 
           if (currentType === 'class' && selectedId) {
-            await this.renderClassWealthOption(selectedId, selectedUUID, sectionContainer).catch((error) => {
-              HM.log(1, `Error rendering wealth option: ${error.message}`);
+            await this.renderWealthOption(sectionContainer, 'class').catch((error) => {
+              HM.log(1, `Error rendering class wealth option: ${error.message}`);
+            });
+          } else if (currentType === 'background' && selectedId) {
+            await this.renderWealthOption(sectionContainer, 'background').catch((error) => {
+              HM.log(1, `Error rendering background wealth option: ${error.message}`);
             });
           }
 
@@ -1946,8 +1958,13 @@ export class EquipmentParser {
       equipmentSections.map(async (section) => {
         HM.log(3, 'Processing section:', section.className);
 
-        // Process dropdowns in parallel
-        const dropdowns = Array.from(section.querySelectorAll('select'));
+        // Get wealth checkbox for this section
+        const wealthChecked = section.querySelector('input[id="use-starting-wealth"]')?.checked || false;
+
+        // Process dropdowns in parallel - skip if wealth is checked or elements are disabled
+        const dropdowns = Array.from(section.querySelectorAll('select')).filter(
+          (dropdown) => !dropdown.disabled && !dropdown.closest('.disabled') && (!wealthChecked || !dropdown.closest('.equipment-item'))
+        );
 
         const dropdownPromises = dropdowns.map(async (dropdown) => {
           const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
@@ -1994,8 +2011,17 @@ export class EquipmentParser {
 
         await Promise.all(dropdownPromises);
 
-        // Process checkboxes in parallel
-        const checkboxes = Array.from(section.querySelectorAll('input[type="checkbox"]')).filter((cb) => cb.checked);
+        // Process checkboxes in parallel - skip if wealth is checked or elements are disabled
+        const checkboxes = Array.from(section.querySelectorAll('input[type="checkbox"]')).filter((cb) => {
+          return (
+            cb.checked &&
+            !cb.id.includes('use-starting-wealth') &&
+            !cb.classList.contains('equipment-favorite-checkbox') &&
+            !cb.disabled &&
+            !cb.closest('.disabled') &&
+            (!wealthChecked || !cb.closest('.equipment-item'))
+          );
+        });
 
         const checkboxPromises = checkboxes.map(async (checkbox) => {
           try {
@@ -2233,60 +2259,50 @@ export class EquipmentParser {
    * @static
    */
   static async convertWealthStringToCurrency(formData) {
-    if (game.settings.get('dnd5e', 'rulesVersion') !== 'legacy') {
-      HM.log(3, 'USING MODERN RULES - NO STARTING WEALTH');
-      return null;
-    }
-
-    if (!formData) {
+    if (!formData || !formData['use-starting-wealth']) {
       HM.log(1, 'Invalid form data for wealth processing');
       return null;
     }
 
-    const useStartingWealth = formData['use-starting-wealth'];
-    if (!useStartingWealth) return null;
+    const wealthAmounts = formData['starting-wealth-amount'];
+    if (!wealthAmounts || (!Array.isArray(wealthAmounts) && !wealthAmounts.length)) return null;
 
-    const wealthAmount = formData['starting-wealth-amount'];
-    if (!wealthAmount) return null;
-
-    const currencies = {
-      pp: 0,
-      gp: 0,
-      ep: 0,
-      sp: 0,
-      cp: 0
-    };
-
-    const matches = wealthAmount.match(/(\d+)\s*([a-z]{2})/gi);
-
-    if (!matches) return null;
-
-    matches.forEach((match) => {
-      const [amount, currency] = match.toLowerCase().split(/\s+/);
-      const value = parseInt(amount);
-
-      if (!isNaN(value)) {
-        switch (currency) {
-          case 'pp':
-            currencies.pp = value;
-            break;
-          case 'gp':
-            currencies.gp = value;
-            break;
-          case 'ep':
-            currencies.ep = value;
-            break;
-          case 'sp':
-            currencies.sp = value;
-            break;
-          case 'cp':
-            currencies.cp = value;
-            break;
-          default:
-            currencies.gp = value; // Default to gold if currency not recognized
-        }
-      }
+    // Initialize currencies object with zeros using CONFIG
+    const currencies = {};
+    Object.keys(CONFIG.DND5E.currencies).forEach((key) => {
+      currencies[key] = 0;
     });
+
+    // Build regex pattern from abbreviations in CONFIG
+    const abbrs = Object.values(CONFIG.DND5E.currencies)
+      .map((c) => c.abbreviation)
+      .join('|');
+    const regex = new RegExp(`(\\d+)\\s*(${abbrs})`, 'gi');
+
+    // Process each wealth amount (could be array or single value)
+    const amountsArray = Array.isArray(wealthAmounts) ? wealthAmounts : [wealthAmounts];
+
+    for (const amount of amountsArray) {
+      const matches = amount.match(regex);
+      if (!matches) continue;
+
+      matches.forEach((match) => {
+        const [num, currency] = match.toLowerCase().split(/\s+/);
+        const value = parseInt(num);
+
+        if (!isNaN(value)) {
+          // Find the currency key that matches this abbreviation
+          const currKey = Object.entries(CONFIG.DND5E.currencies).find(([_, data]) => data.abbreviation.toLowerCase() === currency)?.[0];
+
+          if (currKey) {
+            currencies[currKey] += value; // Add to existing amount
+          } else {
+            currencies.gp += value; // Default to gold if currency not recognized
+          }
+        }
+      });
+    }
+
     return currencies;
   }
 
