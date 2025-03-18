@@ -55,11 +55,11 @@
       <h3 class="font-bold pb-xs text-center">{{localize "hm.settings.mandatory-fields.groups.core"}}</h3>
 
       <!-- Core Character Fields -->
-      <div class="field-group p-sm">
+      <div class="field-group p-sm" data-tooltip="{{localize 'hm.settings.mandatory-fields.core-fields-hint'}}">
         {{#each fields.core}}
           <div class="form-group width-25 flex-col gap-xs pl-sm mb-xs">
             <label class="flex items-center gap-sm whitespace-nowrap">
-              <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}}>
+              <input type="checkbox" name="{{this.key}}" {{#if this.mandatory}}checked{{/if}} disabled>
               {{this.label}}
             </label>
           </div>

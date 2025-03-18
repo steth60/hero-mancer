@@ -636,11 +636,20 @@ export class SummaryManager {
       // Apply highlighting if this is a primary ability
       if (abilityKey && primaryAbilities.has(abilityKey)) {
         HM.log(3, `Highlighting ${rollMethod} ability: ${abilityKey} in block:`, block.id);
-
+        const classUUID = HM.SELECT_STORAGE.class.selectedUUID;
+        const classItem = classUUID ? fromUuidSync(classUUID) : null;
+        const className = classItem?.name || game.i18n.localize('hm.app.abilities.your-class');
         // For standardArray and pointBuy, highlight the label
         const label = block.querySelector('.ability-label');
         if (label) {
           label.classList.add('primary-ability');
+          // Add tooltip text as data attribute
+          const abilityName = CONFIG.DND5E.abilities[abilityKey]?.label || abilityKey.toUpperCase();
+          const tooltipText = game.i18n.format('hm.app.abilities.primary-tooltip', {
+            ability: abilityName,
+            class: className
+          });
+          label.setAttribute('data-tooltip', tooltipText);
         }
 
         // For standardArray, also highlight the dropdown
@@ -740,7 +749,7 @@ export class SummaryManager {
 
         // Check if dark mode is active and apply inversion if needed
         const isDarkMode = game.settings.get('core', 'colorScheme') === 'dark';
-        this.applyDarkModeToImage(portraitImg, isDarkMode);
+        this.applyDarkModeToImage(portraitImg, isDarkMode, true);
       }
 
       // Add name and art path update handling
@@ -753,11 +762,13 @@ export class SummaryManager {
           portraitName.innerHTML = nameInput?.value || game.user.name;
         }
         if (portraitImg && artInput) {
+          const isDefaultImage = portraitImg.src.includes('/abilities/');
           portraitImg.src = artInput.value || defaultImage;
 
-          // Reapply dark mode treatment when image changes
+          // Only apply dark mode treatment for default images
           const isDarkMode = game.settings.get('core', 'colorScheme') === 'dark';
-          this.applyDarkModeToImage(portraitImg, isDarkMode);
+          const isStillDefaultImage = !artInput.value || artInput.value.includes('/abilities/');
+          this.applyDarkModeToImage(portraitImg, isDarkMode, isStillDefaultImage);
         }
       };
 
@@ -768,15 +779,21 @@ export class SummaryManager {
       // Listen for color scheme changes
       Hooks.on('colorSchemeChange', (scheme) => {
         if (portraitImg) {
-          this.applyDarkModeToImage(portraitImg, scheme === 'dark');
+          const isDefaultImage = portraitImg.src.includes('/abilities/');
+          this.applyDarkModeToImage(portraitImg, scheme === 'dark', isDefaultImage);
         }
       });
     }
   }
 
-  // Helper method to apply or remove dark mode treatment to images
-  static applyDarkModeToImage(imgElement, isDarkMode) {
-    if (isDarkMode) {
+  /**
+   * Helper method to apply or remove dark mode treatment to images
+   * @param {HTMLImageElement} imgElement - The image element
+   * @param {boolean} isDarkMode - Whether dark mode is active
+   * @param {boolean} isDefaultImage - Whether the image is a default ability icon
+   */
+  static applyDarkModeToImage(imgElement, isDarkMode, isDefaultImage) {
+    if (isDarkMode && isDefaultImage) {
       imgElement.style.filter = 'invert(1)';
     } else {
       imgElement.style.filter = 'none';

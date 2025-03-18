@@ -36,7 +36,8 @@ export class Listeners {
    */
   static initializeAbilityListeners(context, selectedAbilities) {
     const abilityDropdowns = document.querySelectorAll('.ability-dropdown');
-    const selectedValues = Array.from(abilityDropdowns).map(() => '');
+    // Initialize with actual dropdown values instead of empty strings
+    const selectedValues = Array.from(abilityDropdowns).map((dropdown) => dropdown.value);
     const totalPoints = StatRoller.getTotalPoints();
     const diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
 
@@ -83,7 +84,12 @@ export class Listeners {
       this.updatePlusButtonState(selectedAbilities, context.remainingPoints);
       this.updateMinusButtonState(selectedAbilities);
     } else if (diceRollingMethod === 'standardArray') {
-      DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
+      // Ensure DOM is fully populated before initializing standard array mode
+      requestAnimationFrame(() => {
+        // Re-collect current values to ensure we have the latest
+        const currentValues = Array.from(abilityDropdowns).map((dropdown) => dropdown.value);
+        DropdownHandler.handleStandardArrayMode(abilityDropdowns, currentValues);
+      });
     }
   }
 
@@ -517,6 +523,18 @@ export class Listeners {
         elem.checked = value;
       } else if (elem.tagName === 'SELECT') {
         elem.value = value;
+
+        // Update HM.SELECT_STORAGE for class, race, background
+        if (key === 'class' || key === 'race' || key === 'background') {
+          HM.SELECT_STORAGE[key] = {
+            selectedValue: value,
+            selectedId: value.split(' ')[0],
+            selectedUUID: value.match(/\[(.*?)]/)?.[1]
+          };
+
+          // Log to verify values are updated
+          HM.log(3, `Restored ${key} SELECT_STORAGE:`, HM.SELECT_STORAGE[key]);
+        }
       } else {
         elem.value = value;
       }
@@ -532,8 +550,22 @@ export class Listeners {
       DropdownHandler.handleStandardArrayMode(abilityDropdowns, selectedValues);
     }
 
-    // Update summaries after restoring options
+    // Ensure equipment is initialized with proper values
     requestAnimationFrame(() => {
+      const equipmentContainer = html.querySelector('#equipment-container');
+      if (equipmentContainer) {
+        // Force equipment refresh to use the newly updated HM.SELECT_STORAGE
+        const equipment = new EquipmentParser();
+        equipment
+          .generateEquipmentSelectionUI()
+          .then((choices) => {
+            equipmentContainer.innerHTML = '';
+            equipmentContainer.appendChild(choices);
+          })
+          .catch((error) => HM.log(1, 'Error rendering equipment choices:', error));
+      }
+
+      // Update summaries after restoring options
       SummaryManager.updateClassRaceSummary();
     });
   }

@@ -45,7 +45,9 @@
         "select-placeholder": "Choose",
         "select-value": "Select a value",
         "summary": "{action} {first} and {second}",
-        "tooltip": "Select and assign abilities"
+        "tooltip": "Select and assign abilities",
+        "your-class": "your class",
+        "primary-tooltip": "{ability} is a primary ability for {class}s."
       },
       "background": {
         "adventurer": "an adventurer",
@@ -367,7 +369,8 @@
           "hint": "Configure which character creation fields must be completed",
           "name": "Mandatory Fields Configuration"
         },
-        "saved": "Mandatory field settings saved"
+        "saved": "Mandatory field settings saved",
+        "core-fields-hint": "Core fields are always mandatory and cannot be disabled as they are essential for functionality."
       },
       "no-selection": "No compendiums selected. Please select at least one.",
       "player-customization": {

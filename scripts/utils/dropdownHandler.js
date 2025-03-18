@@ -408,15 +408,17 @@ export class DropdownHandler {
       if (value) valueOccurrences[value] = (valueOccurrences[value] || 0) + 1;
     });
 
-    // Count current selections
+    // Count current selections - use actual dropdown values if selected values are empty
     const selectedCounts = {};
-    selectedValues.forEach((value) => {
-      if (value) selectedCounts[value] = (selectedCounts[value] || 0) + 1;
+    selectedValues.forEach((value, index) => {
+      // If value is empty, get the actual dropdown value
+      const effectiveValue = value || abilityDropdowns[index].value;
+      if (effectiveValue) selectedCounts[effectiveValue] = (selectedCounts[effectiveValue] || 0) + 1;
     });
 
     // Update each dropdown
     abilityDropdowns.forEach((dropdown, index) => {
-      const currentValue = selectedValues[index];
+      const currentValue = selectedValues[index] || dropdown.value;
       const valuesToDisable = {};
 
       // For each selected value, determine how many instances to disable

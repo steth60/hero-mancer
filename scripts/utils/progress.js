@@ -74,7 +74,8 @@ export class ProgressBar {
     // Process named form elements
     const namedInputs = form.querySelectorAll('[name]');
     namedInputs.forEach((input) => {
-      if (input.disabled || input.closest('.equipment-section')?.classList.contains('disabled')) {
+      // Skip if in disabled section or excluded field names
+      if (input.disabled || input.closest('.equipment-section')?.classList.contains('disabled') || input.name === 'use-starting-wealth' || input.name === 'ring.effects' || input.name === 'player') {
         return;
       }
 
@@ -112,8 +113,14 @@ export class ProgressBar {
     if (equipmentContainer) {
       const equipmentInputs = equipmentContainer.querySelectorAll('input[type="checkbox"], select');
       equipmentInputs.forEach((input) => {
-        // Filter out disabled and favorite checkbox inputs
-        if (input.disabled || input.closest('.equipment-section')?.classList.contains('disabled') || input.className.includes('equipment-favorite-checkbox')) {
+        // Skip disabled, favorite, and excluded inputs
+        if (
+          input.disabled ||
+          input.closest('.equipment-section')?.classList.contains('disabled') ||
+          input.className.includes('equipment-favorite-checkbox') ||
+          input.name === 'use-starting-wealth' ||
+          input.name === 'ring.effects'
+        ) {
           return;
         }
 
@@ -167,11 +174,6 @@ export class ProgressBar {
    * @static
    */
   static #isFormFieldPopulated(key, value, form) {
-    // Skip progress tracking for specific fields
-    if (key === 'use-starting-wealth' || key === 'player') {
-      return true;
-    }
-
     // Handle abilities fields
     if (key.match(/^abilities\[.*]$/)) {
       const isFilled = this.#isAbilityScoreFieldPopulated(value, form);
@@ -179,20 +181,9 @@ export class ProgressBar {
       return isFilled;
     }
 
-    // Handle ring effects field
-    if (key === 'ring.effects') {
-      const effectCheckboxes = form.querySelectorAll('input[name="ring.effects"]');
-      const anyChecked = Array.from(effectCheckboxes).some((checkbox) => checkbox.checked);
-      return anyChecked;
-    }
-
+    // Handle starting-wealth-amount field (this check is still needed if we encounter nested fields)
     if (key === 'starting-wealth-amount') {
-      // Only check if parent checkbox is checked
-      const useStartingWealth = form.querySelector('[name="use-starting-wealth"]');
-      if (useStartingWealth?.checked) {
-        return value && value.trim() !== '';
-      }
-      return true; // Don't count it if checkbox isn't checked
+      return true; // Always consider filled since we're ignoring this functionality
     }
 
     // Normal field handling

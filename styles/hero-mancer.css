@@ -703,6 +703,18 @@ fieldset#start > h2 {
   text-shadow: 0 0 5px #ffd70099;
 }
 
+/* Add dark stroke for light theme */
+.theme-light .ability-block .ability-label.primary-ability,
+.theme-light .ability-block.point-buy .ability-label.primary-ability {
+  text-shadow:
+    -1px -1px 1px #000000b3,
+    1px -1px 1px #000000b3,
+    -1px 1px 1px #000000b3,
+    1px 1px 1px #000000b3,
+    0 0 5px #ffd70099;
+  animation: primary-ability-pulse-light 2s infinite ease-in-out;
+}
+
 .ability-dropdown.primary-ability {
   box-shadow: 0 0 5px 5px #ffd70099;
 }
@@ -722,9 +734,45 @@ fieldset#start > h2 {
   }
 }
 
+/* Light theme pulse animation */
+@keyframes primary-ability-pulse-light {
+  0% {
+    text-shadow:
+      -1px -1px 1px #000000b3,
+      1px -1px 1px #000000b3,
+      -1px 1px 1px #000000b3,
+      1px 1px 1px #000000b3,
+      0 0 5px #ffd70099;
+  }
+
+  50% {
+    text-shadow:
+      -1px -1px 1px #000000e6,
+      1px -1px 1px #000000e6,
+      -1px 1px 1px #000000e6,
+      1px 1px 1px #000000e6,
+      0 0 10px #ffd700cc;
+  }
+
+  100% {
+    text-shadow:
+      -1px -1px 1px #000000b3,
+      1px -1px 1px #000000b3,
+      -1px 1px 1px #000000b3,
+      1px 1px 1px #000000b3,
+      0 0 5px #ffd70099;
+  }
+}
+
 .ability-block .ability-label.primary-ability,
 .ability-block.point-buy .ability-label.primary-ability {
   animation: primary-ability-pulse 2s infinite ease-in-out;
+}
+
+/* Primary ability highlight styling with tooltip */
+.ability-label.primary-ability {
+  position: relative;
+  cursor: help;
 }
 
 /* Point buy remaining points display */
