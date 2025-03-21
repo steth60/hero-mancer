@@ -44,13 +44,13 @@ export class Listeners {
     abilityDropdowns.forEach((dropdown, index) => {
       dropdown.addEventListener('change', (event) => {
         if (diceRollingMethod === 'manualFormula') {
-          const selectedValue = event.target.value;
-          selectedValues[index] = selectedValue;
+          const value = event.target.value;
+          selectedValues[index] = value;
           const scoreInput = event.target.parentElement.querySelector('.ability-score');
 
           // Both dropdown and input should reference the selected ability
-          event.target.setAttribute('name', `abilities[${selectedValue}]`);
-          scoreInput.setAttribute('name', `abilities[${selectedValue}].score`);
+          event.target.setAttribute('name', `abilities[${value}]`);
+          scoreInput.setAttribute('name', `abilities[${value}].score`);
 
           // Existing code for disabling options
           abilityDropdowns.forEach((otherDropdown, otherIndex) => {
@@ -122,16 +122,16 @@ export class Listeners {
       }
 
       classDropdown._changeHandler = async (event) => {
-        const selectedValue = event.target.value;
-        HM.log(3, `Class change detected: ${selectedValue}`);
+        const value = event.target.value;
+        HM.log(3, `Class change detected: ${value}`);
 
-        HM.SELECT_STORAGE.class = {
-          selectedValue,
-          selectedId: selectedValue.split(' ')[0],
-          selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
+        HM.SELECTED.class = {
+          value,
+          id: value.split(' ')[0],
+          uuid: value.match(/\[(.*?)]/)?.[1]
         };
 
-        HM.log(3, `Class storage updated: ${JSON.stringify(HM.SELECT_STORAGE.class)}`);
+        HM.log(3, `Class storage updated: ${JSON.stringify(HM.SELECTED.class)}`);
 
         // Call SummaryManager to update abilities highlighting
         SummaryManager.updateAbilitiesSummary();
@@ -139,12 +139,12 @@ export class Listeners {
         // Update equipment only if not in ELKAN mode
         if (!HM.COMPAT.ELKAN) {
           const equipmentContainer = document.querySelector('#equipment-container');
-          const updateEquipment = new EquipmentParser(HM.SELECT_STORAGE.class.selectedId, HM.SELECT_STORAGE.background.selectedId);
+          const updateEquipment = new EquipmentParser(HM.SELECTED.class.id, HM.SELECTED.background.id);
           await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'class');
         }
 
         // Manually update the description for Elkan content
-        this.updateDescriptionElement('class', HM.SELECT_STORAGE.class.selectedId);
+        this.updateDescriptionElement('class', HM.SELECTED.class.id);
       };
 
       classDropdown.addEventListener('change', classDropdown._changeHandler);
@@ -160,29 +160,29 @@ export class Listeners {
       }
 
       backgroundDropdown._changeHandler = async (event) => {
-        const selectedValue = event.target.value;
-        HM.log(3, `Background change detected: ${selectedValue}`);
+        const value = event.target.value;
+        HM.log(3, `Background change detected: ${value}`);
 
-        HM.SELECT_STORAGE.background = {
-          selectedValue,
-          selectedId: selectedValue.split(' ')[0],
-          selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
+        HM.SELECTED.background = {
+          value,
+          id: value.split(' ')[0],
+          uuid: value.match(/\[(.*?)]/)?.[1]
         };
 
-        HM.log(3, `Background storage updated: ${JSON.stringify(HM.SELECT_STORAGE.background)}`);
+        HM.log(3, `Background storage updated: ${JSON.stringify(HM.SELECTED.background)}`);
 
         SummaryManager.updateBackgroundSummary(event.target);
-        await SummaryManager.processBackgroundSelectionChange(HM.SELECT_STORAGE.background);
+        await SummaryManager.processBackgroundSelectionChange(HM.SELECTED.background);
 
         // Update equipment only if not in ELKAN mode
         if (!HM.COMPAT.ELKAN) {
           const equipmentContainer = document.querySelector('#equipment-container');
-          const updateEquipment = new EquipmentParser(HM.SELECT_STORAGE.class.selectedId, HM.SELECT_STORAGE.background.selectedId);
+          const updateEquipment = new EquipmentParser(HM.SELECTED.class.id, HM.SELECTED.background.id);
           await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'background');
         }
 
         // Manually update the description
-        this.updateDescriptionElement('background', HM.SELECT_STORAGE.background.selectedId);
+        this.updateDescriptionElement('background', HM.SELECTED.background.id);
       };
 
       backgroundDropdown.addEventListener('change', backgroundDropdown._changeHandler);
@@ -198,22 +198,22 @@ export class Listeners {
       }
 
       raceDropdown._changeHandler = async (event) => {
-        const selectedValue = event.target.value;
-        HM.log(3, `Race change detected: ${selectedValue}`);
+        const value = event.target.value;
+        HM.log(3, `Race change detected: ${value}`);
 
-        HM.SELECT_STORAGE.race = {
-          selectedValue,
-          selectedId: selectedValue.split(' ')[0],
-          selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
+        HM.SELECTED.race = {
+          value,
+          id: value.split(' ')[0],
+          uuid: value.match(/\[(.*?)]/)?.[1]
         };
 
-        HM.log(3, `Race storage updated: ${JSON.stringify(HM.SELECT_STORAGE.race)}`);
+        HM.log(3, `Race storage updated: ${JSON.stringify(HM.SELECTED.race)}`);
 
         // Race-specific summary updates
         SummaryManager.updateClassRaceSummary();
 
         // Manually update the description
-        this.updateDescriptionElement('race', HM.SELECT_STORAGE.race.selectedId);
+        this.updateDescriptionElement('race', HM.SELECTED.race.id);
       };
 
       raceDropdown.addEventListener('change', raceDropdown._changeHandler);
@@ -246,11 +246,11 @@ export class Listeners {
   /**
    * Updates description element with content from HM.documents collection
    * @param {string} type - Type of dropdown (class, race, background)
-   * @param {string} selectedId - ID of selected item
+   * @param {string} id - ID of selected item
    * @static
    */
-  static updateDescriptionElement(type, selectedId) {
-    HM.log(3, `Updating ${type} description for ID: ${selectedId}`);
+  static updateDescriptionElement(type, id) {
+    HM.log(3, `Updating ${type} description for ID: ${id}`);
 
     try {
       // Find the description element
@@ -270,7 +270,7 @@ export class Listeners {
         for (const folder of HM.documents.race) {
           HM.log(3, `Looking in folder: ${folder.folderName}`);
 
-          const doc = folder.docs.find((d) => d.id === selectedId);
+          const doc = folder.docs.find((d) => d.id === id);
           if (doc) {
             foundDoc = doc;
             HM.log(3, `Found race doc in folder ${folder.folderName}: ${doc.name}`);
@@ -282,15 +282,15 @@ export class Listeners {
           HM.log(3, `Setting race description for ${foundDoc.name}, content length: ${foundDoc.enrichedDescription?.length || 0}`);
           descriptionEl.innerHTML = foundDoc.enrichedDescription || '';
         } else {
-          HM.log(1, `No matching race doc found for ID: ${selectedId}`);
+          HM.log(1, `No matching race doc found for ID: ${id}`);
           descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
         }
       } else {
         // For other document types (class, background), they're direct arrays
         const docsArray = HM.documents[type] || [];
-        HM.log(3, `Looking for ${type} doc with ID ${selectedId} among ${docsArray.length} docs`);
+        HM.log(3, `Looking for ${type} doc with ID ${id} among ${docsArray.length} docs`);
 
-        const doc = docsArray.find((d) => d.id === selectedId);
+        const doc = docsArray.find((d) => d.id === id);
 
         if (doc) {
           HM.log(3, `Found matching ${type} doc: ${doc.name}`);
@@ -303,7 +303,7 @@ export class Listeners {
             descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
           }
         } else {
-          HM.log(1, `No matching ${type} doc found for ID: ${selectedId}`);
+          HM.log(1, `No matching ${type} doc found for ID: ${id}`);
           descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
         }
       }
@@ -429,22 +429,22 @@ export class Listeners {
     let background = '';
     let charClass = '';
 
-    // Check if we have SELECT_STORAGE data
-    if (HM.SELECT_STORAGE) {
+    // Check if we have SELECTED data
+    if (HM.SELECTED) {
       // Get document names from UUIDs
       try {
-        if (HM.SELECT_STORAGE.race?.selectedUUID) {
-          const raceDoc = fromUuidSync(HM.SELECT_STORAGE.race.selectedUUID);
+        if (HM.SELECTED.race?.uuid) {
+          const raceDoc = fromUuidSync(HM.SELECTED.race.uuid);
           race = raceDoc?.name || '';
         }
 
-        if (HM.SELECT_STORAGE.class?.selectedUUID) {
-          const classDoc = fromUuidSync(HM.SELECT_STORAGE.class.selectedUUID);
+        if (HM.SELECTED.class?.uuid) {
+          const classDoc = fromUuidSync(HM.SELECTED.class.uuid);
           charClass = classDoc?.name || '';
         }
 
-        if (HM.SELECT_STORAGE.background?.selectedUUID) {
-          const backgroundDoc = fromUuidSync(HM.SELECT_STORAGE.background.selectedUUID);
+        if (HM.SELECTED.background?.uuid) {
+          const backgroundDoc = fromUuidSync(HM.SELECTED.background.uuid);
           background = backgroundDoc?.name || '';
         }
       } catch (error) {
@@ -689,16 +689,16 @@ export class Listeners {
       } else if (elem.tagName === 'SELECT') {
         elem.value = value;
 
-        // Update HM.SELECT_STORAGE for class, race, background
+        // Update HM.SELECTED for class, race, background
         if (key === 'class' || key === 'race' || key === 'background') {
-          HM.SELECT_STORAGE[key] = {
-            selectedValue: value,
-            selectedId: value.split(' ')[0],
-            selectedUUID: value.match(/\[(.*?)]/)?.[1]
+          HM.SELECTED[key] = {
+            value: value,
+            id: value.split(' ')[0],
+            uuid: value.match(/\[(.*?)]/)?.[1]
           };
 
           // Log to verify values are updated
-          HM.log(3, `Restored ${key} SELECT_STORAGE:`, HM.SELECT_STORAGE[key]);
+          HM.log(3, `Restored ${key} SELECTED:`, HM.SELECTED[key]);
         }
       } else {
         elem.value = value;
@@ -720,7 +720,7 @@ export class Listeners {
       if (HM.COMPAT.ELKAN) return; // Disable if Elkan enabled.
       const equipmentContainer = html.querySelector('#equipment-container');
       if (equipmentContainer) {
-        // Force equipment refresh to use the newly updated HM.SELECT_STORAGE
+        // Force equipment refresh to use the newly updated HM.SELECTED
         const equipment = new EquipmentParser();
         equipment
           .generateEquipmentSelectionUI()

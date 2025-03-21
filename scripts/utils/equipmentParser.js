@@ -81,10 +81,10 @@ export class EquipmentParser {
    */
   constructor() {
     this.equipmentData = null;
-    this.classId = HM.SELECT_STORAGE.class.selectedId;
-    this.classUUID = HM.SELECT_STORAGE.class.selectedUUID;
-    this.backgroundId = HM.SELECT_STORAGE.background.selectedId;
-    this.backgroundUUID = HM.SELECT_STORAGE.background.selectedUUID;
+    this.classId = HM.SELECTED.class.id;
+    this.classUUID = HM.SELECTED.class.uuid;
+    this.backgroundId = HM.SELECTED.background.id;
+    this.backgroundUUID = HM.SELECTED.background.uuid;
     this.proficiencies = new Set();
     EquipmentParser.preloadCompendiumIndices();
   }
@@ -154,11 +154,11 @@ export class EquipmentParser {
    * @throws {Error} If compendium lookup fails
    */
   async getStartingEquipment(type) {
-    const storedData = HM.SELECT_STORAGE[type] || {};
-    const selectedId = storedData.selectedId;
-    const selectedUUID = storedData.selectedUUID;
+    const storedData = HM.SELECTED[type] || {};
+    const id = storedData.id;
+    const uuid = storedData.uuid;
 
-    if (!selectedId) {
+    if (!id) {
       return [];
     }
 
@@ -166,15 +166,15 @@ export class EquipmentParser {
 
     try {
       // Try to get by UUID first
-      if (selectedUUID) {
-        HM.log(3, `Attempting to get document for ${type} by UUID: ${selectedUUID}`);
-        doc = await fromUuidSync(selectedUUID);
+      if (uuid) {
+        HM.log(3, `Attempting to get document for ${type} by UUID: ${uuid}`);
+        doc = await fromUuidSync(uuid);
       }
 
       // If UUID fails, try by ID
       if (!doc) {
-        HM.log(2, `Attempting to get document for ${type} by ID: ${selectedId}`);
-        doc = await this.findItemDocumentById(selectedId);
+        HM.log(2, `Attempting to get document for ${type} by ID: ${id}`);
+        doc = await this.findItemDocumentById(id);
       }
     } catch (error) {
       HM.log(1, `Error retrieving document for ${type}:`, error);
@@ -190,7 +190,7 @@ export class EquipmentParser {
         return [];
       }
     } else {
-      HM.log(2, `No document found for type ${type} with selectedId ${selectedId}`);
+      HM.log(2, `No document found for type ${type} with id ${id}`);
       return [];
     }
   }
@@ -202,7 +202,7 @@ export class EquipmentParser {
    */
   async renderWealthOption(sectionContainer, type = 'class') {
     try {
-      const itemUUID = HM.SELECT_STORAGE[type].selectedUUID;
+      const itemUUID = HM.SELECTED[type].uuid;
       if (!itemUUID) return;
 
       const item = await fromUuidSync(itemUUID);
@@ -338,18 +338,18 @@ export class EquipmentParser {
           const items = this.equipmentData[currentType] || [];
 
           // Get stored data for current type
-          const storedData = HM.SELECT_STORAGE[currentType] || {};
-          const selectedId = storedData.selectedId || '';
-          const selectedUUID = storedData.selectedUUID || '';
+          const storedData = HM.SELECTED[currentType] || {};
+          const id = storedData.id || '';
+          const uuid = storedData.uuid || '';
 
           // Get document for potential equipment description extraction
           let documentWithEquipment = null;
 
-          if (currentType === 'class' && selectedId) {
-            documentWithEquipment = await fromUuidSync(selectedUUID);
+          if (currentType === 'class' && id) {
+            documentWithEquipment = await fromUuidSync(uuid);
             HM.log(3, `Retrieved class document: ${documentWithEquipment?.name || 'unknown'}`, { doc: documentWithEquipment });
-          } else if (currentType === 'background' && selectedId) {
-            documentWithEquipment = await fromUuidSync(selectedUUID);
+          } else if (currentType === 'background' && id) {
+            documentWithEquipment = await fromUuidSync(uuid);
             HM.log(3, `Retrieved background document: ${documentWithEquipment?.name || 'unknown'}`, { doc: documentWithEquipment });
           }
 
@@ -378,11 +378,11 @@ export class EquipmentParser {
             : game.i18n.format('hm.app.equipment.type-equipment', { type: dropdownText });
           sectionContainer.appendChild(header);
 
-          if (currentType === 'class' && selectedId) {
+          if (currentType === 'class' && id) {
             await this.renderWealthOption(sectionContainer, 'class').catch((error) => {
               HM.log(1, `Error rendering class wealth option: ${error.message}`);
             });
-          } else if (currentType === 'background' && selectedId) {
+          } else if (currentType === 'background' && id) {
             await this.renderWealthOption(sectionContainer, 'background').catch((error) => {
               HM.log(1, `Error rendering background wealth option: ${error.message}`);
             });

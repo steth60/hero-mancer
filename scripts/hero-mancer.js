@@ -127,10 +127,10 @@ export class HM {
   }
 }
 
-HM.SELECT_STORAGE = {
-  class: { selectedValue: '', selectedId: '', selectedUUID: '' },
-  race: { selectedValue: '', selectedId: '', selectedUUID: '' },
-  background: { selectedValue: '', selectedId: '', selectedUUID: '' }
+HM.SELECTED = {
+  class: { value: '', id: '', uuid: '' },
+  race: { value: '', id: '', uuid: '' },
+  background: { value: '', id: '', uuid: '' }
 };
 
 /* -------------------------------------------- */

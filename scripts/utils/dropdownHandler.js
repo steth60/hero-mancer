@@ -239,16 +239,16 @@ export class DropdownHandler {
    */
   static async handleDropdownChange(type, html, context, event) {
     try {
-      const selectedValue = event.target.value;
+      const value = event.target.value;
 
       // Extract the ID (everything before the first space)
-      const selectedId = selectedValue.split(' ')[0].trim();
+      const id = value.split(' ')[0].trim();
 
       // Extract the UUID (content inside square brackets)
-      const selectedUUID = selectedValue.match(/\[(.*?)]/)?.[1] || '';
-      HM.log(3, { selectedValue: selectedValue, selectedId: selectedId, selectedUUID: selectedUUID });
-      HM.SELECT_STORAGE[type] = { selectedValue, selectedId, selectedUUID };
-      await this.updateDescription(type, selectedId, context);
+      const uuid = value.match(/\[(.*?)]/)?.[1] || '';
+      HM.log(3, { value: value, id: id, uuid: uuid });
+      HM.SELECTED[type] = { value, id, uuid };
+      await this.updateDescription(type, id, context);
     } catch (error) {
       HM.log(1, `Error handling dropdown change for ${type}:`, error);
 
@@ -263,12 +263,12 @@ export class DropdownHandler {
   /**
    * Updates description based on selected item
    * @param {string} type - Dropdown type
-   * @param {string} selectedId - Selected item ID
+   * @param {string} id - Selected item ID
    * @param {object} context - Application context
    * @returns {Promise<void>}
    * @static
    */
-  static async updateDescription(type, selectedId, context) {
+  static async updateDescription(type, id, context) {
     try {
       const docs = this.getDocumentsFromCacheOrContext(context, `${type}Docs`);
       if (!docs) {
@@ -276,7 +276,7 @@ export class DropdownHandler {
         return;
       }
 
-      const selectedDoc = docs.find((doc) => doc.id === selectedId);
+      const selectedDoc = docs.find((doc) => doc.id === id);
       const content = selectedDoc?.enrichedDescription || '';
 
       HM.log(3, { selectedDoc: selectedDoc, content: content });

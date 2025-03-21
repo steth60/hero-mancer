@@ -274,11 +274,14 @@ export class SummaryManager {
 
     HM.log(3, 'Found dropdowns:', { race: raceDropdown, class: classDropdown, background: backgroundDropdown });
 
+    // Use a single debounced function for equipment updates to avoid multiple calls
+    this._debouncedEquipmentUpdate = this._debouncedEquipmentUpdate || this._createDebouncedEquipmentUpdate();
+
     if (raceDropdown) {
       raceDropdown._summaryChangeHandler = (event) => {
         HM.log(3, 'Race dropdown changed:', event.target.value);
         this.updateClassRaceSummary();
-        this.updateEquipmentSummary();
+        this._debouncedEquipmentUpdate();
       };
       raceDropdown.addEventListener('change', raceDropdown._summaryChangeHandler);
     }
@@ -287,7 +290,7 @@ export class SummaryManager {
       classDropdown._summaryChangeHandler = (event) => {
         HM.log(3, 'Class dropdown changed:', event.target.value);
         this.updateClassRaceSummary();
-        this.updateEquipmentSummary();
+        this._debouncedEquipmentUpdate();
       };
       classDropdown.addEventListener('change', classDropdown._summaryChangeHandler);
     }
@@ -296,7 +299,7 @@ export class SummaryManager {
       backgroundDropdown._summaryChangeHandler = (event) => {
         HM.log(3, 'Background dropdown changed:', event.target.value);
         this.updateBackgroundSummary();
-        this.updateEquipmentSummary();
+        this._debouncedEquipmentUpdate();
       };
       backgroundDropdown.addEventListener('change', backgroundDropdown._summaryChangeHandler);
     }
@@ -313,6 +316,8 @@ export class SummaryManager {
 
     if (equipmentContainer) {
       MutationObserverRegistry.register('summary-equipment', equipmentContainer, { childList: true, subtree: true, attributes: true }, (mutations) => {
+        let needsUpdate = false;
+
         for (const mutation of mutations) {
           if (mutation.type === 'childList' && mutation.addedNodes.length) {
             mutation.addedNodes.forEach((node) => {
@@ -320,50 +325,47 @@ export class SummaryManager {
                 const newCheckboxes = node.querySelectorAll?.('.equipment-favorite-checkbox') || [];
                 newCheckboxes.forEach((checkbox) => {
                   if (!checkbox._favoriteChangeHandler) {
-                    checkbox._favoriteChangeHandler = () => this.updateEquipmentSummary();
+                    checkbox._favoriteChangeHandler = () => this._debouncedEquipmentUpdate();
                     checkbox.addEventListener('change', checkbox._favoriteChangeHandler);
                   }
                 });
+
+                // If we added elements that might affect the summary, flag for update
+                if (node.querySelector('select') || node.querySelector('input[type="checkbox"]')) {
+                  needsUpdate = true;
+                }
               }
             });
           }
 
           // If attribute changed on a favorite checkbox
           if (mutation.type === 'attributes' && mutation.attributeName === 'checked' && mutation.target.classList.contains('equipment-favorite-checkbox')) {
-            this.updateEquipmentSummary();
+            needsUpdate = true;
           }
         }
 
-        // Update summary regardless of mutation type
+        // Only update once if needed
+        if (needsUpdate) {
+          this._debouncedEquipmentUpdate();
+        }
+      });
+    }
+  }
+
+  /**
+   * Creates a debounced version of updateEquipmentSummary
+   * @returns {Function} Debounced update function
+   * @private
+   * @static
+   */
+  static _createDebouncedEquipmentUpdate() {
+    let timeout = null;
+    return () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
         this.updateEquipmentSummary();
-      });
-    }
-
-    if (abilityBlocks) {
-      abilityBlocks.forEach((block, index) => {
-        const currentScore = block.querySelector('.current-score');
-        if (currentScore) {
-          // Register ability score observer with MutationObserverRegistry
-          MutationObserverRegistry.register(`summary-ability-${index}`, currentScore, { childList: true, characterData: true, subtree: true }, () => this.updateAbilitiesSummary());
-        }
-
-        const otherInputs = block.querySelectorAll('.ability-dropdown, .ability-score');
-        otherInputs.forEach((input) => {
-          input._summarySummaryHandler = () => this.updateAbilitiesSummary();
-          input.addEventListener('change', input._summarySummaryHandler);
-        });
-      });
-    }
-
-    if (proseMirror) {
-      // Register proseMirror observer with MutationObserverRegistry
-      MutationObserverRegistry.register('summary-backstory', proseMirror, { childList: true, characterData: true, subtree: true, attributes: true }, (mutations) => {
-        const hasContent = proseMirror.innerHTML.trim() !== '';
-        if (hasContent) {
-          proseMirror.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      });
-    }
+      }, 50); // Small delay to batch closely timed changes
+    };
   }
 
   /**
@@ -392,7 +394,7 @@ export class SummaryManager {
     const [itemId, packId] = selectedOption.value.split(' (');
     if (!itemId || !packId) return;
 
-    const uuid = HM.SELECT_STORAGE.background.selectedUUID;
+    const uuid = HM.SELECTED.background.uuid;
     const backgroundName = selectedOption.text;
     const article = /^[aeiou]/i.test(backgroundName) ? game.i18n.localize('hm.app.equipment.article-plural') : game.i18n.localize('hm.app.equipment.article');
 
@@ -417,7 +419,7 @@ export class SummaryManager {
 
     // Get race details
     let raceLink = game.i18n.format('hm.unknown', { type: 'race' });
-    if (HM.SELECT_STORAGE.race?.selectedUUID) {
+    if (HM.SELECTED.race?.uuid) {
       // Get the race name directly from the dropdown if possible
       const selectedRaceOption = raceSelect.selectedIndex > 0 ? raceSelect.options[raceSelect.selectedIndex] : null;
 
@@ -428,7 +430,7 @@ export class SummaryManager {
       } else {
         // Look for option that contains the UUID
         for (let i = 0; i < raceSelect.options.length; i++) {
-          if (raceSelect.options[i].value.includes(HM.SELECT_STORAGE.race.selectedUUID)) {
+          if (raceSelect.options[i].value.includes(HM.SELECTED.race.uuid)) {
             raceName = raceSelect.options[i].text;
             break;
           }
@@ -437,15 +439,15 @@ export class SummaryManager {
 
       // If we found a name, create the link
       if (raceName) {
-        raceLink = `@UUID[${HM.SELECT_STORAGE.race.selectedUUID}]{${raceName}}`;
+        raceLink = `@UUID[${HM.SELECTED.race.uuid}]{${raceName}}`;
       }
     }
 
     // Similar process for class
     let classLink = game.i18n.format('hm.unknown', { type: 'class' });
-    if (HM.SELECT_STORAGE.class?.selectedUUID) {
+    if (HM.SELECTED.class?.uuid) {
       const className = classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].text : 'unknown class';
-      classLink = `@UUID[${HM.SELECT_STORAGE.class.selectedUUID}]{${className}}`;
+      classLink = `@UUID[${HM.SELECTED.class.uuid}]{${className}}`;
     }
 
     const content = game.i18n.format('hm.app.finalize.summary.classRace', {
@@ -462,86 +464,119 @@ export class SummaryManager {
    * @static
    */
   static async updateEquipmentSummary() {
-    const priorityTypes = ['weapon', 'armor', 'shield'];
+    // Check if we're already processing an update
+    if (this._isUpdatingEquipment) return;
+    this._isUpdatingEquipment = true;
 
-    let selectedEquipment = Array.from(document.querySelectorAll('#equipment-container select, #equipment-container input[type="checkbox"]:checked'))
-      .map((el) => {
-        // For selects
-        if (el.tagName === 'SELECT') {
-          const selectedOption = el.options[el.selectedIndex];
-          if (!selectedOption || !selectedOption.value || !selectedOption.value.includes('Compendium')) return null;
+    try {
+      const priorityTypes = ['weapon', 'armor', 'shield'];
+      const equipmentContainer = document.querySelector('#equipment-container');
 
-          const favoriteCheckbox = el.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
-          const isFavorite = favoriteCheckbox?.checked || false;
-
-          return {
-            type: selectedOption.dataset.tooltip?.toLowerCase() || '',
-            uuid: selectedOption.value,
-            text: selectedOption.textContent?.trim(),
-            favorite: isFavorite
-          };
+      // If no container or in ELKAN mode, exit early
+      if (!equipmentContainer || HM.COMPAT.ELKAN) {
+        const summary = document.querySelector('.equipment-summary');
+        if (summary) {
+          summary.innerHTML = game.i18n.localize('hm.app.finalize.summary.equipmentDefault');
         }
-        // For checkboxes
-        else {
-          const link = el.parentElement?.querySelector('.content-link');
-          const uuid = link?.dataset?.uuid;
+        return;
+      }
 
-          if (!link || !uuid || uuid.includes(',') || !uuid.includes('Compendium')) return null;
+      // Collect all equipment items at once
+      const selectedEquipment = Array.from(document.querySelectorAll('#equipment-container select, #equipment-container input[type="checkbox"]:checked'))
+        .map((el) => {
+          // For selects
+          if (el.tagName === 'SELECT') {
+            const selectedOption = el.options[el.selectedIndex];
+            if (!selectedOption || !selectedOption.value || !selectedOption.value.includes('Compendium')) return null;
 
-          const favoriteCheckbox = el.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
-          const isFavorite = favoriteCheckbox?.checked || false;
+            const favoriteCheckbox = el.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
+            const isFavorite = favoriteCheckbox?.checked || false;
 
-          return {
-            type: link.dataset.tooltip?.toLowerCase() || '',
-            uuid: uuid,
-            text: link.textContent?.trim(),
-            favorite: isFavorite
-          };
+            return {
+              type: selectedOption.dataset.tooltip?.toLowerCase() || '',
+              uuid: selectedOption.value,
+              text: selectedOption.textContent?.trim(),
+              favorite: isFavorite
+            };
+          }
+          // For checkboxes
+          else {
+            const link = el.parentElement?.querySelector('.content-link');
+            const uuid = link?.dataset?.uuid;
+
+            if (!link || !uuid || uuid.includes(',') || !uuid.includes('Compendium')) return null;
+
+            const favoriteCheckbox = el.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
+            const isFavorite = favoriteCheckbox?.checked || false;
+
+            return {
+              type: link.dataset.tooltip?.toLowerCase() || '',
+              uuid: uuid,
+              text: link.textContent?.trim(),
+              favorite: isFavorite
+            };
+          }
+        })
+        .filter(Boolean);
+
+      if (!selectedEquipment.length) {
+        // No equipment? Update summary with default message
+        const summary = document.querySelector('.equipment-summary');
+        if (summary) {
+          summary.innerHTML = game.i18n.localize('hm.app.finalize.summary.equipmentDefault');
         }
-      })
-      .filter(Boolean);
+        return;
+      }
 
-    HM.log(
-      3,
-      'Before sorting:',
-      selectedEquipment.map((item) => `${item.text} (favorite: ${item.favorite})`)
-    );
+      // Single log before sorting
+      HM.log(
+        3,
+        'Before sorting:',
+        selectedEquipment.map((item) => `${item.text} (favorite: ${item.favorite})`)
+      );
 
-    // Fix the sorting to ensure favorites come first
-    selectedEquipment.sort((a, b) => {
-      if (a.favorite && !b.favorite) return -1;
-      if (!a.favorite && b.favorite) return 1;
+      // Sort once - favorites first, then by type priority
+      selectedEquipment.sort((a, b) => {
+        if (a.favorite && !b.favorite) return -1;
+        if (!a.favorite && b.favorite) return 1;
 
-      // If both have same favorite status, use the type priority
-      const aIndex = priorityTypes.indexOf(a.type);
-      const bIndex = priorityTypes.indexOf(b.type);
-      return (bIndex === -1 ? -999 : bIndex) - (aIndex === -1 ? -999 : aIndex);
-    });
-
-    HM.log(
-      3,
-      'After sorting:',
-      selectedEquipment.map((item) => `${item.text} (favorite: ${item.favorite})`)
-    );
-
-    // Take up to 3 items
-    const displayEquipment = selectedEquipment.slice(0, 3);
-
-    const summary = document.querySelector('.equipment-summary');
-    if (summary && displayEquipment.length) {
-      const formattedItems = displayEquipment.map((item) => {
-        const itemName = item.text;
-        const article = /^[aeiou]/i.test(itemName) ? game.i18n.localize('hm.app.equipment.article-plural') : game.i18n.localize('hm.app.equipment.article');
-        return `${article} @UUID[${item.uuid}]{${item.text}}`;
+        // If both have same favorite status, use the type priority
+        const aIndex = priorityTypes.indexOf(a.type);
+        const bIndex = priorityTypes.indexOf(b.type);
+        return (bIndex === -1 ? -999 : bIndex) - (aIndex === -1 ? -999 : aIndex);
       });
 
-      const content = game.i18n.format('hm.app.finalize.summary.equipment', {
-        items:
-          formattedItems.slice(0, -1).join(game.i18n.localize('hm.app.equipment.separator')) + (formattedItems.length > 1 ? game.i18n.localize('hm.app.equipment.and') : '') + formattedItems.slice(-1)
-      });
-      summary.innerHTML = await TextEditor.enrichHTML(content);
-    } else if (summary) {
-      summary.innerHTML = game.i18n.localize('hm.app.finalize.summary.equipmentDefault');
+      // Single log after sorting
+      HM.log(
+        3,
+        'After sorting:',
+        selectedEquipment.map((item) => `${item.text} (favorite: ${item.favorite})`)
+      );
+
+      // Take up to 3 items
+      const displayEquipment = selectedEquipment.slice(0, 3);
+
+      const summary = document.querySelector('.equipment-summary');
+      if (summary && displayEquipment.length) {
+        const formattedItems = displayEquipment.map((item) => {
+          const itemName = item.text;
+          const article = /^[aeiou]/i.test(itemName) ? game.i18n.localize('hm.app.equipment.article-plural') : game.i18n.localize('hm.app.equipment.article');
+          return `${article} @UUID[${item.uuid}]{${item.text}}`;
+        });
+
+        const content = game.i18n.format('hm.app.finalize.summary.equipment', {
+          items:
+            formattedItems.slice(0, -1).join(game.i18n.localize('hm.app.equipment.separator')) +
+            (formattedItems.length > 1 ? game.i18n.localize('hm.app.equipment.and') : '') +
+            formattedItems.slice(-1)
+        });
+        summary.innerHTML = await TextEditor.enrichHTML(content);
+      } else if (summary) {
+        summary.innerHTML = game.i18n.localize('hm.app.finalize.summary.equipmentDefault');
+      }
+    } finally {
+      // Release the lock when done
+      this._isUpdatingEquipment = false;
     }
   }
 
@@ -564,7 +599,7 @@ export class SummaryManager {
     // Get the primary abilities from the class item
     const primaryAbilities = new Set();
     try {
-      const classUUID = HM.SELECT_STORAGE.class.selectedUUID;
+      const classUUID = HM.SELECTED.class.uuid;
       if (classUUID) {
         const classItem = fromUuidSync(classUUID);
 
@@ -636,7 +671,7 @@ export class SummaryManager {
       // Apply highlighting if this is a primary ability
       if (abilityKey && primaryAbilities.has(abilityKey)) {
         HM.log(3, `Highlighting ${rollMethod} ability: ${abilityKey} in block:`, block.id);
-        const classUUID = HM.SELECT_STORAGE.class.selectedUUID;
+        const classUUID = HM.SELECTED.class.uuid;
         const classItem = classUUID ? fromUuidSync(classUUID) : null;
         const className = classItem?.name || game.i18n.localize('hm.app.abilities.your-class');
         // For standardArray and pointBuy, highlight the label
@@ -857,11 +892,11 @@ export class SummaryManager {
    * @static
    */
   static async processBackgroundSelectionChange(selectedBackground) {
-    if (!selectedBackground?.selectedValue) {
+    if (!selectedBackground?.value) {
       return;
     }
 
-    const uuid = HM.SELECT_STORAGE.background.selectedUUID;
+    const uuid = HM.SELECTED.background.uuid;
 
     try {
       const background = await fromUuid(uuid);
