@@ -149,15 +149,34 @@ class TableManager {
   static async rollOnBackgroundCharacteristicTable(backgroundId, characteristicType) {
     const tables = this.currentTables.get(backgroundId);
 
-    if (!tables) return null;
+    if (!tables) {
+      HM.log(2, `No tables found for background ID: ${backgroundId}`);
+      return null;
+    }
 
+    // Better table matching logic with more debugging
     const table = tables.find((t) => {
       const tableName = t.name.toLowerCase();
       const searchTerm = characteristicType.toLowerCase();
-      return tableName.includes(searchTerm) || (searchTerm === 'traits' && tableName.includes('personality'));
+      const isMatch = tableName.includes(searchTerm) || (searchTerm === 'traits' && tableName.includes('personality'));
+
+      HM.log(3, `Checking table match: "${t.name}" for type "${characteristicType}" - Match: ${isMatch}`);
+      return isMatch;
     });
 
-    if (!table) return null;
+    if (!table) {
+      HM.log(2, `No matching table found for type: ${characteristicType}`);
+      return null;
+    }
+
+    // Check if table has available results
+    const availableResults = table.results.filter((r) => !r.drawn);
+    if (!availableResults.length) {
+      HM.log(2, `All results have been drawn from table: ${table.name}`);
+      return null;
+    }
+
+    HM.log(3, `Drawing from table: ${table.name} (${availableResults.length} available results)`);
 
     try {
       // Set replacement to false to prevent duplicates
@@ -166,22 +185,25 @@ class TableManager {
         replacement: false
       };
 
-      const { results } = await table.draw(drawOptions);
-      HM.log(3, 'Draw results:', results);
+      const result = await table.draw(drawOptions);
+      HM.log(3, 'Draw result object:', result);
 
-      if (!results.length) return null;
+      if (!result.results || !result.results.length) {
+        HM.log(2, 'Table draw returned no results');
+        return null;
+      }
 
       // Mark the result as drawn
       await table.updateEmbeddedDocuments('TableResult', [
         {
-          _id: results[0].id,
+          _id: result.results[0].id,
           drawn: true
         }
       ]);
 
-      return results[0]?.text || null;
+      return result.results[0]?.text || null;
     } catch (error) {
-      HM.log(1, 'Error rolling for characteristic:', error);
+      HM.log(1, `Error rolling for characteristic on table ${table.name}:`, error);
       return null;
     }
   }
@@ -863,7 +885,7 @@ export class SummaryManager {
       button.addEventListener('click', async (event) => {
         const tableType = event.currentTarget.dataset.table;
         const textarea = event.currentTarget.closest('.input-with-roll').querySelector('textarea');
-        const backgroundId = backgroundSelect?.value.split(' (')[0];
+        const backgroundId = HM.SELECTED.background.id;
 
         if (!backgroundId) {
           ui.notifications.warn(game.i18n.localize('hm.warnings.select-background'));
