@@ -887,8 +887,14 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       }
 
       // Check if using starting wealth
-      const useStartingWealth = formData.object['use-starting-wealth'];
+      const useClassWealth = formData.object['use-starting-wealth-class'];
+      const useBackgroundWealth = formData.object['use-starting-wealth-background'];
+      const useStartingWealth = useClassWealth || useBackgroundWealth;
+
+      HM.log(3, 'Starting wealth checks:', { class: useClassWealth, background: useBackgroundWealth });
+
       const startingWealth = useStartingWealth ? await EquipmentParser.convertWealthStringToCurrency(formData.object) : null;
+      HM.log(3, 'The starting wealth amount is:', startingWealth);
 
       // Get background equipment (always collected)
       const backgroundEquipment = await HeroMancer.collectEquipmentSelections(event, {
@@ -1196,7 +1202,6 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
         if (startingWealth) {
           await actor.update({
             system: {
-              ...actor.system,
               currency: startingWealth
             }
           });
@@ -1296,7 +1301,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
            * @returns {Promise<void>} A promise that resolves when processing is complete.
            */
           async function doAdvancement(itemIndex = 0) {
-            HM.log(1, itemsWithAdvancements);
+            HM.log(3, itemsWithAdvancements);
             if (itemIndex >= itemsWithAdvancements.length) {
               try {
                 if (currentManager) await currentManager.close();

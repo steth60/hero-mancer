@@ -75,7 +75,13 @@ export class ProgressBar {
     const namedInputs = form.querySelectorAll('[name]');
     namedInputs.forEach((input) => {
       // Skip if in disabled section or excluded field names
-      if (input.disabled || input.closest('.equipment-section')?.classList.contains('disabled') || input.name === 'use-starting-wealth' || input.name === 'ring.effects' || input.name === 'player') {
+      if (
+        input.disabled ||
+        input.closest('.equipment-section')?.classList.contains('disabled') ||
+        input.name.startsWith('use-starting-wealth') ||
+        input.name === 'ring.effects' ||
+        input.name === 'player'
+      ) {
         return;
       }
 
@@ -118,7 +124,7 @@ export class ProgressBar {
           input.disabled ||
           input.closest('.equipment-section')?.classList.contains('disabled') ||
           input.className.includes('equipment-favorite-checkbox') ||
-          input.name === 'use-starting-wealth' ||
+          input.name.startsWith('use-starting-wealth') ||
           input.name === 'ring.effects'
         ) {
           return;

@@ -219,11 +219,11 @@ export class EquipmentParser {
 
       const wealthCheckbox = document.createElement('input');
       wealthCheckbox.type = 'checkbox';
-      wealthCheckbox.id = 'use-starting-wealth';
-      wealthCheckbox.name = 'use-starting-wealth';
+      wealthCheckbox.id = `use-starting-wealth-${type}`;
+      wealthCheckbox.name = `use-starting-wealth-${type}`;
 
       const wealthLabel = document.createElement('label');
-      wealthLabel.htmlFor = 'use-starting-wealth';
+      wealthLabel.htmlFor = `use-starting-wealth-${type}`;
       wealthLabel.innerHTML = game.i18n.localize('hm.app.equipment.use-starting-wealth');
 
       const wealthRollContainer = document.createElement('div');
@@ -232,8 +232,8 @@ export class EquipmentParser {
 
       const wealthInput = document.createElement('input');
       wealthInput.type = 'text';
-      wealthInput.id = 'starting-wealth-amount';
-      wealthInput.name = 'starting-wealth-amount';
+      wealthInput.id = `starting-wealth-amount-${type}`;
+      wealthInput.name = `starting-wealth-amount-${type}`;
       wealthInput.placeholder = game.i18n.localize('hm.app.equipment.wealth-placeholder');
 
       if (isModernRules) {
@@ -1892,7 +1892,49 @@ export class EquipmentParser {
 
     async function findItemInPacks(itemId) {
       if (!itemId) return null;
+
+      // Check if this is a comma-separated list of IDs
+      if (itemId.includes(',')) {
+        const ids = itemId.split(',').filter((id) => id.trim());
+
+        // For equipment groups, we should return a collection of items
+        const items = [];
+
+        for (const id of ids) {
+          // Try to find the item
+          const item = await findItemInPacks(id.trim());
+          if (item) items.push(item);
+        }
+
+        // Return first item for backward compatibility
+        return items.length > 0 ? items[0] : null;
+      }
+
       try {
+        // For 2024 format handling - if it's an ID rather than a UUID, try to find the UUID
+        // This is TEMPORARY
+        if (!itemId.includes('.')) {
+          // Look through the select options to find matching UUID
+          const selectOptions = Array.from(document.querySelectorAll('select option'));
+          for (const option of selectOptions) {
+            if (option.value.split(',').includes(itemId)) {
+              // Find content links within this option
+              const links = option.querySelectorAll('a.content-link');
+              for (const link of links) {
+                const uuid = link.dataset.uuid;
+                if (uuid) {
+                  HM.log(3, `Found UUID ${uuid} for ID ${itemId}`);
+                  const item = await fromUuidSync(uuid);
+                  if (item) {
+                    return item;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Regular UUID lookup
         const indexItem = fromUuidSync(itemId);
         if (indexItem) {
           const packId = indexItem.pack;
@@ -1903,6 +1945,7 @@ export class EquipmentParser {
             return fullItem;
           }
         }
+
         HM.log(2, `Could not find item ${itemId} in any pack`);
         return null;
       } catch (error) {
@@ -1947,15 +1990,31 @@ export class EquipmentParser {
     }
 
     // Get all appropriate sections based on options
-    const equipmentSections = Array.from(equipmentContainer.querySelectorAll('.equipment-choices > div')).filter((section) => {
-      if (section.classList.contains('class-equipment-section') && !options.includeClass) {
+    const allSections = Array.from(equipmentContainer.querySelectorAll('.equipment-choices > div'));
+    HM.log(
+      3,
+      `Found ${allSections.length} total equipment sections:`,
+      allSections.map((s) => s.className)
+    );
+
+    const equipmentSections = allSections.filter((section) => {
+      const isClassSection = section.classList.contains('class-equipment-section');
+      const isBackgroundSection = section.classList.contains('background-equipment-section');
+
+      HM.log(3, `Section "${section.className}": isClass=${isClassSection}, isBackground=${isBackgroundSection}`);
+
+      if (isClassSection && !options.includeClass) {
+        HM.log(3, `Skipping class section because options.includeClass=${options.includeClass}`);
         return false;
       }
-      if (section.classList.contains('background-equipment-section') && !options.includeBackground) {
+      if (isBackgroundSection && !options.includeBackground) {
+        HM.log(3, `Skipping background section because options.includeBackground=${options.includeBackground}`);
         return false;
       }
       return true;
     });
+
+    HM.log(3, `After filtering, using ${equipmentSections.length} equipment sections`);
 
     // Process all sections in parallel
     await Promise.all(
@@ -1963,7 +2022,8 @@ export class EquipmentParser {
         HM.log(3, 'Processing section:', section.className);
 
         // Get wealth checkbox for this section
-        const wealthChecked = section.querySelector('input[id="use-starting-wealth"]')?.checked || false;
+        const sectionType = section.classList.contains('class-equipment-section') ? 'class' : 'background';
+        const wealthChecked = section.querySelector(`input[id="use-starting-wealth-${sectionType}"]`)?.checked || false;
 
         // Process dropdowns in parallel - skip if wealth is checked or elements are disabled
         const dropdowns = Array.from(section.querySelectorAll('select')).filter(
@@ -1971,42 +2031,83 @@ export class EquipmentParser {
         );
 
         const dropdownPromises = dropdowns.map(async (dropdown) => {
+          // Get value (could be IDs or UUIDs)
           const value = dropdown.value || document.getElementById(`${dropdown.id}-default`)?.value;
           if (!value) return;
 
           try {
-            const item = await findItemInPacks(value);
-            if (!item) return;
+            // Try to find the items - value could be single ID/UUID or comma-separated list
+            let items = [];
 
-            const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
-            const optionText = selectedOption?.textContent || '';
-            const favoriteCheckbox = dropdown.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
-            const isFavorite = favoriteCheckbox?.checked || false;
+            // Check for comma-separated values (2024 format)
+            if (value.includes(',')) {
+              // Get UUIDs from option content
+              const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
+              if (selectedOption) {
+                const contentLinks = selectedOption.querySelectorAll('a.content-link');
+                if (contentLinks.length) {
+                  // Get items from content links
+                  items = await Promise.all(Array.from(contentLinks).map((link) => fromUuidSync(link.dataset.uuid)));
+                }
+              }
 
-            const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
-            const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i);
-            const midQuantityMatch = optionText.match(/(.+?)\s+x(\d+)/i);
+              // If no content links, try using IDs directly
+              if (!items.length) {
+                const ids = value.split(',').filter((id) => id.trim());
+                items = await Promise.all(ids.map(async (id) => await findItemInPacks(id)));
+              }
 
-            let quantity = 1;
-            if (startQuantityMatch) quantity = parseInt(startQuantityMatch[1]);
-            else if (endQuantityMatch) quantity = parseInt(endQuantityMatch[2]);
-            else if (midQuantityMatch) quantity = parseInt(midQuantityMatch[2]);
-
-            HM.log(3, `Detected quantity ${quantity} from option text: "${optionText}"`);
-
-            const itemData = item.toObject();
-            if (itemData.type === 'container') {
-              return processContainerItem(item, quantity);
+              // Filter out nulls
+              items = items.filter((item) => item);
             } else {
-              equipment.push({
-                ...itemData,
-                system: {
-                  ...itemData.system,
-                  quantity: quantity,
-                  equipped: true
-                },
-                favorite: isFavorite
-              });
+              // Regular single item lookup
+              const item = await findItemInPacks(value);
+              if (item) items = [item];
+            }
+
+            if (!items.length) return;
+
+            // Process each item
+            for (const item of items) {
+              const selectedOption = dropdown.querySelector(`option[value="${value}"]`);
+              const optionText = selectedOption?.textContent || '';
+              const favoriteCheckbox = dropdown.closest('.equipment-item')?.querySelector('.equipment-favorite-checkbox');
+              const isFavorite = favoriteCheckbox?.checked || false;
+
+              // Try to find quantity in option text for this specific item
+              let quantity = 1;
+              const itemNamePattern = new RegExp(`(\\d+)\\s*(?:×|x)?\\s*${item.name}`, 'i');
+              const quantityMatch = optionText.match(itemNamePattern);
+
+              if (quantityMatch) {
+                quantity = parseInt(quantityMatch[1]);
+              } else {
+                // Fallback patterns
+                const startQuantityMatch = optionText.match(/^(\d+)\s+(.+)$/i);
+                const endQuantityMatch = optionText.match(/(.+)\s+\((\d+)\)$/i);
+                const midQuantityMatch = optionText.match(/(.+?)\s+[x×](\d+)/i);
+
+                if (startQuantityMatch) quantity = parseInt(startQuantityMatch[1]);
+                else if (endQuantityMatch) quantity = parseInt(endQuantityMatch[2]);
+                else if (midQuantityMatch) quantity = parseInt(midQuantityMatch[2]);
+              }
+
+              HM.log(3, `Processing item ${item.name} with quantity ${quantity}`);
+
+              const itemData = item.toObject();
+              if (itemData.type === 'container') {
+                await processContainerItem(item, quantity);
+              } else {
+                equipment.push({
+                  ...itemData,
+                  system: {
+                    ...itemData.system,
+                    quantity: quantity,
+                    equipped: true
+                  },
+                  favorite: isFavorite
+                });
+              }
             }
           } catch (error) {
             HM.log(1, `Error processing dropdown ${dropdown.id}:`, error);
@@ -2263,13 +2364,24 @@ export class EquipmentParser {
    * @static
    */
   static async convertWealthStringToCurrency(formData) {
-    if (!formData || !formData['use-starting-wealth']) {
-      HM.log(1, 'Invalid form data for wealth processing');
+    // Check both possible wealth sources
+    const useClassWealth = formData['use-starting-wealth-class'];
+    const useBackgroundWealth = formData['use-starting-wealth-background'];
+
+    // Determine which wealth to use (or none)
+    if (!useClassWealth && !useBackgroundWealth) {
       return null;
     }
 
-    const wealthAmounts = formData['starting-wealth-amount'];
-    if (!wealthAmounts || (!Array.isArray(wealthAmounts) && !wealthAmounts.length)) return null;
+    // Get the appropriate wealth amount
+    let wealthAmount;
+    if (useClassWealth) {
+      wealthAmount = formData['starting-wealth-amount-class'];
+    } else if (useBackgroundWealth) {
+      wealthAmount = formData['starting-wealth-amount-background'];
+    }
+
+    if (!wealthAmount) return null;
 
     // Initialize currencies object with zeros using CONFIG
     const currencies = {};
@@ -2283,29 +2395,25 @@ export class EquipmentParser {
       .join('|');
     const regex = new RegExp(`(\\d+)\\s*(${abbrs})`, 'gi');
 
-    // Process each wealth amount (could be array or single value)
-    const amountsArray = Array.isArray(wealthAmounts) ? wealthAmounts : [wealthAmounts];
+    // Process the wealth amount
+    const matches = wealthAmount.match(regex);
+    if (!matches) return null;
 
-    for (const amount of amountsArray) {
-      const matches = amount.match(regex);
-      if (!matches) continue;
+    matches.forEach((match) => {
+      const [num, currency] = match.toLowerCase().split(/\s+/);
+      const value = parseInt(num);
 
-      matches.forEach((match) => {
-        const [num, currency] = match.toLowerCase().split(/\s+/);
-        const value = parseInt(num);
+      if (!isNaN(value)) {
+        // Find the currency key that matches this abbreviation
+        const currKey = Object.entries(CONFIG.DND5E.currencies).find(([_, data]) => data.abbreviation.toLowerCase() === currency)?.[0];
 
-        if (!isNaN(value)) {
-          // Find the currency key that matches this abbreviation
-          const currKey = Object.entries(CONFIG.DND5E.currencies).find(([_, data]) => data.abbreviation.toLowerCase() === currency)?.[0];
-
-          if (currKey) {
-            currencies[currKey] += value; // Add to existing amount
-          } else {
-            currencies.gp += value; // Default to gold if currency not recognized
-          }
+        if (currKey) {
+          currencies[currKey] += value; // Add to existing amount
+        } else {
+          currencies.gp += value; // Default to gold if currency not recognized
         }
-      });
-    }
+      }
+    });
 
     return currencies;
   }

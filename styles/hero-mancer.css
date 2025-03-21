@@ -1301,7 +1301,7 @@ fieldset#start > h2 {
 .hm-compendiums-popup-dialog .window-content form {
   height: fit-content;
   padding: 0.5rem;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .hm-compendiums-popup-dialog .window-content {
