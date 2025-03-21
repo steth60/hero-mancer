@@ -96,11 +96,6 @@ export class HM {
         DocumentService.prepareDocumentsByType('background')
       ]);
 
-      // Debug the returned structures
-      HM.log(3, 'Race result:', raceDocs);
-      HM.log(3, 'Class result:', classDocs);
-      HM.log(3, 'Background result:', backgroundDocs);
-
       // Store in HM.documents
       this.documents = { race: raceDocs, class: classDocs, background: backgroundDocs };
 
@@ -124,15 +119,11 @@ export class HM {
         })
       );
 
-      HM.log(3, 'Document preparation complete');
+      HM.log(3, 'Document preparation complete', { doc: this.documents, allDocs: allDocs });
     } catch (error) {
       HM.log(1, 'Failed to prepare documents:', error.message);
       throw error;
     }
-  }
-
-  static updateStoredSelection(type, selection) {
-    this.SELECT_STORAGE[type] = selection;
   }
 }
 
@@ -174,8 +165,7 @@ Hooks.once('ready', async () => {
     background: CustomCompendiums.backgroundPacks,
     items: CustomCompendiums.itemPacks
   });
-
-  await EquipmentParser.initializeLookupItems();
+  if (!HM.COMPAT.ELKAN) await EquipmentParser.initializeLookupItems(); // Completely disable EquipmentParser if Elkan is enabled.
 
   const customArraySetting = game.settings.get(HM.ID, 'customStandardArray') || StatRoller.getStandardArrayDefault();
   if (!customArraySetting || customArraySetting.trim() === '') {

@@ -20,7 +20,7 @@ export class Listeners {
    */
   static async initializeListeners(html, context, selectedAbilities) {
     this.initializeAbilityListeners(context, selectedAbilities);
-    this.initializeEquipmentListeners();
+    this.initializeSelectionListeners();
     this.initializeCharacterListeners();
     this.initializeRollMethodListener(html);
     this.initializeTokenCustomizationListeners();
@@ -94,37 +94,36 @@ export class Listeners {
   }
 
   /**
-   * Initializes equipment selection listeners and renders initial equipment choices
+   * Initializes selection listeners and updates storage
    * @static
    */
-  static initializeEquipmentListeners() {
-    const equipmentContainer = document.querySelector('#equipment-container');
+  static initializeSelectionListeners() {
+    HM.log(3, 'Starting initializeSelectionListeners');
     const classDropdown = document.querySelector('#class-dropdown');
     const backgroundDropdown = document.querySelector('#background-dropdown');
     const raceDropdown = document.querySelector('#race-dropdown');
 
-    // Create a new instance for this render cycle
-    const equipment = new EquipmentParser(classDropdown?.value, backgroundDropdown?.value);
+    HM.log(3, `Dropdowns found: class=${!!classDropdown}, background=${!!backgroundDropdown}, race=${!!raceDropdown}`);
+    HM.log(3, `ELKAN compatibility mode: ${HM.COMPAT.ELKAN}`);
 
-    if (equipmentContainer) {
-      // Clear any existing content
-      equipmentContainer.innerHTML = '';
-
-      equipment
-        .generateEquipmentSelectionUI()
-        .then((choices) => equipmentContainer.appendChild(choices))
-        .catch((error) => HM.log(1, 'Error rendering equipment choices:', error));
+    // Handle equipment initialization if not in ELKAN compatibility mode
+    if (!HM.COMPAT.ELKAN) {
+      HM.log(3, 'Initializing equipment UI');
+      this.#initializeEquipmentUI();
     }
 
-    // Create and store new handler functions
+    // Set up class dropdown handler
     if (classDropdown) {
+      HM.log(3, `Initial class dropdown value: ${classDropdown.value}`);
+
       // Clean up existing handler first
-      if (classDropdown._equipmentChangeHandler) {
-        classDropdown.removeEventListener('change', classDropdown._equipmentChangeHandler);
+      if (classDropdown._changeHandler) {
+        classDropdown.removeEventListener('change', classDropdown._changeHandler);
       }
 
-      classDropdown._equipmentChangeHandler = async (event) => {
+      classDropdown._changeHandler = async (event) => {
         const selectedValue = event.target.value;
+        HM.log(3, `Class change detected: ${selectedValue}`);
 
         HM.SELECT_STORAGE.class = {
           selectedValue,
@@ -132,26 +131,37 @@ export class Listeners {
           selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
         };
 
-        // Create a new parser for this update
-        const updateEquipment = new EquipmentParser(HM.SELECT_STORAGE.class.selectedId, HM.SELECT_STORAGE.background.selectedId);
+        HM.log(3, `Class storage updated: ${JSON.stringify(HM.SELECT_STORAGE.class)}`);
 
-        await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'class');
-
-        // Call SummaryManager to update abilities highlighting when class changes
+        // Call SummaryManager to update abilities highlighting
         SummaryManager.updateAbilitiesSummary();
+
+        // Update equipment only if not in ELKAN mode
+        if (!HM.COMPAT.ELKAN) {
+          const equipmentContainer = document.querySelector('#equipment-container');
+          const updateEquipment = new EquipmentParser(HM.SELECT_STORAGE.class.selectedId, HM.SELECT_STORAGE.background.selectedId);
+          await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'class');
+        }
+
+        // Manually update the description for Elkan content
+        this.updateDescriptionElement('class', HM.SELECT_STORAGE.class.selectedId);
       };
 
-      classDropdown.addEventListener('change', classDropdown._equipmentChangeHandler);
+      classDropdown.addEventListener('change', classDropdown._changeHandler);
     }
 
+    // Set up background dropdown handler
     if (backgroundDropdown) {
+      HM.log(3, `Initial background dropdown value: ${backgroundDropdown.value}`);
+
       // Clean up existing handler first
-      if (backgroundDropdown._equipmentChangeHandler) {
-        backgroundDropdown.removeEventListener('change', backgroundDropdown._equipmentChangeHandler);
+      if (backgroundDropdown._changeHandler) {
+        backgroundDropdown.removeEventListener('change', backgroundDropdown._changeHandler);
       }
 
-      backgroundDropdown._equipmentChangeHandler = async (event) => {
+      backgroundDropdown._changeHandler = async (event) => {
         const selectedValue = event.target.value;
+        HM.log(3, `Background change detected: ${selectedValue}`);
 
         HM.SELECT_STORAGE.background = {
           selectedValue,
@@ -159,25 +169,37 @@ export class Listeners {
           selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
         };
 
-        // Create a new parser for this update
-        const updateEquipment = new EquipmentParser(HM.SELECT_STORAGE.class.selectedId, HM.SELECT_STORAGE.background.selectedId);
+        HM.log(3, `Background storage updated: ${JSON.stringify(HM.SELECT_STORAGE.background)}`);
 
-        await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'background');
         SummaryManager.updateBackgroundSummary(event.target);
         await SummaryManager.processBackgroundSelectionChange(HM.SELECT_STORAGE.background);
+
+        // Update equipment only if not in ELKAN mode
+        if (!HM.COMPAT.ELKAN) {
+          const equipmentContainer = document.querySelector('#equipment-container');
+          const updateEquipment = new EquipmentParser(HM.SELECT_STORAGE.class.selectedId, HM.SELECT_STORAGE.background.selectedId);
+          await this.#refreshEquipmentSectionUI(updateEquipment, equipmentContainer, 'background');
+        }
+
+        // Manually update the description
+        this.updateDescriptionElement('background', HM.SELECT_STORAGE.background.selectedId);
       };
 
-      backgroundDropdown.addEventListener('change', backgroundDropdown._equipmentChangeHandler);
+      backgroundDropdown.addEventListener('change', backgroundDropdown._changeHandler);
     }
 
+    // Set up race dropdown handler
     if (raceDropdown) {
+      HM.log(3, `Initial race dropdown value: ${raceDropdown.value}`);
+
       // Clean up existing handler first
-      if (raceDropdown._raceChangeHandler) {
-        raceDropdown.removeEventListener('change', raceDropdown._raceChangeHandler);
+      if (raceDropdown._changeHandler) {
+        raceDropdown.removeEventListener('change', raceDropdown._changeHandler);
       }
 
-      raceDropdown._raceChangeHandler = async (event) => {
+      raceDropdown._changeHandler = async (event) => {
         const selectedValue = event.target.value;
+        HM.log(3, `Race change detected: ${selectedValue}`);
 
         HM.SELECT_STORAGE.race = {
           selectedValue,
@@ -185,12 +207,155 @@ export class Listeners {
           selectedUUID: selectedValue.match(/\[(.*?)]/)?.[1]
         };
 
-        // Additional race-specific updates if needed
+        HM.log(3, `Race storage updated: ${JSON.stringify(HM.SELECT_STORAGE.race)}`);
+
+        // Race-specific summary updates
         SummaryManager.updateClassRaceSummary();
+
+        // Manually update the description
+        this.updateDescriptionElement('race', HM.SELECT_STORAGE.race.selectedId);
       };
 
-      raceDropdown.addEventListener('change', raceDropdown._raceChangeHandler);
+      raceDropdown.addEventListener('change', raceDropdown._changeHandler);
     }
+
+    // Initialize descriptions for initial values
+    HM.log(3, 'Initializing descriptions for initial values');
+
+    if (classDropdown && classDropdown.value) {
+      const classId = classDropdown.value.split(' ')[0];
+      HM.log(3, `Setting initial class description for ID: ${classId}`);
+      this.updateDescriptionElement('class', classId);
+    }
+
+    if (backgroundDropdown && backgroundDropdown.value) {
+      const backgroundId = backgroundDropdown.value.split(' ')[0];
+      HM.log(3, `Setting initial background description for ID: ${backgroundId}`);
+      this.updateDescriptionElement('background', backgroundId);
+    }
+
+    if (raceDropdown && raceDropdown.value) {
+      const raceId = raceDropdown.value.split(' ')[0];
+      HM.log(3, `Setting initial race description for ID: ${raceId}`);
+      this.updateDescriptionElement('race', raceId);
+    }
+
+    HM.log(3, 'Finished initializeSelectionListeners');
+  }
+
+  /**
+   * Updates description element with content from HM.documents collection
+   * @param {string} type - Type of dropdown (class, race, background)
+   * @param {string} selectedId - ID of selected item
+   * @static
+   */
+  static updateDescriptionElement(type, selectedId) {
+    HM.log(3, `Updating ${type} description for ID: ${selectedId}`);
+
+    try {
+      // Find the description element
+      const descriptionEl = document.querySelector(`#${type}-description`);
+      if (!descriptionEl) {
+        HM.log(1, `${type} description element not found`);
+        return;
+      }
+
+      // For race documents, they're organized in folders
+      if (type === 'race') {
+        let foundDoc = null;
+
+        // HM.documents.race is an array of folders
+        HM.log(3, `Searching through ${HM.documents.race.length} race folders`);
+
+        for (const folder of HM.documents.race) {
+          HM.log(3, `Looking in folder: ${folder.folderName}`);
+
+          const doc = folder.docs.find((d) => d.id === selectedId);
+          if (doc) {
+            foundDoc = doc;
+            HM.log(3, `Found race doc in folder ${folder.folderName}: ${doc.name}`);
+            break;
+          }
+        }
+
+        if (foundDoc) {
+          HM.log(3, `Setting race description for ${foundDoc.name}, content length: ${foundDoc.enrichedDescription?.length || 0}`);
+          descriptionEl.innerHTML = foundDoc.enrichedDescription || '';
+        } else {
+          HM.log(1, `No matching race doc found for ID: ${selectedId}`);
+          descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
+        }
+      } else {
+        // For other document types (class, background), they're direct arrays
+        const docsArray = HM.documents[type] || [];
+        HM.log(3, `Looking for ${type} doc with ID ${selectedId} among ${docsArray.length} docs`);
+
+        const doc = docsArray.find((d) => d.id === selectedId);
+
+        if (doc) {
+          HM.log(3, `Found matching ${type} doc: ${doc.name}`);
+
+          if (doc.enrichedDescription) {
+            HM.log(3, `Setting ${type} description, content length: ${doc.enrichedDescription.length}`);
+            descriptionEl.innerHTML = doc.enrichedDescription;
+          } else {
+            HM.log(2, `No enriched description for ${type} doc`);
+            descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
+          }
+        } else {
+          HM.log(1, `No matching ${type} doc found for ID: ${selectedId}`);
+          descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
+        }
+      }
+    } catch (error) {
+      HM.log(1, `Error updating ${type} description: ${error}`);
+      const descriptionEl = document.querySelector(`#${type}-description`);
+      if (descriptionEl) {
+        descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
+      }
+    }
+  }
+
+  /**
+   * Initializes equipment UI elements
+   * @private
+   * @static
+   */
+  static #initializeEquipmentUI() {
+    HM.log(3, 'Starting initializeEquipmentUI');
+    const equipmentContainer = document.querySelector('#equipment-container');
+    const classDropdown = document.querySelector('#class-dropdown');
+    const backgroundDropdown = document.querySelector('#background-dropdown');
+
+    HM.log(3, `Equipment container found: ${!!equipmentContainer}`);
+    HM.log(3, `Class dropdown value: ${classDropdown?.value}`);
+    HM.log(3, `Background dropdown value: ${backgroundDropdown?.value}`);
+
+    if (equipmentContainer) {
+      // Clear any existing content
+      HM.log(3, 'Clearing equipment container');
+      equipmentContainer.innerHTML = '';
+
+      // Create a new instance for this render cycle
+      const classId = classDropdown?.value?.split(' ')[0];
+      const backgroundId = backgroundDropdown?.value?.split(' ')[0];
+      HM.log(3, `Creating EquipmentParser with classId=${classId}, backgroundId=${backgroundId}`);
+
+      const equipment = new EquipmentParser(classId, backgroundId);
+
+      HM.log(3, 'Generating equipment selection UI');
+      equipment
+        .generateEquipmentSelectionUI()
+        .then((choices) => {
+          HM.log(3, 'Equipment UI generated successfully');
+          equipmentContainer.appendChild(choices);
+        })
+        .catch((error) => {
+          HM.log(1, `Error rendering equipment choices: ${error}`);
+        });
+    }
+
+    HM.log(3, 'Finished initializeEquipmentUI');
   }
 
   /**
@@ -552,6 +717,7 @@ export class Listeners {
 
     // Ensure equipment is initialized with proper values
     requestAnimationFrame(() => {
+      if (HM.COMPAT.ELKAN) return; // Disable if Elkan enabled.
       const equipmentContainer = html.querySelector('#equipment-container');
       if (equipmentContainer) {
         // Force equipment refresh to use the newly updated HM.SELECT_STORAGE
@@ -702,6 +868,7 @@ export class Listeners {
    * @static
    */
   static async #refreshEquipmentSectionUI(equipment, container, type) {
+    if (HM.COMPAT.ELKAN) return; // Disable if elkan enabled.
     try {
       // Reset rendered flags on all items before updating
       if (EquipmentParser.lookupItems) {

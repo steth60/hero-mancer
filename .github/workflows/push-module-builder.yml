@@ -56,13 +56,15 @@ jobs:
 
       - name: Zip Files
         run: |
-          zip -r ./module.zip ./ \
-            -x @.gitignore \
-            -x ".gitattributes" \
-            -x ".git/**" \
-            -x ".github/**" \
-            -x "release_notes.txt" \
-            -x "tour-assets/**"
+          # Create a zip with only the specified folders and files
+          zip -r ./module.zip \
+            lang/ \
+            scripts/ \
+            styles/ \
+            templates/ \
+            LICENSE \
+            module.json \
+            README.md
 
       - name: Create Release
         id: create-release
