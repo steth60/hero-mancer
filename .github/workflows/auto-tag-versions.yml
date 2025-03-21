@@ -1,0 +1,30 @@
+name: Auto Tag Version
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.gitattributes'
+      - '.gitignore'
+
+jobs:
+  tag-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for version in commit message and create tag
+        run: |
+          commit_msg=$(git log -1 --pretty=%s)
+          version=$(echo "$commit_msg" | grep -o -E '[v]?[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 | sed 's/^v//')
+
+          if [ -n "$version" ]; then
+            echo "Found version $version in commit message, creating tag"
+            git tag $version
+            git push origin $version
+          else
+            echo "No version found in commit message, skipping tag creation"
+          fi
