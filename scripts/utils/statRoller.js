@@ -1,4 +1,4 @@
-import { HM, SummaryManager } from './index.js';
+import { HM, HeroMancer, Listeners, SummaryManager } from './index.js';
 
 const { DialogV2 } = foundry.applications.api;
 
@@ -319,6 +319,107 @@ export class StatRoller {
     });
 
     return total;
+  }
+
+  /**
+   * Builds ability scores data for rendering context
+   * @returns {Array<object>} Array of ability data objects
+   * @static
+   */
+  static buildAbilitiesContext() {
+    return Object.entries(CONFIG.DND5E.abilities).map(([key, value]) => ({
+      key,
+      abbreviation: value.abbreviation.toUpperCase(),
+      fullKey: value.fullKey.toUpperCase(),
+      currentScore: HM.ABILITY_SCORES.DEFAULT
+    }));
+  }
+
+  /**
+   * Gets available roll methods with localized names
+   * @returns {Object} Object with roll method localizations
+   * @static
+   */
+  static getRollMethods() {
+    return {
+      pointBuy: game.i18n.localize('hm.app.abilities.methods.pointBuy'),
+      standardArray: game.i18n.localize('hm.app.abilities.methods.standardArray'),
+      manualFormula: game.i18n.localize('hm.app.abilities.methods.manual')
+    };
+  }
+
+  /**
+   * Gets and validates the current dice rolling method
+   * @returns {string} The validated dice rolling method
+   * @static
+   */
+  static getDiceRollingMethod() {
+    let diceRollingMethod = game.settings.get(HM.ID, 'diceRollingMethod');
+
+    // Get allowed methods configuration
+    const allowedMethods = game.settings.get(HM.ID, 'allowedMethods');
+
+    // Map settings keys to method names
+    const methodMapping = {
+      standardArray: 'standardArray',
+      pointBuy: 'pointBuy',
+      manual: 'manualFormula'
+    };
+
+    // Create array of allowed method names
+    const validMethods = Object.entries(allowedMethods)
+      .filter(([key, enabled]) => enabled)
+      .map(([key]) => methodMapping[key])
+      .filter(Boolean);
+
+    // Select first allowed method if current isn't valid
+    if (!diceRollingMethod || !validMethods.includes(diceRollingMethod)) {
+      diceRollingMethod = validMethods[0];
+      HM.log(3, `Invalid dice rolling method - falling back to '${diceRollingMethod}'`);
+    }
+
+    return diceRollingMethod;
+  }
+
+  /**
+   * Gets the standard array for ability scores
+   * @param {string} [diceRollingMethod] - Optional pre-validated dice rolling method
+   * @returns {Array} Array of ability score values
+   * @static
+   */
+  static getStandardArrayValues(diceRollingMethod) {
+    const abilitiesCount = Object.keys(CONFIG.DND5E.abilities).length;
+    const extraAbilities = abilitiesCount > 6 ? abilitiesCount - 6 : 0;
+    const { MIN, MAX } = HM.ABILITY_SCORES;
+
+    // Use provided method or get it if not provided
+    const method = diceRollingMethod || this.getDiceRollingMethod();
+
+    if (method === 'standardArray') {
+      const customArray = game.settings.get(HM.ID, 'customStandardArray');
+      if (customArray) {
+        const parsedArray = customArray.split(',').map(Number);
+        if (parsedArray.length >= abilitiesCount) {
+          return parsedArray.map((val) => Math.max(MIN, Math.min(MAX, val)));
+        }
+      }
+    }
+
+    const standardArray = this.getStandardArray(extraAbilities);
+    return standardArray.map((val) => Math.max(MIN, Math.min(MAX, val)));
+  }
+
+  /**
+   * Adjusts an ability score in response to UI interaction
+   * @param {Event} _event - The triggering event
+   * @param {HTMLElement} element - The button element
+   * @static
+   */
+  static adjustScore(_event, element) {
+    const index = parseInt(element.getAttribute('data-ability-index'), 10);
+    if (isNaN(index)) return;
+    const adjustment = parseInt(element.getAttribute('data-adjust'), 10) || 0;
+    Listeners.changeAbilityScoreValue(index, adjustment, HeroMancer.selectedAbilities);
   }
 
   /* -------------------------------------------- */

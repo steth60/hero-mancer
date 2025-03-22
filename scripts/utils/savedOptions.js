@@ -37,11 +37,35 @@ export class SavedOptions {
   }
 
   /**
-   * Resets saved options by clearing the flag
-   * @returns {Promise<object>} Result of clearing the flag
+   * Resets saved options and optionally resets form elements
+   * @param {HTMLElement} [formElement] - Optional form element to reset
+   * @returns {Promise<boolean>} Success status
    * @static
    */
-  static async resetOptions() {
-    return game.user.setFlag(HM.ID, this.FLAG, null);
+  static async resetOptions(formElement = null) {
+    try {
+      // Clear saved flags
+      await game.user.setFlag(HM.ID, this.FLAG, null);
+
+      // If no form element provided, just clear flags
+      if (!formElement) return true;
+
+      // Reset all form elements
+      formElement.querySelectorAll('select, input').forEach((elem) => {
+        if (elem.type === 'checkbox') {
+          elem.checked = false;
+        } else {
+          elem.value = '';
+        }
+
+        // Dispatch change event
+        elem.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      return true;
+    } catch (error) {
+      HM.log(1, 'Error resetting options:', error);
+      return false;
+    }
   }
 }

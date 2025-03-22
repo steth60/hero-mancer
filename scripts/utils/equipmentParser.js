@@ -2092,7 +2092,7 @@ export class EquipmentParser {
                 else if (midQuantityMatch) quantity = parseInt(midQuantityMatch[2]);
               }
 
-              HM.log(3, `Processing item ${item.name} with quantity ${quantity}`);
+              HM.log(3, `Processing item ${item.name} with quantity ${quantity}`, { item: item });
 
               const itemData = item.toObject();
               if (itemData.type === 'container') {

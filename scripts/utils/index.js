@@ -1,5 +1,8 @@
 /** Services, applications, and utilities for Hero Mancer character creation and management */
 
+/** Handles the creation of our character on submission of the Hero Mancer form. */
+export { ActorCreationService } from './actorCreationService.js';
+
 /** Handles filepicking for character, token, and player art */
 export { CharacterArtPicker } from './characterArtPicker.js';
 

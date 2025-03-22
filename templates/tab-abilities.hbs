@@ -45,14 +45,14 @@
 
             <div class="control-row flex items-center gap-xs">
               <button type="button" class="adjust-button minus-button flex justify-center items-center"
-                data-action="decreaseScore" data-ability-index="{{@index}}"
+                data-action="adjustScore" data-ability-index="{{@index}}" data-adjust="-1"
                 aria-label="{{localize "hm.app.abilities.decrease"}}">-</button>
 
               <span id="ability-score-{{@index}}" class="current-score text-center"
                 aria-live="polite">{{this.currentScore}}</span>
 
               <button type="button" class="adjust-button plus-button flex justify-center items-center"
-                data-action="increaseScore" data-ability-index="{{@index}}"
+                data-action="adjustScore" data-ability-index="{{@index}}" data-adjust="1"
                 aria-label="{{localize "hm.app.abilities.increase"}}">+</button>
             </div>
 
@@ -109,8 +109,9 @@
               placeholder='{{localize "hm.app.abilities.score-placeholder"}}'
               aria-label='{{localize "hm.app.abilities.score-label"}}' />
 
-            <i class='fa-duotone fa-solid fa-dice-d6 fa-2xl' style='cursor: pointer' data-action='rollStat' data-index='{{@index}}'
-              role='button' aria-label='{{localize "hm.app.abilities.roll-dice"}}' tabindex='0'></i>
+            <i class='fa-duotone fa-solid fa-dice-d6 fa-2xl' style='cursor: pointer' data-action='rollStat'
+              data-index='{{@index}}' role='button' aria-label='{{localize "hm.app.abilities.roll-dice"}}'
+              tabindex='0'></i>
           </div>
         {{/each}}
 
