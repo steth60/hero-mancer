@@ -10,105 +10,137 @@
 
 ## Introduction
 
-**Hero Mancer** is the ultimate companion for character creation in FoundryVTT, offering everything you need to build your heroes effortlessly and with style! Whether you're a
-player building from scratch or a GM guiding character advancement, Hero Mancer's sleek UI and dynamic integration make it a breeze. It covers every aspect of character creation!
+**Hero Mancer** transforms character creation in FoundryVTT into an exciting, streamlined experience! Build complete heroes with just a few clicks through our intuitive interface. From abilities to equipment, Hero Mancer handles it all in one place.
 
-Stop struggling with hard-to-search compendiums and manual processes! **Hero Mancer** automates it all in one seamless experience.
+Say goodbye to endless compendium searches and tedious manual entry. **Hero Mancer** automates the entire process so you can focus on what matters—creating memorable characters for your adventures!
 
 ---
 
 ## Features
 
-Hero Mancer has been crafted with powerful features to give your character creation process a boost:
-
-- **Compendium Magic**: No more searching through endless lists—Hero Mancer automatically pulls races, classes, backgrounds, and more from compendiums-you can even specify your
-  own!
-- **Smooth Navigation**: Dynamic dropdowns organize options by folders and packs, making it easy to select the perfect combination of traits for your character.
-- **Enriched Descriptions**: Get detailed, formatted descriptions at your fingertips, thanks to automatic HTML enrichment for all the choices you make.
-- **Stat Rolling**: Roll your dice with ease- and assign your rolls to your ability scores!
+- **Smart Compendium Integration**: Automatically pulls races, classes, backgrounds and more from your compendiums!
+- **Intuitive Navigation**: Organized dropdowns sort options by folders and packs for quick selection!
+- **Rich Descriptions**: See fully formatted details for every character option at a glance!
+- **Simplified Stat Rolling**: Roll and assign ability scores with ease, whether it be Standard Array, Point Buy or All Manual!
+- **Built-In Equipment Selection**: Pick your starting equipment (or starting wealth!) based on your background and class - you can even favorite what you plan on using most!
 
 ---
 
 ## Installation
 
-The easiest way to get started with Hero Mancer is through Foundry’s **Module Manager** or **The Forge's Bazaar**. But if you prefer to do it yourself, we’ve got you covered.
+Get Hero Mancer through Foundry's **Module Manager** or **The Forge's Bazaar** for instant setup.
 
 ### Manual Installation
 
-1. Open **Foundry's Configuration and Setup** screen, go to **Add-on Modules**.
-2. Click the **Install Module** button.
-3. In the **Manifest URL** field, enter the following URL to install the latest version:
-   [https://github.com/Sayshal/hero-mancer/releases/latest/download/module.json](https://github.com/Sayshal/hero-mancer/releases/latest/download/module.json)
-4. Click **Install** and watch Hero Mancer come to life!
-5. Once installed, enable Hero Mancer by going to **Manage Modules**.
-
----
+1. Open **Foundry's Configuration and Setup** screen
+2. Click **Install Module** in the Add-on Modules section
+3. Paste this URL in the **Manifest URL** field:
+  [https://github.com/Sayshal/hero-mancer/releases/latest/download/module.json](https://github.com/Sayshal/hero-mancer/releases/latest/download/module.json)
+4. Click **Install**
+5. Enable Hero Mancer in the **Manage Modules** section
 
 ## Tour
 
-Take a look at how Hero Mancer elevates your character creation process! These screenshots show the module in action.
+See Hero Mancer in action! These screenshots showcase how the module streamlines character creation.
 
-### 1. Getting Start
-
-The beginning of your hero’s journey! This tab gives an overview of the steps you'll follow to create your character.
+### 1. Getting Started
 
 ![Getting Started](tour-assets/start.png)
 
-_The starting tab showing an overview of the character creation steps._
+The journey begins here with a clean, intuitive interface. From this screen you can:
+
+- Enter your character's name, pick character and token art, and assign yourself a color to be used in various places within Foundry.
+- Assign the character to a player (DM only)
+- Customize token settings and display options (configurable via module settings)
+
+The navigation bar at the top shows all creation steps at a glance, letting you move freely between sections as you build your character.
+
+---
 
 ### 2. Choose a Background
 
-Choose your character’s background from a dropdown, with enriched descriptions that help immerse you in your role.
-
 ![Choose a Background](tour-assets/background.png)
 
-_The background selection dropdown with enriched descriptions._
+Select your character's background from a dropdown menu organized by source:
+
+- Full descriptions appear automatically when you select an option
+- See detailed information about skill proficiencies, languages, and equipment
+- Review suggested characteristics to help develop your character's personality
+- Backgrounds include traits, ideals, bonds, and flaws to enhance roleplaying
+
+---
 
 ### 3. Choose a Race
 
-Organized dropdowns make it easy to browse races based on custom or default compendiums.
-
 ![Choose a Race](tour-assets/race.png)
 
-_The race selection dropdown showing folder and race options._
+Select your character's race from a dropdown menu organized by race type:
+
+- Detailed information automatically displays ability score increases, size, speed, and special traits
+- See racial abilities like darkvision, keen senses, and weapon training at a glance
+- Extra racial options like languages and proficiencies are clearly presented
+
+---
 
 ### 4. Choose a Class
 
-Quickly select your class from organized compendiums. Hero Mancer handles the heavy lifting for you!
-
 ![Choose a Class](tour-assets/class.png)
 
-_The class selection dropdown with classes grouped by pack._
+Select your character's class from a dropdown menu organized by source:
+
+- Options are sorted by class name and compendium source
+- View detailed class features including hit dice, proficiencies, and equipment options
+- See complete class advancement tables showing features gained at each level
+
+---
 
 ### 5. Choose Abilities
 
-No need to roll dice manually—Hero Mancer’s built-in stat roller handles it for you, keeping things fast and efficient.
-
 ![Choose Abilities](tour-assets/abilities.png)
 
-_The abilities tab with stat fields and roll icons._
+Determine your character's ability scores with multiple generation methods:
+
+- Choose from different stat generation systems including Standard Array, Point Buy, and Manual Rolling
+- Clear explanations of each method help players understand their options
+- Easily assign values to each ability with intuitive dropdown menus
+- See which abilities your class or background make-up should prioritize
+
+---
 
 ### 6. Choose Starting Equipment
 
-Outfit your character with all the necessary gear using the Equipment tab. Choose items from detailed dropdowns.
-
 ![Choose Starting Equipment](tour-assets/equipment.png)
 
-_The equipment tab for selecting and managing your character’s gear._
+Outfit your character with gear tailored to their class and background:
 
-### 7. Final Check
+- Equipment options dynamically update based on your class and background selections
+- Choose between starting wealth or specific equipment packages
+- Mark important items as favorites to keep them readily accessible on your character sheet
 
-Review your selections and lock in your hero, ready for the adventure that lies ahead.
+---
+
+### 7. Finalize - Player Biography
 
 ![Final Check](tour-assets/finalize.png)
 
-_The finalization tab for reviewing and completing the character creation process._
+Complete your character with personal details and traits:
+
+- Review a summary of your character's race, class, and key attributes
+- Add physical characteristics including height, weight, eye color, and appearance
+- Define personality traits, ideals, bonds, and flaws with optional random generation
+- Set character alignment and faith to round out your hero's identity
 
 ---
 
 ## Why Hero Mancer?
 
-Hero Mancer isn’t just a module—it’s your character creation powerhouse! With its automated processes, enriched descriptions, and built-in tools, it turns the often tedious task of
-character creation into a smooth, exciting part of your adventure. So what are you waiting for? Let Hero Mancer take your characters to the next level!
+Hero Mancer transforms character creation from a tedious process to an engaging experience. Instead of:
+
+- Flipping through rulebooks to find options, journal pages, compendium browsers
+- Manually calculating ability scores and modifiers
+- Creating equipment lists from scratch, dragging from compendiums directly onto your sheet
+- Forgetting important character details
+
+You get a streamlined, all-in-one tool that guides you through each step while maintaining complete creative control. Whether you're a new player overwhelmed by options or a veteran looking to speed up character creation, Hero Mancer helps you build memorable characters ready for adventure!
 
 ---
