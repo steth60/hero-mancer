@@ -41,11 +41,12 @@ body:
       placeholder: '3.3.1'
     validations:
       required: true
-  - type: textarea
-    id: logs
+  - type: checkboxes
+    id: troubleshooter
     attributes:
       label: Hero Mancer Troubleshooter
-      description: Please copy and paste the Hero Mancer troubleshooter retrieved from the menu. If you are experiencing a bug within the application, leave it open so the data on the form is also captured in the Troubleshooter.
-      render: shell
+      description: Recreate the issue being reported in Hero Mancer, and without closing the application, open the troubleshooter from the Settings menu. Download the troubleshooter file and include it as a comment after creating this issue.
+      options:
+        - label: I understand that I will not recieve support until a troubleshooter file has been uploaded.
     validations:
       required: true
