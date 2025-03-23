@@ -65,7 +65,25 @@ export class HM {
    * @param {any} args Strings, variables to log to console.
    */
   static log(level, ...args) {
+    // Convert arguments to a more readable format if needed
+    const now = new Date();
+
+    const logEntry = {
+      type:
+        level === 1 ? 'error'
+        : level === 2 ? 'warn'
+        : 'debug',
+      timestamp: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`,
+      level,
+      content: args
+    };
+
+    // Store in memory for troubleshooting reports
+    if (!window.console_logs) window.console_logs = [];
+    window.console_logs.push(logEntry);
+
     if (this.LOG_LEVEL > 0 && level <= this.LOG_LEVEL) {
+      // Output to console
       switch (level) {
         case 1:
           console.error(`${HM.ID} |`, ...args);

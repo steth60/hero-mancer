@@ -240,14 +240,21 @@ export class DropdownHandler {
   static async handleDropdownChange(type, html, context, event) {
     try {
       const value = event.target.value;
-
-      // Extract the ID (everything before the first space)
       const id = value.split(' ')[0].trim();
-
-      // Extract the UUID (content inside square brackets)
       const uuid = value.match(/\[(.*?)]/)?.[1] || '';
-      HM.log(3, { value: value, id: id, uuid: uuid });
-      HM.SELECTED[type] = { value, id, uuid };
+
+      // Validate UUID format if present
+      let validUuid = uuid;
+      if (uuid) {
+        try {
+          foundry.utils.parseUuid(uuid);
+        } catch (e) {
+          validUuid = '';
+        }
+      }
+
+      HM.log(3, { value: value, id: id, uuid: validUuid });
+      HM.SELECTED[type] = { value, id, uuid: validUuid };
       await this.updateDescription(type, id, context);
     } catch (error) {
       HM.log(1, `Error handling dropdown change for ${type}:`, error);

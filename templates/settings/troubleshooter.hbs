@@ -1,0 +1,18 @@
+<div class="hm-troubleshooter-container">
+	<p class="notes">{{localize "hm.settings.troubleshooter.notes"}}</p>
+	<textarea rows="25" cols="80" readonly>{{output}}</textarea>
+	<div class="troubleshooter-buttons">
+		<button type="button" data-action="exportReport">
+			<i class="fa-solid fa-download"></i> {{localize "hm.settings.troubleshooter.save-to-file"}}
+		</button>
+		<button type="button" data-action="copyToClipboard">
+			<i class="fa-solid fa-copy"></i> {{localize "hm.settings.troubleshooter.copy-to-clipboard"}}
+		</button>
+		<button type="button" data-action="openDiscord">
+			<i class="fa-brands fa-discord"></i> {{localize "hm.settings.troubleshooter.discord"}}
+		</button>
+				<button type="button" data-action="openGithub">
+			<i class="fa-brands fa-github-alt"></i> {{localize "hm.settings.troubleshooter.github"}}
+		</button>
+	</div>
+</div>

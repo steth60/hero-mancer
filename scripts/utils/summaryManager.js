@@ -260,9 +260,19 @@ class TableManager {
    * @protected
    */
   static _parseTableUuidsFromDescription(description) {
-    const uuidPattern = /@UUID\[Compendium\.dnd5e\.tables\.RollTable\.(.*?)]/g;
+    const uuidPattern = /@UUID\[(.*?)]/g;
     const matches = [...description.matchAll(uuidPattern)];
-    return matches.map((match) => match[1]);
+    return matches
+      .map((match) => {
+        try {
+          const parsed = foundry.utils.parseUuid(match[1]);
+          // Only return IDs for RollTable documents
+          return parsed.type === 'RollTable' ? parsed.id : null;
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter(Boolean);
   }
 }
 

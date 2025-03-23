@@ -44,6 +44,8 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      label: Hero Mancer Troubleshooter
+      description: Please copy and paste the Hero Mancer troubleshooter retrieved from the menu. If you are experiencing a bug within the application, leave it open so the data on the form is also captured in the Troubleshooter.
       render: shell
+    validations:
+      required: true

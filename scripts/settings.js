@@ -1,4 +1,4 @@
-import { CharacterArtPicker, CustomCompendiums, DiceRolling, HM, MandatoryFields, StatRoller } from './utils/index.js';
+import { CharacterArtPicker, CustomCompendiums, DiceRolling, HM, MandatoryFields, StatRoller, Troubleshooter } from './utils/index.js';
 
 /**
  * Main registration function that initializes all module settings.
@@ -118,6 +118,15 @@ export function registerSettings() {
         HM.log(3, logMessage);
       }
     }
+  });
+
+  game.settings.registerMenu(HM.ID, 'troubleshootingMenu', {
+    name: 'hm.settings.troubleshooter.menu.name',
+    hint: 'hm.settings.troubleshooter.menu.hint',
+    icon: 'fa-solid fa-bug',
+    label: 'hm.settings.troubleshooter.generate-report',
+    type: Troubleshooter,
+    restricted: false
   });
 
   if (game.modules.get('elkan5e')?.active) {

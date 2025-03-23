@@ -201,17 +201,17 @@ export class ActorCreationService {
    * @static
    */
   static #validateRequiredSelections(backgroundData, raceData, classData) {
-    if (!backgroundData?.packId || !backgroundData?.itemId) {
+    if (!backgroundData?.uuid) {
       ui.notifications.warn('hm.errors.select-background', { localize: true });
       return false;
     }
 
-    if (!raceData?.packId || !raceData?.itemId) {
+    if (!raceData?.uuid) {
       ui.notifications.warn('hm.errors.select-race', { localize: true });
       return false;
     }
 
-    if (!classData?.packId || !classData?.itemId) {
+    if (!classData?.uuid) {
       ui.notifications.warn('hm.errors.select-class', { localize: true });
       return false;
     }

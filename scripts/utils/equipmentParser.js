@@ -1911,9 +1911,16 @@ export class EquipmentParser {
       }
 
       try {
-        // For 2024 format handling - if it's an ID rather than a UUID, try to find the UUID
-        // This is TEMPORARY
-        if (!itemId.includes('.')) {
+        // Check if it's a valid UUID
+        let parsed;
+        try {
+          parsed = foundry.utils.parseUuid(itemId);
+        } catch (e) {
+          // Not a valid UUID format
+        }
+
+        // If it's not a valid UUID, try to find a UUID for this ID
+        if (!parsed && !itemId.includes('.')) {
           // Look through the select options to find matching UUID
           const selectOptions = Array.from(document.querySelectorAll('select option'));
           for (const option of selectOptions) {

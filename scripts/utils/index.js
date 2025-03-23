@@ -1,6 +1,6 @@
 /** Services, applications, and utilities for Hero Mancer character creation and management */
 
-/** Handles the creation of our character on submission of the Hero Mancer form. */
+/** Handles the creation of our character on submission of the Hero Mancer form */
 export { ActorCreationService } from './actorCreationService.js';
 
 /** Handles filepicking for character, token, and player art */
@@ -39,7 +39,7 @@ export { MandatoryFields } from '../app/MandatoryFields.js';
 /** Handles header progress bar in Hero Mancer */
 export { ProgressBar } from './progress.js';
 
-/** Manages saved data across sessions per-user. */
+/** Manages saved data across sessions per-user */
 export { SavedOptions } from './savedOptions.js';
 
 /** Manages ability score calculations and updates */
@@ -47,3 +47,6 @@ export { StatRoller } from './statRoller.js';
 
 /** Manages all listener and building activities for the Finalization tab */
 export { SummaryManager } from './summaryManager.js';
+
+/** Utility to export relevant information for bug reporting */
+export { Troubleshooter } from '../app/Troubleshooter.js';

@@ -1421,6 +1421,28 @@ fieldset#start > h2 {
   text-shadow: 0 0 8px #ff6b6b80;
 }
 
+.hm-troubleshooter-container textarea {
+  width: 100%;
+  margin-bottom: 10px;
+  overflow-x: hidden;
+  font-size: var(--font-size-12);
+  font-family: monospace;
+  white-space: pre-wrap;
+  resize: none;
+}
+
+.troubleshooter-buttons {
+  gap: 0.625rem;
+  display: flex;
+  justify-content: center;
+}
+
+.troubleshooter-buttons button {
+  gap: 0.313rem;
+  display: flex;
+  align-items: center;
+}
+
 /* Input styling for color picker */
 .hm-app .hm-app-tab-content .input-35,
 .hm-app .hm-app-tab-content color-picker {
