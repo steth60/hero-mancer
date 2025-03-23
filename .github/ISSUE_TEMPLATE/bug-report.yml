@@ -1,6 +1,6 @@
 name: Bug Report
 description: File a bug report
-title: '[BUG] '
+title: '[BUG]: '
 labels: ['bug']
 assignees:
   - Sayshal
@@ -16,8 +16,7 @@ body:
       description: Recreate the issue being reported in Hero Mancer, and without closing the application, open the troubleshooter from the Settings menu. Download the troubleshooter file and attach it below.
       options:
         - label: I understand that I will not recieve support until a troubleshooter file has been uploaded.
-      validations:
-        required: true
+          required: true
   - type: textarea
     id: what-happened
     attributes:
