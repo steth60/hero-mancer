@@ -60,6 +60,7 @@
       },
       "cancel": "Cancel",
       "cancel-description": "Cancel and close Hero Mancer",
+      "character-created": "Character has been created successfully.",
       "class": {
         "none": "No classes available.",
         "preamble": "Choose your character's class from the available options.",
@@ -80,6 +81,7 @@
         "and": ", and ",
         "article": "a",
         "article-plural": "an",
+        "choices-header": "Equipment Choices",
         "choose-all": "Select all of the following:",
         "choose-one": "Choose one (1) from:",
         "choose-second-weapon": "Choose second weapon",
@@ -143,6 +145,10 @@
         "select-placeholder": "Choose a race",
         "tooltip": "Select a race for your character"
       },
+      "randomization-complete": "Character randomization complete!",
+      "randomize": "Randomize",
+      "randomize-character": "Randomize Character",
+      "randomizing": "Randomizing character...",
       "reset": "Reset",
       "reset-description": "Reset Hero Mancer",
       "save": "Save For Later",
@@ -150,6 +156,7 @@
       "start": {
         "character-art-label": "Character Art",
         "character-art-placeholder": "Choose art for your character",
+        "generate-random-name": "Generate random name",
         "name-label": "Character Name",
         "name-placeholder": "Choose a name for your character",
         "player-assignment-label": "Assign to Player",
@@ -202,28 +209,47 @@
       "no-equipment-notice": "Unable to find any starting equipment data in the raw description, you're on your own!"
     },
     "errors": {
+      "ability-roll-failed": "Unable to roll ability scores. Please try a different rolling method or refresh the application and try again.",
+      "actor-creation-failed": "Failed to create character. Please try again.",
       "advancement-process": "There was an error applying character advancements. Your character may be incomplete.",
+      "advancement-processing-failed": "Error processing character advancements.",
       "advancement-timeout": "Advancement process timed out. Please check your character sheet for completeness.",
+      "art-picker-failed": "Failed to open character art picker",
+      "avatar-picker-failed": "Failed to open player avatar picker",
       "cache-error": "Error loading cached data. Character creation data will be refreshed.",
+      "character-creation-failed": "Character creation failed. Please ensure all required fields are completed and that you have proper permissions to create characters.",
       "cleanup-failed": "Failed to properly clean up some resources. You may need to refresh the page if you experience issues.",
       "description-update": "Failed to update item description.",
+      "document-preparation-failed": "Failed to prepare {type} documents: {error}",
       "dropdown-initialization": "Failed to initialize dropdown options.",
       "equipment-rendering": "There was an error loading equipment. Please try a different selection or refresh the application.",
       "event-handler-error": "An error occurred while processing an event.",
-      "failed-compendium-retrieval": "Failed to retrieve documents from compendium pack: {type}",
+      "failed-compendium-retrieval": "Failed to retrieve compendiums: {type} {details}",
       "fetch-fail": "Failed to fetch some documents, please check console for errors.",
       "form-submission": "There was an error submitting the form. Please try again.",
+      "invalid-document-type": "Invalid document type specified",
+      "missing-ability-fields": "Missing required ability scores: {fields} ({count} total)",
+      "missing-background-fields": "Missing required background details: {fields} ({count} total)",
+      "missing-basic-fields": "Missing required basic fields: {fields} ({count} total)",
       "missing-equipment": "The selected {type} doesn't contain any Starting Equipment data. Please report this to the creator of the item, not Hero Mancer.",
       "missing-mandatory-fields": "Required fields missing: {fields}",
       "no-background": "The selected background could not be found.",
       "no-class": "The selected class could not be found.",
       "no-race": "The selected race could not be found.",
+      "randomization-failed": "Character randomization failed",
+      "randomize-failed": "Could not reset options to default values. Please try closing and reopening the character creator.",
+      "reset-options-failed": "Failed to save your options. Please verify you have the necessary permissions and try again.",
       "roll-failed": "Failed to roll ability score. Please try again.",
       "save-options-failed": "Failed to save your options. Please try again.",
       "select-background": "Please select a background before submitting.",
       "select-class": "Please select a class before submitting.",
       "select-race": "Please select a race before submitting.",
-      "tab-navigation": "There was an error navigating to the selected tab."
+      "tab-navigation": "There was an error navigating to the selected tab.",
+      "token-art-picker-failed": "Failed to open token art picker"
+    },
+    "info": {
+      "advancement-progress": "Processing {item} ({current}/{total})",
+      "all-advancements-complete": "All character advancements processed successfully."
     },
     "settings": {
       "ability-scores": {
@@ -250,6 +276,9 @@
         "hint": "Comma-separated list of alignments available for character creation.",
         "name": "Available Alignments"
       },
+      "appearance-options": {
+        "header": "Appearance Options"
+      },
       "art-picker-root": {
         "hint": "The root directory for the Character Art Picker",
         "name": "Art Picker Root Directory"
@@ -261,18 +290,24 @@
         "hint": "Chain 1 stat roll after the other to roll a complete character.",
         "name": "Chained Rolls"
       },
+      "character-options": {
+        "header": "Customization Options"
+      },
       "class-packs": {
         "name": "Class Packs"
       },
       "configure-compendiums": "Configure Compendiums",
+      "configure-customization": "Configure Customization",
       "configure-mandatory": "Configure Mandatory Fields",
       "configure-rolling": "Configure Roll Options",
       "custom-compendiums": {
+        "all-selected": "No packs selected! All available {type} compendiums have been selected as a fallback.",
         "background": "Background",
         "backgrounds-label": "Set Background Compendiums:",
         "class": "Class",
         "classes-label": "Set Class Compendiums:",
-        "description": "Configure your custom compendiums for classes, races, and backgrounds.",
+        "description": "Configure your custom compendiums for classes, races, and backgrounds. If you fail to select any compendiums for any category, all valid compendiums will be loaded as a fallback.",
+        "dialog-error": "Unable to render dialog, see console.",
         "error": "Failed to retrieve documents from compendium pack: {pack}",
         "error-saving": "There was an error saving your compendium settings. Please see console (F12).",
         "form-saved": "Compendium form settings have been saved.",
@@ -284,15 +319,16 @@
         "manage-items": "Manage Items",
         "manage-races": "Manage Races",
         "menu": {
-          "hint": "Open dialog to configure custom compendiums for all categories.",
-          "name": "Configure Compendiums"
+          "hint": "Determine which packs Hero Mancer will use.",
+          "name": "Custom Compendiums"
         },
         "no-valid-packs": "No valid compendium packs were found.",
         "race": "Race",
         "races-label": "Set Race Compendiums:",
+        "save-error": "Unable to create done button, see console.",
         "saved": "{type} compendium settings have been saved.",
         "select-all": "Select All",
-        "title": "Select your {type} compendiums!"
+        "title": "Select {type} compendiums!"
       },
       "custom-point-buy-total": {
         "hint": "Specify the point buy total if not using standard calculations.",
@@ -309,14 +345,26 @@
         "name": "Custom Standard Array",
         "reset-default": "Custom Standard Array was reset to default values due to invalid length."
       },
+      "customization": {
+        "error-art-picker": "Error selecting art picker location. Please try again.",
+        "error-context": "Error loading customization settings. Default values may be shown.",
+        "error-saving": "Error saving character customization settings.",
+        "menu": {
+          "hint": "Determine what customization players can use.",
+          "name": "Character Customization"
+        },
+        "save-error": "Failed to save setting: {setting}. Using previous value.",
+        "saved": "Character customization settings saved successfully."
+      },
       "deities": {
         "hint": "Comma-separated list of deities available for character creation.",
         "name": "Available Deities"
       },
       "dice-rolling": {
+        "error-context": "Error loading dice rolling settings. Default values will be used.",
         "error-saving": "Unable to save dice settings, see console and report to the developer.",
         "menu": {
-          "hint": "Open dialog to configure custom stat rolling settings available to your players during character creation.",
+          "hint": "Set stat generation options.",
           "name": "Ability Score Generation"
         },
         "need-roll-method": "At least one ability score generation method must be enabled, changes rejected.",
@@ -337,6 +385,18 @@
         "hint": "Adds a button to use Hero Mancer on the Actors tab.",
         "name": "Enable Hero Mancer?"
       },
+      "eye-colors": {
+        "hint": "Comma-separated list of eye colors used for character randomization.",
+        "name": "Eye Colors"
+      },
+      "genders": {
+        "hint": "Comma-separated list of genders used for character randomization.",
+        "name": "Genders"
+      },
+      "hair-colors": {
+        "hint": "Comma-separated list of hair colors used for character randomization.",
+        "name": "Hair Colors"
+      },
       "item-packs": {
         "name": "Item Packs"
       },
@@ -347,11 +407,12 @@
           "verbose": "Verbose",
           "warnings": "Warnings"
         },
-        "hint": "Set the verbosity of logs generated by Hero Mancer.",
+        "hint": "Set the level of logs generated by Hero Mancer. The troubleshooter will catch everything regardless. Recommended: Warnings.",
         "name": "Logging Level"
       },
       "mandatory-fields": {
         "core-fields-hint": "Core fields are always mandatory and cannot be disabled as they are essential for functionality.",
+        "error-context": "Error loading mandatory fields settings. Using default values.",
         "error-saving": "Error saving mandatory field settings",
         "groups": {
           "abilities": "Step 5: Abilities",
@@ -367,8 +428,8 @@
         },
         "instructions": "Select which fields should be required during character creation:",
         "menu": {
-          "hint": "Configure which character creation fields must be completed",
-          "name": "Mandatory Fields Configuration"
+          "hint": "Set which fields must be filled out before submitting a character.",
+          "name": "Mandatory Fields"
         },
         "saved": "Mandatory field settings saved"
       },
@@ -380,25 +441,39 @@
       "race-packs": {
         "name": "Race Packs"
       },
+      "randomize": {
+        "hint": "Allows users to randomize aspects of their character creation process. Useful for one shots, randomizer games, and loose cannons.",
+        "name": "Enable Randomizer?"
+      },
+      "reset-to-default": "An empty field was detected in: {setting}! Reset to default value.",
       "roll-delay": {
         "hint": "Controls the delay (in milliseconds) between each roll when using chained rolling. Lower values make the process faster, while higher values make it easier to follow. This setting has no effect if you are manually rolling with physical dice.",
         "name": "Roll Animation Delay"
+      },
+      "skin-tones": {
+        "hint": "Comma-separated list of skin tones used for character randomization.",
+        "name": "Skin Tones"
       },
       "token-customization": {
         "hint": "Allow your players to set some default token settings usually reserved for the GM, such as display name status, dynamic token ring settings, and display bars.",
         "name": "Allow Token Customization"
       },
       "troubleshooter": {
+        "copy-error": "Failed to copy report to clipboard.",
         "copy-success": "Troubleshooter copied to clipboard",
         "copy-to-clipboard": "Copy to Clipboard",
         "discord": "Join Discord",
+        "error-context": "Error loading troubleshooter data.",
+        "error-report": "Error generating troubleshooting report. Please try again.",
         "export": "Export Troubleshooter",
+        "export-error": "Failed to export troubleshooting report.",
         "export-success": "Troubleshooter exported as {filename}",
-        "generate-report": "Generate Troubleshooter",
+        "generate-report": "Open Troubleshooter",
         "github": "Report Issue",
+        "link-error": "Failed to open external link.",
         "menu": {
           "hint": "Generate a troubleshooter report to assist with issues.",
-          "name": "Open Troubleshooter"
+          "name": "Troubleshooter"
         },
         "notes": "The troubleshooter contains all relevant information needed to start the bug-squashing process. Using the buttons below, you can save this output as a file or copy it to your clipboard. Feel free to join the Discord or create an issue on Github.",
         "save-to-file": "Download",
@@ -409,9 +484,15 @@
     "warnings": {
       "advancement-failed": "Failed to apply {item} advancement. Your character may be missing some features.",
       "advancement-timeout": "The advancement process for {item} took too long and was skipped.",
+      "currency-update-failed": "Failed to update character currency.",
+      "equipment-creation-failed": "Failed to create some equipment items.",
       "equipment-extraction-failed": "Note: The document contains equipment information, but it could not be automatically extracted due to its format.",
+      "equipment-processing-failed": "Some equipment items couldn't be processed correctly.",
+      "favorites-processing-failed": "Failed to process favorite items properly.",
+      "no-packs-found": "No packs found for {type}",
       "partial-cleanup": "Some resources could not be properly cleaned up.",
-      "select-background": "You must select a valid background first."
+      "select-background": "You must select a valid background first.",
+      "some-advancements-failed": "Some advancements failed: {failed}. Succeeded: {succeeded}."
     }
   }
 }

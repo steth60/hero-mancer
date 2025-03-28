@@ -1,8 +1,24 @@
 /* ==========================================================================
-    Utility Classes
-   ========================================================================== */
+  Variables
+ ========================================================================== */
+:root {
+  --border-radius-lg: 0.375rem;
+  --border-radius-md: 0.3125rem;
+  --border-radius-sm: 0.25rem;
+  --border-radius-xl: 0.5rem;
+  --hm-app-header-height: 6.25rem;
+  --spacing-lg: 1.5rem;
+  --spacing-md: 1rem;
+  --spacing-sm: 0.5rem;
+  --spacing-xl: 2rem;
+  --spacing-xs: 0.25rem;
+}
 
-/* Display & Layout */
+/* ==========================================================================
+  Utility Classes - Layout
+ ========================================================================== */
+
+/* Flex utilities */
 .flex {
   display: flex;
 }
@@ -27,6 +43,7 @@
   flex-shrink: 0;
 }
 
+/* Field layout */
 .field-column {
   display: flex;
   flex-direction: column;
@@ -37,14 +54,61 @@
 .field-column .field-group {
   margin-bottom: 0.4rem;
   border: 1px solid var(--color-border-light-tertiary);
-  border-radius: 5px;
+  border-radius: var(--border-radius-md);
 }
 
+/* Width utilities */
 .width-25 {
   width: 25%;
 }
 
-/* Alignment */
+.w-full {
+  width: 100%;
+}
+
+.w-auto {
+  width: auto;
+}
+
+/* Height utilities */
+.h-auto {
+  height: auto;
+}
+
+.h-full {
+  height: 100%;
+}
+
+/* Grid utilities */
+.grid {
+  display: grid;
+}
+
+.grid-2-col {
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid-3-col {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.grid-4-col {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.grid-7-col {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.grid-auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+/* ==========================================================================
+  Utility Classes - Alignment
+ ========================================================================== */
+
+/* Flex alignment */
 .items-center {
   align-items: center;
 }
@@ -66,37 +130,42 @@
   justify-content: flex-end;
 }
 
-/* Spacing */
+/* ==========================================================================
+  Utility Classes - Spacing
+ ========================================================================== */
+
+/* Gap utilities */
 .gap-xs {
-  gap: 0.25rem;
+  gap: var(--spacing-xs);
 }
 
 .gap-sm {
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 }
 
 .gap-md {
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .gap-lg {
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
 }
 
+/* Margin utilities */
 .m-0 {
   margin: 0;
 }
 
 .mb-sm {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--spacing-sm);
 }
 
 .mb-md {
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .mb-lg {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-lg);
 }
 
 .ml-xs {
@@ -104,25 +173,28 @@
 }
 
 .m-lr {
-  margin-right: 0.25rem;
-  margin-left: 0.25rem;
-  padding-right: 0.25rem;
-  padding-left: 0.25rem;
+  margin: 0 0.25rem;
+  padding: 0 0.25rem;
 }
 
+/* Padding utilities */
 .p-sm {
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
 }
 
 .p-md {
-  padding: 1rem;
+  padding: var(--spacing-md);
 }
 
 .p-lg {
-  padding: 1.5rem;
+  padding: var(--spacing-lg);
 }
 
-/* Text Alignment */
+/* ==========================================================================
+  Utility Classes - Typography
+ ========================================================================== */
+
+/* Text alignment */
 .text-center {
   text-align: center;
 }
@@ -135,7 +207,7 @@
   text-align: right;
 }
 
-/* Typography */
+/* Font size */
 .text-sm {
   font-size: 0.875rem;
 }
@@ -152,6 +224,7 @@
   font-size: 1.5rem;
 }
 
+/* Font style */
 .font-bold {
   font-weight: bold;
 }
@@ -164,24 +237,10 @@
   font-style: italic;
 }
 
-/* Width & Height */
-.w-full {
-  width: 100%;
-}
+/* ==========================================================================
+  Utility Classes - Overflow
+ ========================================================================== */
 
-.w-auto {
-  width: auto;
-}
-
-.h-auto {
-  height: auto;
-}
-
-.h-full {
-  height: 100%;
-}
-
-/* Overflow */
 .overflow-auto {
   overflow: auto;
 }
@@ -211,34 +270,9 @@
   white-space: nowrap;
 }
 
-/* Grid Layout */
-.grid {
-  display: grid;
-}
-
-.grid-2-col {
-  grid-template-columns: 1fr 1fr;
-}
-
-.grid-3-col {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-.grid-4-col {
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-}
-
-.grid-auto-fit {
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-}
-
-.grid-7-col {
-  grid-template-columns: repeat(7, 1fr);
-}
-
 /* ==========================================================================
-    Main Application Container
-   ========================================================================== */
+  Main Application Container
+  ========================================================================== */
 
 .application.hm-app {
   display: flex;
@@ -255,6 +289,9 @@
 .application.hm-app .fa-dice,
 .application.hm-app .fa-list-check,
 .application.hm-app .fa-atlas,
+.application.hm-app .fa-palette,
+.application.hm-app .fa-bug,
+.hm-troubleshooter .fa-bug,
 .hm-compendiums-popup-dialog .fa-solid {
   color: var(--user-color);
 }
@@ -269,8 +306,8 @@ h6 {
 }
 
 /* ==========================================================================
-    Form Elements
-   ========================================================================== */
+  Form Elements
+  ========================================================================== */
 
 .form-row,
 .art-selection-row,
@@ -290,6 +327,7 @@ h6 {
   margin: 0 0.3rem;
 }
 
+/* Label styles */
 .label-15 {
   flex: 0 0 120px;
   margin-right: 0.3rem;
@@ -311,10 +349,16 @@ h6 {
   margin-left: 0.313rem;
 }
 
+/* Button styles */
 .button-7 {
   flex: 0 0 auto;
   width: auto;
+  height: 32px;
   white-space: nowrap;
+}
+
+button {
+  margin-right: unset;
 }
 
 /* Fieldset styling */
@@ -323,7 +367,7 @@ h6 {
   min-height: 0;
   max-height: 100%;
   margin: 1rem 0;
-  padding: 2rem;
+  padding: 1rem 2rem;
   border: 1px solid var(--user-color);
   border-radius: 0.375rem;
   overflow: auto;
@@ -364,20 +408,20 @@ h6 {
 }
 
 /* ==========================================================================
-    Application Header
-   ========================================================================== */
+  Application Header
+  ========================================================================== */
 
 .hm-app-header {
   --progress-percent: 0%;
 
   display: flex;
   position: relative;
-  flex: 0 0 var(--hm-app-header-height, 100px);
+  flex: 0 0 var(--hm-app-header-height);
   flex-direction: column;
   justify-content: center;
   align-items: center;
   margin-bottom: 1rem;
-  border-radius: 6px;
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
   text-align: center;
   background: transparent;
@@ -428,7 +472,7 @@ h6 {
 .wizard-progress-text {
   opacity: 0.9;
   color: #fff;
-  font-size: 0.9em;
+  font-size: 0.9rem;
   text-shadow:
     -1px -1px 0 #000,
     1px -1px 0 #000,
@@ -437,8 +481,8 @@ h6 {
 }
 
 /* ==========================================================================
-    Navigation Tabs
-   ========================================================================== */
+  Navigation Tabs
+  ========================================================================== */
 
 .application.hm-app .hm-app-nav {
   align-items: center;
@@ -463,8 +507,8 @@ h6 {
 }
 
 /* ==========================================================================
-    Tab Content
-   ========================================================================== */
+  Tab Content
+  ========================================================================== */
 
 .hm-app-tab-content {
   max-height: 70vh;
@@ -476,7 +520,7 @@ h6 {
 }
 
 .application.hm-app .hm-app-tab-content table {
-  border-radius: 8px;
+  border-radius: var(--border-radius-xl);
 }
 
 .application.hm-app .hm-app-tab-content table > caption {
@@ -500,13 +544,13 @@ h6 {
 }
 
 .hm-app-tab-content .equipment-choices h3 {
-  font-size: 1.75rem;
+  font-size: 1.64rem;
   font-family: 'modesto condensed', serif;
 }
 
 /* ==========================================================================
-    Horizontal Rules
-   ========================================================================== */
+  Horizontal Rules
+  ========================================================================== */
 
 .application.hm-app hr {
   height: 2px;
@@ -521,8 +565,8 @@ h6 {
 }
 
 /* ==========================================================================
-    Typography
-   ========================================================================== */
+  Typography
+  ========================================================================== */
 
 .hm-app h2,
 .hm-app h3 {
@@ -543,8 +587,8 @@ fieldset#start > h2 {
 }
 
 /* ==========================================================================
-    Footer
-   ========================================================================== */
+  Footer
+  ========================================================================== */
 
 .hm-app-footer {
   display: flex;
@@ -584,8 +628,8 @@ fieldset#start > h2 {
 }
 
 /* ==========================================================================
-    Abilities Section
-   ========================================================================== */
+  Abilities Section
+  ========================================================================== */
 
 /* Ability container layout */
 .hm-app .ability-container {
@@ -607,21 +651,18 @@ fieldset#start > h2 {
   flex-direction: column;
   align-items: center;
   width: 85px;
-  line-height: 2.5em;
+  line-height: 2.5rem;
 }
 
-.hm-app .ability-block .ability-dropdown {
+.hm-app .ability-block .ability-dropdown,
+.hm-app .ability-block .ability-score {
   width: 100%;
-  margin: 0;
   font-size: var(--font-size-13);
   text-align: center;
 }
 
 .hm-app .ability-block .ability-score {
-  width: 100%;
   margin-bottom: 20px;
-  font-size: var(--font-size-13);
-  text-align: center;
 }
 
 /* Point-buy specific styling */
@@ -641,7 +682,7 @@ fieldset#start > h2 {
   width: 16%;
   max-width: 16%;
   border: 1px solid #ccc;
-  border-radius: 6px;
+  border-radius: var(--border-radius-lg);
   text-align: center;
 }
 
@@ -663,15 +704,16 @@ fieldset#start > h2 {
   padding-bottom: 0.313rem;
 }
 
+/* Button controls */
 .minus-button,
 .plus-button {
   display: flex;
   flex-shrink: 0;
   justify-content: center;
   align-items: center;
-  width: 2em;
-  height: 2em;
-  font-size: 1em;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1rem;
 }
 
 .ability-block.point-buy .adjust-button {
@@ -680,30 +722,26 @@ fieldset#start > h2 {
   align-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 5px;
-  font-size: 1.2em;
+  border-radius: var(--border-radius-md);
+  font-size: 1.2rem;
   cursor: pointer;
 }
 
 .ability-block.point-buy .score-value {
   min-width: 40px;
   font-weight: bold;
-  font-size: 1.5em;
+  font-size: 1.5rem;
   text-align: center;
 }
 
 /* Primary ability highlight styling */
-.ability-block .ability-label.primary-ability {
-  color: #ffd700;
-  text-shadow: 0 -5px 20px #ffd70099;
-}
-
+.ability-block .ability-label.primary-ability,
 .ability-block.point-buy .ability-label.primary-ability {
   color: #ffd700;
-  text-shadow: 0 0 5px #ffd70099;
+  text-shadow: 0 -5px 20px #ffd70099;
+  animation: primary-ability-pulse 2s infinite ease-in-out;
 }
 
-/* Add dark stroke for light theme */
 .theme-light .ability-block .ability-label.primary-ability,
 .theme-light .ability-block.point-buy .ability-label.primary-ability {
   text-shadow:
@@ -719,7 +757,7 @@ fieldset#start > h2 {
   box-shadow: 0 0 5px 5px #ffd70099;
 }
 
-/* Add a slight animation for additional visual cue */
+/* Primary ability animations */
 @keyframes primary-ability-pulse {
   0% {
     text-shadow: 0 0 5px #ffd70099;
@@ -734,7 +772,6 @@ fieldset#start > h2 {
   }
 }
 
-/* Light theme pulse animation */
 @keyframes primary-ability-pulse-light {
   0% {
     text-shadow:
@@ -764,12 +801,7 @@ fieldset#start > h2 {
   }
 }
 
-.ability-block .ability-label.primary-ability,
-.ability-block.point-buy .ability-label.primary-ability {
-  animation: primary-ability-pulse 2s infinite ease-in-out;
-}
-
-/* Primary ability highlight styling with tooltip */
+/* Primary ability tooltip */
 .ability-label.primary-ability {
   position: relative;
   cursor: help;
@@ -782,24 +814,24 @@ fieldset#start > h2 {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-size: 1.5em;
+  font-size: 1.5rem;
   text-align: center;
 }
 
 .remaining-label,
 .points-display {
-  margin-bottom: 0.4em;
+  margin-bottom: 0.4rem;
   font-weight: bold;
-  font-size: 1.2em;
+  font-size: 1.2rem;
 }
 
 #remaining-points {
-  margin-right: 0.2em;
+  margin-right: 0.2rem;
   color: var(--text-color-highlight, #4cae4f);
 }
 
 #total-points {
-  margin-left: 0.2em;
+  margin-left: 0.2rem;
 }
 
 .theme-light #remaining-points {
@@ -819,32 +851,30 @@ fieldset#start > h2 {
 }
 
 /* ==========================================================================
-    Equipment Section
-   ========================================================================== */
+  Equipment Section
+  ========================================================================== */
 
 .equipment-container {
   display: flex;
   flex-direction: column;
-  border-radius: 8px;
+  border-radius: var(--border-radius-xl);
   background: var(--color-background-alt);
 }
 
 .equipment-choices {
-  gap: 1.25rem;
+  gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   display: grid;
-  margin-top: 1rem;
 }
 
 .class-equipment-section,
 .background-equipment-section {
-  display: flex;
   flex: 1;
   flex-direction: column;
   align-items: flex-start;
-  padding: 2rem;
+  padding: 1.25rem;
   border: 1px solid #4a4a4a;
-  border-radius: 6px;
+  border-radius: var(--border-radius-lg);
   box-shadow: 0 2px 4px #0003;
 }
 
@@ -888,15 +918,14 @@ fieldset#start > h2 {
 
 .equipment-choices h4 {
   width: 92%;
-  margin: 1rem 0 0.5rem;
+  margin: unset;
 }
 
 .equipment-choices .parent-label {
   width: fit-content;
   min-width: 140px;
-  max-width: 240px;
-  margin-right: 0;
-  margin-left: 0;
+  max-width: 265px;
+  margin: 0;
 }
 
 .equipment-choices input[type='checkbox'] {
@@ -908,8 +937,7 @@ fieldset#start > h2 {
   width: fit-content;
   min-width: 140px;
   max-width: 240px;
-  margin-right: 0;
-  margin-left: 0;
+  margin: 0.25rem 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -917,7 +945,7 @@ fieldset#start > h2 {
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices a.content-link {
   display: inline;
-  margin: 0 0 0 0.2em;
+  margin: 0 0 0 0.2rem;
   padding: 0;
   border: none;
   font-style: italic;
@@ -925,7 +953,7 @@ fieldset#start > h2 {
 }
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices a.content-link i {
-  margin: 0 0.2em 0 0;
+  margin: 0 0.2rem 0 0;
   font-size: inherit;
 }
 
@@ -946,10 +974,13 @@ fieldset#start > h2 {
 
 /* Wealth option container */
 .wealth-option-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   margin: 10px 0 0;
   padding: 0.625rem;
   border: 1px solid var(--color-border-light-tertiary);
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
 }
 
 .wealth-option-container label {
@@ -960,9 +991,25 @@ fieldset#start > h2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 0.2rem;
-  padding: 0 0.625rem;
-  border-radius: 4px;
+  width: fit-content;
+  padding-left: 0.25rem;
+  border-radius: var(--border-radius-sm);
+}
+
+.wealth-roll-container button,
+.character-name-row button {
+  aspect-ratio: 1/1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.wealth-roll-container button i,
+.character-name-row button i {
+  margin: 0;
 }
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices .wealth-roll-container input[type='text'] {
@@ -971,10 +1018,6 @@ fieldset#start > h2 {
   max-width: 65px;
   padding-right: 0.625rem;
   text-align: center;
-}
-
-.dual-weapon-selection {
-  margin-left: 10px;
 }
 
 .second-weapon-label {
@@ -991,7 +1034,7 @@ fieldset#start > h2 {
   margin: 10px 0;
   padding: 0.5rem;
   border: 1px solid var(--color-level-error-border);
-  border-radius: 5px;
+  border-radius: var(--border-radius-md);
 }
 
 .equipment-missing-warning {
@@ -1038,15 +1081,15 @@ fieldset#start > h2 {
   font-size: 1rem;
 }
 
-/* Favorite star styling - revised for consistent positioning */
+/* Favorite star styling */
 .equipment-favorite-container {
   display: inline-flex;
   position: relative;
   align-items: center;
-  width: 1.2em; /* Add positioning context */
-  height: 1.2em;
-  margin-left: auto; /* Prevent line height issues */
-  line-height: 1; /* Consistent height */
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-left: auto;
+  line-height: 1;
   vertical-align: baseline;
 }
 
@@ -1077,10 +1120,10 @@ fieldset#start > h2 {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 1em;
-  height: 1em;
+  width: 1rem;
+  height: 1rem;
   color: #aaa;
-  font-size: 1.2em;
+  font-size: 1.2rem;
   transition: color 0.2s ease;
 }
 
@@ -1107,8 +1150,8 @@ fieldset#start > h2 {
 }
 
 /* ==========================================================================
-    Finalize Tab - Summary Section
-   ========================================================================== */
+  Finalize Tab - Summary Section
+  ========================================================================== */
 
 .hm-app-tab-content .summary-section {
   gap: 0.625rem;
@@ -1131,11 +1174,11 @@ fieldset#start > h2 {
   width: 150px;
   height: 150px;
   border: 1px solid #666;
-  border-radius: 5px;
+  border-radius: var(--border-radius-md);
 }
 
 .hm-app-tab-content .character-name {
-  font-size: 1.2em;
+  font-size: 1.2rem;
 }
 
 .hm-app-tab-content .character-summary {
@@ -1238,8 +1281,8 @@ fieldset#start > h2 {
 }
 
 /* ==========================================================================
-    Settings Pages
-   ========================================================================== */
+  Settings Pages
+  ========================================================================== */
 
 .ability-scores-container {
   width: 60%;
@@ -1305,7 +1348,10 @@ fieldset#start > h2 {
 }
 
 .hm-compendiums-popup-dialog .window-content {
+  min-width: 260px;
+  max-width: 520px;
   height: fit-content;
+  min-height: 300px;
   max-height: calc(100vh - 200px);
 }
 
@@ -1330,6 +1376,7 @@ fieldset#start > h2 {
   margin-left: 10px;
 }
 
+/* Compendium groups */
 .hm-compendium-groups {
   overflow-y: auto;
 }
@@ -1354,6 +1401,10 @@ fieldset#start > h2 {
   padding: 0;
 }
 
+/* ==========================================================================
+  Mandatory Fields and Validation
+  ========================================================================== */
+
 /* Mandatory fields popup */
 .hm-mandatory-fields-popup {
   gap: 0.625rem;
@@ -1370,7 +1421,7 @@ fieldset#start > h2 {
 
 .hm-mandatory-fields-popup .field-group {
   padding: 0.625rem;
-  border-radius: 5px;
+  border-radius: var(--border-radius-md);
 }
 
 .hm-mandatory-fields-popup .field-group h3 {
@@ -1380,10 +1431,11 @@ fieldset#start > h2 {
 
 .hm-mandatory-fields-popup .field-group h4 {
   margin: 5px 0;
-  font-size: 1em;
+  font-size: 1rem;
 }
 
 .hm-mandatory-fields-popup .form-group {
+  gap: unset;
   margin: 5px 0;
   padding-left: 0.625rem;
 }
@@ -1408,7 +1460,7 @@ fieldset#start > h2 {
   justify-content: center;
   align-items: center;
   margin-right: 0.25rem;
-  font-size: 0.9em;
+  font-size: 0.9rem;
 }
 
 .mandatory-indicator.complete {
@@ -1420,6 +1472,36 @@ fieldset#start > h2 {
   color: #ff6b6b;
   text-shadow: 0 0 8px #ff6b6b80;
 }
+
+/* Field validation styling */
+.form-row > label,
+.art-selection-row > label,
+.customization-row > label,
+.ability-block > span.ability-label,
+.ability-block > label,
+.form-group > label,
+.trait-group > label,
+.personality-group > label,
+.description-group > label,
+.notes-group > label,
+.notes-section > h3 {
+  gap: 0.5rem;
+  display: flex;
+  position: relative;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.notes-section:has(prose-mirror.mandatory-field) > h3 {
+  gap: 0.5rem;
+  display: flex;
+  position: relative;
+  align-items: center;
+}
+
+/* ==========================================================================
+  Troubleshooter
+  ========================================================================== */
 
 .hm-troubleshooter-container textarea {
   width: 100%;
@@ -1442,6 +1524,10 @@ fieldset#start > h2 {
   display: flex;
   align-items: center;
 }
+
+/* ==========================================================================
+  Customization
+  ========================================================================== */
 
 /* Input styling for color picker */
 .hm-app .hm-app-tab-content .input-35,
@@ -1475,33 +1561,11 @@ fieldset#start > h2 {
   padding-left: 0.313rem;
 }
 
-/* Mandatory fields styling */
-.form-row > label,
-.art-selection-row > label,
-.customization-row > label,
-.ability-block > span.ability-label,
-.ability-block > label,
-.form-group > label,
-.trait-group > label,
-.personality-group > label,
-.description-group > label,
-.notes-group > label,
-.notes-section > h3 {
-  gap: 0.5rem;
-  display: flex;
-  position: relative;
-  align-items: center;
-  margin-top: 0.5rem;
-}
+/* ==========================================================================
+  Dice Rolling
+  ========================================================================== */
 
-.notes-section:has(prose-mirror.mandatory-field) > h3 {
-  gap: 0.5rem;
-  display: flex;
-  position: relative;
-  align-items: center;
-}
-
-/* Animations */
+/* Animation for dice rolling */
 @keyframes roll-dice {
   0% {
     transform: rotate(0deg) scale(1);
@@ -1521,9 +1585,44 @@ fieldset#start > h2 {
   animation: roll-dice 0.5s ease-in-out;
 }
 
+.hm-dice-rolling-popup .form-group {
+  gap: unset;
+}
+
 /* ==========================================================================
-   Media Queries
-   ========================================================================== */
+  Customization Application
+  ========================================================================== */
+
+.customization-application .form-group,
+.customization-application .form-group .form-group,
+.customization-application .form-group .flex.items-center {
+  gap: unset;
+  width: 100%;
+}
+
+.customization-application .form-group .flex.items-center .form-input {
+  gap: unset;
+  width: 100%;
+  max-width: 100%;
+}
+
+.customization-application .flex.items-center button.file-picker {
+  aspect-ratio: 1/1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: auto;
+  height: 100%;
+  margin-left: 5px;
+}
+
+.customization-application .flex.items-center button.file-picker i {
+  margin: 0;
+}
+
+/* ==========================================================================
+  Media Queries
+  ========================================================================== */
 
 @media (width <= 1024px) {
   /* Application container */
@@ -1536,6 +1635,7 @@ fieldset#start > h2 {
   /* Navigation */
   .application.hm-app .hm-app-nav {
     gap: 1rem;
+    display: flex;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -1551,8 +1651,7 @@ fieldset#start > h2 {
   .hm-app-tab-content fieldset input[type='text'],
   .hm-app-tab-content fieldset select {
     width: 80%;
-    margin-right: 0;
-    margin-left: 0;
+    margin: 0;
   }
 
   /* Footer */
