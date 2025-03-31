@@ -233,7 +233,7 @@ export class EquipmentParser {
 
       // Create wealth option container
       const wealthComponents = this.createWealthOptionComponents(type, isModernRules, wealthValue);
-      this.setupWealthOptionBehavior(wealthComponents, sectionContainer, isModernRules, wealthValue);
+      this.setupWealthOptionBehavior(wealthComponents, sectionContainer, isModernRules, wealthValue, type);
 
       HM.log(3, `Rendered wealth option for ${type} with value ${wealthValue}`);
     } catch (error) {
@@ -306,9 +306,10 @@ export class EquipmentParser {
    * @param {HTMLElement} sectionContainer - Parent container
    * @param {boolean} isModernRules - Whether using 2024 rules
    * @param {string|number} wealthValue - Starting wealth value
+   * @param {string} type - Class or background type for wealth
    * @private
    */
-  setupWealthOptionBehavior(components, sectionContainer, isModernRules, wealthValue) {
+  setupWealthOptionBehavior(components, sectionContainer, isModernRules, wealthValue, type) {
     HM.log(3, 'Setting up wealth behavior');
 
     const { wealthContainer, wealthCheckbox, wealthLabel, wealthRollContainer, wealthInput, rollButton } = components;
@@ -322,6 +323,22 @@ export class EquipmentParser {
         wealthInput.value = `${roll.total} ${CONFIG.DND5E.currencies.gp.abbreviation}`;
         wealthInput.dispatchEvent(new Event('change', { bubbles: true }));
         HM.log(3, `Rolled wealth ${formula} = ${roll.total}`);
+
+        // Publish to chat if setting is enabled
+        if (game.settings.get(HM.ID, 'publishWealthRolls')) {
+          const characterNameInput = document.getElementById('character-name');
+          const characterName = characterNameInput?.value || game.user.name;
+          const typeLabel = game.i18n.localize(`TYPES.Item.${type}`);
+
+          await roll.toMessage({
+            flavor: game.i18n.format('hm.app.equipment.wealth-roll-message', {
+              name: characterName,
+              type: typeLabel,
+              result: roll.total
+            }),
+            speaker: ChatMessage.getSpeaker()
+          });
+        }
       });
     }
 

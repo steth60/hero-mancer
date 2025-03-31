@@ -101,7 +101,8 @@
         "unknown-choice": "Unknown linked item.",
         "unnamed": "unnamed item",
         "use-starting-wealth": "Use starting wealth",
-        "wealth-placeholder": "0 gp"
+        "wealth-placeholder": "0 gp",
+        "wealth-roll-message": "{name} rolled for {type} starting wealth & received: {result} gp."
       },
       "finalize": {
         "backstory": "Backstory",
@@ -437,6 +438,10 @@
       "player-customization": {
         "hint": "Allow your players to set some information up during character creation, such as player color, pronouns, and avatar.",
         "name": "Allow Player Customization"
+      },
+      "publish-wealth-rolls": {
+        "hint": "When enabled, starting wealth rolls will be published to chat for all users.",
+        "name": "Publish Starting Wealth Rolls"
       },
       "race-packs": {
         "name": "Race Packs"

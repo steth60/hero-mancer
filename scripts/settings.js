@@ -60,6 +60,15 @@ function registerCoreSettings() {
     }
   });
 
+  game.settings.register(HM.ID, 'publishWealthRolls', {
+    name: 'hm.settings.publish-wealth-rolls.name',
+    hint: 'hm.settings.publish-wealth-rolls.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
   game.settings.register(HM.ID, 'diceRollingMethod', {
     scope: 'client',
     config: false,
