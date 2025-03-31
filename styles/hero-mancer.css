@@ -1208,16 +1208,16 @@ fieldset#start > h2 {
 /* Target the ability table specifically */
 .message-content .character-summary .ability-scores-summary .ability-table {
   width: 100%;
-  border-collapse: collapse;
   margin: 10px 0;
+  border-collapse: collapse;
 }
 
 /* Make all cells equal width */
 .message-content .character-summary .ability-scores-summary .ability-table th,
 .message-content .character-summary .ability-scores-summary .ability-table td {
   width: 33.33%;
-  text-align: center;
   padding: 0.125rem;
+  text-align: center;
 }
 
 /* Style table headers */
@@ -1228,18 +1228,18 @@ fieldset#start > h2 {
 
 /* Apply soft colors to each column */
 .message-content .character-summary .ability-scores-summary .ability-table tr td:nth-child(1) {
-  background-color: #e8b7b7;
   font-size: var(--font-size-12);
+  background-color: #e8b7b7;
 }
 
 .message-content .character-summary .ability-scores-summary .ability-table tr td:nth-child(2) {
-  background-color: #c9c2e3;
   font-size: var(--font-size-12);
+  background-color: #c9c2e3;
 }
 
 .message-content .character-summary .ability-scores-summary .ability-table tr td:nth-child(3) {
-  background-color: #b7d4b7;
   font-size: var(--font-size-12);
+  background-color: #b7d4b7;
 }
 
 /* Add some subtle borders */
@@ -1250,11 +1250,11 @@ fieldset#start > h2 {
 }
 
 .message-content .character-summary .currency-icon {
-  vertical-align: middle;
-  border: none;
-  margin-right: 5px;
-  height: 16px;
   width: 16px;
+  height: 16px;
+  margin-right: 5px;
+  border: none;
+  vertical-align: middle;
 }
 
 .message-content .character-summary .starting-wealth {
