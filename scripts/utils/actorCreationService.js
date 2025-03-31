@@ -35,8 +35,8 @@ export class ActorCreationService {
       // Validate and collect data
       if (!this.#validateMandatoryFields(formData.object)) return;
 
-      const { useStartingWealth, startingWealth } = await this.#processWealthOptions(formData.object);
-      const equipmentSelections = await this.#collectEquipment(event, useStartingWealth);
+      const { useClassWealth, useBackgroundWealth, startingWealth } = await this.#processWealthOptions(formData.object);
+      const equipmentSelections = await this.#collectEquipment(event, useClassWealth, useBackgroundWealth);
 
       const characterData = this.#extractCharacterData(formData.object);
       if (!this.#validateCharacterData(characterData)) return;
@@ -244,7 +244,7 @@ export class ActorCreationService {
   /**
    * Processes starting wealth options from form data
    * @param {object} formData - Form data containing wealth options
-   * @returns {Promise<{useStartingWealth: boolean, startingWealth: object|null}>}
+   * @returns {Promise<{useClassWealth: boolean, useBackgroundWealth: boolean, startingWealth: object|null}>}
    * @private
    * @static
    */
@@ -259,27 +259,30 @@ export class ActorCreationService {
 
     HM.log(3, 'Starting wealth amount:', startingWealth);
 
-    return { useStartingWealth, startingWealth };
+    return { useClassWealth, useBackgroundWealth, startingWealth };
   }
 
   /**
    * Collects equipment selections from the form
-   * @param {Event} event - Form submission event
-   * @param {boolean} useStartingWealth - Whether starting wealth is being used
-   * @returns {Promise<Array<object>>} Equipment items to be created
-   * @private
+   * @param {Event} event - The form submission event
+   * @param {boolean} useClassWealth - Whether class starting wealth is being used
+   * @param {boolean} useBackgroundWealth - Whether background starting wealth is being used
+   * @returns {Promise<Array<object>>} An array of equipment items
    * @static
    */
-  static async #collectEquipment(event, useStartingWealth) {
-    // Get background equipment (always collected)
-    const backgroundEquipment = await EquipmentParser.collectEquipmentSelections(event, {
-      includeClass: false,
-      includeBackground: true
-    });
+  static async #collectEquipment(event, useClassWealth, useBackgroundWealth) {
+    // Get background equipment if not using background wealth
+    const backgroundEquipment =
+      !useBackgroundWealth ?
+        await EquipmentParser.collectEquipmentSelections(event, {
+          includeClass: false,
+          includeBackground: true
+        })
+      : [];
 
-    // Get class equipment (only if not using starting wealth)
+    // Get class equipment if not using class wealth
     const classEquipment =
-      !useStartingWealth ?
+      !useClassWealth ?
         await EquipmentParser.collectEquipmentSelections(event, {
           includeClass: true,
           includeBackground: false
