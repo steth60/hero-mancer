@@ -347,7 +347,12 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     const globalCheckbox = document.createElement('input');
     globalCheckbox.type = 'checkbox';
     globalCheckbox.className = 'hm-select-all-global';
+
+    // Set both property and attribute
     globalCheckbox.checked = allSelected;
+    if (allSelected) {
+      globalCheckbox.setAttribute('checked', 'checked');
+    }
 
     globalLabel.append(globalCheckbox, game.i18n.localize('hm.settings.custom-compendiums.select-all'));
     globalHeader.appendChild(globalLabel);
@@ -380,7 +385,12 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     groupCheckbox.type = 'checkbox';
     groupCheckbox.className = 'hm-select-all';
     groupCheckbox.dataset.source = source;
+
+    // Set both property and attribute
     groupCheckbox.checked = group.allSelected;
+    if (group.allSelected) {
+      groupCheckbox.setAttribute('checked', 'checked');
+    }
 
     groupLabel.append(groupCheckbox, group.name);
     groupHeader.appendChild(groupLabel);
@@ -415,7 +425,12 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     itemCheckbox.name = 'compendiumMultiSelect';
     itemCheckbox.value = pack.value;
     itemCheckbox.dataset.source = source;
+
+    // Set both property and attribute
     itemCheckbox.checked = pack.selected;
+    if (pack.selected) {
+      itemCheckbox.setAttribute('checked', 'checked');
+    }
 
     itemLabel.append(itemCheckbox, pack.label);
     return itemLabel;
