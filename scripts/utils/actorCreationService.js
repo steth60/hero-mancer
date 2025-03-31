@@ -829,7 +829,7 @@ export class ActorCreationService {
       }
 
       // Generate character summary
-      await this.#createCharacterSummary();
+      await this.#createCharacterSummary(actor);
     } catch (error) {
       HM.log(1, 'Error in processAdvancements:', error);
       ui.notifications.error('hm.errors.advancement-processing-failed', { localize: true });
@@ -881,15 +881,16 @@ export class ActorCreationService {
 
   /**
    * Creates character summary chat message
+   * @param {object} actor - Current actor data to derive chat details from
    * @returns {Promise<void>}
    * @private
    * @static
    */
-  static async #createCharacterSummary() {
+  static async #createCharacterSummary(actor) {
     try {
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker(),
-        content: DOMManager.generateCharacterSummaryChatMessage(),
+        content: DOMManager.generateCharacterSummaryChatMessage(actor),
         flags: {
           'hero-mancer': { type: 'character-summary' }
         }

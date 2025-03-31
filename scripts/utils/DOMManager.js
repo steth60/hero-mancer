@@ -768,17 +768,18 @@ export class DOMManager {
 
   /**
    * Generates a formatted chat message summarizing the created character
+   * @param {object} actor - Current actor data to derive chat details from
    * @returns {string} HTML content for chat message
    * @static
    */
-  static generateCharacterSummaryChatMessage() {
+  static generateCharacterSummaryChatMessage(actor) {
     try {
       // Get character name and summary sections
       const characterName = this.#getCharacterName();
       const summaries = this.#collectSummaryContent();
 
       // Generate formatted HTML message
-      return this.#buildSummaryMessageHTML(characterName, summaries);
+      return this.#buildSummaryMessageHTML(characterName, summaries, actor);
     } catch (error) {
       HM.log(1, 'Error generating character summary message:', error);
 
@@ -1883,23 +1884,24 @@ export class DOMManager {
    * Build formatted HTML for summary message
    * @param {string} characterName - Character name
    * @param {Object} summaries - Summary content by section
+   * @param {Actor} actor - The newly created actor
    * @returns {string} Formatted HTML
    * @private
    */
-  static #buildSummaryMessageHTML(characterName, summaries) {
+  static #buildSummaryMessageHTML(characterName, summaries, actor) {
     let message = `
-    <div class="character-summary" style="line-height: 1.7; margin: 0.5em 0;">
-      <h2 style="margin-bottom: 0.5em">${characterName}</h2>
-      <hr style="margin: 0.5em 0">
+  <div class="character-summary">
+    <h2>${characterName}</h2>
+    <div class="summaries">
   `;
 
     // Add each summary section if available
-    if (summaries.classRace) {
-      message += `<span class="summary-section class-race">${summaries.classRace}</span> `;
-    }
-
     if (summaries.background) {
       message += `<span class="summary-section background">${summaries.background}</span> `;
+    }
+
+    if (summaries.classRace) {
+      message += `<span class="summary-section class-race">${summaries.classRace}</span> `;
     }
 
     if (summaries.abilities) {
@@ -1911,6 +1913,114 @@ export class DOMManager {
     }
 
     message += '</div>';
+
+    // Add ability scores table
+    message += this.#buildAbilityScoresTable(actor);
+
+    // Add inventory list
+    message += this.#buildInventoryList(actor);
+
+    message += '</div>';
     return message;
+  }
+
+  /**
+   * Builds an HTML table showing ability scores and modifiers
+   * @param {Actor} actor - The actor containing ability data
+   * @returns {string} HTML table
+   * @private
+   */
+  static #buildAbilityScoresTable(actor) {
+    if (!actor?.system?.abilities) return '';
+
+    let tableHTML = `
+    <div class="ability-scores-summary">
+      <h3>${game.i18n.localize('DND5E.AbilityScorePl')}</h3>
+      <table class="ability-table">
+        <tr>
+          <th>${game.i18n.localize('DND5E.Ability')}</th>
+          <th>${game.i18n.localize('DND5E.AbilityScoreShort')}</th>
+          <th>${game.i18n.localize('DND5E.AbilityModifierShort')}</th>
+        </tr>
+  `;
+
+    for (const [key, abilityConfig] of Object.entries(CONFIG.DND5E.abilities)) {
+      const ability = actor.system.abilities[key];
+      if (!ability) continue;
+
+      const score = ability.value;
+      const mod = ability.mod;
+      const label = CONFIG.DND5E.abilities[key]?.label || key;
+      const modPrefix = mod >= 0 ? '+' : '';
+
+      tableHTML += `
+      <tr>
+        <td>${label.toUpperCase()}</td>
+        <td>${score}</td>
+        <td>${modPrefix}${mod}</td>
+      </tr>
+    `;
+    }
+
+    tableHTML += `
+      </table>
+    </div>
+  `;
+
+    return tableHTML;
+  }
+
+  /**
+   * Builds a comma-separated list of all items and currency
+   * @param {Actor} actor - The actor containing inventory and currency data
+   * @returns {string} HTML inventory summary
+   * @private
+   */
+  static #buildInventoryList(actor) {
+    if (!actor) return '';
+
+    const items = actor.items.filter((item) => !['class', 'subclass', 'race', 'background', 'feat', 'spell'].includes(item.type));
+
+    let inventoryHTML = `
+    <div class="inventory-summary">
+      <h3>${game.i18n.localize('DND5E.StartingEquipment.Title')}</h3>
+  `;
+
+    // Build item list with UUID links
+    if (items.length) {
+      const itemLinks = items
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((item) => `@UUID[${item.uuid}]`)
+        .join(', ');
+
+      inventoryHTML += `<p class="inventory-items">${itemLinks}</p>`;
+    } else {
+      inventoryHTML += `<p class="inventory-items"> ${game.i18n.localize('hm.app.finalize.summary.no-items')}</p>`;
+    }
+
+    // Add currency if any exists
+    const currency = actor.system.currency;
+    const hasCurrency = currency && Object.values(currency).some((v) => v > 0);
+
+    if (hasCurrency) {
+      inventoryHTML += `<h3>${game.i18n.localize('DND5E.StartingEquipment.Wealth.Label')}</h3><p class="starting-wealth">`;
+
+      const currencyParts = [];
+      for (const [coin, amount] of Object.entries(currency)) {
+        if (amount > 0) {
+          const coinConfig = CONFIG.DND5E.currencies[coin] || {};
+          const iconPath = coinConfig.icon || '';
+          const iconHtml = iconPath ? `<img src="${iconPath}" width="16" height="16" class="currency-icon">` : '';
+          const label = coinConfig.abbreviation || coin;
+          currencyParts.push(`${iconHtml}${amount} ${label}`);
+        }
+      }
+
+      inventoryHTML += currencyParts.join(', ');
+      inventoryHTML += '</p>';
+    }
+
+    inventoryHTML += '</div>';
+    return inventoryHTML;
   }
 }
