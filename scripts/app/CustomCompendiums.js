@@ -188,6 +188,14 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     for (const pack of game.packs) {
       if (pack.metadata.type !== 'Item') continue;
 
+      // Skip CPR compendiums - they contain stub documents
+      if (HM.COMPAT.CPR) {
+        if (pack.metadata.id.includes('chris-premades') || pack.metadata.packageName === 'chris-premades') {
+          HM.log(3, `Skipping CPR pack: ${pack.metadata.label}`);
+          continue;
+        }
+      }
+
       try {
         const index = await pack.getIndex();
         let hasValidDocs = false;

@@ -293,6 +293,28 @@ export class HM {
       throw new Error(`Document preparation failed: ${error.message}. Some features may not work correctly.`);
     }
   }
+
+  /**
+   * Check and set compatibility flags for other modules
+   * @static
+   * @returns {void}
+   */
+  static checkModuleCompatibility() {
+    // Reset compatibility flags
+    HM.COMPAT = {};
+
+    // Elkan compatibility
+    if (game.modules.get('elkan5e')?.active && game.settings.get(HM.ID, 'elkanCompatibility')) {
+      HM.COMPAT = { ELKAN: true };
+      HM.log(3, 'Elkan Detected: Compatibility auto-enabled.');
+    }
+
+    // Cauldron of Plentiful Resources compatibility
+    if (game.modules.get('chris-premades')?.active) {
+      HM.COMPAT = { CPR: true };
+      HM.log(3, 'CPR Detected: Compatibility auto-enabled.');
+    }
+  }
 }
 
 /* -------------------------------------------- */
@@ -322,10 +344,8 @@ Hooks.once('ready', async () => {
   for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
     await pack.getIndex();
   }
-  if (game.modules.get('elkan5e')?.active && game.settings.get(HM.ID, 'elkanCompatibility')) {
-    HM.COMPAT = { ELKAN: true };
-    HM.log(3, 'Elkan Detected: Compatibility auto-enabled.');
-  }
+
+  HM.checkModuleCompatibility();
   await HM.loadAndEnrichDocuments();
 
   // Load compendium selections

@@ -47,6 +47,23 @@
         "id": "dnd5e",
         "type": "system"
       }
+    ],
+    "optional": [
+      {
+        "id": "chris-premades",
+        "type": "module",
+        "compatibility": {
+          "minimum": "1.0.16",
+          "verified": "1.0.16"
+        }
+      },
+      {
+        "id": "elkan5e",
+        "type": "module",
+        "compatibility": {
+          "verified": "v1.12.18.2"
+        }
+      }
     ]
   },
   "styles": ["styles/hero-mancer.css"],

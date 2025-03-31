@@ -966,8 +966,8 @@ export class ActorCreationService {
         }
       }
 
-      // Report overall results
-      this.#reportAdvancementResults(results);
+      // Report overall results and apply CPR effects if enabled
+      this.#reportAdvancementResults(results, actor);
     } finally {
       if (currentManager) await currentManager.close().catch((e) => null);
       actor.sheet.render(true);
@@ -977,11 +977,12 @@ export class ActorCreationService {
   /**
    * Reports advancement processing results
    * @param {object} results - Object with success/failure arrays
+   * @param {Actor} actor - Actor to apply advancements to
    * @returns {void}
    * @private
    * @static
    */
-  static #reportAdvancementResults(results) {
+  static #reportAdvancementResults(results, actor) {
     if (results.failure.length === 0) {
       ui.notifications.info('hm.info.all-advancements-complete', { localize: true });
     } else {
@@ -991,6 +992,11 @@ export class ActorCreationService {
           succeeded: results.success.join(', ')
         })
       );
+    }
+
+    // Apply CPR effects if compatibility is enabled
+    if (HM.COMPAT.CPR) {
+      this.#applyCPREffects(actor);
     }
   }
 
@@ -1020,6 +1026,25 @@ export class ActorCreationService {
         return this.#createAdvancementManager(actor, item, retryCount + 1);
       }
       throw error;
+    }
+  }
+
+  /**
+   * Applies CPR effects to the actor if compatibility is enabled
+   * @param {Actor} actor - The actor to apply automations to
+   * @returns {Promise<void>}
+   * @private
+   * @static
+   */
+  static async #applyCPREffects(actor) {
+    if (!actor) return;
+
+    try {
+      HM.log(3, 'Applying CPR effects to actor');
+      await chrisPremades.utils.actorUtils.updateAll(actor);
+      ui.notifications.info('hm.info.cpr-effects-applied', { localize: true });
+    } catch (error) {
+      HM.log(1, 'Error applying CPR effects:', error);
     }
   }
 

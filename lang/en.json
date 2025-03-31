@@ -250,7 +250,8 @@
     },
     "info": {
       "advancement-progress": "Processing {item} ({current}/{total})",
-      "all-advancements-complete": "All character advancements processed successfully."
+      "all-advancements-complete": "All character advancements processed successfully.",
+      "cpr-effects-applied": "Cauldron of Plentiful Resouces detected! Automations have been applied!"
     },
     "settings": {
       "ability-scores": {
