@@ -346,7 +346,7 @@ export class DOMManager {
     const tokenArtCheckbox = element.querySelector('#link-token-art');
     if (tokenArtCheckbox) {
       this.on(tokenArtCheckbox, 'change', () => {
-        const tokenArtRow = element.querySelector('.token-art-row');
+        const tokenArtRow = element.querySelector('#token-art-row');
         if (tokenArtRow) {
           tokenArtRow.style.display = tokenArtCheckbox.checked ? 'none' : 'flex';
         }
