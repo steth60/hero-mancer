@@ -336,15 +336,37 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   /**
    * Actions performed after any render of the Application.
    * @param {ApplicationRenderContext} _context Prepared context data
-   * @param {RenderOptions} _options Provided render options
+   * @param {RenderOptions} options Provided render options
    * @returns {void}
    * @protected
    * @override
    */
-  async _onRender(_context, _options) {
+  async _onRender(_context, options) {
     if (this.#isRendering) return;
     try {
       this.#isRendering = true;
+
+      // Check if this is a partial render of just the abilities tab
+      const isAbilitiesPartialRender = options.parts && Array.isArray(options.parts) && options.parts.length === 1 && options.parts[0] === 'abilities';
+
+      if (isAbilitiesPartialRender) {
+        // For abilities-only render, just initialize abilities tab
+        const abilitiesTab = this.element.querySelector('.tab[data-tab="abilities"]');
+        if (abilitiesTab) {
+          await DOMManager.initializeAbilities(this.element);
+        }
+
+        // Check mandatory fields only for the abilities tab
+        const abilitiesFields = this.element.querySelector('.tab[data-tab="abilities"]');
+        if (abilitiesFields) {
+          await MandatoryFields.checkMandatoryFields(abilitiesFields);
+        }
+
+        // Early return to avoid reinitializing other components
+        return;
+      }
+
+      // For full render or other partial renders, proceed with normal initialization
 
       // Check if we need to re-init roll method listeners
       const abilitiesTab = this.element.querySelector('.tab[data-tab="abilities"]');
