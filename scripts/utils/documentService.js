@@ -1,4 +1,4 @@
-import { HM } from './index.js';
+import { DescriptionBuilder, HM } from './index.js';
 
 /**
  * Service for managing game document preparation and processing
@@ -237,11 +237,7 @@ export class DocumentService {
 
       if (!packs.length) {
         HM.log(2, `No valid packs found for type ${type}`);
-        ui.notifications.warn(
-          game.i18n.format('hm.warnings.no-packs-found', {
-            type: type
-          })
-        );
+        ui.notifications.warn(game.i18n.format('hm.warnings.no-packs-found', { type: type }));
         return { documents: [] };
       }
     } catch (error) {
@@ -249,53 +245,60 @@ export class DocumentService {
       return { documents: [] };
     }
 
-    const validPacks = new Set();
+    const validPacks = [];
     const failedPacks = [];
     const processingErrors = [];
 
-    await Promise.all(
-      packs.map(async (pack) => {
-        if (!pack || !pack.metadata) {
-          HM.log(2, 'Invalid pack encountered during processing');
-          return;
+    // Process each pack sequentially to better control execution
+    for (const pack of packs) {
+      if (!pack || !pack.metadata) {
+        HM.log(2, 'Invalid pack encountered during processing');
+        continue;
+      }
+
+      try {
+        // Track fetch start time for performance monitoring
+        const startTime = performance.now();
+        const documents = await pack.getDocuments({ type });
+        const endTime = performance.now();
+
+        if (endTime - startTime > 1000) {
+          HM.log(2, `Pack retrieval slow for ${pack.metadata.label}: ${Math.round(endTime - startTime)}ms`);
         }
 
-        try {
-          // Track fetch start time for performance monitoring
-          const startTime = performance.now();
-          const documents = await pack.getDocuments({ type });
-          const endTime = performance.now();
+        if (!documents || !documents.length) {
+          HM.log(3, `No documents of type ${type} found in ${pack.metadata.label}`);
+          continue;
+        }
 
-          if (endTime - startTime > 1000) {
-            HM.log(2, `Pack retrieval slow for ${pack.metadata.label}: ${Math.round(endTime - startTime)}ms`);
-          }
-
-          if (!documents || !documents.length) {
-            HM.log(3, `No documents of type ${type} found in ${pack.metadata.label}`);
-            return;
-          }
-
-          documents.forEach((doc) => {
-            if (!doc) return;
+        // Process all documents in this pack with Promise.all for proper awaiting
+        const packDocs = await Promise.all(
+          documents.map(async (doc) => {
+            if (!doc) return null;
 
             const packName = this.#determinePackName(pack.metadata.label, pack.metadata.id);
-            validPacks.add({
+            const description = await this.#findDescription(doc);
+
+            return {
               doc,
               packName,
               uuid: doc.uuid,
               packId: pack.metadata.id,
-              description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description'),
+              description,
               folderName: doc.folder?.name || null,
               system: doc.system
-            });
-          });
-        } catch (error) {
-          HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}:`, error);
-          processingErrors.push(error.message);
-          failedPacks.push(pack.metadata.label);
-        }
-      })
-    );
+            };
+          })
+        );
+
+        // Filter out null values and add to validPacks
+        validPacks.push(...packDocs.filter(Boolean));
+      } catch (error) {
+        HM.log(1, `Failed to retrieve documents from pack ${pack.metadata.label}:`, error);
+        processingErrors.push(error.message);
+        failedPacks.push(pack.metadata.label);
+      }
+    }
 
     // Report errors more comprehensively
     if (failedPacks.length > 0) {
@@ -315,7 +318,7 @@ export class DocumentService {
     }
 
     return {
-      documents: this.#sortDocumentsByNameAndPack([...validPacks])
+      documents: this.#sortDocumentsByNameAndPack(validPacks)
     };
   }
 
@@ -389,6 +392,23 @@ export class DocumentService {
     } catch (error) {
       HM.log(1, 'Error sorting documents:', error);
       return documents; // Return original unsorted array as fallback
+    }
+  }
+
+  /**
+   * Finds and retrieves comprehensive description for a document by generating formatted content
+   * @param {Object} doc - The document to find a description for
+   * @returns {Promise<string>} Complete description HTML
+   * @private
+   */
+  static async #findDescription(doc) {
+    if (!doc) return game.i18n.localize('hm.app.no-description');
+
+    try {
+      return await DescriptionBuilder._generateDescription(doc);
+    } catch (error) {
+      HM.log(1, `Error generating description for ${doc?.name}:`, error);
+      return doc.system?.description?.value || game.i18n.localize('hm.app.no-description');
     }
   }
 }

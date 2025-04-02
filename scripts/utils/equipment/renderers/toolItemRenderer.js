@@ -1,5 +1,4 @@
-import { HM } from '../../index.js';
-import { BaseItemRenderer } from '../index.js';
+import { BaseItemRenderer, HM } from '../../index.js';
 
 /**
  * Renderer for tool equipment items

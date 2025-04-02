@@ -244,10 +244,10 @@ export class HM {
           if (doc?.description) {
             try {
               doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
-              doc.enrichedDescription = doc.enrichedDescription
-                .replace(/<h3/g, '<h2')
-                .replace(/<\/h3/g, '</h2')
-                .replace(/<\/ h3/g, '</ h2');
+              // doc.enrichedDescription = doc.enrichedDescription
+              //   .replace(/<h3/g, '<h2')
+              //   .replace(/<\/h3/g, '</h2')
+              //   .replace(/<\/ h3/g, '</ h2');
             } catch (error) {
               HM.log(1, `Failed to enrich description for '${doc.name}':`, error);
               // Recovery: use plain description as fallback
@@ -336,13 +336,14 @@ Hooks.on('init', () => {
     'pack',
     'system.description.value',
     'system.identifier',
+    'system.item',
     'system.properties',
-    'system.type.value',
-    'type',
-    'uuid',
     'system.source.rules',
+    'system.startingEquipment',
+    'system.type.value',
     'system.wealth',
-    'system.startingEquipment'
+    'type',
+    'uuid'
   ];
 });
 
