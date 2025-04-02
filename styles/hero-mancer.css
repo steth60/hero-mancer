@@ -485,6 +485,8 @@ button {
   ========================================================================== */
 
 .application.hm-app .hm-app-nav {
+  display: flex;
+  flex-flow: row wrap;
   align-items: center;
   align-self: center;
   padding-bottom: 0.4rem;
