@@ -3,6 +3,9 @@
 /** Handles the creation of our character on submission of the Hero Mancer form */
 export { ActorCreationService } from './actorCreationService.js';
 
+/** Public API for equipment parsing */
+export { API } from '../api.js';
+
 /** Handles filepicking for character, token, and player art */
 export { CharacterArtPicker } from './characterArtPicker.js';
 
