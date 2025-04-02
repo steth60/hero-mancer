@@ -1037,6 +1037,8 @@ export class EquipmentParser {
       const endTime = performance.now();
       HM.log(1, `Failed after ${(endTime - startTime).toFixed(0)}ms: ${error.message}`);
     }
+
+    Hooks.callAll('heroMancer.EquipmentDataReady', this.lookupItems);
   }
 
   /**

@@ -1,5 +1,5 @@
 import { registerSettings } from './settings.js';
-import { CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HeroMancer, StatRoller } from './utils/index.js';
+import { API, CustomCompendiums, DiceRolling, DocumentService, EquipmentParser, HeroMancer, StatRoller } from './utils/index.js';
 
 /**
  * Main Hero Mancer class, define some statics that will be used everywhere in the module.
@@ -80,6 +80,13 @@ export class HM {
     race: { value: '', id: '', uuid: '' },
     background: { value: '', id: '', uuid: '' }
   };
+
+  /**
+   * Public API for equipment selection functionality
+   * @static
+   * @type {Object}
+   */
+  static API = API;
 
   /* -------------------------------------------- */
   /*  Static Public Methods                       */
@@ -367,6 +374,9 @@ Hooks.once('ready', async () => {
     await game.settings.set(HM.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
     HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
   }
+
+  globalThis.heroMancer = HM.API;
+  Hooks.callAll('heroMancer.Ready', this);
 });
 
 Hooks.on('renderActorDirectory', () => {
