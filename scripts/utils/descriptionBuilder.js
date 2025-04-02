@@ -55,9 +55,11 @@ export class DescriptionBuilder {
     // Core traits table
     html += await this.#buildCoreTraitsTable(classDoc);
 
-    // Basic description
     if (classDoc.system?.description?.value) {
-      html += `<div class="description">${classDoc.system.description.value}</div>`;
+      // Remove the "Core Traits" header and the associated table using a more aggressive regex
+      const description = classDoc.system.description.value.replace(/<h3>Core\s+[^<]+Traits<\/h3>\s*<table[^>]*class="core-class-traits"[^>]*>.*?<\/table>/s, '').trim();
+
+      html += `<div class="description">${description}</div>`;
     }
 
     // Class features table
@@ -261,7 +263,7 @@ export class DescriptionBuilder {
     if (!classDoc.advancement) return '';
 
     let html = `
-    <h2>Class Features</h2>
+    <h3>Class Features</h3>
     <p>As a ${classDoc.name}, you gain the following class features when you reach the specified levels.</p>
     <table class="features-table">
       <caption>The ${classDoc.name}</caption>
@@ -405,7 +407,7 @@ export class DescriptionBuilder {
       const featureName = modernStyle ? `Level ${feature.level}: ${feature.name}` : feature.name;
 
       html += `
-      <h4>${featureName}</h4>
+      <h5>${featureName}</h5>
       <div class="feature-description">${feature.description}</div>`;
     }
 
@@ -441,7 +443,7 @@ export class DescriptionBuilder {
         if (subclassPages.length) {
           // Add header if this is the first time we found subclasses
           if (!foundSubclasses) {
-            html += `<h2>Subclasses</h2>
+            html += `<h3>Subclasses</h3>
                    <p>A ${classDoc.name} subclass is a specialization that grants you features at certain levels, as specified in the subclass.</p>`;
             foundSubclasses = true;
           }
@@ -449,7 +451,7 @@ export class DescriptionBuilder {
           // Add each subclass
           for (const subPage of subclassPages) {
             html += `
-            <h3>${subPage.name}</h3>`;
+            <h4>${subPage.name}</h4>`;
 
             if (subPage.system?.description?.value) {
               html += subPage.system.description.value;
@@ -499,7 +501,7 @@ export class DescriptionBuilder {
   static async #buildRaceTraits(raceDoc) {
     if (!raceDoc.advancement) return '';
 
-    let html = `<h2>${raceDoc.name} Traits</h2>`;
+    let html = `<h3>${raceDoc.name} Traits</h3>`;
 
     // Get traits from advancements
     const traits = [];
@@ -568,7 +570,7 @@ export class DescriptionBuilder {
     // Add traits
     for (const trait of traits) {
       html += `
-      <h3>${trait.name}</h3>
+      <h4>${trait.name}</h4>
       <div class="trait-description">${trait.description}</div>`;
     }
 
@@ -610,13 +612,13 @@ export class DescriptionBuilder {
   static async #buildBackgroundFeatures(bgDoc) {
     if (!bgDoc.advancement) return '';
 
-    let html = `<h2>${bgDoc.name} Features</h2>`;
+    let html = `<h3>${bgDoc.name} Features</h3>`;
 
     // Get skill proficiencies
     const skillTraits = bgDoc.advancement.byType?.Trait?.filter((a) => a.configuration.choices?.some((c) => c.pool)) || [];
 
     if (skillTraits.length) {
-      html += '<h3>Skill Proficiencies</h3>';
+      html += '<h4>Skill Proficiencies</h4>';
 
       for (const trait of skillTraits) {
         const choices = trait.configuration.choices[0];
@@ -673,7 +675,7 @@ export class DescriptionBuilder {
     // Add features
     for (const feature of features) {
       html += `
-      <h3>${feature.name}</h3>
+      <h4>${feature.name}</h4>
       <div class="feature-description">${feature.description}</div>`;
     }
 
