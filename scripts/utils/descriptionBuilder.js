@@ -1,684 +1,201 @@
 import { HM } from './index.js';
 /**
- * Build descriptions from journal pages.
- * @class
+ * A class for embedding journal pages inside other applications.
  */
-export class DescriptionBuilder {
+export class JournalPageEmbed {
   /**
-   * Generates a comprehensive  description.
-   * @param {Object} doc - The  document
-   * @returns {Promise<string>} HTML content for the class
-   * @private
+   * @param {HTMLElement} container - The container element where the journal page will be embedded
+   * @param {object} options - Configuration options
    */
-  static async _generateDescription(doc) {
-    // Default fallback description
-    const fallbackDescription = doc.system?.description?.value || game.i18n.localize('hm.app.no-description');
+  constructor(container, options = {}) {
+    this.container = container;
+    this.options = foundry.utils.mergeObject(
+      {
+        editable: false,
+        height: 'auto',
+        width: '100%',
+        scrollable: true
+      },
+      options
+    );
 
-    // If document isn't a class/race/background, return the fallback
-    if (!['class', 'race', 'background'].includes(doc.type)) {
-      return fallbackDescription;
-    }
-
-    // For classes, generate full class description
-    if (doc.type === 'class') {
-      return await this.#generateClassDescription(doc);
-    }
-
-    // For races, generate race description
-    if (doc.type === 'race') {
-      return await this.#generateRaceDescription(doc);
-    }
-
-    // For backgrounds, generate background description
-    if (doc.type === 'background') {
-      return await this.#generateBackgroundDescription(doc);
-    }
-
-    return fallbackDescription;
+    this.sheet = null;
+    this.pageId = null;
   }
 
   /**
-   * Generates a comprehensive class description with features, tables, etc.
-   * @param {Object} classDoc - The class document
-   * @returns {Promise<string>} HTML content for the class
-   * @private
+   * Render a journal page inside the container
+   * @param {string} pageId - The ID of the journal page to embed
+   * @param {string} [itemName] - Optional name of the item (class/race/background) to match
+   * @returns {Promise<JournalPageEmbed|null>}
    */
-  static async #generateClassDescription(classDoc) {
-    if (!classDoc) return '';
+  async render(pageId, itemName = null) {
+    // Log that we're attempting to render a journal page
+    HM.log(3, `Attempting to render journal page ${pageId}${itemName ? ` for ${itemName}` : ''}`);
 
-    // Determine style (modern 2024 or legacy 2014)
-    const modernStyle = classDoc.system?.source?.rules === '2024';
+    // Clear container while we load
+    this.container.innerHTML = '<div class="journal-loading"><i class="fas fa-spinner fa-spin"></i> Loading journal content...</div>';
 
-    // Build HTML structure
-    let html = '<div class="class-journal">';
+    try {
+      let document = null;
+      let page = null;
 
-    // Core traits table
-    html += await this.#buildCoreTraitsTable(classDoc);
+      // Check if this is a compendium reference
+      if (pageId.includes('.')) {
+        HM.log(3, `Parsing compendium reference: ${pageId}`);
+        try {
+          // Try to load it as a direct UUID
+          document = await fromUuid(`Compendium.${pageId}`);
+          HM.log(3, 'Loaded document:', document);
 
-    if (classDoc.system?.description?.value) {
-      // Remove the "Core Traits" header and the associated table using a more aggressive regex
-      const description = classDoc.system.description.value.replace(/<h3>Core\s+[^<]+Traits<\/h3>\s*<table[^>]*class="core-class-traits"[^>]*>.*?<\/table>/s, '').trim();
-
-      html += `<div class="description">${description}</div>`;
-    }
-
-    // Class features table
-    html += await this.#buildClassTable(classDoc, { modernStyle });
-
-    // Class features details
-    html += await this.#buildClassFeatures(classDoc, { modernStyle });
-
-    // Add subclasses
-    html += await this.#buildSubclasses(classDoc);
-
-    html += '</div>';
-
-    return await TextEditor.enrichHTML(html);
-  }
-
-  /**
-   * Builds the core traits table for a class
-   * @param {Object} classDoc - The class document
-   * @returns {Promise<string>} HTML for the core traits table
-   * @private
-   */
-  static async #buildCoreTraitsTable(classDoc) {
-    let html = `
-    <table class="core-traits">
-    <caption>Core ${classDoc.name} Traits</caption>
-    <tbody>`;
-
-    // Primary Ability
-    if (classDoc.system?.primaryAbility?.value) {
-      const abilities = Array.from(classDoc.system.primaryAbility.value)
-        .map((a) => CONFIG.DND5E.abilities[a]?.label || a)
-        .join(' and ');
-
-      html += `
-      <tr>
-        <th scope="row">Primary Ability</th>
-        <td>${abilities}</td>
-      </tr>`;
-    }
-
-    // Hit Die
-    if (classDoc.system?.hd) {
-      html += `
-      <tr>
-        <th scope="row">Hit Point Die</th>
-        <td>${classDoc.system.hd.denomination} per ${classDoc.name} level</td>
-      </tr>`;
-    }
-
-    // Saving Throws - extracted from the advancement
-    if (classDoc.advancement?.byType?.Trait) {
-      const savesTraits = classDoc.advancement.byType.Trait.filter((a) => a.level === 1 && a.configuration.grants?.some((g) => typeof g === 'string' && g.startsWith('saves:')));
-
-      if (savesTraits.length) {
-        // Safely get save names
-        let saveNames = [];
-        for (const trait of savesTraits) {
-          const grants = trait.configuration.grants;
-          if (grants instanceof Set) {
-            // Handle Set by converting to Array first
-            saveNames.push(
-              ...Array.from(grants)
-                .filter((g) => typeof g === 'string' && g.startsWith('saves:'))
-                .map((g) => CONFIG.DND5E.abilities[g.split(':')[1]]?.label || g.split(':')[1])
-            );
-          } else if (Array.isArray(grants)) {
-            saveNames.push(...grants.filter((g) => typeof g === 'string' && g.startsWith('saves:')).map((g) => CONFIG.DND5E.abilities[g.split(':')[1]]?.label || g.split(':')[1]));
-          }
-        }
-
-        html += `
-      <tr>
-        <th scope="row">Saving Throw Proficiencies</th>
-        <td>${saveNames.join(' and ')}</td>
-      </tr>`;
-      }
-    }
-
-    // Skills
-    if (classDoc.advancement?.byType?.Trait) {
-      const skillTraits = classDoc.advancement.byType.Trait.filter((a) => a.level === 1 && a.configuration.choices?.some((c) => c.pool));
-
-      if (skillTraits.length) {
-        const skillTrait = skillTraits[0];
-        const choices = skillTrait.configuration.choices[0];
-        const skillCount = choices.count || 2;
-
-        // Handle different pool structures safely
-        let skills = '';
-        if (choices.pool) {
-          if (Array.isArray(choices.pool)) {
-            // If pool is an array of strings
-            skills = choices.pool
-              .filter((p) => typeof p === 'string')
-              .map((p) => {
-                const skill = p.startsWith('skills:') ? p.split(':')[1] : p;
-                return CONFIG.DND5E.skills[skill]?.label || skill;
-              })
-              .join(', ');
-          } else if (typeof choices.pool === 'object') {
-            // If pool is an object with skill keys
-            skills = Object.keys(choices.pool)
-              .filter((key) => choices.pool[key])
-              .map((key) => CONFIG.DND5E.skills[key]?.label || key)
-              .join(', ');
-          }
-        }
-
-        html += `
-      <tr>
-        <th scope="row">Skill Proficiencies</th>
-        <td>Choose ${skillCount} from ${skills || 'available skills'}</td>
-      </tr>`;
-      }
-    }
-
-    // Weapons
-    if (classDoc.advancement?.byType?.Trait) {
-      const weaponTraits = classDoc.advancement.byType.Trait.filter((a) => a.level === 1 && a.configuration.grants?.some((g) => typeof g === 'string' && g.startsWith('weapon:')));
-
-      if (weaponTraits.length) {
-        // Safely get weapon proficiencies
-        let weaponNames = [];
-        for (const trait of weaponTraits) {
-          const grants = trait.configuration.grants;
-          if (grants instanceof Set) {
-            // Handle Set by converting to Array first
-            weaponNames.push(
-              ...Array.from(grants)
-                .filter((g) => typeof g === 'string' && g.startsWith('weapon:'))
-                .map((g) => CONFIG.DND5E.weaponProficiencies[g.split(':')[1]] || g.split(':')[1])
-            );
-          } else if (Array.isArray(grants)) {
-            weaponNames.push(...grants.filter((g) => typeof g === 'string' && g.startsWith('weapon:')).map((g) => CONFIG.DND5E.weaponProficiencies[g.split(':')[1]] || g.split(':')[1]));
-          }
-        }
-
-        html += `
-      <tr>
-        <th scope="row">Weapon Proficiencies</th>
-        <td>${weaponNames.join(' and ')}</td>
-      </tr>`;
-      }
-    }
-
-    // Armor
-    if (classDoc.advancement?.byType?.Trait) {
-      const armorTraits = classDoc.advancement.byType.Trait.filter((a) => a.level === 1 && a.configuration.grants?.some((g) => typeof g === 'string' && g.startsWith('armor:')));
-
-      if (armorTraits.length) {
-        // Safely get armor proficiencies
-        let armorNames = [];
-        for (const trait of armorTraits) {
-          const grants = trait.configuration.grants;
-          if (grants instanceof Set) {
-            // Handle Set by converting to Array first
-            armorNames.push(
-              ...Array.from(grants)
-                .filter((g) => typeof g === 'string' && g.startsWith('armor:'))
-                .map((g) => CONFIG.DND5E.armorProficiencies[g.split(':')[1]] || g.split(':')[1])
-            );
-          } else if (Array.isArray(grants)) {
-            armorNames.push(...grants.filter((g) => typeof g === 'string' && g.startsWith('armor:')).map((g) => CONFIG.DND5E.armorProficiencies[g.split(':')[1]] || g.split(':')[1]));
-          }
-        }
-
-        html += `
-      <tr>
-        <th scope="row">Armor Proficiencies</th>
-        <td>${armorNames.join(', ')}</td>
-      </tr>`;
-      }
-    }
-
-    // Starting Equipment
-    if (classDoc.system?.wealth) {
-      html += `
-      <tr>
-        <th scope="row">Starting Equipment</th>
-        <td>${classDoc.system.startingEquipmentDescription || `${classDoc.system.wealth} gold`}</td>
-      </tr>`;
-    }
-
-    html += `
-    </tbody>
-    </table>`;
-
-    return html;
-  }
-
-  /**
-   * Builds the class advancement table with features and progressions
-   * @param {Object} classDoc - The class document
-   * @param {Object} options - Options for table generation
-   * @param {boolean} options.modernStyle - Whether to use modern style formatting
-   * @returns {Promise<string>} HTML table
-   * @private
-   */
-  static async #buildClassTable(classDoc, { modernStyle }) {
-    if (!classDoc.advancement) return '';
-
-    let html = `
-    <h3>Class Features</h3>
-    <p>As a ${classDoc.name}, you gain the following class features when you reach the specified levels.</p>
-    <table class="features-table">
-      <caption>The ${classDoc.name}</caption>
-      <colgroup>
-        <col class="level">
-        <col class="prof">
-        <col class="features">`;
-
-    // Check for scale values
-    const scaleValues = classDoc.advancement.byType.ScaleValue || [];
-    if (scaleValues.length) {
-      html += `<col span="${scaleValues.length}" class="scale">`;
-    }
-
-    html += `
-      </colgroup>
-      <thead>
-        <tr>
-          <th scope="col">Level</th>
-          <th scope="col">Proficiency Bonus</th>
-          <th scope="col">Features</th>`;
-
-    // Add column headers for scale values
-    for (const scale of scaleValues) {
-      html += `<th scope="col">${scale.title}</th>`;
-    }
-
-    html += `
-        </tr>
-      </thead>
-      <tbody>`;
-
-    // Add rows for each level
-    for (let level = 1; level <= 20; level++) {
-      const features = [];
-
-      // Get features for this level
-      for (const advancement of classDoc.advancement.byLevel[level] || []) {
-        if (advancement.constructor.typeName === 'AbilityScoreImprovement') {
-          features.push('Ability Score Improvement');
-        } else if (advancement.constructor.typeName === 'ItemGrant' && !advancement.configuration.optional) {
-          for (const item of advancement.configuration.items) {
-            try {
-              const feature = fromUuidSync(item.uuid);
-              if (feature) {
-                features.push(`<a class="content-link" data-uuid="${item.uuid}">${feature.name}</a>`);
+          // If we got a JournalEntry (not a page)
+          if (document && document.documentName === 'JournalEntry') {
+            if (document.pages.size > 0) {
+              // If we have an item name, try to find a matching page
+              if (itemName) {
+                page = document.pages.find((p) => p.name === itemName || p.name.includes(itemName));
+                if (page) {
+                  HM.log(3, `Found matching page "${page.name}" for ${itemName}`);
+                }
               }
-            } catch (error) {
-              // Skip if we can't load it
-              HM.log(2, `Couldn't load feature: ${item.uuid}`, error);
-            }
-          }
-        }
-      }
 
-      // Create row
-      html += `
-      <tr>
-        <td class="level">${modernStyle ? level : this.#ordinalSuffix(level)}</td>
-        <td class="prof">+${Math.floor(1 + (level - 1) / 4)}</td>
-        <td class="features">${features.join(', ')}</td>`;
-
-      // Add scale values
-      for (const scale of scaleValues) {
-        const value = scale.configuration.scale[level]?.value || '';
-        html += `<td class="scale">${value}</td>`;
-      }
-
-      html += '</tr>';
-    }
-
-    html += `
-      </tbody>
-    </table>`;
-
-    return html;
-  }
-
-  /**
-   * Adds ordinal suffix to a number
-   * @param {number} n - The number
-   * @returns {string} Number with ordinal suffix (1st, 2nd, etc)
-   * @private
-   */
-  static #ordinalSuffix(n) {
-    const s = ['th', 'st', 'nd', 'rd'];
-    const v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  }
-
-  /**
-   * Builds detailed class features descriptions
-   * @param {Object} classDoc - The class document
-   * @param {Object} options - Options for feature generation
-   * @param {boolean} options.modernStyle - Whether to use modern style formatting
-   * @returns {Promise<string>} HTML content for features
-   * @private
-   */
-  static async #buildClassFeatures(classDoc, { modernStyle }) {
-    if (!classDoc.advancement) return '';
-
-    let html = '';
-    const features = [];
-
-    // Group features by level
-    for (let level = 1; level <= 20; level++) {
-      const advancements = classDoc.advancement.byLevel[level] || [];
-
-      for (const advancement of advancements) {
-        if (advancement.constructor.typeName === 'ItemGrant' && !advancement.configuration.optional) {
-          for (const item of advancement.configuration.items) {
-            try {
-              const feature = fromUuidSync(item.uuid);
-              if (feature?.type === 'feat') {
-                features.push({
-                  level,
-                  name: feature.name,
-                  description: feature.system?.description?.value || ''
-                });
+              // If no matching page found, fall back to the first page
+              if (!page) {
+                page = document.pages.contents[0];
+                HM.log(3, `Using first page from journal entry: ${page.name}`);
               }
-            } catch (error) {
-              // Skip if we can't load it
-              HM.log(2, `Couldn't load feature: ${item.uuid}`, error);
             }
+          } else if (document && document.documentName === 'JournalEntryPage') {
+            // We already have a page
+            page = document;
           }
-        } else if (advancement.constructor.typeName === 'AbilityScoreImprovement') {
-          features.push({
-            level,
-            name: 'Ability Score Improvement',
-            description: 'You gain the Ability Score Improvement feat or another feat of your choice for which you qualify.'
-          });
+        } catch (err) {
+          HM.log(2, `Error loading compendium page: ${err}`);
         }
       }
+
+      if (!page) {
+        HM.log(2, `Journal page ${pageId} not found`);
+        return null;
+      }
+
+      HM.log(3, 'Page to render:', page);
+
+      // For simple text pages, render the content directly
+      if (page.type === 'text' && page.text?.content) {
+        this.container.innerHTML = '';
+
+        const contentDiv = document.createElement('div');
+        contentDiv.classList.add('journal-page-content');
+        contentDiv.innerHTML = await TextEditor.enrichHTML(page.text.content);
+
+        this.container.appendChild(contentDiv);
+        this.pageId = page.id;
+
+        HM.log(3, `Text page ${page.id} rendered directly`);
+        return this;
+      }
+
+      // For other page types, use the sheet approach
+      try {
+        const sheetClass = page._getSheetClass();
+        this.sheet = new sheetClass(page, { editable: this.options.editable });
+        this.pageId = page.id;
+
+        // Prepare the container
+        this.container.classList.add('journal-page-embed');
+        if (this.options.scrollable) {
+          this.container.classList.add('scrollable');
+        }
+
+        // Render the sheet content
+        const data = await this.sheet.getData();
+        const view = await this.sheet._renderInner(data);
+
+        // Clear and add the content
+        this.container.innerHTML = '';
+
+        // Handle the view properly based on what _renderInner returns
+        if (view instanceof jQuery) {
+          // If it's a jQuery object, append it directly
+          view.appendTo(this.container);
+        } else if (view instanceof HTMLElement || view instanceof DocumentFragment) {
+          // If it's a DOM element or fragment, append it
+          this.container.appendChild(view);
+        } else if (typeof view === 'string') {
+          // If it's an HTML string, set it as innerHTML
+          this.container.innerHTML = view;
+        } else {
+          // Log what we got and show an error
+          HM.log(2, 'Unexpected return type from _renderInner:', typeof view);
+          this.container.innerHTML = '<div class="notification error">Error rendering content: Unexpected format</div>';
+          return null;
+        }
+
+        // Activate listeners
+        this.sheet._activateCoreListeners($(this.container));
+        this.sheet.activateListeners($(this.container));
+
+        // Handle TOC if applicable
+        if (this.sheet.toc) {
+          this._renderHeadings();
+        }
+
+        // Signal completion
+        this.sheet._callHooks('render', $(this.container), data);
+
+        HM.log(3, `Journal page ${this.pageId} rendered successfully`);
+        return this;
+      } catch (error) {
+        HM.log(1, `Error with sheet rendering: ${error.message}`);
+
+        // Fallback for failures in the sheet approach
+        this.container.innerHTML = `
+        <div class="notification warning">Simplified view of ${page.name}</div>
+        <h2>${page.name}</h2>
+        <div class="journal-content">${page.text?.content || 'No content available'}</div>
+      `;
+
+        return this;
+      }
+    } catch (error) {
+      HM.log(1, `Error rendering journal page ${pageId}: ${error.message}`);
+      this.container.innerHTML = `<div class="notification error">Error rendering journal page: ${error.message}</div>`;
+      return null;
     }
-
-    // Sort features by level
-    features.sort((a, b) => a.level - b.level);
-
-    // Build HTML for each feature
-    for (const feature of features) {
-      const featureName = modernStyle ? `Level ${feature.level}: ${feature.name}` : feature.name;
-
-      html += `
-      <h5>${featureName}</h5>
-      <div class="feature-description">${feature.description}</div>`;
-    }
-
-    return html;
   }
 
   /**
-   * Builds subclasses section
-   * @param {Object} classDoc - The class document
-   * @returns {Promise<string>} HTML content for subclasses
+   * Render headings from the page's table of contents
    * @private
    */
-  static async #buildSubclasses(classDoc) {
-    // Try to find journal with subclasses
-    const packMatch = classDoc.pack?.match(/^([^.]+)\./);
-    if (!packMatch) return '';
+  _renderHeadings() {
+    if (!this.sheet.toc || Object.keys(this.sheet.toc).length === 0) return;
 
-    const moduleId = packMatch[1];
-    const journalPacks = game.packs.filter((p) => p.metadata.type === 'JournalEntry' && p.metadata.id.startsWith(moduleId));
-
-    let html = '';
-    let foundSubclasses = false;
-
-    for (const pack of journalPacks) {
-      const index = await pack.getIndex();
-      const journalEntry = index.find((j) => j.name === classDoc.name);
-
-      if (journalEntry) {
-        const journal = await pack.getDocument(journalEntry._id);
-
-        // Find subclass pages
-        const subclassPages = journal.pages.contents.filter((p) => p.type === 'subclass');
-        if (subclassPages.length) {
-          // Add header if this is the first time we found subclasses
-          if (!foundSubclasses) {
-            html += `<h3>Subclasses</h3>
-                   <p>A ${classDoc.name} subclass is a specialization that grants you features at certain levels, as specified in the subclass.</p>`;
-            foundSubclasses = true;
-          }
-
-          // Add each subclass
-          for (const subPage of subclassPages) {
-            html += `
-            <h4>${subPage.name}</h4>`;
-
-            if (subPage.system?.description?.value) {
-              html += subPage.system.description.value;
-            } else if (subPage.text?.content) {
-              html += subPage.text.content;
-            }
-          }
-        }
-      }
-    }
-
-    return html;
+    const headings = Object.values(this.sheet.toc);
+    headings.forEach(({ element, slug }) => {
+      if (element) element.dataset.anchor = slug;
+    });
   }
 
   /**
-   * Generates a comprehensive race description
-   * @param {Object} raceDoc - The race document
-   * @returns {Promise<string>} HTML content for the race
-   * @private
+   * Navigate to a specific anchor within the journal page
+   * @param {string} anchor - The anchor slug to navigate to
    */
-  static async #generateRaceDescription(raceDoc) {
-    if (!raceDoc) return '';
-
-    let html = '<div class="race-journal">';
-
-    // Add basic description
-    if (raceDoc.system?.description?.value) {
-      html += `<div class="description">${raceDoc.system.description.value}</div>`;
+  goToAnchor(anchor) {
+    if (!this.sheet?.toc || !anchor) return;
+    const heading = this.sheet.toc[anchor];
+    if (heading?.element) {
+      heading.element.scrollIntoView({ behavior: 'smooth' });
     }
-
-    // Add race traits
-    if (raceDoc.advancement) {
-      html += await this.#buildRaceTraits(raceDoc);
-    }
-
-    html += '</div>';
-
-    return await TextEditor.enrichHTML(html);
   }
 
   /**
-   * Builds race traits section
-   * @param {Object} raceDoc - The race document
-   * @returns {Promise<string>} HTML content for race traits
-   * @private
+   * Clean up resources when removing the embed
    */
-  static async #buildRaceTraits(raceDoc) {
-    if (!raceDoc.advancement) return '';
-
-    let html = `<h3>${raceDoc.name} Traits</h3>`;
-
-    // Get traits from advancements
-    const traits = [];
-    for (const level in raceDoc.advancement.byLevel) {
-      for (const advancement of raceDoc.advancement.byLevel[level]) {
-        if (advancement.constructor.typeName === 'ItemGrant') {
-          for (const item of advancement.configuration.items) {
-            try {
-              const trait = fromUuidSync(item.uuid);
-              if (trait) {
-                traits.push({
-                  name: trait.name,
-                  description: trait.system?.description?.value || ''
-                });
-              }
-            } catch (error) {
-              // Skip if we can't load it
-              HM.log(2, `Couldn't load trait: ${item.uuid}`, error);
-            }
-          }
-        }
-      }
-    }
-
-    // Add ability score increases if available
-    if (raceDoc.system?.abilities) {
-      const increases = [];
-      for (const [ability, data] of Object.entries(raceDoc.system.abilities)) {
-        if (data?.value) {
-          increases.push(`${CONFIG.DND5E.abilities[ability]?.label || ability} ${data.value > 0 ? `+${data.value}` : data.value}`);
-        }
-      }
-
-      if (increases.length) {
-        traits.unshift({
-          name: 'Ability Score Increase',
-          description: `Your ability scores each increase by the amount shown in the ${raceDoc.name} Ability Score Increases table.`
-        });
-
-        // Add ASI table
-        html += `
-        <table class="asi-table">
-          <caption>${raceDoc.name} Ability Score Increases</caption>
-          <tbody>
-            <tr>`;
-
-        for (const ability of Object.keys(CONFIG.DND5E.abilities)) {
-          if (raceDoc.system.abilities[ability]) {
-            html += `<th>${CONFIG.DND5E.abilities[ability]?.abbreviation || ability}</th>`;
-          }
-        }
-
-        html += '</tr><tr>';
-
-        for (const ability of Object.keys(CONFIG.DND5E.abilities)) {
-          if (raceDoc.system.abilities[ability]) {
-            const value = raceDoc.system.abilities[ability].value;
-            html += `<td>${value > 0 ? `+${value}` : value}</td>`;
-          }
-        }
-
-        html += '</tr></tbody></table>';
-      }
-    }
-
-    // Add traits
-    for (const trait of traits) {
-      html += `
-      <h4>${trait.name}</h4>
-      <div class="trait-description">${trait.description}</div>`;
-    }
-
-    return html;
-  }
-
-  /**
-   * Generates a comprehensive background description
-   * @param {Object} bgDoc - The background document
-   * @returns {Promise<string>} HTML content for the background
-   * @private
-   */
-  static async #generateBackgroundDescription(bgDoc) {
-    if (!bgDoc) return '';
-
-    let html = '<div class="background-journal">';
-
-    // Add basic description
-    if (bgDoc.system?.description?.value) {
-      html += `<div class="description">${bgDoc.system.description.value}</div>`;
-    }
-
-    // Add background features
-    if (bgDoc.advancement) {
-      html += await this.#buildBackgroundFeatures(bgDoc);
-    }
-
-    html += '</div>';
-
-    return await TextEditor.enrichHTML(html);
-  }
-
-  /**
-   * Builds background features section
-   * @param {Object} bgDoc - The background document
-   * @returns {Promise<string>} HTML content for background features
-   * @private
-   */
-  static async #buildBackgroundFeatures(bgDoc) {
-    if (!bgDoc.advancement) return '';
-
-    let html = `<h3>${bgDoc.name} Features</h3>`;
-
-    // Get skill proficiencies
-    const skillTraits = bgDoc.advancement.byType?.Trait?.filter((a) => a.configuration.choices?.some((c) => c.pool)) || [];
-
-    if (skillTraits.length) {
-      html += '<h4>Skill Proficiencies</h4>';
-
-      for (const trait of skillTraits) {
-        const choices = trait.configuration.choices[0];
-        if (!choices) continue;
-
-        let skillList = [];
-        if (choices.pool) {
-          if (Array.isArray(choices.pool)) {
-            skillList = choices.pool
-              .filter((p) => typeof p === 'string')
-              .map((p) => {
-                const skill = p.startsWith('skills:') ? p.split(':')[1] : p;
-                return CONFIG.DND5E.skills[skill]?.label || skill;
-              });
-          } else if (choices.pool instanceof Set) {
-            // Convert Set to Array first
-            skillList = Array.from(choices.pool)
-              .filter((p) => typeof p === 'string')
-              .map((p) => {
-                const skill = p.startsWith('skills:') ? p.split(':')[1] : p;
-                return CONFIG.DND5E.skills[skill]?.label || skill;
-              });
-          }
-        }
-
-        const count = choices.count || 2;
-        html += `<p>Choose ${count} from ${skillList.join(', ') || 'available skills'}</p>`;
-      }
-    }
-
-    // Get other features from advancements
-    const features = [];
-    for (const level in bgDoc.advancement.byLevel) {
-      for (const advancement of bgDoc.advancement.byLevel[level]) {
-        if (advancement.constructor.typeName === 'ItemGrant') {
-          for (const item of advancement.configuration.items) {
-            try {
-              const feature = fromUuidSync(item.uuid);
-              if (feature) {
-                features.push({
-                  name: feature.name,
-                  description: feature.system?.description?.value || ''
-                });
-              }
-            } catch (error) {
-              // Skip if we can't load it
-              HM.log(2, `Couldn't load feature: ${item.uuid}`, error);
-            }
-          }
-        }
-      }
-    }
-
-    // Add features
-    for (const feature of features) {
-      html += `
-      <h4>${feature.name}</h4>
-      <div class="feature-description">${feature.description}</div>`;
-    }
-
-    return html;
+  close() {
+    this.container.innerHTML = '';
+    this.sheet = null;
+    this.pageId = null;
   }
 }

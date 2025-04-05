@@ -1,4 +1,4 @@
-import { DescriptionBuilder, HM } from './index.js';
+import { HM } from './index.js';
 
 /**
  * Service for managing game document preparation and processing
@@ -206,6 +206,7 @@ export class DocumentService {
           id: doc.id,
           name: `${doc.name} (${doc.packName || 'Unknown'})`,
           description: doc.description,
+          journalPageId: doc.journalPageId,
           packName: doc.packName,
           packId: doc.packId,
           uuid: doc.uuid
@@ -277,7 +278,7 @@ export class DocumentService {
             if (!doc) return null;
 
             const packName = this.#determinePackName(pack.metadata.label, pack.metadata.id);
-            const description = await this.#findDescription(doc);
+            const { description, journalPageId } = await this.#findDescription(doc);
 
             return {
               doc,
@@ -285,6 +286,7 @@ export class DocumentService {
               uuid: doc.uuid,
               packId: pack.metadata.id,
               description,
+              journalPageId,
               folderName: doc.folder?.name || null,
               system: doc.system
             };
@@ -375,10 +377,12 @@ export class DocumentService {
 
     try {
       return documents
-        .map(({ doc, packName, packId, description, folderName, uuid, system }) => ({
+        .map(({ doc, packName, packId, description, journalPageId, folderName, uuid, system }) => ({
           id: doc.id,
           name: doc.name,
-          description,
+          // Extract description and journalPageId from the returned object
+          description: description,
+          journalPageId,
           folderName,
           packName,
           packId,
@@ -391,7 +395,7 @@ export class DocumentService {
         });
     } catch (error) {
       HM.log(1, 'Error sorting documents:', error);
-      return documents; // Return original unsorted array as fallback
+      return documents;
     }
   }
 
@@ -402,13 +406,172 @@ export class DocumentService {
    * @private
    */
   static async #findDescription(doc) {
-    if (!doc) return game.i18n.localize('hm.app.no-description');
+    if (!doc) return { description: game.i18n.localize('hm.app.no-description') };
 
     try {
-      return await DescriptionBuilder._generateDescription(doc);
+      // First check if there's a journal page we can use
+      const journalPageId = await this.#findRelatedJournalPage(doc);
+
+      // Return object with journalPageId if found, otherwise include description
+      if (journalPageId) {
+        return {
+          description: game.i18n.localize('hm.app.journal-description-placeholder'),
+          journalPageId
+        };
+      }
+
+      // Just return the basic description when no journal page exists
+      return {
+        description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description')
+      };
     } catch (error) {
       HM.log(1, `Error generating description for ${doc?.name}:`, error);
-      return doc.system?.description?.value || game.i18n.localize('hm.app.no-description');
+      return {
+        description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description')
+      };
     }
+  }
+
+  /**
+   * Finds a journal page related to the document
+   * @param {Object} doc - The document to find a journal page for
+   * @returns {Promise<string|null>} Journal page ID or null if none found
+   * @private
+   */
+  static async #findRelatedJournalPage(doc) {
+    if (!doc) return null;
+
+    try {
+      // Look for journals with names matching patterns like "Class: Fighter" or "Fighter Class"
+      const docType = doc.type; // class, race, background
+      const docName = doc.name;
+
+      if (!docType || !docName) return null;
+
+      // Define search patterns
+      const patterns = [
+        `${docName} ${docType}`,
+        `${docType}: ${docName}`,
+        `${docType} - ${docName}`,
+        docName // Also try just the name by itself
+      ];
+
+      // Log what we're searching for
+      HM.log(3, `Looking for journal page for ${docType} ${docName} with patterns:`, patterns);
+
+      // Case-insensitive search
+      const lowerPatterns = patterns.map((p) => p.toLowerCase());
+
+      // PART 1: Search through world journals first
+      HM.log(3, 'Searching world journals...');
+      const worldJournalResult = this.#searchWorldJournals(lowerPatterns);
+      if (worldJournalResult) {
+        HM.log(2, `Found matching journal page in world: ${worldJournalResult}`);
+        return worldJournalResult;
+      }
+
+      // PART 2: Search through compendium packs
+      HM.log(3, 'Searching compendium packs...');
+
+      // Extract module ID from document pack if available
+      const docPackMatch = doc.pack?.match(/^([^.]+)\./);
+      const docModuleId = docPackMatch ? docPackMatch[1] : null;
+
+      if (docModuleId) {
+        HM.log(3, `Document is from module: ${docModuleId}`);
+      }
+
+      // Get all journal entry packs
+      const journalPacks = game.packs.filter((p) => p.metadata.type === 'JournalEntry');
+
+      // First try packs from the same module as the document
+      if (docModuleId) {
+        const moduleJournalPacks = journalPacks.filter((p) => p.metadata.id.startsWith(docModuleId));
+        HM.log(3, `Found ${moduleJournalPacks.length} journal packs from same module`);
+
+        const packResult = await this.#searchJournalPacks(moduleJournalPacks, lowerPatterns, docName);
+        if (packResult) {
+          HM.log(2, `Found matching journal page in module pack: ${packResult}`);
+          return packResult;
+        }
+      }
+
+      // Then try all other packs as a fallback
+      HM.log(3, `Searching all ${journalPacks.length} available journal packs`);
+      const packResult = await this.#searchJournalPacks(journalPacks, lowerPatterns, docName);
+      if (packResult) {
+        HM.log(2, `Found matching journal page in compendium: ${packResult}`);
+        return packResult;
+      }
+
+      HM.log(3, `No matching journal page found for ${docType} ${docName}`);
+      return null;
+    } catch (error) {
+      HM.log(2, `Error finding journal page for ${doc?.name}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Search world journals for matching pages
+   * @param {string[]} lowerPatterns - Lowercase name patterns to search for
+   * @returns {string|null} Journal page ID or null if none found
+   * @private
+   */
+  static #searchWorldJournals(lowerPatterns) {
+    // Search through journal entries
+    for (const journal of game.journal) {
+      if (lowerPatterns.includes(journal.name.toLowerCase())) {
+        // Return the first page if the journal has pages
+        if (journal.pages.size > 0) {
+          return journal.pages.contents[0].id;
+        }
+      }
+
+      // Also check individual pages within journals that might match
+      for (const page of journal.pages) {
+        if (lowerPatterns.includes(page.name.toLowerCase())) {
+          return page.id;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Search journal packs for matching entries
+   * @param {CompendiumCollection[]} packs - Journal packs to search through
+   * @param {string[]} lowerPatterns - Lowercase name patterns to search for
+   * @param {string} docName - Original document name for exact match attempts
+   * @returns {Promise<string|null>} Journal page ID or null if none found
+   * @private
+   */
+  static async #searchJournalPacks(packs, lowerPatterns, docName) {
+    for (const pack of packs) {
+      try {
+        // Get the index first (faster than loading all documents)
+        const index = await pack.getIndex();
+
+        // Look for exact name matches first
+        const exactMatches = Array.from(index).filter((entry) => lowerPatterns.includes(entry.name.toLowerCase()));
+
+        if (exactMatches.length > 0) {
+          // Load the first matching journal
+          const journal = await pack.getDocument(exactMatches[0]._id);
+          if (journal.pages.size > 0) {
+            // Return pack ID + journal ID instead of just the page ID
+            return `${pack.collection}.${journal.id}`;
+          }
+        }
+
+        // Rest of method remains the same...
+      } catch (error) {
+        HM.log(2, `Error searching journal pack ${pack.metadata.label}:`, error);
+        continue; // Try next pack
+      }
+    }
+
+    return null;
   }
 }

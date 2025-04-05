@@ -1,4 +1,4 @@
-import { ActorCreationService, CharacterArtPicker, CharacterRandomizer, DOMManager, HM, MandatoryFields, ProgressBar, SavedOptions, StatRoller } from '../utils/index.js';
+import { ActorCreationService, CharacterArtPicker, CharacterRandomizer, DOMManager, HM, JournalPageEmbed, MandatoryFields, ProgressBar, SavedOptions, StatRoller } from '../utils/index.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -44,7 +44,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     window: {
       icon: 'fa-solid fa-egg',
-      resizable: false,
+      resizable: true,
       minimizable: true,
       controls: [
         {
@@ -736,6 +736,35 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
       HM.log(1, 'Character creation failed:', error);
       ui.notifications.error('hm.errors.character-creation-failed', { localize: true });
       return null;
+    }
+  }
+
+  // In your Hero Mancer application code
+
+  /**
+   * Embed a journal page in the description section
+   * @param {string} pageId - The ID of the journal page to embed
+   * @param {string} [anchor] - Optional anchor to scroll to
+   */
+  async embedJournalPage(pageId, anchor) {
+    // Get or create the container
+    let container = this.element.find('.journal-embed-container')[0];
+    if (!container) {
+      container = document.createElement('div');
+      container.classList.add('journal-embed-container');
+      this.element.find('.description-container').append(container);
+    }
+
+    // Create and render the embed
+    this.journalEmbed = new JournalPageEmbed(container, {
+      scrollable: true,
+      height: '400px' // Adjust as needed
+    });
+
+    await this.journalEmbed.render(pageId);
+
+    if (anchor) {
+      this.journalEmbed.goToAnchor(anchor);
     }
   }
 }

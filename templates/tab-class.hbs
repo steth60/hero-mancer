@@ -21,8 +21,13 @@
     </div>
 
     {{!-- Class Description Display --}}
-    <div id='class-description' class="overflow-vert-only" role='region' aria-live='polite' aria-atomic='true'>
+    {{!-- {{#if journalPageId}} --}}
+      <div class="journal-container" data-journal-id="{{journalPageId}}">
+        {{!-- Journal content will be loaded here via JournalPageEmbed --}}
+        <div class="journal-loading"><i class="fas fa-spinner fa-spin"></i> Loading journal content...</div>
+      </div>
+    {{!-- {{else}}
       {{{enrichedDescription}}}
-    </div>
+    {{/if}} --}}
   </fieldset>
 </div>

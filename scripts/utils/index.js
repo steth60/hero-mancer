@@ -8,7 +8,7 @@ export { Troubleshooter } from '../app/Troubleshooter.js';
 export { HM } from '../hero-mancer.js';
 export { ActorCreationService } from './actorCreationService.js';
 export { CharacterArtPicker } from './characterArtPicker.js';
-export { DescriptionBuilder } from './descriptionBuilder.js';
+export { JournalPageEmbed } from './descriptionBuilder.js';
 export { DocumentService } from './documentService.js';
 export { DOMManager } from './DOMManager.js';
 export { EquipmentDataService } from './equipment/equipmentDataService.js';
