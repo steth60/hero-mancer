@@ -34,10 +34,10 @@ export class JournalPageEmbed {
     HM.log(3, `Attempting to render journal page ${pageId}${itemName ? ` for ${itemName}` : ''}`);
 
     // Clear container while we load
-    this.container.innerHTML = '<div class="journal-loading"><i class="fas fa-spinner fa-spin"></i> Loading journal content...</div>';
+    this.container.innerHTML = `<div class="journal-loading"><i class="fas fa-spinner fa-spin"></i>${game.i18n.localize('hm.app.journal-loading')}</div>`;
 
     try {
-      let document = null;
+      let journalDoc = null;
       let page = null;
 
       // Check if this is a compendium reference
@@ -45,15 +45,20 @@ export class JournalPageEmbed {
         HM.log(3, `Parsing compendium reference: ${pageId}`);
         try {
           // Try to load it as a direct UUID
-          document = await fromUuid(`Compendium.${pageId}`);
-          HM.log(3, 'Loaded document:', document);
+          journalDoc = await fromUuid(`Compendium.${pageId}`);
+          HM.log(3, 'Loaded document:', journalDoc);
 
           // If we got a JournalEntry (not a page)
-          if (document && document.documentName === 'JournalEntry') {
-            if (document.pages.size > 0) {
+          if (journalDoc && journalDoc.documentName === 'JournalEntry') {
+            if (journalDoc.pages.size > 0) {
               // If we have an item name, try to find a matching page
               if (itemName) {
-                page = document.pages.find((p) => p.name === itemName || p.name.includes(itemName));
+                // Normalize itemName for better matching
+                const normalizedName = this._normalizeItemName(itemName);
+
+                // Try to find a matching page
+                page = this._findMatchingPage(journalDoc.pages, normalizedName);
+
                 if (page) {
                   HM.log(3, `Found matching page "${page.name}" for ${itemName}`);
                 }
@@ -61,13 +66,13 @@ export class JournalPageEmbed {
 
               // If no matching page found, fall back to the first page
               if (!page) {
-                page = document.pages.contents[0];
+                page = journalDoc.pages.contents[0];
                 HM.log(3, `Using first page from journal entry: ${page.name}`);
               }
             }
-          } else if (document && document.documentName === 'JournalEntryPage') {
+          } else if (journalDoc && journalDoc.documentName === 'JournalEntryPage') {
             // We already have a page
-            page = document;
+            page = journalDoc;
           }
         } catch (err) {
           HM.log(2, `Error loading compendium page: ${err}`);
@@ -176,6 +181,154 @@ export class JournalPageEmbed {
     headings.forEach(({ element, slug }) => {
       if (element) element.dataset.anchor = slug;
     });
+  }
+
+  /**
+   * Normalize an item name for matching
+   * @param {string} name - The item name to normalize
+   * @returns {string} - Normalized name
+   * @private
+   */
+  _normalizeItemName(name) {
+    if (!name) return '';
+    // Remove content in parentheses
+    return name.split('(')[0].trim();
+  }
+
+  /**
+   * Find a matching page for an item
+   * @param {Collection} pages - Collection of pages to search
+   * @param {string} itemName - Item name to match against
+   * @returns {JournalEntryPage|null} - Matching page or null
+   * @private
+   */
+  _findMatchingPage(pages, itemName) {
+    if (!pages || pages.size === 0 || !itemName) return null;
+
+    const normalizedItemName = itemName.toLowerCase();
+    const specialRaces = ['elf', 'gnome', 'tiefling']; // Races that need special handling
+    const isSpecialRace = specialRaces.some((race) => normalizedItemName.includes(race.toLowerCase()));
+
+    HM.log(3, `JournalPageEmbed: Looking for page matching "${itemName}" among ${pages.size} pages`);
+
+    // Log available pages for debugging
+    const pageNames = Array.from(pages).map((p) => p.name);
+    HM.log(3, `JournalPageEmbed: Available pages: ${pageNames.join(', ')}`);
+
+    // Create a filtered list excluding art handouts
+    const filteredPages = Array.from(pages).filter((p) => !p.name.toLowerCase().includes('handout') && !p.name.toLowerCase().includes('art'));
+
+    if (filteredPages.length < pages.size) {
+      HM.log(3, `JournalPageEmbed: Filtered out ${pages.size - filteredPages.length} art/handout pages`);
+    }
+
+    // FIRST PRIORITY: Exact match (case-sensitive)
+    let match = filteredPages.find((p) => p.name === itemName);
+    if (match) {
+      HM.log(3, `JournalPageEmbed: Found exact case-sensitive match "${match.name}"`);
+      return match;
+    }
+
+    // SECOND PRIORITY: Case-insensitive exact match
+    match = filteredPages.find((p) => p.name.toLowerCase() === normalizedItemName);
+    if (match) {
+      HM.log(3, `JournalPageEmbed: Found exact case-insensitive match "${match.name}"`);
+      return match;
+    }
+
+    // THIRD PRIORITY: For special races, check base race name
+    if (isSpecialRace) {
+      const baseRaceName = this._getBaseRaceName(itemName);
+      if (baseRaceName) {
+        match = filteredPages.find((p) => p.name.toLowerCase() === baseRaceName.toLowerCase());
+        if (match) {
+          HM.log(3, `JournalPageEmbed: Found base race match "${match.name}" for "${itemName}"`);
+          return match;
+        }
+      }
+    }
+
+    // FOURTH PRIORITY: Substantial partial matches (avoid short-name false positives)
+    for (const page of filteredPages) {
+      const pageName = page.name.toLowerCase();
+
+      // Skip very short page names to avoid matching with things like "A" in "Spells A-Z"
+      if (pageName.length < 3) continue;
+
+      // Substantial content match
+      if (pageName.includes(normalizedItemName) && normalizedItemName.length > 3) {
+        HM.log(3, `JournalPageEmbed: Found partial match "${page.name}" containing "${itemName}"`);
+        return page;
+      }
+
+      if (normalizedItemName.includes(pageName) && pageName.length > 3) {
+        HM.log(3, `JournalPageEmbed: Found partial match "${page.name}" contained in "${itemName}"`);
+        return page;
+      }
+    }
+
+    // If nothing found in filtered pages, try the full set as a fallback
+    HM.log(3, 'JournalPageEmbed: No match in filtered pages, trying full set as fallback');
+    return this._findFallbackMatch(pages, itemName);
+  }
+
+  /**
+   * Fallback matching logic for when no match is found in filtered pages
+   * @param {Collection} pages - Collection of pages to search
+   * @param {string} itemName - Item name to match against
+   * @returns {JournalEntryPage|null} - Matching page or null
+   * @private
+   */
+  _findFallbackMatch(pages, itemName) {
+    const normalizedItemName = itemName.toLowerCase();
+
+    // Try exact match first
+    let match = pages.find((p) => p.name.toLowerCase() === normalizedItemName);
+    if (match) return match;
+
+    // Try base name for special races
+    const specialRaces = ['elf', 'gnome', 'tiefling'];
+    if (specialRaces.some((race) => normalizedItemName.includes(race.toLowerCase()))) {
+      const baseRaceName = this._getBaseRaceName(itemName);
+      if (baseRaceName) {
+        match = pages.find((p) => p.name.toLowerCase() === baseRaceName.toLowerCase());
+        if (match) return match;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get the base race name for special races
+   * @param {string} raceName - Full race name
+   * @returns {string|null} - Base race name or null
+   * @private
+   */
+  _getBaseRaceName(raceName) {
+    if (!raceName) return null;
+
+    // Handle comma format: "Elf, High" -> "Elf"
+    if (raceName.includes(',')) {
+      return raceName.split(',')[0].trim();
+    }
+
+    // Handle space format
+    const lowerName = raceName.toLowerCase();
+
+    if (lowerName.includes('elf') && raceName.includes(' ')) {
+      return 'Elf';
+    }
+
+    if (lowerName.includes('gnome') && raceName.includes(' ')) {
+      return 'Gnome';
+    }
+
+    if (lowerName.includes('tiefling') && raceName.includes(' ')) {
+      return 'Tiefling';
+    }
+
+    return null;
   }
 
   /**

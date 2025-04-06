@@ -160,6 +160,7 @@ export class DocumentService {
         name: doc.name,
         packName: doc.packName,
         packId: doc.packId,
+        journalPageId: doc.journalPageId,
         uuid: doc.uuid,
         description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description')
       });
@@ -442,70 +443,37 @@ export class DocumentService {
     if (!doc) return null;
 
     try {
-      // Look for journals with names matching patterns like "Class: Fighter" or "Fighter Class"
       const docType = doc.type; // class, race, background
       const docName = doc.name;
+      const docUuid = doc.uuid;
 
       if (!docType || !docName) return null;
 
-      // Define search patterns
-      const patterns = [
-        `${docName} ${docType}`,
-        `${docType}: ${docName}`,
-        `${docType} - ${docName}`,
-        docName // Also try just the name by itself
-      ];
-
-      // Log what we're searching for
-      HM.log(3, `Looking for journal page for ${docType} ${docName} with patterns:`, patterns);
-
-      // Case-insensitive search
-      const lowerPatterns = patterns.map((p) => p.toLowerCase());
-
-      // PART 1: Search through world journals first
-      HM.log(3, 'Searching world journals...');
-      const worldJournalResult = this.#searchWorldJournals(lowerPatterns);
-      if (worldJournalResult) {
-        HM.log(2, `Found matching journal page in world: ${worldJournalResult}`);
-        return worldJournalResult;
+      // Extract module ID from document pack or UUID
+      let moduleId = null;
+      if (doc.pack) {
+        const packMatch = doc.pack.match(/^([^.]+)\./);
+        if (packMatch) moduleId = packMatch[1];
+      } else if (docUuid) {
+        const uuidMatch = docUuid.match(/^Compendium\.([^.]+)\./);
+        if (uuidMatch) moduleId = uuidMatch[1];
       }
 
-      // PART 2: Search through compendium packs
-      HM.log(3, 'Searching compendium packs...');
-
-      // Extract module ID from document pack if available
-      const docPackMatch = doc.pack?.match(/^([^.]+)\./);
-      const docModuleId = docPackMatch ? docPackMatch[1] : null;
-
-      if (docModuleId) {
-        HM.log(3, `Document is from module: ${docModuleId}`);
+      // Early return for SRD backgrounds and races - they don't have journal pages
+      if (moduleId === 'dnd5e' && ['background', 'race', 'species'].includes(docType)) {
+        HM.log(3, `Skipping journal search for SRD ${docType} "${docName}"`);
+        return null;
       }
 
-      // Get all journal entry packs
+      // Normalize the name for better matching
+      const normalizedName = this.#normalizeItemName(docName);
+
+      HM.log(3, `Looking for ${docType} journal page for "${docName}" (normalized: "${normalizedName}")`);
+
       const journalPacks = game.packs.filter((p) => p.metadata.type === 'JournalEntry');
 
-      // First try packs from the same module as the document
-      if (docModuleId) {
-        const moduleJournalPacks = journalPacks.filter((p) => p.metadata.id.startsWith(docModuleId));
-        HM.log(3, `Found ${moduleJournalPacks.length} journal packs from same module`);
-
-        const packResult = await this.#searchJournalPacks(moduleJournalPacks, lowerPatterns, docName);
-        if (packResult) {
-          HM.log(2, `Found matching journal page in module pack: ${packResult}`);
-          return packResult;
-        }
-      }
-
-      // Then try all other packs as a fallback
-      HM.log(3, `Searching all ${journalPacks.length} available journal packs`);
-      const packResult = await this.#searchJournalPacks(journalPacks, lowerPatterns, docName);
-      if (packResult) {
-        HM.log(2, `Found matching journal page in compendium: ${packResult}`);
-        return packResult;
-      }
-
-      HM.log(3, `No matching journal page found for ${docType} ${docName}`);
-      return null;
+      // Skip world journals entirely and focus on compendium search
+      return await this.#searchCompendiumsForPage(journalPacks, normalizedName, docType, docUuid);
     } catch (error) {
       HM.log(2, `Error finding journal page for ${doc?.name}:`, error);
       return null;
@@ -513,63 +481,191 @@ export class DocumentService {
   }
 
   /**
-   * Search world journals for matching pages
-   * @param {string[]} lowerPatterns - Lowercase name patterns to search for
-   * @returns {string|null} Journal page ID or null if none found
+   * Normalize an item name for matching
+   * @param {string} name - Item name to normalize
+   * @returns {string} - Normalized name
    * @private
    */
-  static #searchWorldJournals(lowerPatterns) {
-    // Search through journal entries
-    for (const journal of game.journal) {
-      if (lowerPatterns.includes(journal.name.toLowerCase())) {
-        // Return the first page if the journal has pages
-        if (journal.pages.size > 0) {
-          return journal.pages.contents[0].id;
-        }
-      }
+  static #normalizeItemName(name) {
+    if (!name) return '';
 
-      // Also check individual pages within journals that might match
-      for (const page of journal.pages) {
-        if (lowerPatterns.includes(page.name.toLowerCase())) {
-          return page.id;
-        }
-      }
-    }
-
-    return null;
+    // Remove content in parentheses
+    return name.split('(')[0].trim();
   }
 
   /**
-   * Search journal packs for matching entries
+   * Search compendiums for matching journal page
    * @param {CompendiumCollection[]} packs - Journal packs to search through
-   * @param {string[]} lowerPatterns - Lowercase name patterns to search for
-   * @param {string} docName - Original document name for exact match attempts
-   * @returns {Promise<string|null>} Journal page ID or null if none found
+   * @param {string} itemName - Item name to find
+   * @param {string} itemType - Item type (race, class, background)
+   * @param {string} [itemUuid] - Optional UUID of the original item for module matching
+   * @returns {Promise<string|null>} - Journal page UUID or null
    * @private
    */
-  static async #searchJournalPacks(packs, lowerPatterns, docName) {
-    for (const pack of packs) {
+  static async #searchCompendiumsForPage(packs, itemName, itemType, itemUuid) {
+    const normalizedItemName = itemName.toLowerCase();
+    const specialRaces = ['elf', 'gnome', 'tiefling']; // Races that need special handling
+    const isSpecialRace = specialRaces.some((race) => normalizedItemName.includes(race.toLowerCase()));
+
+    // Determine if we need to check for base race name
+    const baseRaceName = isSpecialRace ? this.#getBaseRaceName(itemName) : null;
+
+    // Extract module prefix from item UUID if available
+    let modulePrefix = null;
+    if (itemUuid) {
+      const uuidMatch = itemUuid.match(/^Compendium\.([^.]+)\./);
+      if (uuidMatch && uuidMatch[1]) {
+        modulePrefix = uuidMatch[1];
+        HM.log(3, `Extracted module prefix: ${modulePrefix} from UUID ${itemUuid}`);
+      }
+    }
+
+    // Prioritize packs by module prefix and filter out irrelevant ones
+    let prioritizedPacks = [...packs];
+
+    // Filter out irrelevant packs for better performance
+    if (modulePrefix) {
+      // First prioritize exact module matches
+      const exactMatches = prioritizedPacks.filter((p) => p.collection.startsWith(modulePrefix));
+
+      // If we have exact matches, only use those
+      if (exactMatches.length > 0) {
+        HM.log(3, `Using ${exactMatches.length} packs that match module prefix ${modulePrefix}`);
+        prioritizedPacks = exactMatches;
+      } else {
+        // Otherwise, sort with preference to PHB packs which are likely to have content
+        prioritizedPacks.sort((a, b) => {
+          const aIsPHB = a.collection.includes('dnd-players-handbook');
+          const bIsPHB = b.collection.includes('dnd-players-handbook');
+          if (aIsPHB && !bIsPHB) return -1;
+          if (!aIsPHB && bIsPHB) return 1;
+          return 0;
+        });
+      }
+    }
+
+    HM.log(3, `Searching for ${itemType} "${itemName}"${baseRaceName ? ` (base: "${baseRaceName}")` : ''} in ${prioritizedPacks.length} packs`);
+
+    // First pass: Look for exact matches across prioritized packs
+    for (const pack of prioritizedPacks) {
       try {
-        // Get the index first (faster than loading all documents)
-        const index = await pack.getIndex();
+        await pack.getIndex();
 
-        // Look for exact name matches first
-        const exactMatches = Array.from(index).filter((entry) => lowerPatterns.includes(entry.name.toLowerCase()));
+        // Log what pack we're searching in
+        HM.log(3, `Searching pack: ${pack.metadata.label} (${pack.collection})`);
 
-        if (exactMatches.length > 0) {
-          // Load the first matching journal
-          const journal = await pack.getDocument(exactMatches[0]._id);
-          if (journal.pages.size > 0) {
-            // Return pack ID + journal ID instead of just the page ID
-            return `${pack.collection}.${journal.id}`;
+        // Load all journals in the pack, excluding art handouts
+        for (const entry of pack.index) {
+          try {
+            // Skip art handouts
+            if (entry.name.toLowerCase().includes('art') || entry.name.toLowerCase().includes('handout')) {
+              continue;
+            }
+
+            const journal = await pack.getDocument(entry._id);
+            if (!journal?.pages?.size) continue;
+
+            // Log what we're searching through
+            HM.log(3, `Checking journal "${journal.name}" with ${journal.pages.size} pages`);
+
+            // First try exact name match
+            const exactMatch = journal.pages.find((p) => p.name.toLowerCase() === normalizedItemName);
+
+            if (exactMatch) {
+              const result = `${pack.collection}.${journal.id}.JournalEntryPage.${exactMatch.id}`;
+              HM.log(2, `FOUND EXACT MATCH: ${itemType} "${itemName}" matches page "${exactMatch.name}" in journal "${journal.name}"`);
+              return result;
+            }
+
+            // If this is a special race, try matching the base race name
+            if (baseRaceName) {
+              const baseMatch = journal.pages.find((p) => p.name.toLowerCase() === baseRaceName.toLowerCase());
+
+              if (baseMatch) {
+                const result = `${pack.collection}.${journal.id}.JournalEntryPage.${baseMatch.id}`;
+                HM.log(2, `FOUND BASE MATCH: ${itemType} "${itemName}" matches base race page "${baseMatch.name}" in journal "${journal.name}"`);
+                return result;
+              }
+            }
+          } catch (err) {
+            continue; // Skip any problematic journals
           }
         }
-
-        // Rest of method remains the same...
       } catch (error) {
         HM.log(2, `Error searching journal pack ${pack.metadata.label}:`, error);
         continue; // Try next pack
       }
+    }
+
+    HM.log(2, `No exact match found for ${itemType} "${itemName}", searching for partial matches...`);
+
+    // Second pass: Only if no exact match was found, try broader matching criteria
+    for (const pack of prioritizedPacks) {
+      try {
+        for (const entry of pack.index) {
+          try {
+            // Skip art handouts
+            if (entry.name.toLowerCase().includes('art') || entry.name.toLowerCase().includes('handout')) {
+              continue;
+            }
+
+            const journal = await pack.getDocument(entry._id);
+            if (!journal?.pages?.size) continue;
+
+            // Look for a page that contains the item name or vice versa
+            for (const page of journal.pages) {
+              const pageName = page.name.toLowerCase();
+
+              // Skip very short page names to avoid matching with things like "A" in "Spells A-Z"
+              if (pageName.length < 3) continue;
+
+              // Check for substantial content overlap
+              if ((pageName.includes(normalizedItemName) && normalizedItemName.length > 3) || (normalizedItemName.includes(pageName) && pageName.length > 3)) {
+                const result = `${pack.collection}.${journal.id}.JournalEntryPage.${page.id}`;
+                HM.log(2, `FOUND PARTIAL MATCH: ${itemType} "${itemName}" matches page "${page.name}" in journal "${journal.name}"`);
+                return result;
+              }
+            }
+          } catch (err) {
+            continue;
+          }
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    HM.log(2, `No matching journal page found for ${itemType} "${itemName}" after searching all packs`);
+    return null;
+  }
+
+  /**
+   * Get the base race name for special races
+   * @param {string} raceName - Full race name
+   * @returns {string|null} - Base race name or null
+   * @private
+   */
+  static #getBaseRaceName(raceName) {
+    if (!raceName) return null;
+
+    // Handle comma format: "Elf, High" -> "Elf"
+    if (raceName.includes(',')) {
+      return raceName.split(',')[0].trim();
+    }
+
+    // Handle space format
+    const lowerName = raceName.toLowerCase();
+
+    if (lowerName.includes('elf') && raceName.includes(' ')) {
+      return 'Elf';
+    }
+
+    if (lowerName.includes('gnome') && raceName.includes(' ')) {
+      return 'Gnome';
+    }
+
+    if (lowerName.includes('tiefling') && raceName.includes(' ')) {
+      return 'Tiefling';
     }
 
     return null;

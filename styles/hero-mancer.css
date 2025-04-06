@@ -1799,115 +1799,211 @@ fieldset#start > h2 {
   }
 }
 
-/* Journal container base styles */
+/* Journal container styles */
 .journal-container {
-  margin: 0;
-  padding: 12px;
-  position: relative;
-  height: 400px;
-  overflow: auto;
-}
-
-/* Handle the journal page content */
-.journal-page-embed {
-  height: 100%;
-  overflow-y: auto;
-}
-
-/* Fix figure and image display */
-.journal-container figure,
-.journal-page-embed figure {
-  margin: 0 0 1em;
-  max-width: 100%;
-}
-
-/* Handle right-aligned figures */
-.journal-container figure.right,
-.journal-page-embed figure.right {
-  float: right;
-  margin: 0 0 10px 10px;
-  max-width: 250px;
-}
-
-/* Handle centered figures */
-.journal-container figure:not(.right),
-.journal-page-embed figure:not(.right) {
-  display: block;
-  margin: 1em auto;
-  text-align: center;
-}
-
-/* Image sizing */
-.journal-container figure img,
-.journal-page-embed figure img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* Figure captions */
-.journal-container figcaption,
-.journal-page-embed figcaption {
-  font-size: 0.9em;
-  text-align: center;
-  margin-top: 5px;
-}
-
-/* Basic table styling */
-.journal-container table,
-.journal-page-embed table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  margin: 0.5em 0;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.journal-container .journal-page-content table td,
-.journal-page-embed .journal-page-content table td {
-  word-break: break-all;
-  overflow-wrap: break-word;
-  white-space: normal;
-}
-
-.journal-container colgroup col.spellcasting {
-  width: 3%;
-  white-space: nowrap;
-}
-
-.journal-container .journal-page-content table th {
-  padding: 0.1rem;
-}
-
-.journal-container .spell-slots {
-  width: 1%;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.journal-container .journal-page-content td,
-.journal-container .journal-page-content th {
-  overflow-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
-  width: fit-content;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  max-width: 100px;
-}
-
-/* Loading indicator */
-.journal-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  color: #191813 !important;
+  background-color: #f0f0e0 !important;
+  font-family: 'Modesto Condensed', 'Palatino Linotype', serif !important;
   border-radius: 5px;
-  margin: 1rem 0;
+  padding: 4px;
 }
 
-.journal-loading i {
-  margin-right: 0.5rem;
+.journal-container .title {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #4b4a44;
+}
+
+/* Journal content styles */
+.journal-container .journal-entry-content {
+  line-height: 1.4;
+}
+
+/* Tables */
+.journal-container table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.journal-container table caption {
+  font-weight: bold;
+  text-align: center;
+}
+
+.journal-container section {
+  margin-top: unset;
+}
+
+.journal-container th,
+.journal-container td {
+  text-align: center;
+}
+
+/* Headings */
+.journal-container h1,
+.journal-container h2,
+.journal-container h3,
+.journal-container h4,
+.journal-container h5 {
+  color: #782e22 !important;
+  border-bottom: 2px solid #e6bd6b;
+  border-image: linear-gradient(to right, #e6bd6b, transparent 90%);
+  border-image-slice: 0 0 1 0;
+  margin-top: 0.8em;
+  margin-bottom: 0.4em;
+  text-shadow: unset;
+  font-weight: bold;
+  font-family: var(--dnd5e-font-modesto) !important;
+}
+
+.journal-container img {
+  max-width: unset;
+  width: 100%;
+}
+
+/* Links */
+.journal-container a,
+.journal-container a.content-link {
+  color: #782e22 !important;
+  text-decoration: none;
+  border: none;
+  background: none;
+}
+
+.journal-container a:hover {
+  text-decoration: underline;
+}
+
+/* Content embed (for images) */
+.journal-container .content-embed {
+  margin: 10px 0;
+  text-align: center;
+}
+
+/* Fix for figure text alignment */
+.journal-container .content-embed p {
+  text-align: left;
+}
+
+/* Fix for figcaption alignment */
+.journal-container .content-embed figcaption {
+  text-align: right;
+}
+
+/* Positioning and width utilities from phb */
+.journal-container .content-embed.right {
+  float: right;
+  margin-left: 5px;
+  clear: right;
+}
+
+.journal-container .content-embed.left {
+  float: left;
+  margin-right: 5px;
+  clear: left;
+}
+
+.journal-container .content-embed.center {
+  margin: auto;
+}
+
+/* Width classes */
+.journal-container .content-embed.four,
+.journal-container .four {
+  width: 400px;
+}
+
+.journal-container .content-embed.three,
+.journal-container .three {
+  width: 300px;
+}
+
+.journal-container .content-embed.two,
+.journal-container .two {
+  width: 200px;
+}
+
+.journal-container .content-embed.one,
+.journal-container .one {
+  width: 100px;
+}
+
+/* Clear fix utility */
+.journal-container .clear-both {
+  clear: both;
+}
+
+/* Caption styling for embedded content */
+.journal-container .content-embed figcaption cite {
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+/* PHB specific styling for embeds */
+.journal-container figure.content-embed {
+  margin: 0.5em 0;
+}
+
+.journal-container figure.content-embed strong.embed-caption {
+  margin-right: 0.3em;
+}
+
+.journal-container * {
+  color: inherit;
+}
+
+/* Journal table styles with specific handling for many-column tables */
+.journal-container table.features-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.85em; /* Reduce font size for tables with many columns */
+}
+
+/* Target tables with many columns by using the colgroup or spellcasting class */
+.journal-container table.features-table colgroup col.spellcasting,
+.journal-container table colgroup col[span='9'] {
+  width: auto; /* Let these columns size naturally */
+}
+
+/* Make spell slot columns more compact */
+.journal-container table td.spell-slots {
+  width: 2em;
+  text-align: center;
+}
+
+/* Style for complex headers with rowspan/colspan */
+.journal-container table th[rowspan],
+.journal-container table th[colspan],
+.journal-container table td {
+  vertical-align: middle;
+  padding: unset;
+}
+
+/* Ensure headers with line breaks display properly */
+.journal-container table thead th {
+  white-space: wrap;
+  text-align: center;
+}
+
+/* Skill feature columns tend to have more text */
+.journal-container table td.features {
+  text-align: left;
+  white-space: normal;
+}
+
+/* Specific column styling */
+.journal-container table td.level,
+.journal-container table td.prof,
+.journal-container table td.scale {
+  text-align: center;
+  white-space: wrap;
+}
+
+/* Make tables responsive on smaller screens */
+@media screen and (width <= 768px) {
+  .journal-container table.features-table {
+    font-size: 0.75em;
+    display: block;
+    overflow-x: auto;
+  }
 }

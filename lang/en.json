@@ -194,7 +194,8 @@
         "start": "Start"
       },
       "tabs": "Hero Mancer Navigation Tabs",
-      "title": "the {components}"
+      "title": "the {components}",
+      "journal-loading": "Loading journal content..."
     },
     "dialogs": {
       "reroll": {

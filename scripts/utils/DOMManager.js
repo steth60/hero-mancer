@@ -826,18 +826,18 @@ export class DOMManager {
         return;
       }
 
-      // Show loading indicator while we process
-      descriptionEl.innerHTML = '<div class="journal-loading"><i class="fas fa-spinner fa-spin"></i> Loading content...</div>';
-
       // Check for journal page
       if (doc.journalPageId) {
         HM.log(3, `Found journal page ID ${doc.journalPageId} for ${doc.name}`);
 
         // Create container for journal embed
-        const container = document.createElement('div');
-        container.classList.add('journal-container');
-        descriptionEl.innerHTML = ''; // Clear the loading indicator
-        descriptionEl.appendChild(container);
+        const container = descriptionEl.querySelector('.journal-container') || document.createElement('div');
+
+        if (!container.classList.contains('journal-container')) {
+          container.classList.add('journal-container');
+          descriptionEl.innerHTML = '';
+          descriptionEl.appendChild(container);
+        }
 
         // Create and initialize the journal embed
         const embed = new JournalPageEmbed(container, {
@@ -845,8 +845,8 @@ export class DOMManager {
           height: 'auto'
         });
 
-        // Attempt to render the journal page
-        const result = await embed.render(doc.journalPageId);
+        // Attempt to render the journal page with the document name
+        const result = await embed.render(doc.journalPageId, doc.name);
 
         if (result) {
           HM.log(3, `Successfully rendered journal page for ${doc.name}`);
@@ -859,8 +859,8 @@ export class DOMManager {
       }
 
       // Fall back to regular description
-      if (doc.description) {
-        descriptionEl.innerHTML = doc.description;
+      if (doc.enrichedDescription) {
+        descriptionEl.innerHTML = doc.enrichedDescription;
       } else {
         descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
       }
@@ -1304,7 +1304,7 @@ export class DOMManager {
           await embed.render(doc.journalPageId, itemName);
         } else {
           // No journal, just show description
-          journalContainer.innerHTML = doc.description || game.i18n.localize('hm.app.no-description');
+          journalContainer.innerHTML = doc.enrichedDescription || game.i18n.localize('hm.app.no-description');
         }
       } else {
         journalContainer.innerHTML = game.i18n.localize('hm.app.no-description');
