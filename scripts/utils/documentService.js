@@ -461,36 +461,17 @@ export class DocumentService {
 
       // Early return for SRD backgrounds and races - they don't have journal pages
       if (moduleId === 'dnd5e' && ['background', 'race', 'species'].includes(docType)) {
-        HM.log(3, `Skipping journal search for SRD ${docType} "${docName}"`);
         return null;
       }
-
-      // Normalize the name for better matching
-      const normalizedName = this.#normalizeItemName(docName);
-
-      HM.log(3, `Looking for ${docType} journal page for "${docName}" (normalized: "${normalizedName}")`);
 
       const journalPacks = game.packs.filter((p) => p.metadata.type === 'JournalEntry');
 
       // Skip world journals entirely and focus on compendium search
-      return await this.#searchCompendiumsForPage(journalPacks, normalizedName, docType, docUuid);
+      return await this.#searchCompendiumsForPage(journalPacks, docName, docType, docUuid);
     } catch (error) {
       HM.log(2, `Error finding journal page for ${doc?.name}:`, error);
       return null;
     }
-  }
-
-  /**
-   * Normalize an item name for matching
-   * @param {string} name - Item name to normalize
-   * @returns {string} - Normalized name
-   * @private
-   */
-  static #normalizeItemName(name) {
-    if (!name) return '';
-
-    // Remove content in parentheses
-    return name.split('(')[0].trim();
   }
 
   /**
@@ -516,7 +497,6 @@ export class DocumentService {
       const uuidMatch = itemUuid.match(/^Compendium\.([^.]+)\./);
       if (uuidMatch && uuidMatch[1]) {
         modulePrefix = uuidMatch[1];
-        HM.log(3, `Extracted module prefix: ${modulePrefix} from UUID ${itemUuid}`);
       }
     }
 
@@ -530,7 +510,6 @@ export class DocumentService {
 
       // If we have exact matches, only use those
       if (exactMatches.length > 0) {
-        HM.log(3, `Using ${exactMatches.length} packs that match module prefix ${modulePrefix}`);
         prioritizedPacks = exactMatches;
       } else {
         // Otherwise, sort with preference to PHB packs which are likely to have content
@@ -544,15 +523,9 @@ export class DocumentService {
       }
     }
 
-    HM.log(3, `Searching for ${itemType} "${itemName}"${baseRaceName ? ` (base: "${baseRaceName}")` : ''} in ${prioritizedPacks.length} packs`);
-
-    // First pass: Look for exact matches across prioritized packs
     for (const pack of prioritizedPacks) {
       try {
         await pack.getIndex();
-
-        // Log what pack we're searching in
-        HM.log(3, `Searching pack: ${pack.metadata.label} (${pack.collection})`);
 
         // Load all journals in the pack, excluding art handouts
         for (const entry of pack.index) {
@@ -565,15 +538,12 @@ export class DocumentService {
             const journal = await pack.getDocument(entry._id);
             if (!journal?.pages?.size) continue;
 
-            // Log what we're searching through
-            HM.log(3, `Checking journal "${journal.name}" with ${journal.pages.size} pages`);
-
             // First try exact name match
             const exactMatch = journal.pages.find((p) => p.name.toLowerCase() === normalizedItemName);
 
             if (exactMatch) {
               const result = `${pack.collection}.${journal.id}.JournalEntryPage.${exactMatch.id}`;
-              HM.log(2, `FOUND EXACT MATCH: ${itemType} "${itemName}" matches page "${exactMatch.name}" in journal "${journal.name}"`);
+              HM.log(3, `${itemType} "${itemName}" matches page "${exactMatch.name}" in journal "${journal.name}"`);
               return result;
             }
 
@@ -583,7 +553,7 @@ export class DocumentService {
 
               if (baseMatch) {
                 const result = `${pack.collection}.${journal.id}.JournalEntryPage.${baseMatch.id}`;
-                HM.log(2, `FOUND BASE MATCH: ${itemType} "${itemName}" matches base race page "${baseMatch.name}" in journal "${journal.name}"`);
+                HM.log(3, `${itemType} "${itemName}" matches base race page "${baseMatch.name}" in journal "${journal.name}"`);
                 return result;
               }
             }
@@ -594,44 +564,6 @@ export class DocumentService {
       } catch (error) {
         HM.log(2, `Error searching journal pack ${pack.metadata.label}:`, error);
         continue; // Try next pack
-      }
-    }
-
-    HM.log(2, `No exact match found for ${itemType} "${itemName}", searching for partial matches...`);
-
-    // Second pass: Only if no exact match was found, try broader matching criteria
-    for (const pack of prioritizedPacks) {
-      try {
-        for (const entry of pack.index) {
-          try {
-            // Skip art handouts
-            if (entry.name.toLowerCase().includes('art') || entry.name.toLowerCase().includes('handout')) {
-              continue;
-            }
-
-            const journal = await pack.getDocument(entry._id);
-            if (!journal?.pages?.size) continue;
-
-            // Look for a page that contains the item name or vice versa
-            for (const page of journal.pages) {
-              const pageName = page.name.toLowerCase();
-
-              // Skip very short page names to avoid matching with things like "A" in "Spells A-Z"
-              if (pageName.length < 3) continue;
-
-              // Check for substantial content overlap
-              if ((pageName.includes(normalizedItemName) && normalizedItemName.length > 3) || (normalizedItemName.includes(pageName) && pageName.length > 3)) {
-                const result = `${pack.collection}.${journal.id}.JournalEntryPage.${page.id}`;
-                HM.log(2, `FOUND PARTIAL MATCH: ${itemType} "${itemName}" matches page "${page.name}" in journal "${journal.name}"`);
-                return result;
-              }
-            }
-          } catch (err) {
-            continue;
-          }
-        }
-      } catch (error) {
-        continue;
       }
     }
 

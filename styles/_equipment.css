@@ -1,0 +1,298 @@
+/* ==========================================================================
+  Equipment Section
+  ========================================================================== */
+
+.equipment-container {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--border-radius-xl);
+  background: var(--color-background-alt);
+}
+
+.equipment-choices {
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: grid;
+}
+
+.class-equipment-section,
+.background-equipment-section {
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1.25rem;
+  border: 1px solid #4a4a4a;
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 2px 4px #0003;
+}
+
+.hm-app-tab-content .class-equipment-section h3,
+.hm-app-tab-content .background-equipment-section h3 {
+  width: 100%;
+  margin-bottom: unset;
+  text-align: center;
+}
+
+.hm-app-tab-content .class-equipment-section h4,
+.hm-app-tab-content .background-equipment-section h4 {
+  font-size: var(--font-size-15);
+  font-family: signika, sans-serif;
+}
+
+.equipment-item {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: baseline;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border-dark-secondary);
+}
+
+.equipment-item label,
+.equipment-item input,
+.equipment-item select {
+  width: fit-content;
+  margin-top: 4px;
+  margin-right: auto;
+  vertical-align: middle;
+}
+
+.equipment-choices h3 {
+  border-bottom: 2px solid var(--color-border-light-primary);
+  font-size: var(--font-size-20);
+  text-align: center;
+}
+
+.equipment-choices h4 {
+  width: 92%;
+  margin: unset;
+}
+
+.equipment-choices .parent-label {
+  width: fit-content;
+  min-width: 140px;
+  max-width: 265px;
+  margin: 0;
+}
+
+.equipment-choices input[type='checkbox'] {
+  flex-shrink: 0;
+  margin: 0 0.5rem 0.2rem 0;
+}
+
+.application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select {
+  width: fit-content;
+  min-width: 140px;
+  max-width: 240px;
+  margin: 0.25rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.application.hm-app .hm-app-tab-content .equipment-container .equipment-choices a.content-link {
+  display: inline;
+  margin: 0 0 0 0.2rem;
+  padding: 0;
+  border: none;
+  font-style: italic;
+  background: none;
+}
+
+.application.hm-app .hm-app-tab-content .equipment-container .equipment-choices a.content-link i {
+  margin: 0 0.2rem 0 0;
+  font-size: inherit;
+}
+
+/* Disabled equipment states */
+.equipment-choices select:disabled,
+.equipment-choices input:disabled,
+.equipment-choices label.disabled {
+  opacity: 0.5;
+  color: #878787;
+  cursor: not-allowed;
+}
+
+.equipment-item.disabled select,
+.equipment-item.disabled input[type='checkbox'],
+.equipment-item.disabled label {
+  pointer-events: none;
+}
+
+/* Wealth option container */
+.wealth-option-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 10px 0 0;
+  padding: 0.625rem;
+  border: 1px solid var(--color-border-light-tertiary);
+  border-radius: var(--border-radius-sm);
+}
+
+.wealth-option-container label {
+  font-weight: 500;
+}
+
+.wealth-roll-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: fit-content;
+  padding-left: 0.25rem;
+  border-radius: var(--border-radius-sm);
+}
+
+.wealth-roll-container button,
+.character-name-row button {
+  aspect-ratio: 1/1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.wealth-roll-container button i,
+.character-name-row button i {
+  margin: 0;
+}
+
+.application.hm-app .hm-app-tab-content .equipment-container .equipment-choices .wealth-roll-container input[type='text'] {
+  width: fit-content;
+  min-width: 0.001rem;
+  max-width: 65px;
+  padding-right: 0.625rem;
+  text-align: center;
+}
+
+.second-weapon-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-dark-secondary);
+  font-size: var(--font-size-14);
+}
+
+.equipment-empty-notice {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 10px 0;
+  padding: 0.5rem;
+  border: 1px solid var(--color-level-error-border);
+  border-radius: var(--border-radius-md);
+}
+
+.equipment-missing-warning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
+}
+
+.warning-icon {
+  color: var(--color-level-error);
+  font-size: 2rem;
+}
+
+.extracted-equipment-info {
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  max-width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-left: 2px solid #a0a0a0;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-all;
+  word-wrap: break-word;
+}
+
+.extracted-equipment-info p {
+  overflow-wrap: break-word;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-all;
+  word-wrap: break-word;
+}
+
+.extracted-equipment-info h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+/* Favorite star styling */
+.equipment-favorite-container {
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-left: auto;
+  line-height: 1;
+  vertical-align: baseline;
+}
+
+.equipment-favorite-label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  cursor: pointer;
+}
+
+.equipment-favorite-checkbox {
+  opacity: 0;
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.equipment-item.disabled .equipment-favorite-container {
+  display: none !important;
+}
+
+.equipment-choices .equipment-favorite-container .equipment-favorite-label .equipment-favorite-checkbox {
+  position: absolute;
+}
+
+.equipment-favorite-star {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 1rem;
+  height: 1rem;
+  color: #aaa;
+  font-size: 1.2rem;
+  transition: color 0.2s ease;
+}
+
+.equipment-favorite-checkbox:checked + .equipment-favorite-star {
+  color: #ffd700;
+}
+
+.equipment-favorite-checkbox:hover + .equipment-favorite-star {
+  color: #f0b400;
+}
+
+/* Special handling for checkbox labels */
+.equipment-item label .equipment-favorite-container {
+  position: absolute;
+  top: 50%;
+  right: -24px;
+  transform: translateY(-50%);
+}
+
+/* Special handling for select elements */
+.equipment-item select + .equipment-favorite-container {
+  display: inline-flex;
+  margin-left: 8px;
+}
