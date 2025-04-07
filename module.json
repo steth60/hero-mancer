@@ -33,7 +33,12 @@
       "lang": "en",
       "name": "English",
       "path": "lang/en.json"
-    }
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json"
+    }  
   ],
   "manifest": "https://github.com/Sayshal/hero-mancer/releases/latest/download/module.json",
   "relationships": {
