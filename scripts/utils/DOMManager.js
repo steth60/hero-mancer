@@ -1228,6 +1228,33 @@ export class DOMManager {
   static async #handleDropdownChange(element, type, event) {
     // Extract selection data
     const value = event.target.value;
+
+    // Check if default/empty option is selected
+    if (!value) {
+      // Reset selection data for this type
+      HM.SELECTED[type] = { value: '', id: '', uuid: '' };
+      HM.log(3, `${type} reset to default`);
+
+      // Find the correct tab
+      const currentTab = element.querySelector(`.tab[data-tab="${type}"]`);
+      if (!currentTab) {
+        HM.log(1, `Could not find tab for ${type}`);
+        return;
+      }
+
+      // Find and clear the journal container
+      const journalContainer = currentTab.querySelector('.journal-container');
+      if (journalContainer) {
+        journalContainer.innerHTML = '';
+        journalContainer.removeAttribute('data-journal-id');
+      }
+
+      // Update UI based on dropdown type
+      await this.#updateUIForDropdownType(element, type);
+      return;
+    }
+
+    // Process selected option (existing code)
     const id = value.split(' ')[0].trim();
     const uuid = value.match(/\[(.*?)]/)?.[1] || '';
 
@@ -1273,9 +1300,11 @@ export class DOMManager {
           await embed.render(doc.journalPageId, itemName);
         } else {
           // No journal, just show description
+          journalContainer.removeAttribute('data-journal-id');
           journalContainer.innerHTML = doc.enrichedDescription || game.i18n.localize('hm.app.no-description');
         }
       } else {
+        journalContainer.removeAttribute('data-journal-id');
         journalContainer.innerHTML = game.i18n.localize('hm.app.no-description');
       }
     } else {

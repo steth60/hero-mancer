@@ -426,11 +426,7 @@ export class DocumentService {
    * @private
    */
   static async #findDescription(doc) {
-    if (!doc) {
-      return {
-        description: game.i18n.localize('hm.app.no-description')
-      };
-    }
+    if (!doc) return;
 
     try {
       // First check if there's a journal page we can use
@@ -445,6 +441,7 @@ export class DocumentService {
       }
 
       // Fall back to the basic description from the document
+
       return {
         description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description')
       };
@@ -452,6 +449,7 @@ export class DocumentService {
       HM.log(1, `Error generating description for ${doc?.name}:`, error);
 
       // Return basic description even on error
+      HM.log(2, 'Return basic description even on error.');
       return {
         description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description')
       };
@@ -541,19 +539,38 @@ export class DocumentService {
     const startTime = performance.now();
 
     try {
+      // If we have a module prefix, only search packs from that module
+      const packsToSearch = modulePrefix ? prioritizedPacks.filter((pack) => pack.collection.startsWith(modulePrefix)) : prioritizedPacks;
+
+      // If we filtered out all packs but still have a modulePrefix, log it
+      if (modulePrefix && packsToSearch.length === 0) {
+        HM.log(3, `No matching journal packs found for module prefix: ${modulePrefix}`);
+        return null;
+      }
+
       // Search through each pack until a match is found
-      for (const pack of prioritizedPacks) {
+      for (const pack of packsToSearch) {
         const result = await this.#searchSingleCompendium(pack, normalizedItemName, baseRaceName);
         if (result) {
           const searchTime = Math.round(performance.now() - startTime);
           if (searchTime > 3500) {
             HM.log(2, `Journal search for "${itemName}" took ${searchTime}ms`);
           }
+
+          // Verify module match
+          if (modulePrefix) {
+            const resultModulePrefix = this.#extractModulePrefixFromUuid(result);
+            if (resultModulePrefix !== modulePrefix) {
+              HM.log(3, `Found journal page in wrong module: ${resultModulePrefix} vs expected ${modulePrefix}`);
+              continue; // Skip this result and keep searching
+            }
+          }
+
           return result;
         }
       }
 
-      HM.log(3, `No matching journal page found for ${itemType} "${itemName}" after searching all packs`);
+      HM.log(3, `No matching journal page found for ${itemType} "${itemName}" after searching ${packsToSearch.length} packs`);
       return null;
     } catch (error) {
       HM.log(2, `Error during journal page search for ${itemName}:`, error);
@@ -570,8 +587,19 @@ export class DocumentService {
   static #extractModulePrefixFromUuid(itemUuid) {
     if (!itemUuid) return null;
 
-    const uuidMatch = itemUuid.match(/^Compendium\.([^.]+)\./);
-    return uuidMatch && uuidMatch[1] ? uuidMatch[1] : null;
+    // Handle standard Compendium UUID format
+    const compendiumMatch = itemUuid.match(/^Compendium\.([^.]+)\./);
+    if (compendiumMatch && compendiumMatch[1]) {
+      return compendiumMatch[1];
+    }
+
+    // Handle direct collection format (pack.collection.documentId)
+    const collectionMatch = itemUuid.match(/^([^.]+)\./);
+    if (collectionMatch && collectionMatch[1]) {
+      return collectionMatch[1];
+    }
+
+    return null;
   }
 
   /**
@@ -612,30 +640,29 @@ export class DocumentService {
    */
   static async #searchSingleCompendium(pack, normalizedItemName, baseRaceName) {
     try {
-      await pack.getIndex();
+      // Get the index which now includes pages data
+      const index = await pack.getIndex();
 
-      for (const entry of pack.index) {
+      for (const entry of index) {
         // Skip art handouts
         if (this.#isArtHandout(entry.name)) continue;
 
-        const journal = await pack.getDocument(entry._id);
-        if (!journal?.pages?.size) continue;
+        // If the index doesn't have pages data or it's empty, skip
+        if (!entry.pages?.length) continue;
 
-        // First try exact name match
-        const exactMatch = journal.pages.find((p) => p.name.toLowerCase() === normalizedItemName);
-
+        // Check for exact name match in the journal pages from the index
+        const exactMatch = entry.pages.find((p) => p.name.toLowerCase() === normalizedItemName);
         if (exactMatch) {
-          HM.log(3, `Found exact match page "${exactMatch.name}" in journal "${journal.name}"`);
-          return `${pack.collection}.${journal.id}.JournalEntryPage.${exactMatch.id}`;
+          HM.log(3, `Found exact match page "${exactMatch.name}" in journal "${entry.name}"`);
+          return `Compendium.${pack.collection}.${entry._id}.JournalEntryPage.${exactMatch._id}`;
         }
 
         // If this is a special race, try matching the base race name
         if (baseRaceName) {
-          const baseMatch = journal.pages.find((p) => p.name.toLowerCase() === baseRaceName.toLowerCase());
-
+          const baseMatch = entry.pages.find((p) => p.name.toLowerCase() === baseRaceName.toLowerCase());
           if (baseMatch) {
-            HM.log(3, `Found base race match page "${baseMatch.name}" in journal "${journal.name}"`);
-            return `${pack.collection}.${journal.id}.JournalEntryPage.${baseMatch.id}`;
+            HM.log(3, `Found base race match page "${baseMatch.name}" in journal "${entry.name}"`);
+            return `Compendium.${pack.collection}.${entry._id}.JournalEntryPage.${baseMatch._id}`;
           }
         }
       }

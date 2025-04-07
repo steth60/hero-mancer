@@ -136,6 +136,8 @@
         "traits-placeholder-alt": "Describe your character's personality. How do their abilities shape who they are? Are they wise and contemplative, or charismatic and outgoing?"
       },
       "header-title": "Hero Mancer Creation Wizard",
+      "journal-description-placeholder": "The Journal is loading. This is a placeholder.",
+      "journal-loading": "Loading journal content...",
       "no-description": "Unable to load a valid description for this item.",
       "optionsReset": "Reset Hero Mancer! Let's try again!",
       "optionsSaved": "Options saved! Re-open Hero Mancer to continue where you left off!",
@@ -194,8 +196,7 @@
         "start": "Start"
       },
       "tabs": "Hero Mancer Navigation Tabs",
-      "title": "the {components}",
-      "journal-loading": "Loading journal content..."
+      "title": "the {components}"
     },
     "dialogs": {
       "reroll": {
@@ -233,7 +234,7 @@
       "missing-ability-fields": "Missing required ability scores: {fields} ({count} total)",
       "missing-background-fields": "Missing required background details: {fields} ({count} total)",
       "missing-basic-fields": "Missing required basic fields: {fields} ({count} total)",
-      "missing-equipment": "The selected {type} doesn't contain any Starting Equipment data. Please report this to the creator of the item, not Hero Mancer.",
+      "missing-equipment": "The selected {type} doesn't contain any Starting Equipment data. Please report this to the creator of the item, not Hero Mancer. If you haven't selected a {type}, you can ignore this warning.",
       "missing-mandatory-fields": "Required fields missing: {fields}",
       "no-background": "The selected background could not be found.",
       "no-class": "The selected class could not be found.",

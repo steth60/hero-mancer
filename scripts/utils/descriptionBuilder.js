@@ -98,8 +98,11 @@ export class JournalPageEmbed {
     // Check if this is a compendium reference
     if (pageId.includes('.')) {
       try {
+        // Check if pageId already has the Compendium prefix
+        const uuidToLoad = pageId.startsWith('Compendium.') ? pageId : `Compendium.${pageId}`;
+
         // Try to load it as a direct UUID
-        journalDoc = await fromUuid(`Compendium.${pageId}`);
+        journalDoc = await fromUuid(uuidToLoad);
 
         if (journalDoc?.documentName === 'JournalEntry') {
           // If we have a journal entry but need a specific page

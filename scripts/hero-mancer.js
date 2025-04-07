@@ -244,10 +244,10 @@ export class HM {
           if (doc?.description) {
             try {
               doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
-              // doc.enrichedDescription = doc.enrichedDescription
-              //   .replace(/<h3/g, '<h2')
-              //   .replace(/<\/h3/g, '</h2')
-              //   .replace(/<\/ h3/g, '</ h2');
+              doc.enrichedDescription = doc.enrichedDescription
+                .replace(/<h3/g, '<h2')
+                .replace(/<\/h3/g, '</h2')
+                .replace(/<\/ h3/g, '</ h2');
             } catch (error) {
               HM.log(1, `Failed to enrich description for '${doc.name}':`, error);
               // Recovery: use plain description as fallback
@@ -345,6 +345,8 @@ Hooks.on('init', () => {
     'type',
     'uuid'
   ];
+  CONFIG.JournalEntry.compendiumIndexFields = ['_id', 'name', 'pages', 'type', 'uuid'];
+  CONFIG.JournalEntryPage.compendiumIndexFields = ['_id', 'name', 'type', 'uuid'];
 });
 
 Hooks.once('ready', async () => {
