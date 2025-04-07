@@ -1,58 +1,28 @@
-/** Services, applications, and utilities for Hero Mancer character creation and management */
-
-/** Handles the creation of our character on submission of the Hero Mancer form */
-export { ActorCreationService } from './actorCreationService.js';
-
-/** Public API for equipment parsing */
 export { API } from '../api.js';
-
-/** Handles filepicking for character, token, and player art */
-export { CharacterArtPicker } from './characterArtPicker.js';
-
-/** Application to allow compendium selection */
 export { CustomCompendiums } from '../app/CustomCompendiums.js';
-
-/** Application to configure customization options */
 export { Customization } from '../app/Customization.js';
-
-/** Applicaation to configure dice rolling options */
 export { DiceRolling } from '../app/DiceRolling.js';
-
-/** Handles document storage and retrieval */
-export { DocumentService } from './documentService.js';
-
-/** DOM Manager for all events/mutations. */
-export { DOMManager } from './DOMManager.js';
-
-/** Form Validation for Mandatory Fields Class */
-export { FormValidation } from './formValidation.js';
-
-/** Application for all Hero Mancer creation */
 export { HeroMancer } from '../app/HeroMancer.js';
-
-/** Constants from hero-mancer.js application */
-export { HM } from '../hero-mancer.js';
-
-/** Parses and manages equipment data */
-export { EquipmentParser } from './equipment/index.js';
-
-/** Handles mandatory fields settings */
 export { MandatoryFields } from '../app/MandatoryFields.js';
-
-/** Handles header progress bar in Hero Mancer */
-export { ProgressBar } from './progress.js';
-
-/** Handles randomization functionality for character name & character */
-export { CharacterRandomizer } from './randomizer.js';
-
-/** Manages saved data across sessions per-user */
-export { SavedOptions } from './savedOptions.js';
-
-/** Manages ability score calculations and updates */
-export { StatRoller } from './statRoller.js';
-
-/** Manages RollTable interactions for backgrounds */
-export { TableManager } from './tableManager.js';
-
-/** Utility to export relevant information for bug reporting */
 export { Troubleshooter } from '../app/Troubleshooter.js';
+export { HM } from '../hero-mancer.js';
+export { ActorCreationService } from './actorCreationService.js';
+export { CharacterArtPicker } from './characterArtPicker.js';
+export { JournalPageEmbed } from './descriptionBuilder.js';
+export { DocumentService } from './documentService.js';
+export { DOMManager } from './DOMManager.js';
+export { EquipmentDataService } from './equipment/equipmentDataService.js';
+export { EquipmentParser } from './equipment/equipmentParser.js';
+export { EquipmentRenderer } from './equipment/equipmentRenderer.js';
+export { AndItemRenderer } from './equipment/renderers/andItemRenderer.js';
+export { BaseItemRenderer } from './equipment/renderers/baseItemRenderer.js';
+export { FocusItemRenderer } from './equipment/renderers/focusItemRenderer.js';
+export { LinkedItemRenderer } from './equipment/renderers/linkedItemRenderer.js';
+export { OrItemRenderer } from './equipment/renderers/orItemRenderer.js';
+export { ToolItemRenderer } from './equipment/renderers/toolItemRenderer.js';
+export { FormValidation } from './formValidation.js';
+export { ProgressBar } from './progress.js';
+export { CharacterRandomizer } from './randomizer.js';
+export { SavedOptions } from './savedOptions.js';
+export { StatRoller } from './statRoller.js';
+export { TableManager } from './tableManager.js';

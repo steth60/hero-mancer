@@ -1,5 +1,4 @@
-import { HM } from '../../utils/index.js';
-import { EquipmentDataService, EquipmentRenderer } from './index.js';
+import { EquipmentDataService, EquipmentRenderer, HM } from '../../utils/index.js';
 
 /**
  * Parses, manages, and renders equipment data for character creation

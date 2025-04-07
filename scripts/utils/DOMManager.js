@@ -1,4 +1,4 @@
-import { EquipmentParser, HeroMancer, HM, MandatoryFields, StatRoller, TableManager } from './index.js';
+import { EquipmentParser, HeroMancer, HM, JournalPageEmbed, MandatoryFields, StatRoller, TableManager } from './index.js';
 
 /**
  * Centralized DOM event and observer management
@@ -798,46 +798,43 @@ export class DOMManager {
    * @param {string} type - Type of dropdown (class, race, background)
    * @param {string} id - ID of selected item
    * @param {HTMLElement} descriptionEl - Description element to update
+   * @returns {Promise<void>}
+   * @static
    */
-  static updateDescription(type, id, descriptionEl) {
+  static async updateDescription(type, id, descriptionEl) {
+    if (!descriptionEl) {
+      HM.log(2, `Cannot update ${type} description: No description element provided`);
+      return;
+    }
+
     HM.log(3, `Updating ${type} description for ID: ${id}`);
 
     try {
-      // For race documents, they're organized in folders
-      if (type === 'race') {
-        let foundDoc = null;
-
-        for (const folder of HM.documents.race) {
-          const doc = folder.docs.find((d) => d.id === id);
-          if (doc) {
-            foundDoc = doc;
-            break;
-          }
-        }
-
-        if (foundDoc) {
-          descriptionEl.innerHTML = foundDoc.enrichedDescription || '';
-        } else {
-          if (!id) return;
-          descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
-        }
-      } else {
-        const docsArray = HM.documents[type] || [];
-        const doc = docsArray.find((d) => d.id === id);
-
-        if (doc) {
-          if (doc.enrichedDescription) {
-            descriptionEl.innerHTML = doc.enrichedDescription;
-          } else {
-            descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
-          }
-        } else {
-          if (!id) return;
-          descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
-        }
+      // If no ID provided, clear the description
+      if (!id) {
+        descriptionEl.innerHTML = '';
+        return;
       }
+
+      // Find the document
+      const doc = await this.#findDocumentById(type, id);
+
+      // No document found
+      if (!doc) {
+        descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
+        return;
+      }
+
+      // Check for journal page - render it if available
+      if (doc.journalPageId) {
+        await this.#renderJournalPage(doc, descriptionEl);
+        return;
+      }
+
+      // Fall back to regular description
+      this.#renderStandardDescription(doc, descriptionEl);
     } catch (error) {
-      HM.log(1, `Error updating ${type} description: ${error}`);
+      HM.log(1, `Error updating ${type} description: ${error.message}`, error);
       descriptionEl.innerHTML = game.i18n.localize('hm.app.no-description');
     }
   }
@@ -1231,6 +1228,33 @@ export class DOMManager {
   static async #handleDropdownChange(element, type, event) {
     // Extract selection data
     const value = event.target.value;
+
+    // Check if default/empty option is selected
+    if (!value) {
+      // Reset selection data for this type
+      HM.SELECTED[type] = { value: '', id: '', uuid: '' };
+      HM.log(3, `${type} reset to default`);
+
+      // Find the correct tab
+      const currentTab = element.querySelector(`.tab[data-tab="${type}"]`);
+      if (!currentTab) {
+        HM.log(1, `Could not find tab for ${type}`);
+        return;
+      }
+
+      // Find and clear the journal container
+      const journalContainer = currentTab.querySelector('.journal-container');
+      if (journalContainer) {
+        journalContainer.innerHTML = '';
+        journalContainer.removeAttribute('data-journal-id');
+      }
+
+      // Update UI based on dropdown type
+      await this.#updateUIForDropdownType(element, type);
+      return;
+    }
+
+    // Process selected option (existing code)
     const id = value.split(' ')[0].trim();
     const uuid = value.match(/\[(.*?)]/)?.[1] || '';
 
@@ -1238,10 +1262,53 @@ export class DOMManager {
     HM.SELECTED[type] = { value, id, uuid };
     HM.log(3, `${type} updated:`, HM.SELECTED[type]);
 
-    // Update description
-    const descEl = element.querySelector(`#${type}-description`);
-    if (descEl) {
-      this.updateDescription(type, id, descEl);
+    // Find the correct tab
+    const currentTab = element.querySelector(`.tab[data-tab="${type}"]`);
+    if (!currentTab) {
+      HM.log(1, `Could not find tab for ${type}`);
+      return;
+    }
+
+    // Find the journal container
+    const journalContainer = currentTab.querySelector('.journal-container');
+    if (journalContainer) {
+      // Find the document with this ID
+      let doc = null;
+      if (type === 'race') {
+        for (const folder of HM.documents.race) {
+          const foundDoc = folder.docs.find((d) => d.id === id);
+          if (foundDoc) {
+            doc = foundDoc;
+            break;
+          }
+        }
+      } else {
+        const docsArray = HM.documents[type] || [];
+        doc = docsArray.find((d) => d.id === id);
+      }
+
+      if (doc) {
+        if (doc.journalPageId) {
+          // Set the journal ID and initialize the journal embed
+          journalContainer.dataset.journalId = doc.journalPageId;
+
+          // Get the item name from the dropdown selected text
+          const itemName = event.target.options[event.target.selectedIndex].text.split(' (')[0];
+
+          // Create and initialize the journal embed with the item name
+          const embed = new JournalPageEmbed(journalContainer);
+          await embed.render(doc.journalPageId, itemName);
+        } else {
+          // No journal, just show description
+          journalContainer.removeAttribute('data-journal-id');
+          journalContainer.innerHTML = doc.enrichedDescription || game.i18n.localize('hm.app.no-description');
+        }
+      } else {
+        journalContainer.removeAttribute('data-journal-id');
+        journalContainer.innerHTML = game.i18n.localize('hm.app.no-description');
+      }
+    } else {
+      HM.log(1, `Could not find journal container for ${type}`);
     }
 
     // Update UI based on dropdown type
@@ -2022,5 +2089,89 @@ export class DOMManager {
 
     inventoryHTML += '</div>';
     return inventoryHTML;
+  }
+
+  /**
+   * Find a document by its ID and type
+   * @param {string} type - Document type
+   * @param {string} id - Document ID
+   * @returns {Object|null} - Document object or null if not found
+   * @private
+   * @static
+   */
+  static async #findDocumentById(type, id) {
+    // For race documents, search in folder structure
+    if (type === 'race') {
+      for (const folder of HM.documents.race) {
+        const foundDoc = folder.docs.find((d) => d.id === id);
+        if (foundDoc) return foundDoc;
+      }
+      return null;
+    }
+
+    // For other document types, search in flat array
+    const docsArray = HM.documents[type] || [];
+    return docsArray.find((d) => d.id === id);
+  }
+
+  /**
+   * Render a journal page in the description element
+   * @param {Object} doc - Document containing journal page reference
+   * @param {HTMLElement} descriptionEl - Description element to update
+   * @returns {Promise<void>}
+   * @private
+   * @static
+   */
+  static async #renderJournalPage(doc, descriptionEl) {
+    HM.log(3, `Found journal page ID ${doc.journalPageId} for ${doc.name}`);
+
+    // Create container for journal embed if needed
+    const container = descriptionEl.querySelector('.journal-container') || document.createElement('div');
+
+    if (!container.classList.contains('journal-container')) {
+      container.classList.add('journal-container');
+      descriptionEl.innerHTML = '';
+      descriptionEl.appendChild(container);
+    }
+
+    // Create and initialize the journal embed
+    const embed = new JournalPageEmbed(container, {
+      scrollable: true,
+      height: 'auto'
+    });
+
+    // Attempt to render the journal page with the document name
+    try {
+      const result = await embed.render(doc.journalPageId, doc.name);
+
+      if (result) {
+        HM.log(3, `Successfully rendered journal page for ${doc.name}`);
+        return;
+      }
+
+      // If rendering failed, throw error to fall through to regular description
+      throw new Error('Failed to render journal page');
+    } catch (error) {
+      HM.log(2, `Failed to render journal page ${doc.journalPageId} for ${doc.name}: ${error.message}`);
+      descriptionEl.innerHTML = '<div class="notification error">Failed to load journal page content</div>';
+
+      // Wait a moment, then fall back to regular description
+      setTimeout(() => this.#renderStandardDescription(doc, descriptionEl), 500);
+    }
+  }
+
+  /**
+   * Render standard text description
+   * @param {Object} doc - Document to display
+   * @param {HTMLElement} descriptionEl - Description element to update
+   * @private
+   * @static
+   */
+  static #renderStandardDescription(doc, descriptionEl) {
+    if (doc.enrichedDescription) {
+      descriptionEl.innerHTML = doc.enrichedDescription;
+    } else {
+      descriptionEl.innerHTML = doc.description || game.i18n.localize('hm.app.no-description');
+    }
   }
 }

@@ -1,5 +1,4 @@
-import { HM } from '../index.js';
-import { AndItemRenderer, BaseItemRenderer, FocusItemRenderer, LinkedItemRenderer, OrItemRenderer, ToolItemRenderer } from './index.js';
+import { AndItemRenderer, BaseItemRenderer, FocusItemRenderer, HM, LinkedItemRenderer, OrItemRenderer, ToolItemRenderer } from '../index.js';
 
 /**
  * Manages rendering of equipment selection UI components
