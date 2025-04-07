@@ -244,6 +244,9 @@ export class DOMManager {
 
     // Initialize ability score inputs
     this.#initializeAbilityScoreInputs(element);
+
+    // Initialize ability value tracking
+    StatRoller.initializeAbilityDropdownTracking();
   }
 
   /**

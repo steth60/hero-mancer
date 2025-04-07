@@ -372,6 +372,15 @@ function registerDiceRollingSettings() {
     }
   });
 
+  game.settings.register(HM.ID, 'standardArraySwapMode', {
+    name: 'hm.settings.standard-array-swap-mode.name',
+    hint: 'hm.settings.standard-array-swap-mode.hint',
+    scope: 'world',
+    config: false,
+    type: Boolean,
+    default: false
+  });
+
   HM.log(3, 'Dice Rolling settings registered.');
 }
 
