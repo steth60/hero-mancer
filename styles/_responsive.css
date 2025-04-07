@@ -2,7 +2,7 @@
   Media Queries
   ========================================================================== */
 
-@media (width <= 1024px) {
+@media (width <= 999px) {
   /* Application container */
   .application.hm-app {
     width: 95%;
@@ -85,8 +85,8 @@
   }
 }
 
-/* Minimum width requirement for Foundry (700px <= width <= 1024px) */
-@media (700px <= width <= 1024px) {
+/* Minimum width requirement for Foundry (700px <= width <= 999px) */
+@media (700px <= width <= 999px) {
   .application.hm-app {
     width: 100%;
     height: auto;

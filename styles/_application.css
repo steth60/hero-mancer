@@ -3,14 +3,11 @@
   ========================================================================== */
 
 .application.hm-app {
-  display: flex;
-  flex-direction: column;
-  width: 1250px;
+  width: 1000px;
   max-width: calc(100vw - 100px);
   height: auto;
   min-height: 0;
   max-height: calc(100vh - 150px);
-  overflow: hidden;
 }
 
 .application.hm-app .fa-egg,

@@ -97,6 +97,7 @@ button {
 
 .hm-app .form-group select {
   width: fit-content;
+  max-width: 200px;
   min-width: 120px;
 }
 
