@@ -1,0 +1,503 @@
+{
+  "hm": {
+    "actortab-button": {
+      "creating": "Hero Mancer erstellt deinen Charakter! ... Dies kann einen Moment dauern.",
+      "hint": "Öffne Hero Mancer",
+      "loading": "Hero Mancer lädt! ... Dies kann einen Moment dauern.",
+      "name": "Hero Mancer"
+    },
+    "app": {
+      "abilities": {
+        "decrease": "-1",
+        "default": "ist stolz auf seine beeindruckenden Attribute",
+        "excels": "ist hervorragend in",
+        "increase": "+1",
+        "instructions": {
+          "chained-rolls": "Deine Spielleitung hat verkettete Würfe aktiviert. Klicke einfach auf einen der Würfel oben, um alle Werte zu würfeln. Aber keine Sorge! Du kannst die Einträge einzeln neu würfeln, vorausgesetzt, deine Spielleitung erlaubt es.",
+          "manual": {
+            "description": "Würfle für jedes Attribut die angegebene Formel (Standard ist 4W6, streiche den niedrigsten) und trage das Ergebnis als den Attributswert ein. Wiederhole diesen Vorgang für jedes Attribut.",
+            "preamble": "Die manuelle Würfelmethode ermöglicht es dir, ein einzigartiges Charakterprofil zu erstellen, indem du für jedes Attribut einen eigenen Attributswert auswürfelst. Standardmäßig wird dabei die klassische 4W6-Methode (der niedrigste Wert zählt nicht) verwendet, aber dein Spielleiter kann eine eigene Formel für das Würfeln festlegen. Die Ergebnisse dieser Methode können von starken über durchschnittliche bis hin zu niedrigen Werten reichen und verleihen der Charaktererstellung ein Element der Unvorhersehbarkeit, das zu ausgeprägten Stärken und Schwächen führen kann. Diese Methode eignet sich perfekt, um in kurzen Kampagnen oder One-Shots unterschiedliche Charaktere zu erschaffen, bei denen überraschende Werte zu kreativem Rollenspiel anregen können. Nimm die Zufälligkeit an und genieße die einzigartigen Ergebnisse!",
+            "title": "Methode zur Werte-Generierung: Manuelles Würfeln"
+          },
+          "no-roll-method": "Fehler beim Laden einer gültigen Würfelmethode, bitte an den Entwickler melden.",
+          "point-buy": {
+            "description": "Weise jedem Attributswert Punkte zu. Du hast eine Basis von 27 Punkten, die du verteilen kannst, wobei der maximale Attributswert auf 15 begrenzt ist.",
+            "preamble": "Die Methode des Punktekaufs bietet Flexibilität, indem sie dir ermöglicht, deinen Attributen eine bestimmte Anzahl von Punkten zuzuweisen. Verteile deine Punkte auf die Attribute, um ein ausgewogenes oder spezialisiertes Charakterprofil zu erstellen. Jeder Attributswert über 8 hat einen bestimmten Punktepreis, also plane weise!",
+            "remaining": "Verbleibend",
+            "title": "Methode zur Werte-Generierung: Punktekauf"
+          },
+          "standard-array": {
+            "description": "Wähle für jedes der unten aufgeführten Attribute einen Wert aus dem Dropdown-Menü aus. Denke bei deiner Entscheidung an deine Klassen- und Charakterziele. Du kannst einen Wert nur einmal verwenden.",
+            "preamble": "Die Standardwerte ermöglichen es dir, den Attributswerten deines Charakters eine Reihe von vordefinierten Werten zuzuweisen, die darauf ausgelegt sind, die Charaktere ausgewogen zu halten und die Charaktererstellung zu vereinfachen. Diese Methode ist ideal für neue Spieler oder diejenigen, die eine konsistente, ausgewogene Aufstellung innerhalb der Gruppe wünschen, um sicherzustellen, dass jeder Charakter auf dem gleichen Leistungsniveau beginnt. Denke daran, dass deine Volksboni immer noch deine endgültigen Attributswerte beeinflussen. Berücksichtige deine Klassen- und Volksboni sorgfältig, wenn du diese Werte platzierst, um die Leistung deines Charakters in seiner primären Rolle zu optimieren.",
+            "title": "Methode zur Werte-Generierung: Standardwerte"
+          }
+        },
+        "label": "Attribut",
+        "methods": {
+          "manual": "Manuell",
+          "pointBuy": "Punktekauf",
+          "standardArray": "Standardwerte"
+        },
+        "primary-tooltip": "{ability} is das Primärattribut für die Klasse {class}.",
+        "roll-dice": "Würfle für Attribute",
+        "score-label": "Attributswerte",
+        "score-placeholder": "Eintragen",
+      "select-method": "Wähle Wertemethode",
+        "select-placeholder": "Wähle",
+        "select-value": "Wähle einen Wert",
+        "summary": "{action} {first} und {second}",
+        "tooltip": "Wähle die Attributswerte für deinen Charakter",
+        "your-class": "your class"
+      },
+      "background": {
+        "adventurer": "ein Abenteurer",
+        "none": "Keine Hintergründe Verfügbar.",
+        "preamble": "Wähle den Hintergrund deines Charakters aus den verfügbaren Optionen aus.",
+        "select-label": "Hintergrund",
+        "select-placeholder": "Wähle einen Hintergrund",
+        "summary": "Du beginnst als {name}",
+        "tooltip": "Wähle den Hintergrund für deinen Charakter"
+      },
+      "cancel": "Abbrechen",
+      "cancel-description": "Abbrechen und schließe Hero Mancer",
+      "character-created": "Der Charakter wurde erfolgreich erstellt.",
+      "class": {
+        "none": "Keine Klassen verfügbar.",
+        "preamble": "Wähle die Klasse deines Charakters aus den verfügbaren Optionen aus.",
+        "select-label": "Klasse",
+        "select-placeholder": "Wähle die Klasse",
+        "tooltip": "Wähle die Klasse für deinen Charakter"
+      },
+      "document-service": {
+        "dndbeyond-importer": "DDB",
+        "elkan5e": "Elkan",
+        "forge": "Forge",
+        "homebrew": "Homebrew",
+        "phb": "PHB",
+        "srd": "SRD"
+      },
+      "done": "Fertig",
+      "equipment": {
+        "and": ", und ",
+        "article": "",
+        "article-plural": "",
+        "choices-header": "Ausrüstungsauswahl",
+        "choose-all": "Wähle alle der folgenden Optionen aus:",
+        "choose-one": "Wähle eine (1) der folgenden Optionen aus:",
+        "choose-second-weapon": "Wähle eine zweite Waffe",
+        "failed-to-load": "Fehler beim Laden von {count} items.",
+        "gptobuy": "GM zum kaufen",
+        "lacks-proficiency": "nicht geübt",
+        "pouch": "Komponentenbeutel",
+        "preamble": "Über den Reiter Ausrüstung im Hero Mancer Creation Wizard können Spieler nun die Ausrüstung und die Startressourcen ihres Charakters vollständig verwalten. Spieler können klassen-, hintergrund- und volksspezifische Ausrüstung auswählen sowie aus Ausrüstungspaketen oder Regeln für das Startvermögen wählen. Dies bietet einen umfassenden Workflow für die Ausrüstung des Charakters während des Erstellungsprozesses.",
+        "roll-wealth": "Vermögen würfeln",
+        "select-weapon": "Waffe wählen",
+        "separator": ", ",
+        "starting": "starting",
+        "starting-equipment": "Startausrüstung",
+        "summary": "trägt {items} auf der Reise.",
+        "tooltip": "Wähle die Ausrüstung für deinen Charakter",
+        "type-equipment": "{type} Ausrüstung",
+        "unknown-choice": "Unbekanntes verknüpftes Item.",
+        "unnamed": "Item ohne Namen",
+        "use-starting-wealth": "Verwende Startvermögen",
+        "wealth-placeholder": "0 GM"
+      },
+      "finalize": {
+        "backstory": "Hintergrundgeschichte",
+        "backstory-placeholder": "Schreibe eine Hintergrundgeschichte für deinen Charakter. Überlege dir, welchen Organisationen sie angehören, welche Verbündeten sie gewonnen oder welche Feinde sie sich gemacht haben, und welche anderen wichtigen Details es in ihrem Leben gab, bevor sie zum Abenteurer wurden.",
+        "bonds-placeholder": "Wer oder was liegt dir am meisten am Herzen? Welcher Ort fühlt sich wie ein Zuhause an? Welcher Gegenstand bedeutet dir alles? Drücke auf die Würfeln Schaltfläche, um aus den Bindungen zu wählen, die durch deinen Hintergrund vorgeschlagen werden.",
+        "bonds-placeholder-alt": "Wer oder was liegt dir am meisten am Herzen? Welcher Ort fühlt sich wie ein Zuhause an? Welcher Gegenstand bedeutet dir alles?",
+        "character-details": "Charakterdetails",
+        "character-portrait": "Charakterporträt",
+        "class-race-summary": "Dieser {race} {class}",
+        "flaws-placeholder": "Was sind die Unzulänglichkeiten oder Schwächen deines Charakters? Denke dabei sowohl an persönliche Eigenheiten als auch an Einschränkungen bei den Attributswerten. Welche Eigenschaften könnten für andere schwierig sein? Drücke auf die Würfeln Schaltfläche, um aus den Makeln zu wählen, die durch deinen Hintergrund vorgeschlagen werden.",
+        "flaws-placeholder-alt": "Was sind die Unzulänglichkeiten oder Schwächen deines Charakters? Denke dabei sowohl an persönliche Eigenheiten als auch an Einschränkungen bei den Attributswerten. Welche Eigenschaften könnten andere als schwierig empfinden?",
+        "ideals-placeholder": "Von welchen Prinzipien lässt du dich leiten? Welche Sache oder Überzeugung treibt dich zu Abenteuern an? Wofür würdest du kämpfen oder sterben? Drücke auf die Würfeln Schaltfläche, um aus Idealen zu wählen, die durch deinen Hintergrund vorgeschlagen werden.",
+        "ideals-placeholder-alt": "Von welchen Prinzipien lässt du dich leiten? Welche Sache oder Überzeugung treibt dich zu Abenteuern an? Wofür würdest du kämpfen oder sterben?",
+        "personal-characteristics": "Persönliche Eigenschaften",
+        "personality-traits": "Persönlichkeitsmerkmale",
+        "physical-characteristics": "Erscheinungsbild",
+        "physical-description": "Erscheinung",
+        "summary": {
+          "abilities": "stolz auf seine beeindruckende {first} und {second}",
+          "abilitiesDefault": "stolz auf seine beindruckenden Attribute",
+          "background": "Angefangen als {background},",
+          "backgroundDefault": "Angefangen als Abenteurer,",
+          "classRace": "ist dieser {race} {class}",
+          "classRaceDefault": "ist dieser unbekanntes Volk unbekannte Klasse",
+          "default": "Angefangen als Abenteurer, ist dieser unbekanntes Volk unbekannte Klasse stolz auf seine beindruckenden Attribute und beginnt das Abenteur.",
+          "equipment": "und beginnt das Abenteuer mit folgenden Gegenständen: {items}.",
+          "equipmentDefault": "und beginnt das Abenteuer."
+        },
+        "tooltip": "Vervollständige deine Charaktererschaffung",
+        "traits-placeholder": "Beschreibe die Persönlichkeit deines Charakters. Wie prägen seine Attribute seine Persönlichkeit? Ist er weise und nachdenklich oder charismatisch und extrovertiert? Drücke auf die Würfeln Schaltfläche, um aus den Persönlichkeitsmerkmalen auszuwählen, die durch deinen Hintergrund vorgeschlagen werden.",
+        "traits-placeholder-alt": "Beschreibe die Persönlichkeit deines Charakters. Wie prägen seine Attribute seine Persönlichkeit? Ist er weise und nachdenklich oder charismatisch und extrovertiert?"
+      },
+      "header-title": "Hero Mancer Creation Wizard",
+      "no-description": "Es konnte keine gültige Beschreibung für dieses Item geladen werden.",
+      "optionsReset": "Hero Mancer zurücksetzen! Versuchen wir es noch einmal!",
+      "optionsSaved": "Optionen gespeichert! Starte Hero Mancer neu, um dort weiterzumachen, wo du aufgehört hast!",
+      "race": {
+        "none": "Kein Volk verfügbar.",
+        "preamble": "Wähle das Volk deines Charakters aus den verfügbaren Optionen aus.",
+        "select-label": "Volk",
+        "select-placeholder": "Wähle ein Volk",
+        "tooltip": "Wähle das Volk für deinen Charakter"
+      },
+      "randomization-complete": "Charakter Zufallsgenerierung abgeschlossen!",
+      "randomize": "Zufällig",
+      "randomize-character": "Charakter zufällig ausfüllen",
+      "randomizing": "Fülle Charakter zufällig aus...",
+      "reset": "Zurücksetzen",
+      "reset-description": "Setze Hero Mancer zurück",
+      "save": "Für Später Speichern",
+      "save-description": "Charakter für später speichern",
+      "start": {
+        "character-art-label": "Charakterporträt",
+        "character-art-placeholder": "Wähle ein Charakterporträt",
+        "generate-random-name": "Generiere einen zufälligen Namen",
+        "name-label": "Charaktername",
+        "name-placeholder": "Wähle den Namen für deinen Charakter",
+        "player-assignment-label": "Spieler zuweisen",
+        "player-assignment-placeholder": "Wähle einen Spieler",
+        "player-avatar": "Spieler-Avatar",
+        "player-avatar-placeholder": "Wähle einen Spieler-Avatar",
+        "player-color": "Spieler-Farbe",
+        "player-color-placeholder": "Wähle eine Farbe für deinen Spieler",
+        "player-pronouns": "Spieler-Pronomen",
+        "player-pronouns-placeholder": "Wähle deine bevorzugten Pronomen",
+        "preamble": {
+          "conclusion": "Je mehr Details du angibst, desto lebendiger wird dein Charakter in der Welt der SL. Deine Reise beginnt jetzt!",
+          "description": "Dieser interaktive Charakterersteller führt dich durch die Erstellung deines perfekten Charakters für FoundryVTT.",
+          "features": "Während dieses Prozesses wählst du Attribute, Volk, Klasse und Hintergrund aus, wählst deine bevorzugte Methode zum Ermitteln von Werten aus, passt die Startausrüstung an und entwickelst die Persönlichkeit deines Charakters.",
+          "navigation": "Du kannst frei zwischen den Abschnitten navigieren – dein Fortschritt wird automatisch gespeichert. Verwende 'Für Später Speichern', um zu einem anderen Zeitpunkt fortzufahren.",
+          "title": "Willkommen bei Hero Mancer!"
+        },
+        "select-art": "Auswählen",
+        "token-art-label": "Spielfigur",
+        "token-art-placeholder": "Wähle ein Bild für die Figur",
+        "token-same-as-character": "Verwende dasselbe Bild für die Figur?",
+        "token-visibility-placeholder": "Wähle Anzeigestatus",
+        "tooltip": "Beginne mit der Erstellung deines Charakters"
+      },
+      "submit": "Einreichen",
+      "submit-description": "Reiche deinen Hero Mancer ein",
+      "tab-names": {
+        "abilities": "Attribute",
+        "background": "Hintergrund",
+        "class": "Klasse",
+        "equipment": "Ausrüstung",
+        "finalize": "Vervollständigen",
+        "race": "Volk",
+        "start": "Start"
+      },
+      "tabs": "Hero Mancer Registerkarten",
+      "title": "{components}"
+    },
+    "dialogs": {
+      "reroll": {
+        "cancel": "Abbrechen",
+        "chain-roll-label": "Wirf alle Attributswerte nacheinander",
+        "confirm": "Neu würfeln",
+        "content": "Ein oder mehrere Attributswerte haben bereits Werte. Möchtest du wirklich neu würfeln? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "title": "Werte neu würfeln?"
+      }
+    },
+    "equipment": {
+      "extracted-info": "Ausrüstung in der Beschreibung:",
+      "no-equipment-notice": "Da in der Beschreibung keine Daten zur Startausrüstung zu finden sind, bist du auf dich allein gestellt!"
+    },
+    "errors": {
+      "ability-roll-failed": "Attributswerte können nicht gewürfelt werden. Bitte versuche es mit einer anderen Würfelmethode oder lade die Anwendung neu und versuche es erneut.",
+      "actor-creation-failed": "Charakter konnte nicht erstellt werden. Bitte versuche es erneut.",
+      "advancement-process": "Beim Anwenden der Fortschritte deines Charakters ist ein Fehler aufgetreten. Dein Charakter ist möglicherweise unvollständig.",
+      "advancement-processing-failed": "Fehler beim anwenden der Fortschritte",
+      "advancement-timeout": "Der Fortschritt wurde abgebrochen. Bitte überprüfe, ob dein Charakterbogen vollständig ist.",
+      "art-picker-failed": "Die Auswahl der Charaktergrafiken konnte nicht geöffnet werden",
+      "avatar-picker-failed": "Fehler beim Öffnen der Auswahl für Spieler-Avatare",
+      "cache-error": "Fehler beim Laden der zwischengespeicherten Daten. Die Daten zur Charaktererstellung werden aktualisiert.",
+      "character-creation-failed": "Die Charaktererstellung ist fehlgeschlagen. Bitte stelle sicher, dass alle erforderlichen Felder ausgefüllt sind und dass du über die erforderlichen Berechtigungen zum Erstellen von Charakteren verfügst.",
+      "cleanup-failed": "Einige Ressourcen wurden nicht ordnungsgemäß bereinigt. Bei Problemen musst du die Seite möglicherweise aktualisieren.",
+      "description-update": "Die Beschreibung des Items konnte nicht aktualisiert werden.",
+      "document-preparation-failed": "{type} Dokumente konnten nicht vorbereitet werden: {error}",
+      "dropdown-initialization": "Die Dropdown-Optionen konnten nicht initialisiert werden.",
+      "equipment-rendering": "Beim Laden der Ausrüstung ist ein Fehler aufgetreten. Bitte versuche es mit einer anderen Auswahl oder aktualisiere die Anwendung.",
+      "event-handler-error": "Bei der Verarbeitung eines Ereignisses ist ein Fehler aufgetreten.",
+      "failed-compendium-retrieval": "Kompendien konnten nicht abgerufen werden: {type} {details}",
+      "fetch-fail": "Einige Dokumente konnten nicht abgerufen werden. Bitte überprüfe die Konsole auf Fehler.",
+      "form-submission": "Beim Absenden des Formulars ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+      "invalid-document-type": "Ungültiger Dokumenttyp angegeben",
+      "missing-ability-fields": "Fehlende erforderliche Attributswerte: {fields} ({count} Gesamt)",
+      "missing-background-fields": "Fehlende erforderliche Hintergrunddetails: {fields} ({count} Gesamt)",
+      "missing-basic-fields": "Fehlende erforderliche Basisfelder: {fields} ({count} Gesamt)",
+      "missing-equipment": "Folgende Auswahl enthält keine Daten zur Startausrüstung: {type}. Bitte melde dies dem Ersteller des Items, nicht Hero Mancer.",
+      "missing-mandatory-fields": "Benötigte Felder fehlen: {fields}",
+      "no-background": "Der ausgewählte Hintergrund konnte nicht gefunden werden.",
+      "no-class": "Die ausgewählte Klasse konnte nicht gefunden werden.",
+      "no-race": "Der ausgewählte Volk konnte nicht gefunden werden.",
+      "randomization-failed": "Zufälliger Charakter fehlgeschlagen",
+      "randomize-failed": "Die Optionen konnten nicht auf die Standardwerte zurückgesetzt werden. Bitte versuche, die Charaktererstellung zu schließen und erneut zu öffnen.",
+      "reset-options-failed": "Deine Optionen konnten nicht gespeichert werden. Bitte überprüfe, ob du über die erforderlichen Berechtigungen verfügst, und versuche es erneut.",
+      "roll-failed": "Der Attributswert konnte nicht ermittelt werden. Bitte versuche es erneut.",
+      "save-options-failed": "Deine Optionen konnten nicht gespeichert werden. Bitte versuche es erneut.",
+      "select-background": "Bitte wähle einen Hintergrund aus, bevor du einreichst.",
+      "select-class": "Bitte wähle eine Klasse aus, bevor du einreichst.",
+      "select-race": "Bitte wähle ein Volk aus, bevor du einreichst.",
+      "tab-navigation": "Beim Navigieren zur ausgewählten Registerkarte ist ein Fehler aufgetreten.",
+      "token-art-picker-failed": "Figurenbild auswahl konnte nicht geöffnet werden"
+    },
+    "info": {
+      "advancement-progress": "Verarbeitung {item} ({current}/{total})",
+      "all-advancements-complete": "Alle Fortschritte des Charakters wurden erfolgreich verarbeitet."
+    },
+    "settings": {
+      "ability-scores": {
+        "default": {
+          "hint": "Der Startwert für Attributswerte beim Erstellen eines neuen Charakters.",
+          "name": "Standard"
+        },
+        "header": "Grenzen für Attributswerte",
+        "invalid-point-buy": "Punktekauf Gesamtpunkte sind zu niedrig. Bei einer Mindestpunktzahl von {min} benötigst du mindestens {totalNeeded} Punkte.",
+        "invalid-range": "Ungültiger Bereich für Attributswerte. Bitte stelle sicher, dass Min ≤ Default ≤ Max.",
+        "invalid-standard-array": "Standardwerte {values} liegen außerhalb des zulässigen Bereichs ({min}-{max}).",
+        "max": {
+          "hint": "Der maximale Wert, der bei der Charaktererstellung für Attributswerte zulässig ist.",
+          "name": "Max"
+        },
+        "min": {
+          "hint": "Der minimalste Wert, der bei der Charaktererstellung für Attributswerte zulässig ist.",
+          "name": "Min"
+        },
+        "standard-array-adjusted": "Einige Standardwerte lagen außerhalb des zulässigen Bereichs ({min}-{max}) und wurden angepasst.",
+        "standard-array-fixed": "Die Werte der Standardwerte {original} lagen außerhalb des zulässigen Bereichs ({min}-{max}) und wurden automatisch angepasst."
+      },
+      "alignments": {
+        "hint": "Durch Kommas getrennte Liste von Gesinnungen, die für die Charaktererstellung zur Verfügung stehen.",
+        "name": "Verfügbare Gesinnungen"
+      },
+      "appearance-options": {
+        "header": "Erscheinungsbild Optionen"
+      },
+      "art-picker-root": {
+        "hint": "Das Hauptverzeichnis für die Bilder Auswahl",
+        "name": "Bilder Hauptverzeichnis"
+      },
+      "background-packs": {
+        "name": "Hintergrundkompendien"
+      },
+      "chained-rolls": {
+        "hint": "Wirf einen Wurf nach dem anderen, um einen vollständigen Charakter zu erstellen.",
+        "name": "Verkettete Würfe"
+      },
+      "character-options": {
+        "header": "Anpassungsoptionen"
+      },
+      "class-packs": {
+        "name": "Klassenkompendien"
+      },
+      "configure-compendiums": "Compendien konfigurieren",
+      "configure-customization": "Anpassung konfigurieren",
+      "configure-mandatory": "Pflichtfelder konfigurieren",
+      "configure-rolling": "Würfeloptionen Konfigurieren",
+      "custom-compendiums": {
+        "all-selected": "Es wurden keine Pakete ausgewählt! Alle verfügbaren {type} Kompendien wurden als Ausweichlösung ausgewählt.",
+        "background": "Hintergrund",
+        "backgrounds-label": "Hintergrundkompendien festlegen:",
+        "class": "Klasse",
+        "classes-label": "Klassenkompendien festlegen:",
+        "description": "Konfiguriere deine benutzerdefinierten Kompendien für Klassen, Völker und Hintergründe. Wenn du für eine Kategorie keine Kompendien auswählst, werden alle gültigen Kompendien als Fallback geladen.",
+        "dialog-error": "Dialog kann nicht gerendert werden, siehe Konsole.",
+        "error": "Dokumente konnten nicht aus dem Kompendium-Paket abgerufen werden: {pack}",
+        "error-saving": "Beim Speichern deiner Kompendium-Einstellungen ist ein Fehler aufgetreten. Bitte schau in der Konsole nach (F12).",
+        "form-saved": "Die Einstellungen des Kompendiums wurden gespeichert.",
+        "invalid-pack": "Ein oder mehrere Kompendienpakete sind nicht mehr gültig.",
+        "item": "Gegenstände",
+        "items-label": "Gegenständekompendien festlegen:",
+        "manage-backgrounds": "Hintergründe verwalten",
+        "manage-classes": "Klassen verwalten",
+        "manage-items": "Gegenstände verwalten",
+        "manage-races": "Völker verwalten",
+        "menu": {
+          "hint": "Lege fest, welche Kompendien Hero Mancer verwenden soll.",
+          "name": "Eigene Kompendien"
+        },
+        "no-valid-packs": "Es wurden keine gültigen Kompendien gefunden.",
+        "race": "Volk",
+        "races-label": "Volkskompendien festlegen:",
+        "save-error": "Konnte Fertig Schaltfläche nicht erstellen, siehe Konsole.",
+        "saved": "{type} Kompendium-Einstellungen wurden gespeichert.",
+        "select-all": "Alle auswählen",
+        "title": "Wähle {type} Kompendien!"
+      },
+      "custom-point-buy-total": {
+        "hint": "Gib die Gesamtpunktzahl an, wenn du keine Standardberechnungen verwendest.",
+        "name": "Eigene Punktekauf Summe"
+      },
+      "custom-roll-formula": {
+        "hint": "Gib die Würfelformel für die manuelle Generierung von Attributswerten an. Standard ist '4d6kh3'.",
+        "name": "Eigene Manuelle Würfelformel.",
+        "reset": "Eigene Würfelformel war leer, zurücksetzt auf standard: 4d6kh3"
+      },
+      "custom-standard-array": {
+        "hint": "Legt die Formel für die Standardwerte Generierung von Attributswerten fest. Standardwert ist 15,14,13,12,10,8",
+        "invalid-format": "Ungültiges Format: Bitte gib nur durch Kommas getrennte Zahlen ein.",
+        "name": "Eigene Standardwerte",
+        "reset-default": "Die eigenen Standardwerte wurde aufgrund einer ungültigen Länge auf die Ausgangswerte zurückgesetzt."
+      },
+      "customization": {
+        "error-art-picker": "Fehler bei der Auswahl des Speicherorts im Bild-Browsers. Bitte versuche es erneut.",
+        "error-context": "Fehler beim Laden der Anpassungseinstellungen. Standardwerte werden möglicherweise angezeigt.",
+        "error-saving": "Fehler beim Speichern der Einstellungen für die Zeichenanpassung.",
+        "menu": {
+          "hint": "Lege fest, welche Anpassungen Spieler verwenden können.",
+          "name": "Charakter Anpassung"
+        },
+        "save-error": "Einstellung konnte nicht gespeichert werden: {setting}. Vorherige Werte wurden übernommen.",
+        "saved": "Die Einstellungen zur Charakteranpassung wurden erfolgreich gespeichert."
+      },
+      "deities": {
+        "hint": "Durch Kommas getrennte Liste der verfügbaren Gottheiten in der Charaktererstellung.",
+        "name": "Verfügbare Gottheiten"
+      },
+      "dice-rolling": {
+        "error-context": "Fehler beim Laden der Würfeleigenschaften. Standardwerte werden verwendet.",
+        "error-saving": "Würfeleinstellungen können nicht gespeichert werden. Siehe Konsole und melde es dem Entwickler.",
+        "menu": {
+          "hint": "Lege Optionen für die Werte-Generierung fest.",
+          "name": "Attributswerte Generierung"
+        },
+        "need-roll-method": "Mindestens eine Methode zur Generierung von Attributswerten muss aktiviert sein, Änderungen werden abgelehnt.",
+        "saved": "Die Einstellungen für das Würfeln wurden gespeichert."
+      },
+      "dice-rolling-method": {
+        "hint": "Wähle aus, welche Rollmethoden deine Benutzer auswählen können.",
+        "manual-formula": "Manuell",
+        "name": "Attributswert Generierung",
+        "point-buy": "Punktekauf",
+        "standard-array": "Standardwerte"
+      },
+      "elkan": {
+        "hint": "Wenn du diese Einstellung aktivierst, wird die Kompatibilität mit Elkan5e sichergestellt. Bitte beachte, dass dadurch die Registerkarte Ausrüstung von Hero Mancer deaktiviert wird.",
+        "name": "Elkan5e Kompatibilität aktivieren?"
+      },
+      "enable": {
+        "hint": "Fügt eine Schaltfläche hinzu, um Hero Mancer auf der Akteure Registerkarte zu verwenden.",
+        "name": "Hero Mancer aktivieren?"
+      },
+      "eye-colors": {
+        "hint": "Durch Kommas getrennte Liste der Augenfarben, die für die zufällige Verteilung der Charaktere verwendet wird.",
+        "name": "Augenfarben"
+      },
+      "genders": {
+        "hint": "Durch Kommas getrennte Liste der Geschlechter, die für die zufällige Erstellung der Charaktere verwendet wird.",
+        "name": "Geschlechter"
+      },
+      "hair-colors": {
+        "hint": "Durch Kommas getrennte Liste von Haarfarben, die für die zufällige Erstellung der Charaktere verwendet werden.",
+        "name": "Haarfarben"
+      },
+      "item-packs": {
+        "name": "Gegenstands Kompendien"
+      },
+      "logger": {
+        "choices": {
+          "errors": "Fehler",
+          "off": "Aus",
+          "verbose": "Ausführlich",
+          "warnings": "Warnungen"
+        },
+        "hint": "Legt die Stufe der von Hero Mancer generierten Protokolle fest. Die Fehlerbehebung wird trotzdem alles abfangen. Empfohlen: Warnungen.",
+        "name": "Protokollierungsstufe"
+      },
+      "mandatory-fields": {
+        "core-fields-hint": "Kernfelder sind immer obligatorisch und können nicht deaktiviert werden, da sie für die Funktionalität unerlässlich sind.",
+        "error-context": "Fehler beim Laden der Einstellungen für Pflichtfelder. Standardwerte werden verwendet.",
+        "error-saving": "Fehler beim Speichern der Einstellungen für Pflichtfelder",
+        "groups": {
+          "abilities": "Schritt 5: Attribute",
+          "basic": "Grundeinstellungen",
+          "biography": "Schritt 7: Biografie",
+          "core": "Schritt 2-4: Quellen",
+          "details": "Charakterdetails",
+          "personality": "Persönlichkeitsmerkmale",
+          "physical": "Erscheinung",
+          "player": "Spieleranpassung",
+          "start": "Schritt 1: Start",
+          "token": "Figuranpassung"
+        },
+        "instructions": "Wähle aus, welche Felder bei der Charaktererstellung ausgefüllt werden müssen:",
+        "menu": {
+          "hint": "Lege fest, welche Felder ausgefüllt werden müssen, bevor ein Charakter eingereicht werden kann.",
+          "name": "Pflichtfelder"
+        },
+        "saved": "Pflichtfeldeinstellungen gespeichert"
+      },
+      "no-selection": "Es wurden keine Kompendien ausgewählt. Bitte wähle mindestens eines aus.",
+      "player-customization": {
+        "hint": "Erlaubt deinen Spielern, bei der Charaktererstellung einige Informationen festzulegen, wie z. B. Spielerfarbe, Pronomen und Avatar.",
+        "name": "Spieleranpassung zulassen"
+      },
+      "publish-wealth-rolls": {
+        "hint": "Wenn diese Option aktiviert ist, werden die Würfe zum Ermitteln des Startvermögens für alle Benutzer im Chat veröffentlicht.",
+        "name": "Startvermögen öffentlich würfeln"
+      },
+      "race-packs": {
+        "name": "Völkerpakete"
+      },
+      "randomize": {
+        "hint": "Erlaubt es Benutzern, Aspekte ihres Charaktererstellungsprozesses zufällig zu bestimmen. Nützlich für One Shots, zufallsspiele und unberechenbare Charaktere.",
+        "name": "Zufällige Erstellung erlauben?"
+      },
+      "reset-to-default": "Es wurde ein leeres Feld gefunden: {setting}! Auf Standardwert zurücksetzen.",
+      "roll-delay": {
+        "hint": "Steuert die Verzögerung (in Millisekunden) zwischen jedem Wurf, wenn das verkettete Würfeln verwendet wird. Niedrigere Werte beschleunigen den Vorgang, während höhere Werte die Nachverfolgung erleichtern. Diese Einstellung hat keine Auswirkungen, wenn du manuell mit physischen Würfeln würfelst.",
+        "name": "Verzögerung der Rollenanimation"
+      },
+      "skin-tones": {
+        "hint": "Durch Kommas getrennte Liste von Hauttönen, die für die zufällige Erstellung der Charaktere verwendet werden.",
+        "name": "Hauttöne"
+      },
+      "token-customization": {
+        "hint": "Erlaube deinen Spielern, einige Standard-Figuren-Einstellungen vorzunehmen, die normalerweise dem Spielleiter vorbehalten sind, wie z. B. den Status des Anzeigenamens, die Einstellungen für den dynamischen Figur-Ring und die Anzeigeleisten.",
+        "name": "Erlaube eigene Spielfiguren"
+      },
+      "troubleshooter": {
+        "copy-error": "Bericht konnte nicht in die Zwischenablage kopiert werden.",
+        "copy-success": "Fehlerbehebung in die Zwischenablage kopiert",
+        "copy-to-clipboard": "In Zwischenablage kopieren",
+        "discord": "Discord beitreten",
+        "error-context": "Fehler beim Laden der Fehlerbehebungsdaten.",
+        "error-report": "Fehler beim Erstellen des Fehlerberichts. Bitte erneut versuchen.",
+        "export": "Exportiere Fehlerbehebungsbericht",
+        "export-error": "Fehler beim Exportieren des Fehlerbehebungsberichts.",
+        "export-success": "Fehlerbehebungsbericht exportiert als {filename}",
+        "generate-report": "Öffne Fehlerbehebung",
+        "github": "Problem melden",
+        "link-error": "Externer Link konnte nicht geöffnet werden.",
+        "menu": {
+          "hint": "Erstelle einen Fehlerbehebungsbericht, um bei Problemen zu helfen.",
+          "name": "Fehlerbehebungsbericht"
+        },
+        "notes": "Der Fehlerbehebungsbericht enthält alle relevanten Informationen, die für den Start des Bug-Squashing-Prozesses benötigt werden. Mit den untenstehenden Schaltflächen kannst du diese Ausgabe als Datei speichern oder in deine Zwischenablage kopieren. Du kannst dem Discord beitreten oder ein Issue auf Github erstellen. Die Kommunikation für dieses Modul ist auf Englisch.",
+        "save-to-file": "Download",
+        "title": "Troubleshooter"
+      }
+    },
+    "unknown": "{type} unbekannt",
+    "warnings": {
+      "advancement-failed": "Fortschritt von {item} konnte nicht angewendet werden. Deinem Charakter fehlen möglicherweise einige Merkmale.",
+      "advancement-timeout": "Der Fortschrittsprozess für {item} dauerte zu lange und wurde übersprungen.",
+      "currency-update-failed": "Die Währung des Charakters konnte nicht aktualisiert werden.",
+      "equipment-creation-failed": "Einige Ausrüstungsgegenstände konnten nicht erstellt werden.",
+      "equipment-extraction-failed": "Hinweis: Das Dokument enthält Informationen zur Ausrüstung, die jedoch aufgrund des Formats nicht automatisch extrahiert werden konnten.",
+      "equipment-processing-failed": "Einige Items der Ausrüstung konnten nicht korrekt verarbeitet werden.",
+      "favorites-processing-failed": "Favoriten-Gegenstände konnten nicht richtig verarbeitet werden.",
+      "no-packs-found": "Es wurden keine Kompendien gefunden für {type}",
+      "partial-cleanup": "Einige Ressourcen konnten nicht ordnungsgemäß bereinigt werden.",
+      "select-background": "Du musst zuerst einen gültigen Hintergrund auswählen.",
+      "some-advancements-failed": "Einige Fortschritte scheiterten: {failed}. Erfolgreich: {succeeded}."
+    },
+    "_comment": "Aufgrund der besseren Lesbarkeit wird in der Übersetzung das generische Maskulinum verwendet. Gemeint sind jedoch immer alle Geschlechter!"
+  }
+}
