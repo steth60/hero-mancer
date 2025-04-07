@@ -128,6 +128,10 @@
   box-shadow: 0 0 5px 5px #ffd70099;
 }
 
+.ability-dropdown option.hm-used-elsewhere {
+  background-color: var(--user-color);
+}
+
 /* Primary ability tooltip */
 .ability-label.primary-ability {
   position: relative;

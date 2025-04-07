@@ -1107,49 +1107,48 @@ export class DOMManager {
    * @static
    */
   static handleStandardArrayMode(abilityDropdowns, selectedValues) {
-    // Get the standard array from the first dropdown's options
+    // Count value occurrences in the standard array
     const valueOccurrences = {};
-    const firstDropdown = abilityDropdowns[0];
-    const availableOptions = Array.from(firstDropdown.options).filter((opt) => opt.value && opt.value !== '');
-
-    // Count occurrences of each value in the standard array
-    availableOptions.forEach((option) => {
-      const value = option.value;
-      if (value) valueOccurrences[value] = (valueOccurrences[value] || 0) + 1;
-    });
-
-    // Count current selections - use actual dropdown values if selected values are empty
-    const selectedCounts = {};
-    selectedValues.forEach((value, index) => {
-      // If value is empty, get the actual dropdown value
-      const effectiveValue = value || abilityDropdowns[index].value;
-      if (effectiveValue) selectedCounts[effectiveValue] = (selectedCounts[effectiveValue] || 0) + 1;
-    });
-
-    // Update each dropdown
-    abilityDropdowns.forEach((dropdown, index) => {
-      const currentValue = selectedValues[index] || dropdown.value;
-      const valuesToDisable = {};
-
-      // For each selected value, determine how many instances to disable
-      Object.entries(selectedCounts).forEach(([value, count]) => {
-        valuesToDisable[value] = count;
-        // Don't disable the current selection
-        if (value === currentValue) {
-          valuesToDisable[value]--;
+    if (abilityDropdowns.length > 0) {
+      const firstDropdown = abilityDropdowns[0];
+      Array.from(firstDropdown.options).forEach((option) => {
+        if (option.value) {
+          valueOccurrences[option.value] = (valueOccurrences[option.value] || 0) + 1;
         }
       });
+    }
 
-      // Apply disabling to options
+    // Count current selections of each value
+    const selectedCounts = {};
+    selectedValues.forEach((value) => {
+      if (!value) return;
+      selectedCounts[value] = (selectedCounts[value] || 0) + 1;
+    });
+
+    // Update options to show used values
+    abilityDropdowns.forEach((dropdown, dropdownIndex) => {
       Array.from(dropdown.options).forEach((option) => {
-        const optionValue = option.value;
-        if (!optionValue) return; // Skip empty option
+        // Always ensure no disabling
+        option.disabled = false;
 
-        if (valuesToDisable[optionValue] > 0) {
-          option.disabled = true;
-          valuesToDisable[optionValue]--;
-        } else {
-          option.disabled = false;
+        // Remove existing class first
+        option.classList.remove('hm-used-elsewhere');
+
+        // Skip empty option
+        if (!option.value) return;
+
+        // Get the value and its occurrences
+        const value = option.value;
+        const maxOccurrences = valueOccurrences[value] || 0;
+        const selectedCount = selectedCounts[value] || 0;
+
+        // Only mark as "used elsewhere" if all available instances are used
+        // AND this dropdown isn't showing one of those instances
+        const isUsedUp = selectedCount >= maxOccurrences;
+        const isSelectedHere = dropdown.value === value;
+
+        if (isUsedUp && !isSelectedHere) {
+          option.classList.add('hm-used-elsewhere');
         }
       });
     });

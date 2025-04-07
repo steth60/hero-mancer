@@ -677,13 +677,59 @@ export class StatRoller {
    * @static
    */
   static #handleStandardArrayDropdown(dropdown, index, abilityDropdowns, selectedValues) {
-    // Update tracking array with new value
-    selectedValues[index] = dropdown.value;
+    const newValue = dropdown.value;
 
-    // Apply standard array handling
+    // Update tracking array with new value
+    selectedValues[index] = newValue;
+
+    // Count value occurrences in the standard array
+    const valueOccurrences = this.#countValueOccurrences(abilityDropdowns);
+
+    // Count current selections of each value
+    const selectedCounts = {};
+    selectedValues.forEach((value, idx) => {
+      if (!value) return;
+      selectedCounts[value] = (selectedCounts[value] || 0) + 1;
+    });
+
+    // If the selected value exceeds available occurrences, clear one
+    if (newValue && selectedCounts[newValue] > valueOccurrences[newValue]) {
+      // Find the first other dropdown with this value (excluding current one)
+      for (let i = 0; i < abilityDropdowns.length; i++) {
+        if (i !== index && abilityDropdowns[i].value === newValue) {
+          // Clear this dropdown
+          abilityDropdowns[i].value = '';
+          selectedValues[i] = '';
+          break; // Only clear one
+        }
+      }
+    }
+
+    // Apply standard array handling to update the UI with visual indicators
     requestAnimationFrame(() => {
       DOMManager.handleStandardArrayMode(abilityDropdowns, selectedValues);
     });
+  }
+
+  /**
+   * Count the occurrences of each value in the standard array
+   * @param {NodeList} abilityDropdowns - Ability dropdown elements
+   * @returns {Object} Map of values to occurrence counts
+   * @private
+   * @static
+   */
+  static #countValueOccurrences(abilityDropdowns) {
+    const valueOccurrences = {};
+    // Use the first dropdown to get all available options
+    if (abilityDropdowns.length > 0) {
+      const firstDropdown = abilityDropdowns[0];
+      Array.from(firstDropdown.options).forEach((option) => {
+        if (option.value) {
+          valueOccurrences[option.value] = (valueOccurrences[option.value] || 0) + 1;
+        }
+      });
+    }
+    return valueOccurrences;
   }
 
   /**
