@@ -1,5 +1,6 @@
 {
   "hm": {
+    "_comment": "Aufgrund der besseren Lesbarkeit wird in der Übersetzung das generische Maskulinum verwendet. Gemeint sind jedoch immer alle Geschlechter!",
     "actortab-button": {
       "creating": "Hero Mancer erstellt deinen Charakter! ... Dies kann einen Moment dauern.",
       "hint": "Öffne Hero Mancer",
@@ -42,7 +43,7 @@
         "roll-dice": "Würfle für Attribute",
         "score-label": "Attributswerte",
         "score-placeholder": "Eintragen",
-      "select-method": "Wähle Wertemethode",
+        "select-method": "Wähle Wertemethode",
         "select-placeholder": "Wähle",
         "select-value": "Wähle einen Wert",
         "summary": "{action} {first} und {second}",
@@ -458,7 +459,7 @@
         "hint": "Durch Kommas getrennte Liste von Hauttönen, die für die zufällige Erstellung der Charaktere verwendet werden.",
         "name": "Hauttöne"
       },
-        "standard-array-swap-mode": {
+      "standard-array-swap-mode": {
         "hint": "Wenn diese Option aktiviert ist, werden bei der Auswahl eines bereits verwendeten Werts die Werte zwischen den Attributen ausgetauscht, anstatt die vorherige Auswahl zu löschen. Dies ist hilfreich, wenn du deine Attributswerte neu anordnen möchtest.",
         "name": "Standardwerte Tauschmodus"
       },
@@ -501,7 +502,6 @@
       "partial-cleanup": "Einige Ressourcen konnten nicht ordnungsgemäß bereinigt werden.",
       "select-background": "Du musst zuerst einen gültigen Hintergrund auswählen.",
       "some-advancements-failed": "Einige Fortschritte scheiterten: {failed}. Erfolgreich: {succeeded}."
-    },
-    "_comment": "Aufgrund der besseren Lesbarkeit wird in der Übersetzung das generische Maskulinum verwendet. Gemeint sind jedoch immer alle Geschlechter!"
+    }
   }
 }
