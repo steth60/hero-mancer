@@ -408,9 +408,8 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /**
-   * Actions to perform when the application is closed
-   * Cleans up resources and references
-   * @returns {Promise<boolean>} Returns true to allow the application to close
+   * Clean up embedded journals before closing
+   * @returns {Promise<boolean>} True if cleanup was successful
    * @protected
    * @override
    */
@@ -418,6 +417,21 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     // Perform cleanup before the application is removed from DOM
     await super._preClose();
     HM.log(3, 'Preparing to close application');
+
+    // Close any active journal embeds
+    const embedContainers = this.element.querySelectorAll('.journal-container, .journal-embed-container');
+    for (const container of embedContainers) {
+      try {
+        // Get the data attribute that might store the embed instance
+        const embedInstanceId = container.dataset.embedId;
+        if (embedInstanceId && this[embedInstanceId]) {
+          this[embedInstanceId].close();
+        }
+        container.innerHTML = '';
+      } catch (error) {
+        HM.log(2, `Error closing journal embed: ${error.message}`);
+      }
+    }
 
     // Clean up all DOM interactions with a single call
     DOMManager.cleanup();
@@ -739,32 +753,36 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  // In your Hero Mancer application code
-
   /**
    * Embed a journal page in the description section
    * @param {string} pageId - The ID of the journal page to embed
+   * @param {string} [itemName] - Optional name of the item for matching
    * @param {string} [anchor] - Optional anchor to scroll to
+   * @returns {Promise<JournalPageEmbed|null>} The embedded journal or null if failed
    */
-  async embedJournalPage(pageId, anchor) {
-    // Get or create the container
-    let container = this.element.find('.journal-embed-container')[0];
-    if (!container) {
-      container = document.createElement('div');
-      container.classList.add('journal-embed-container');
-      this.element.find('.description-container').append(container);
-    }
+  async embedJournalPage(pageId, itemName, anchor) {
+    try {
+      // Get or create the container
+      let container = this.element.find('.journal-embed-container')[0];
+      if (!container) {
+        container = document.createElement('div');
+        container.classList.add('journal-embed-container');
+        this.element.find('.description-container').append(container);
+      }
 
-    // Create and render the embed
-    this.journalEmbed = new JournalPageEmbed(container, {
-      scrollable: true,
-      height: '400px' // Adjust as needed
-    });
+      // Create and render the embed
+      const journalEmbed = new JournalPageEmbed(container, {});
 
-    await this.journalEmbed.render(pageId);
+      const result = await journalEmbed.render(pageId, itemName);
 
-    if (anchor) {
-      this.journalEmbed.goToAnchor(anchor);
+      if (result && anchor) {
+        journalEmbed.goToAnchor(anchor);
+      }
+
+      return result;
+    } catch (error) {
+      HM.log(1, `Error embedding journal page: ${error.message}`, error);
+      return null;
     }
   }
 }

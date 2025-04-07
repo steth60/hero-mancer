@@ -6,6 +6,10 @@ export class JournalPageEmbed {
   /**
    * @param {HTMLElement} container - The container element where the journal page will be embedded
    * @param {object} options - Configuration options
+   * @param {boolean} [options.editable=false] - Whether the journal page is editable
+   * @param {string|number} [options.height='auto'] - Height of the embedded content
+   * @param {string|number} [options.width='100%'] - Width of the embedded content
+   * @param {boolean} [options.scrollable=true] - Whether the content is scrollable
    */
   constructor(container, options = {}) {
     this.container = container;
@@ -27,172 +31,218 @@ export class JournalPageEmbed {
    * Render a journal page inside the container
    * @param {string} pageId - The ID of the journal page to embed
    * @param {string} [itemName] - Optional name of the item (class/race/background) to match
-   * @returns {Promise<JournalPageEmbed|null>}
+   * @returns {Promise<JournalPageEmbed|null>} This instance or null if rendering failed
    */
   async render(pageId, itemName = null) {
     // Log that we're attempting to render a journal page
     HM.log(3, `Attempting to render journal page ${pageId}${itemName ? ` for ${itemName}` : ''}`);
 
-    // Clear container while we load
-    this.container.innerHTML = `<div class="journal-loading"><i class="fas fa-spinner fa-spin"></i>${game.i18n.localize('hm.app.journal-loading')}</div>`;
+    // Show loading indicator
+    this.#showLoadingIndicator();
 
     try {
-      let journalDoc = null;
-      let page = null;
+      // Load the journal document
+      const journalData = await this.#loadJournalDocument(pageId, itemName);
 
-      // Check if this is a compendium reference
-      if (pageId.includes('.')) {
-        HM.log(3, `Parsing compendium reference: ${pageId}`);
-        try {
-          // Try to load it as a direct UUID
-          journalDoc = await fromUuid(`Compendium.${pageId}`);
-          HM.log(3, 'Loaded document:', journalDoc);
-
-          // If we got a JournalEntry (not a page)
-          if (journalDoc && journalDoc.documentName === 'JournalEntry') {
-            if (journalDoc.pages.size > 0) {
-              // If we have an item name, try to find a matching page
-              if (itemName) {
-                // Normalize itemName for better matching
-                const normalizedName = this._normalizeItemName(itemName);
-
-                // Try to find a matching page
-                page = this._findMatchingPage(journalDoc.pages, normalizedName);
-
-                if (page) {
-                  HM.log(3, `Found matching page "${page.name}" for ${itemName}`);
-                }
-              }
-
-              // If no matching page found, fall back to the first page
-              if (!page) {
-                page = journalDoc.pages.contents[0];
-                HM.log(3, `Using first page from journal entry: ${page.name}`);
-              }
-            }
-          } else if (journalDoc && journalDoc.documentName === 'JournalEntryPage') {
-            // We already have a page
-            page = journalDoc;
-          }
-        } catch (err) {
-          HM.log(2, `Error loading compendium page: ${err}`);
-        }
-      }
-
-      if (!page) {
+      if (!journalData.page) {
         HM.log(2, `Journal page ${pageId} not found`);
+        this.#showErrorMessage('Journal page not found');
         return null;
       }
 
-      HM.log(3, 'Page to render:', page);
+      // Render the content based on page type
+      await this.#renderPageContent(journalData.page);
 
-      // For simple text pages, render the content directly
-      if (page.type === 'text' && page.text?.content) {
-        this.container.innerHTML = '';
-
-        const contentDiv = document.createElement('div');
-        contentDiv.classList.add('journal-page-content');
-        contentDiv.innerHTML = await TextEditor.enrichHTML(page.text.content);
-
-        this.container.appendChild(contentDiv);
-        this.pageId = page.id;
-
-        HM.log(3, `Text page ${page.id} rendered directly`);
-        return this;
-      }
-
-      // For other page types, use the sheet approach
-      try {
-        const sheetClass = page._getSheetClass();
-        this.sheet = new sheetClass(page, { editable: this.options.editable });
-        this.pageId = page.id;
-
-        // Prepare the container
-        this.container.classList.add('journal-page-embed');
-        if (this.options.scrollable) {
-          this.container.classList.add('scrollable');
-        }
-
-        // Render the sheet content
-        const data = await this.sheet.getData();
-        const view = await this.sheet._renderInner(data);
-
-        // Clear and add the content
-        this.container.innerHTML = '';
-
-        // Handle the view properly based on what _renderInner returns
-        if (view instanceof jQuery) {
-          // If it's a jQuery object, append it directly
-          view.appendTo(this.container);
-        } else if (view instanceof HTMLElement || view instanceof DocumentFragment) {
-          // If it's a DOM element or fragment, append it
-          this.container.appendChild(view);
-        } else if (typeof view === 'string') {
-          // If it's an HTML string, set it as innerHTML
-          this.container.innerHTML = view;
-        } else {
-          // Log what we got and show an error
-          HM.log(2, 'Unexpected return type from _renderInner:', typeof view);
-          this.container.innerHTML = '<div class="notification error">Error rendering content: Unexpected format</div>';
-          return null;
-        }
-
-        // Activate listeners
-        this.sheet._activateCoreListeners($(this.container));
-        this.sheet.activateListeners($(this.container));
-
-        // Handle TOC if applicable
-        if (this.sheet.toc) {
-          this._renderHeadings();
-        }
-
-        // Signal completion
-        this.sheet._callHooks('render', $(this.container), data);
-
-        HM.log(3, `Journal page ${this.pageId} rendered successfully`);
-        return this;
-      } catch (error) {
-        HM.log(1, `Error with sheet rendering: ${error.message}`);
-
-        // Fallback for failures in the sheet approach
-        this.container.innerHTML = `
-        <div class="notification warning">Simplified view of ${page.name}</div>
-        <h2>${page.name}</h2>
-        <div class="journal-content">${page.text?.content || 'No content available'}</div>
-      `;
-
-        return this;
-      }
+      this.pageId = journalData.page.id;
+      return this;
     } catch (error) {
-      HM.log(1, `Error rendering journal page ${pageId}: ${error.message}`);
-      this.container.innerHTML = `<div class="notification error">Error rendering journal page: ${error.message}</div>`;
+      HM.log(1, `Error rendering journal page ${pageId}: ${error.message}`, error);
+      this.#showErrorMessage(`Error rendering journal page: ${error.message}`);
       return null;
     }
   }
 
   /**
-   * Render headings from the page's table of contents
+   * Show loading indicator in the container
    * @private
    */
-  _renderHeadings() {
-    if (!this.sheet.toc || Object.keys(this.sheet.toc).length === 0) return;
-
-    const headings = Object.values(this.sheet.toc);
-    headings.forEach(({ element, slug }) => {
-      if (element) element.dataset.anchor = slug;
-    });
+  #showLoadingIndicator() {
+    this.container.innerHTML = `
+      <div class="journal-loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        ${game.i18n.localize('hm.app.journal-loading')}
+      </div>`;
   }
 
   /**
-   * Normalize an item name for matching
-   * @param {string} name - The item name to normalize
-   * @returns {string} - Normalized name
+   * Show error message in the container
+   * @param {string} message - Error message to display
    * @private
    */
-  _normalizeItemName(name) {
-    if (!name) return '';
-    // Remove content in parentheses
-    return name.split('(')[0].trim();
+  #showErrorMessage(message) {
+    this.container.innerHTML = `
+      <div class="notification error">${message}</div>`;
+  }
+
+  /**
+   * Load journal document from pageId
+   * @param {string} pageId - Journal page ID/reference
+   * @param {string} [itemName] - Optional item name for matching
+   * @returns {Promise<{journalDoc: JournalEntry|null, page: JournalEntryPage|null}>}
+   * @private
+   */
+  async #loadJournalDocument(pageId, itemName) {
+    let journalDoc = null;
+    let page = null;
+
+    // Check if this is a compendium reference
+    if (pageId.includes('.')) {
+      try {
+        // Try to load it as a direct UUID
+        journalDoc = await fromUuid(`Compendium.${pageId}`);
+
+        if (journalDoc?.documentName === 'JournalEntry') {
+          // If we have a journal entry but need a specific page
+          if (journalDoc.pages.size > 0) {
+            page = (await this.#findMatchingPage(journalDoc.pages, itemName)) || journalDoc.pages.contents[0];
+          }
+        } else if (journalDoc?.documentName === 'JournalEntryPage') {
+          // We already have a page
+          page = journalDoc;
+        }
+      } catch (err) {
+        HM.log(2, `Error loading compendium page: ${err.message}`);
+        throw new Error(`Failed to load journal page: ${err.message}`);
+      }
+    }
+
+    return { journalDoc, page };
+  }
+
+  /**
+   * Render the content of a journal page
+   * @param {JournalEntryPage} page - The page to render
+   * @returns {Promise<void>}
+   * @private
+   */
+  async #renderPageContent(page) {
+    // For simple text pages, render the content directly
+    if (page.type === 'text' && page.text?.content) {
+      await this.#renderTextPageContent(page);
+      return;
+    }
+
+    // For other page types, use the sheet approach
+    await this.#renderPageWithSheet(page);
+  }
+
+  /**
+   * Render a text page directly
+   * @param {JournalEntryPage} page - The page to render
+   * @returns {Promise<void>}
+   * @private
+   */
+  async #renderTextPageContent(page) {
+    this.container.innerHTML = '';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('journal-page-content');
+    contentDiv.innerHTML = await TextEditor.enrichHTML(page.text.content);
+
+    this.container.appendChild(contentDiv);
+    HM.log(3, `Text page ${page.id} rendered directly`);
+  }
+
+  /**
+   * Render a page using its sheet
+   * @param {JournalEntryPage} page - The page to render
+   * @returns {Promise<void>}
+   * @private
+   */
+  async #renderPageWithSheet(page) {
+    try {
+      const sheetClass = page._getSheetClass();
+      this.sheet = new sheetClass(page, { editable: this.options.editable });
+
+      // Prepare the container
+      this.#prepareContainer();
+
+      // Render the sheet content
+      const data = await this.sheet.getData();
+      const view = await this.sheet._renderInner(data);
+
+      // Clear and add the content
+      this.container.innerHTML = '';
+      this.#appendSheetContent(view);
+
+      // Activate listeners
+      this.#activateSheetListeners();
+
+      // Handle TOC if applicable
+      if (this.sheet.toc) {
+        this._renderHeadings();
+      }
+
+      // Signal completion
+      this.sheet._callHooks('render', $(this.container), data);
+
+      HM.log(3, `Journal page ${this.pageId} rendered successfully with sheet`);
+    } catch (error) {
+      HM.log(1, `Error with sheet rendering: ${error.message}`);
+      this.#renderFallbackContent(page);
+    }
+  }
+
+  /**
+   * Prepare the container for sheet rendering
+   * @private
+   */
+  #prepareContainer() {
+    this.container.classList.add('journal-page-embed');
+    if (this.options.scrollable) {
+      this.container.classList.add('scrollable');
+    }
+  }
+
+  /**
+   * Append sheet content to the container
+   * @param {jQuery|HTMLElement|DocumentFragment|string} view - Content to append
+   * @private
+   */
+  #appendSheetContent(view) {
+    if (view instanceof jQuery) {
+      view.appendTo(this.container);
+    } else if (view instanceof HTMLElement || view instanceof DocumentFragment) {
+      this.container.appendChild(view);
+    } else if (typeof view === 'string') {
+      this.container.innerHTML = view;
+    } else {
+      HM.log(2, 'Unexpected return type from _renderInner:', typeof view);
+      this.container.innerHTML = '<div class="notification error">Error rendering content: Unexpected format</div>';
+    }
+  }
+
+  /**
+   * Activate sheet listeners
+   * @private
+   */
+  #activateSheetListeners() {
+    if (!this.sheet) return;
+    this.sheet._activateCoreListeners($(this.container));
+    this.sheet.activateListeners($(this.container));
+  }
+
+  /**
+   * Render fallback content when sheet rendering fails
+   * @param {JournalEntryPage} page - The page that failed to render
+   * @private
+   */
+  #renderFallbackContent(page) {
+    this.container.innerHTML = `
+      <div class="notification warning">Simplified view of ${page.name}</div>
+      <h2>${page.name}</h2>
+      <div class="journal-content">${page.text?.content || 'No content available'}</div>
+    `;
   }
 
   /**
@@ -202,101 +252,78 @@ export class JournalPageEmbed {
    * @returns {JournalEntryPage|null} - Matching page or null
    * @private
    */
-  _findMatchingPage(pages, itemName) {
-    if (!pages || pages.size === 0 || !itemName) return null;
+  async #findMatchingPage(pages, itemName) {
+    if (!pages?.size || !itemName) return null;
 
-    const normalizedItemName = itemName.toLowerCase();
-    const specialRaces = ['elf', 'gnome', 'tiefling']; // Races that need special handling
-    const isSpecialRace = specialRaces.some((race) => normalizedItemName.includes(race.toLowerCase()));
+    const normalizedItemName = this.#normalizeItemName(itemName);
 
-    HM.log(3, `JournalPageEmbed: Looking for page matching "${itemName}" among ${pages.size} pages`);
+    HM.log(3, `Finding page matching "${itemName}" among ${pages.size} pages`);
 
-    // Log available pages for debugging
-    const pageNames = Array.from(pages).map((p) => p.name);
-    HM.log(3, `JournalPageEmbed: Available pages: ${pageNames.join(', ')}`);
+    // Create a prioritized list of matching strategies
+    const matchStrategies = [
+      // 1. Exact case-sensitive match
+      (page) => page.name === itemName,
 
-    // Create a filtered list excluding art handouts
-    const filteredPages = Array.from(pages).filter((p) => !p.name.toLowerCase().includes('handout') && !p.name.toLowerCase().includes('art'));
+      // 2. Case-insensitive exact match
+      (page) => page.name.toLowerCase() === normalizedItemName,
+
+      // 3. Base race match for special races
+      (page) => {
+        const baseRaceName = this.#getBaseRaceName(itemName);
+        return baseRaceName && page.name.toLowerCase() === baseRaceName.toLowerCase();
+      },
+
+      // 4. Substantial partial matches
+      (page) => {
+        const pageName = page.name.toLowerCase();
+        if (pageName.length < 3) return false; // Skip very short names
+
+        // Either page contains item name or item name contains page name
+        return (pageName.includes(normalizedItemName) && normalizedItemName.length > 3) || (normalizedItemName.includes(pageName) && pageName.length > 3);
+      }
+    ];
+
+    // Filter out art handouts first
+    const filteredPages = Array.from(pages).filter((page) => !page.name.toLowerCase().includes('handout') && !page.name.toLowerCase().includes('art'));
 
     if (filteredPages.length < pages.size) {
-      HM.log(3, `JournalPageEmbed: Filtered out ${pages.size - filteredPages.length} art/handout pages`);
+      HM.log(3, `Filtered out ${pages.size - filteredPages.length} art/handout pages`);
     }
 
-    // FIRST PRIORITY: Exact match (case-sensitive)
-    let match = filteredPages.find((p) => p.name === itemName);
-    if (match) {
-      HM.log(3, `JournalPageEmbed: Found exact case-sensitive match "${match.name}"`);
-      return match;
-    }
-
-    // SECOND PRIORITY: Case-insensitive exact match
-    match = filteredPages.find((p) => p.name.toLowerCase() === normalizedItemName);
-    if (match) {
-      HM.log(3, `JournalPageEmbed: Found exact case-insensitive match "${match.name}"`);
-      return match;
-    }
-
-    // THIRD PRIORITY: For special races, check base race name
-    if (isSpecialRace) {
-      const baseRaceName = this._getBaseRaceName(itemName);
-      if (baseRaceName) {
-        match = filteredPages.find((p) => p.name.toLowerCase() === baseRaceName.toLowerCase());
-        if (match) {
-          HM.log(3, `JournalPageEmbed: Found base race match "${match.name}" for "${itemName}"`);
-          return match;
-        }
+    // Try each strategy in order until we find a match
+    for (const strategy of matchStrategies) {
+      const match = filteredPages.find(strategy);
+      if (match) {
+        HM.log(3, `Found matching page "${match.name}" for "${itemName}"`);
+        return match;
       }
     }
 
-    // FOURTH PRIORITY: Substantial partial matches (avoid short-name false positives)
-    for (const page of filteredPages) {
-      const pageName = page.name.toLowerCase();
-
-      // Skip very short page names to avoid matching with things like "A" in "Spells A-Z"
-      if (pageName.length < 3) continue;
-
-      // Substantial content match
-      if (pageName.includes(normalizedItemName) && normalizedItemName.length > 3) {
-        HM.log(3, `JournalPageEmbed: Found partial match "${page.name}" containing "${itemName}"`);
-        return page;
-      }
-
-      if (normalizedItemName.includes(pageName) && pageName.length > 3) {
-        HM.log(3, `JournalPageEmbed: Found partial match "${page.name}" contained in "${itemName}"`);
-        return page;
+    // If no match in filtered pages, try the full set as a last resort
+    HM.log(3, 'No match in filtered pages, trying full set as fallback');
+    for (const strategy of matchStrategies) {
+      const match = Array.from(pages).find(strategy);
+      if (match) {
+        HM.log(3, `Found fallback match "${match.name}" for "${itemName}"`);
+        return match;
       }
     }
 
-    // If nothing found in filtered pages, try the full set as a fallback
-    HM.log(3, 'JournalPageEmbed: No match in filtered pages, trying full set as fallback');
-    return this._findFallbackMatch(pages, itemName);
+    HM.log(3, `No matching page found for "${itemName}"`);
+    return null;
   }
 
   /**
-   * Fallback matching logic for when no match is found in filtered pages
-   * @param {Collection} pages - Collection of pages to search
-   * @param {string} itemName - Item name to match against
-   * @returns {JournalEntryPage|null} - Matching page or null
+   * Normalize an item name for matching
+   * @param {string} name - The item name to normalize
+   * @returns {string} - Normalized name
    * @private
    */
-  _findFallbackMatch(pages, itemName) {
-    const normalizedItemName = itemName.toLowerCase();
+  #normalizeItemName(name) {
+    if (!name) return '';
 
-    // Try exact match first
-    let match = pages.find((p) => p.name.toLowerCase() === normalizedItemName);
-    if (match) return match;
-
-    // Try base name for special races
-    const specialRaces = ['elf', 'gnome', 'tiefling'];
-    if (specialRaces.some((race) => normalizedItemName.includes(race.toLowerCase()))) {
-      const baseRaceName = this._getBaseRaceName(itemName);
-      if (baseRaceName) {
-        match = pages.find((p) => p.name.toLowerCase() === baseRaceName.toLowerCase());
-        if (match) return match;
-      }
-    }
-
-    return null;
+    // Remove content in parentheses
+    return name.split('(')[0].trim().toLowerCase();
   }
 
   /**
@@ -305,30 +332,45 @@ export class JournalPageEmbed {
    * @returns {string|null} - Base race name or null
    * @private
    */
-  _getBaseRaceName(raceName) {
+  #getBaseRaceName(raceName) {
     if (!raceName) return null;
+
+    // List of special races that need special handling
+    const specialRaces = ['elf', 'gnome', 'tiefling', 'dwarf', 'halfling'];
+    const lowerName = raceName.toLowerCase();
+
+    // Only proceed for special races
+    if (!specialRaces.some((race) => lowerName.includes(race))) {
+      return null;
+    }
 
     // Handle comma format: "Elf, High" -> "Elf"
     if (raceName.includes(',')) {
       return raceName.split(',')[0].trim();
     }
 
-    // Handle space format
-    const lowerName = raceName.toLowerCase();
-
-    if (lowerName.includes('elf') && raceName.includes(' ')) {
-      return 'Elf';
-    }
-
-    if (lowerName.includes('gnome') && raceName.includes(' ')) {
-      return 'Gnome';
-    }
-
-    if (lowerName.includes('tiefling') && raceName.includes(' ')) {
-      return 'Tiefling';
+    // Handle space format by extracting the first word for known races
+    for (const race of specialRaces) {
+      if (lowerName.includes(race) && raceName.includes(' ')) {
+        // Capitalize the first letter of the race
+        return race.charAt(0).toUpperCase() + race.slice(1);
+      }
     }
 
     return null;
+  }
+
+  /**
+   * Render headings from the page's table of contents
+   * @private
+   */
+  _renderHeadings() {
+    if (!this.sheet?.toc || Object.keys(this.sheet.toc).length === 0) return;
+
+    const headings = Object.values(this.sheet.toc);
+    headings.forEach(({ element, slug }) => {
+      if (element) element.dataset.anchor = slug;
+    });
   }
 
   /**
@@ -337,6 +379,7 @@ export class JournalPageEmbed {
    */
   goToAnchor(anchor) {
     if (!this.sheet?.toc || !anchor) return;
+
     const heading = this.sheet.toc[anchor];
     if (heading?.element) {
       heading.element.scrollIntoView({ behavior: 'smooth' });
@@ -347,7 +390,26 @@ export class JournalPageEmbed {
    * Clean up resources when removing the embed
    */
   close() {
-    this.container.innerHTML = '';
+    if (this.sheet) {
+      try {
+        // Allow sheet to properly cleanup if it has a close method
+        if (typeof this.sheet.close === 'function') {
+          this.sheet.close();
+        }
+      } catch (error) {
+        HM.log(2, `Error closing journal sheet: ${error.message}`);
+      }
+    }
+
+    // Clear container content
+    if (this.container) {
+      this.container.innerHTML = '';
+
+      // Remove any classes we added
+      this.container.classList.remove('journal-page-embed', 'scrollable');
+    }
+
+    // Reset properties
     this.sheet = null;
     this.pageId = null;
   }

@@ -5,9 +5,32 @@
 /* Base container */
 .journal-container {
   padding: 0.25rem;
-  border-radius: 5px;
+  border-radius: var(--border-radius-md);
   color: #191813 !important;
   background-color: #f0f0e0 !important;
+}
+
+/* Loading state */
+.journal-container .journal-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  font-style: italic;
+  color: var(--color-text-dark-secondary);
+}
+
+.journal-container .journal-loading i {
+  color: var(--color-text-hyperlink);
+}
+
+/* Error state */
+.journal-container .notification.error,
+.journal-container .notification.warning {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border-radius: var(--border-radius-sm);
 }
 
 .journal-container * {
