@@ -351,9 +351,6 @@ Hooks.on('init', () => {
 
 Hooks.once('ready', async () => {
   if (!game.settings.get(HM.ID, 'enable')) return;
-  for (const pack of game.packs.filter((p) => p.documentName === 'Item')) {
-    await pack.getIndex();
-  }
 
   HM.checkModuleCompatibility();
   await HM.loadAndEnrichDocuments();
@@ -370,6 +367,7 @@ Hooks.once('ready', async () => {
     background: CustomCompendiums.backgroundPacks,
     items: CustomCompendiums.itemPacks
   });
+
   if (!HM.COMPAT.ELKAN) await EquipmentParser.initializeLookupItems(); // Completely disable EquipmentParser if Elkan is enabled.
 
   const customArraySetting = game.settings.get(HM.ID, 'customStandardArray') || StatRoller.getStandardArrayDefault();
@@ -379,6 +377,11 @@ Hooks.once('ready', async () => {
   }
 
   globalThis.heroMancer = HM.API;
+
+  // Enable the Hero Mancer button after all prep is complete
+  const button = document.querySelector('.hm-actortab-button');
+  if (button) button.disabled = false;
+
   Hooks.callAll('heroMancer.Ready', this);
 });
 
@@ -390,12 +393,13 @@ Hooks.on('renderActorDirectory', () => {
   // Don't create duplicate buttons
   if (headerActions.querySelector('.hm-actortab-button')) return;
 
-  // Create button
+  // Create button (initially disabled)
   const button = document.createElement('button');
   button.type = 'button';
   button.classList.add('hm-actortab-button');
   button.setAttribute('title', game.i18n.localize('hm.actortab-button.hint'));
   button.innerHTML = `<i class="fa-solid fa-egg" style="color: var(--user-color)"></i> ${game.i18n.localize('hm.actortab-button.name')}`;
+  button.disabled = true; // Start disabled
 
   // Add click handler
   button.addEventListener('click', () => {
