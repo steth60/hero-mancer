@@ -65,6 +65,7 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
         { key: 'chainedRolls', defaultValue: false },
         { key: 'rollDelay', defaultValue: 500 },
         { key: 'customStandardArray', defaultValue: '15,14,13,12,10,8' },
+        { key: 'standardArraySwapMode', defaultValue: false },
         { key: 'customPointBuyTotal', defaultValue: 27 },
         { key: 'abilityScoreDefault', defaultValue: 8 },
         { key: 'abilityScoreMin', defaultValue: 8 },
@@ -358,7 +359,17 @@ export class DiceRolling extends HandlebarsApplicationMixin(ApplicationV2) {
    * @private
    */
   static _saveSettings(formData, allowedMethods) {
-    const settings = ['customRollFormula', 'chainedRolls', 'rollDelay', 'customStandardArray', 'customPointBuyTotal', 'abilityScoreDefault', 'abilityScoreMin', 'abilityScoreMax'];
+    const settings = [
+      'customRollFormula',
+      'chainedRolls',
+      'rollDelay',
+      'customStandardArray',
+      'customPointBuyTotal',
+      'abilityScoreDefault',
+      'abilityScoreMin',
+      'abilityScoreMax',
+      'standardArraySwapMode'
+    ];
 
     for (const setting of settings) {
       game.settings.set(HM.ID, setting, formData.object[setting]);

@@ -8,6 +8,21 @@
   border-radius: var(--border-radius-md);
   color: #191813 !important;
   background-color: #f0f0e0 !important;
+  overflow: auto hidden;
+}
+
+.hm-app-tab-content .dnd5e2-journal .journal-container {
+  padding-left: 0.2rem !important;
+  padding-right: 0.2rem !important;
+  margin-left: 0.2rem !important;
+  margin-right: 0.2rem !important;
+  width: 100% !important;
+
+  --scroll-margin: unset;
+}
+
+.hm-app .hm-app-tab-content .dnd5e2-journal {
+  padding: 0.5rem 1rem;
 }
 
 .journal-container:empty,
@@ -45,7 +60,7 @@
 .journal-container .title {
   color: #4b4a44;
   font-weight: bold;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 
 .journal-container .journal-entry-content {
@@ -96,6 +111,7 @@
 .journal-container img {
   width: 100%;
   max-width: unset;
+  margin: unset;
 }
 
 .journal-container .content-embed {
@@ -113,7 +129,7 @@
 
 .journal-container .content-embed figcaption cite {
   font-style: italic;
-  font-size: 0.9rem;
+  font-size: 0.7rem;
 }
 
 .journal-container figure.content-embed strong.embed-caption {
@@ -210,11 +226,11 @@
 .journal-container table thead tr th[scope='col'][rowspan='2'] {
   width: fit-content;
   max-width: 195px;
-  font-size: var(--font-size-14);
+  font-size: var(--font-size-13);
 }
 
 .journal-container table colgroup col[span='6'] {
-  font-size: var(--font-size-12);
+  font-size: var(--font-size-11);
 }
 
 .journal-container table thead tr th[scope='col'] {
@@ -258,7 +274,7 @@
 .journal-container table.features-table th[scope='col'][rowspan='2'] {
   width: 75px;
   max-width: 100px;
-  font-size: var(--font-size-13);
+  font-size: var(--font-size-12);
   white-space: normal;
 }
 
@@ -271,6 +287,6 @@
   .journal-container table.features-table {
     display: block;
     overflow-x: auto;
-    font-size: 0.75rem;
+    font-size: 0.6rem;
   }
 }

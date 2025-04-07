@@ -15,6 +15,12 @@ export class StatRoller {
 
   static isRolling = false;
 
+  static #isSwapping = false;
+
+  static #abilityDropdownValues = new Map();
+
+  static #lastHandledChanges = new Map();
+
   /* -------------------------------------------- */
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
@@ -611,32 +617,53 @@ export class StatRoller {
   }
 
   /**
+   * Initialize tracking of ability dropdown values
+   * @static
+   */
+  static initializeAbilityDropdownTracking() {
+    this.#abilityDropdownValues.clear();
+    document.querySelectorAll('.ability-dropdown').forEach((dropdown, i) => {
+      this.#abilityDropdownValues.set(i, dropdown.value);
+    });
+  }
+
+  /**
    * Handle ability dropdown change events
    * @param {Event} event - The change event
    * @param {string} diceRollingMethod - Current dice rolling method
+   * @static
    */
   static handleAbilityDropdownChange(event, diceRollingMethod) {
-    if (!event || !event.target) return;
+    if (!event?.target) return;
 
     const dropdown = event.target;
     const index = parseInt(dropdown.dataset.index, 10);
+    if (isNaN(index)) return;
 
-    if (isNaN(index)) {
-      HM.log(2, 'Invalid index in ability dropdown');
-      return;
-    }
+    const newValue = dropdown.value;
+    const lastChange = this.#lastHandledChanges.get(index);
+
+    // Skip if this is a duplicate event (within 50ms)
+    if (lastChange?.value === newValue && Date.now() - lastChange.time < 50) return;
+
+    // Track this change
+    this.#lastHandledChanges.set(index, { value: newValue, time: Date.now() });
+    const originalValue = this.#abilityDropdownValues.get(index) || '';
 
     const abilityDropdowns = document.querySelectorAll('.ability-dropdown');
-    const selectedValues = Array.from(abilityDropdowns).map((dropdown) => dropdown.value);
-    const totalPoints = this.getTotalPoints();
+    const selectedValues = Array.from(abilityDropdowns).map((d) => d.value);
 
+    // Handle different dice rolling methods
     if (diceRollingMethod === 'manualFormula') {
       this.#handleManualFormulaDropdown(dropdown, abilityDropdowns, selectedValues);
     } else if (diceRollingMethod === 'standardArray') {
-      this.#handleStandardArrayDropdown(dropdown, index, abilityDropdowns, selectedValues);
+      this.#handleStandardArrayDropdown(dropdown, index, abilityDropdowns, selectedValues, game.settings.get(HM.ID, 'standardArraySwapMode'), originalValue);
     } else if (diceRollingMethod === 'pointBuy') {
-      this.#handlePointBuyDropdown(dropdown, index, abilityDropdowns, selectedValues, totalPoints);
+      this.#handlePointBuyDropdown(dropdown, index, abilityDropdowns, selectedValues, this.getTotalPoints());
     }
+
+    // Update stored value for future reference
+    this.#abilityDropdownValues.set(index, newValue);
   }
 
   /**
@@ -673,17 +700,61 @@ export class StatRoller {
    * @param {number} index - The dropdown index
    * @param {NodeList} abilityDropdowns - All ability dropdowns
    * @param {Array} selectedValues - Currently selected values
+   * @param {Boolean} swapMode - Should score swap with previously selected
+   * @param {Map} originalValue - Index of current values before manipulation
+   * @param {}
    * @private
    * @static
    */
-  static #handleStandardArrayDropdown(dropdown, index, abilityDropdowns, selectedValues) {
-    // Update tracking array with new value
-    selectedValues[index] = dropdown.value;
+  static #handleStandardArrayDropdown(dropdown, index, abilityDropdowns, selectedValues, swapMode, originalValue) {
+    if (this.#isSwapping) return;
 
-    // Apply standard array handling
-    requestAnimationFrame(() => {
-      DOMManager.handleStandardArrayMode(abilityDropdowns, selectedValues);
-    });
+    const newValue = dropdown.value;
+
+    // Handle swapping logic when enabled
+    if (swapMode && newValue) {
+      const duplicateIndex = selectedValues.findIndex((value, i) => i !== index && value === newValue);
+
+      if (duplicateIndex !== -1) {
+        try {
+          this.#isSwapping = true;
+
+          // Swap values - other dropdown gets the original value from this one
+          abilityDropdowns[duplicateIndex].value = originalValue;
+          selectedValues[duplicateIndex] = originalValue;
+
+          // Update tracking
+          this.#abilityDropdownValues.set(duplicateIndex, originalValue);
+          this.#lastHandledChanges.set(duplicateIndex, {
+            value: originalValue,
+            time: Date.now()
+          });
+        } finally {
+          setTimeout(() => {
+            this.#isSwapping = false;
+          }, 0);
+        }
+      }
+    }
+    // If not in swap mode, clear any duplicate selections
+    else if (newValue) {
+      const duplicateIndex = selectedValues.findIndex((value, i) => i !== index && value === newValue);
+
+      if (duplicateIndex !== -1) {
+        abilityDropdowns[duplicateIndex].value = '';
+        selectedValues[duplicateIndex] = '';
+
+        this.#abilityDropdownValues.set(duplicateIndex, '');
+        this.#lastHandledChanges.set(duplicateIndex, {
+          value: '',
+          time: Date.now()
+        });
+      }
+    }
+
+    // Update selected values and UI
+    selectedValues[index] = newValue;
+    DOMManager.handleStandardArrayMode(abilityDropdowns, selectedValues);
   }
 
   /**
@@ -697,7 +768,6 @@ export class StatRoller {
    * @static
    */
   static #handlePointBuyDropdown(dropdown, index, abilityDropdowns, selectedValues, totalPoints) {
-    // Handle point buy case
     selectedValues[index] = dropdown.value || '';
     DOMManager.refreshAbilityDropdownsState(abilityDropdowns, selectedValues, totalPoints, 'pointBuy');
   }

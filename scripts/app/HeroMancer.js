@@ -44,7 +44,7 @@ export class HeroMancer extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     window: {
       icon: 'fa-solid fa-egg',
-      resizable: true,
+      resizable: false,
       minimizable: true,
       controls: [
         {
