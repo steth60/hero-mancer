@@ -69,7 +69,7 @@
         "select-placeholder": "Wähle die Klasse",
         "tooltip": "Wähle die Klasse für deinen Charakter"
       },
-     "document-service": {
+      "document-service": {
         "common-labels": {
           "dndbeyond-importer": "DDB",
           "elkan5e": "Elkan",
@@ -79,7 +79,7 @@
           "srd": "SRD"
         },
         "other-itdentifier": "Andere"
-     },
+      },
       "done": "Fertig",
       "equipment": {
         "add-favorites": "Zu Favoriten hinzufügen",
@@ -107,10 +107,10 @@
         "unknown-focus": "Unbekannter Fokus",
         "unnamed": "Item ohne Namen",
         "use-starting-wealth": "Verwende Startvermögen",
-        "wealth-placeholder": "0 GM"
+        "wealth-placeholder": "0 GM",
         "wealth-roll-message": "{name} würfelte für {type} Startvermögen und erhält: {result} GM."
       },
-	    "errors": {
+      "errors": {
         "unexpected-format": "Fehler beim Rendern des Inhalts: Unerwartetes Format"
       },
       "finalize": {
@@ -146,7 +146,7 @@
       },
       "header-title": "Hero Mancer Creation Wizard",
       "journal": {
-         "no-content-found": "Keine Inhalte verfügbar."
+        "no-content-found": "Keine Inhalte verfügbar."
       },
       "journal-description-placeholder": "Das Journal wird geladen. Dies ist ein Platzhalter.",
       "journal-loading": "Lade Inhalt des Journals...",
@@ -161,7 +161,7 @@
         "tooltip": "Wähle das Volk für deinen Charakter"
       },
       "randomization-complete": "Charakter Zufallsgenerierung abgeschlossen!",
-	    "randomize": {
+      "randomize": {
         "default-name": "Abenteurer",
         "randomize": "Zufällig",
         "randomize-character": "Charakter zufällig ausfüllen",
