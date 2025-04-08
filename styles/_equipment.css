@@ -1,5 +1,5 @@
 /* ==========================================================================
-  Equipment Section
+  Equipment Section - Layout
   ========================================================================== */
 
 .equipment-container {
@@ -26,6 +26,10 @@
   box-shadow: 0 2px 4px #0003;
 }
 
+/* ==========================================================================
+  Typography and Headings
+  ========================================================================== */
+
 .hm-app-tab-content .class-equipment-section h3,
 .hm-app-tab-content .background-equipment-section h3 {
   width: 100%;
@@ -37,25 +41,6 @@
 .hm-app-tab-content .background-equipment-section h4 {
   font-size: var(--font-size-15);
   font-family: signika, sans-serif;
-}
-
-.equipment-item {
-  display: flex;
-  flex-flow: row wrap;
-  align-items: baseline;
-  width: 100%;
-  max-width: 100%;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--color-border-dark-secondary);
-}
-
-.equipment-item label,
-.equipment-item input,
-.equipment-item select {
-  width: fit-content;
-  margin-top: 4px;
-  margin-right: auto;
-  vertical-align: middle;
 }
 
 .equipment-choices h3 {
@@ -74,6 +59,76 @@
   margin: 0;
 }
 
+/* ==========================================================================
+  Table Structure
+  ========================================================================== */
+
+table.equipment-item,
+table.wealth-option-container {
+  display: table;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border-collapse: collapse;
+  background: transparent;
+}
+
+table.equipment-item {
+  border-bottom: 1px solid var(--color-border-dark-secondary);
+}
+
+table.equipment-item tr,
+table.wealth-option-container tr {
+  display: table-row;
+  background: transparent;
+}
+
+table.equipment-item th,
+table.equipment-item td,
+table.wealth-option-container th,
+table.wealth-option-container td {
+  display: table-cell;
+  border: none;
+  vertical-align: middle;
+  background: transparent;
+}
+
+table.equipment-item th {
+  padding: 0.25rem;
+  border-bottom: 1px solid #0000001a;
+  text-align: left;
+}
+
+table.equipment-item td {
+  padding: 0.25rem;
+}
+
+table.equipment-item td:first-child {
+  width: 75%;
+}
+
+table.equipment-item td:last-child {
+  width: 25%;
+  text-align: right;
+}
+
+table.equipment-item tr + tr,
+table.wealth-option-container tr + tr {
+  margin-top: 0;
+}
+
+/* ==========================================================================
+  Form Elements
+  ========================================================================== */
+
+.equipment-item label,
+.equipment-item input,
+.equipment-item select {
+  width: fit-content;
+  margin-top: 4px;
+  margin-right: auto;
+  vertical-align: middle;
+}
+
 .equipment-choices input[type='checkbox'] {
   flex-shrink: 0;
   margin: 0 0.5rem 0.2rem 0;
@@ -81,7 +136,7 @@
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select {
   display: block;
-  width: auto !important;
+  width: auto;
   min-width: 140px;
   max-width: 100%;
   margin: 0.25rem 0 0;
@@ -104,58 +159,54 @@
   font-size: inherit;
 }
 
-/* Disabled equipment states */
-.equipment-choices select:disabled,
-.equipment-choices input:disabled,
-.equipment-choices label.disabled {
-  opacity: 0.5;
-  color: #878787;
-  cursor: not-allowed;
-}
+/* ==========================================================================
+  Wealth Options
+  ========================================================================== */
 
-.equipment-item.disabled select,
-.equipment-item.disabled input[type='checkbox'],
-.equipment-item.disabled label {
-  pointer-events: none;
-}
-
-/* Wealth option container */
-.wealth-option-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin: 10px 0 0;
-  padding: 0.625rem;
+table.wealth-option-container {
+  margin: 10px 0 1rem;
   border: 1px solid var(--color-border-light-tertiary);
   border-radius: var(--border-radius-sm);
 }
 
-.wealth-option-container label {
+table.wealth-option-container td {
+  padding: unset;
+  vertical-align: middle;
+}
+
+table.wealth-option-container label {
+  margin-left: 0.5rem;
   font-weight: 500;
 }
 
-.wealth-roll-container {
+tr.wealth-roll-container td {
+  gap: 0.5rem;
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
   align-items: center;
-  width: fit-content;
-  padding-left: 0.25rem;
-  border-radius: var(--border-radius-sm);
+  padding: 0.5rem 0.625rem;
 }
 
-.wealth-roll-container button,
-.character-name-row button {
-  aspect-ratio: 1/1;
+.wealth-roll-container input[type='text'] {
+  flex: 1;
+  min-width: 80px;
+  max-width: 120px;
+  margin: 0;
+}
+
+.wealth-roll-button {
   display: flex;
+  flex: 0 0 auto;
   justify-content: center;
   align-items: center;
   width: 32px;
   height: 32px;
+  margin: 0;
   padding: 0;
+  border-radius: var(--border-radius-sm);
 }
 
-.wealth-roll-container button i,
-.character-name-row button i {
+.wealth-roll-button i {
   margin: 0;
 }
 
@@ -167,12 +218,80 @@
   text-align: center;
 }
 
+/* ==========================================================================
+  Favorite Star
+  ========================================================================== */
+
+.equipment-favorite-container {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 1.2rem;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  text-align: right;
+}
+
+.equipment-favorite-label {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  float: right;
+  height: 100%;
+  cursor: pointer;
+}
+
+.equipment-favorite-checkbox {
+  opacity: 0;
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.equipment-choices .equipment-favorite-container .equipment-favorite-label .equipment-favorite-checkbox {
+  position: absolute;
+}
+
+.equipment-favorite-star {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 1rem;
+  height: 1rem;
+  color: #aaa;
+  font-size: 1.2rem;
+  transition: color 0.2s ease;
+}
+
+.equipment-favorite-checkbox:checked + .equipment-favorite-star {
+  color: #ffd700;
+}
+
+.equipment-favorite-checkbox:hover + .equipment-favorite-star {
+  color: #f0b400;
+}
+
+td .equipment-favorite-container {
+  display: block;
+  height: 100%;
+  text-align: right;
+}
+
+/* ==========================================================================
+  Second Weapon Options
+  ========================================================================== */
+
 .second-weapon-label {
   display: block;
   margin-bottom: 0.5rem;
   color: var(--color-text-dark-secondary);
   font-size: var(--font-size-14);
 }
+
+/* ==========================================================================
+  Empty Notices and Warnings
+  ========================================================================== */
 
 .equipment-empty-notice {
   box-sizing: border-box;
@@ -228,242 +347,34 @@
   font-size: 1rem;
 }
 
-/* Favorite star styling */
-.equipment-favorite-container {
-  display: block !important;
-  position: relative;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100% !important;
-  height: 1.2rem;
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 1;
-  text-align: right !important;
+/* ==========================================================================
+  States and Visibility
+  ========================================================================== */
+
+.equipment-item.disabled select,
+.equipment-item.disabled input[type='checkbox'],
+.equipment-item.disabled label {
+  pointer-events: none;
 }
 
-.equipment-favorite-label {
-  display: inline-flex !important;
-  justify-content: center;
-  align-items: center;
-  float: right !important;
-  height: 100%;
-  cursor: pointer;
-}
-
-.equipment-favorite-checkbox {
-  opacity: 0;
-  position: absolute;
-  width: 0;
-  height: 0;
+.equipment-choices select:disabled,
+.equipment-choices input:disabled,
+.equipment-choices label.disabled {
+  opacity: 0.5;
+  color: #878787;
+  cursor: not-allowed;
 }
 
 .equipment-item.disabled .equipment-favorite-container {
-  display: none !important;
+  display: none;
 }
 
-.equipment-choices .equipment-favorite-container .equipment-favorite-label .equipment-favorite-checkbox {
-  position: absolute;
-}
-
-.equipment-favorite-star {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 1rem;
-  height: 1rem;
-  color: #aaa;
-  font-size: 1.2rem;
-  transition: color 0.2s ease;
-}
-
-.equipment-favorite-checkbox:checked + .equipment-favorite-star {
-  color: #ffd700;
-}
-
-.equipment-favorite-checkbox:hover + .equipment-favorite-star {
-  color: #f0b400;
-}
-
-/* Special handling for checkbox labels */
-.equipment-item label .equipment-favorite-container {
-  position: absolute;
-  top: 50%;
-  right: -24px;
-  transform: translateY(-50%);
-}
-
-/* Special handling for select elements */
-.equipment-item select + .equipment-favorite-container {
-  display: inline-flex;
-  margin-left: 8px;
-}
-
-/* Table structure */
-table.equipment-item,
-table.wealth-option-container {
-  display: table !important;
-  width: 100%;
-  margin-bottom: 0.5rem;
-  border-collapse: collapse;
-}
-
-table.equipment-item tr,
-table.wealth-option-container tr {
-  display: table-row !important;
-}
-
-table.equipment-item th,
-table.equipment-item td,
-table.wealth-option-container th,
-table.wealth-option-container td {
-  display: table-cell !important;
-}
-
-table.equipment-item th {
-  padding: 0.25rem;
-  border-bottom: 1px solid #0000001a;
-  text-align: left;
-}
-
-table.equipment-item td {
-  padding: 0.25rem;
-  vertical-align: middle;
-}
-
-table.equipment-item td:first-child {
-  width: 75%;
-}
-
-table.equipment-item td:last-child {
-  width: 25%;
-  text-align: right !important;
-}
-
-/* Hide table borders in normal view */
-table.equipment-item,
-table.equipment-item th,
-table.equipment-item td {
-  border: none;
-}
-
-/* Wealth option table */
-table.wealth-option-container {
-  width: 100%;
-  margin: 10px 0 1rem;
-  border: 1px solid var(--color-border-light-tertiary);
-  border-radius: var(--border-radius-sm);
-  border-collapse: collapse;
-}
-
-table.wealth-option-container td {
-  padding: unset;
-  vertical-align: middle;
-}
-
-table.wealth-option-container label {
-  margin-left: 0.5rem;
-  font-weight: 500;
-}
-
-/* Ensure the wealth row container is properly hidden initially */
-tr.wealth-roll-container[style*='display: none'] {
-  display: none !important;
-}
-
-/* Style for when it should be shown */
-tr.wealth-roll-container[style*='display: table-row'] {
-  display: table-row !important;
-}
-
-tr.wealth-roll-container td {
-  gap: 0.5rem;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 0.5rem 0.625rem;
-}
-
-.wealth-roll-container input[type='text'] {
-  flex: 1;
-  min-width: 80px;
-  max-width: 120px;
-  margin: 0;
-}
-
-/* Explicitly hide wealth roll container initially */
 tr.wealth-roll-container[hidden],
 tr.wealth-roll-container[style*='display: none'] {
-  display: none !important;
+  display: none;
 }
 
-/* Explicitly show wealth roll container when intended */
 tr.wealth-roll-container:not([hidden]),
 tr.wealth-roll-container[style*='display: table-row'] {
-  display: table-row !important;
-}
-
-/* Fix row spacing */
-table.equipment-item tr + tr,
-table.wealth-option-container tr + tr {
-  margin-top: 0 !important;
-}
-
-/* Override specifically for wealth roll container cells */
-table.wealth-option-container tr.wealth-roll-container td {
-  gap: 0.5rem;
-  display: flex !important;
-  flex-direction: row;
-  align-items: center;
-}
-
-/* Style the button inside wealth roll container */
-.wealth-roll-button {
-  display: flex;
-  flex: 0 0 auto;
-  justify-content: center;
-  align-items: center;
-  width: 32px;
-  height: 32px;
-  margin: 0;
-  padding: 0;
-  border-radius: var(--border-radius-sm);
-}
-
-.wealth-roll-button i {
-  margin: 0;
-}
-
-table.equipment-item,
-table.equipment-item tr,
-table.equipment-item th,
-table.equipment-item td,
-table.wealth-option-container,
-table.wealth-option-container tr,
-table.wealth-option-container th,
-table.wealth-option-container td {
-  background: transparent !important; /* Override any Foundry styling */
-  background-color: transparent !important;
-}
-
-/* Add additional fixes for table structure */
-table.equipment-item {
-  margin-bottom: 0.5rem; /* Remove any debug borders */
-  border: none !important;
-  border-bottom: 1px solid var(--color-border-dark-secondary) !important;
-}
-
-table.equipment-item th,
-table.equipment-item td {
-  border: none !important; /* Remove any debug borders */
-  vertical-align: middle;
-}
-
-/* Ensure the favorite star is properly aligned */
-td .equipment-favorite-container {
-  display: block !important;
-  justify-content: flex-end;
-  align-items: center;
-  height: 100%;
-  text-align: right !important;
+  display: table-row;
 }
