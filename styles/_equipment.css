@@ -70,9 +70,7 @@
 }
 
 .equipment-choices .parent-label {
-  width: fit-content;
-  min-width: 140px;
-  max-width: 265px;
+  width: 100%;
   margin: 0;
 }
 
@@ -364,11 +362,6 @@ table.wealth-option-container label {
   margin-left: 0.5rem;
 }
 
-/* Override any conflicting flex styles */
-tr.wealth-roll-container {
-  /* No display property here - let inline style control it */
-}
-
 /* Ensure the wealth row container is properly hidden initially */
 tr.wealth-roll-container[style*='display: none'] {
   display: none !important;
@@ -381,11 +374,17 @@ tr.wealth-roll-container[style*='display: table-row'] {
 
 tr.wealth-roll-container td {
   padding: 0.5rem 0.625rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .wealth-roll-container input[type='text'] {
-  margin-right: 0.5rem;
-  width: auto !important;
+  flex: 1;
+  min-width: 80px;
+  max-width: 120px;
+  margin: 0;
 }
 
 /* Explicitly hide wealth roll container initially */
@@ -406,19 +405,27 @@ table.wealth-option-container tr + tr {
   margin-top: 0 !important;
 }
 
-/* Temporary for debugging - remove after fixing */
-table.equipment-item {
-  border: 1px solid rgb(255 0 0 / 50%);
+/* Override specifically for wealth roll container cells */
+table.wealth-option-container tr.wealth-roll-container td {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-table.equipment-item th {
-  border: 1px solid rgb(0 0 255 / 50%);
+/* Style the button inside wealth roll container */
+.wealth-roll-button {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--border-radius-sm);
 }
 
-table.equipment-item td {
-  border: 1px solid rgb(0 255 0 / 50%);
-}
-
-table.wealth-option-container {
-  border: 1px solid rgb(255 165 0 / 50%);
+.wealth-roll-button i {
+  margin: 0;
 }
