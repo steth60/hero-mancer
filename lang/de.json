@@ -69,16 +69,20 @@
         "select-placeholder": "Wähle die Klasse",
         "tooltip": "Wähle die Klasse für deinen Charakter"
       },
-      "document-service": {
-        "dndbeyond-importer": "DDB",
-        "elkan5e": "Elkan",
-        "forge": "Forge",
-        "homebrew": "Homebrew",
-        "phb": "PHB",
-        "srd": "SRD"
-      },
+     "document-service": {
+        "common-labels": {
+          "dndbeyond-importer": "DDB",
+          "elkan5e": "Elkan",
+          "forge": "Forge",
+          "homebrew": "Homebrew",
+          "phb": "PHB",
+          "srd": "SRD"
+        },
+        "other-itdentifier": "Andere"
+     },
       "done": "Fertig",
       "equipment": {
+        "add-favorites": "Zu Favoriten hinzufügen",
         "and": ", und ",
         "article": "",
         "article-plural": "",
@@ -100,9 +104,14 @@
         "tooltip": "Wähle die Ausrüstung für deinen Charakter",
         "type-equipment": "{type} Ausrüstung",
         "unknown-choice": "Unbekanntes verknüpftes Item.",
+        "unknown-focus": "Unbekannter Fokus",
         "unnamed": "Item ohne Namen",
         "use-starting-wealth": "Verwende Startvermögen",
         "wealth-placeholder": "0 GM"
+        "wealth-roll-message": "{name} würfelte für {type} Startvermögen und erhält: {result} GM."
+      },
+	    "errors": {
+        "unexpected-format": "Fehler beim Rendern des Inhalts: Unerwartetes Format"
       },
       "finalize": {
         "backstory": "Hintergrundgeschichte",
@@ -136,6 +145,11 @@
         "traits-placeholder-alt": "Beschreibe die Persönlichkeit deines Charakters. Wie prägen seine Attribute seine Persönlichkeit? Ist er weise und nachdenklich oder charismatisch und extrovertiert?"
       },
       "header-title": "Hero Mancer Creation Wizard",
+      "journal": {
+         "no-content-found": "Keine Inhalte verfügbar."
+      },
+      "journal-description-placeholder": "Das Journal wird geladen. Dies ist ein Platzhalter.",
+      "journal-loading": "Lade Inhalt des Journals...",
       "no-description": "Es konnte keine gültige Beschreibung für dieses Item geladen werden.",
       "optionsReset": "Hero Mancer zurücksetzen! Versuchen wir es noch einmal!",
       "optionsSaved": "Optionen gespeichert! Starte Hero Mancer neu, um dort weiterzumachen, wo du aufgehört hast!",
@@ -147,9 +161,12 @@
         "tooltip": "Wähle das Volk für deinen Charakter"
       },
       "randomization-complete": "Charakter Zufallsgenerierung abgeschlossen!",
-      "randomize": "Zufällig",
-      "randomize-character": "Charakter zufällig ausfüllen",
-      "randomizing": "Fülle Charakter zufällig aus...",
+	    "randomize": {
+        "default-name": "Abenteurer",
+        "randomize": "Zufällig",
+        "randomize-character": "Charakter zufällig ausfüllen",
+        "randomizing": "Fülle Charakter zufällig aus..."
+      },
       "reset": "Zurücksetzen",
       "reset-description": "Setze Hero Mancer zurück",
       "save": "Für Später Speichern",
@@ -501,6 +518,7 @@
       "no-packs-found": "Es wurden keine Kompendien gefunden für {type}",
       "partial-cleanup": "Einige Ressourcen konnten nicht ordnungsgemäß bereinigt werden.",
       "select-background": "Du musst zuerst einen gültigen Hintergrund auswählen.",
+      "simplified-journal": "Vereinfachte Ansicht von {page}.",
       "some-advancements-failed": "Einige Fortschritte scheiterten: {failed}. Erfolgreich: {succeeded}."
     }
   }
