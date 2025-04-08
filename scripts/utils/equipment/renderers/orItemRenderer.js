@@ -51,13 +51,11 @@ export class OrItemRenderer extends BaseItemRenderer {
 
     if (isWeaponShieldChoice) {
       await this.setupWeaponShieldChoice(item, select, itemContainer);
-      // Don't add the favorite button since setupWeaponShieldChoice adds its own
       return itemContainer;
     } else if (isMultiQuantityChoice) {
       await this.setupMultiQuantityChoice(item, select, itemContainer);
     } else {
       await this.renderStandardOrChoice(item, select);
-      // Add favorite star for standard choices
       this.addFavoriteStar(itemContainer, item);
     }
 
@@ -272,7 +270,7 @@ export class OrItemRenderer extends BaseItemRenderer {
     const weaponLookupKey = this.getWeaponLookupKey(item);
     const weaponOptions = this.getWeaponOptions(weaponLookupKey);
 
-    // Create first select row with its own favorite button
+    // Create first select row
     const firstRow = document.createElement('tr');
     const firstCell = document.createElement('td');
     const firstStarCell = document.createElement('td');
@@ -283,11 +281,7 @@ export class OrItemRenderer extends BaseItemRenderer {
     firstRow.appendChild(firstStarCell);
     container.appendChild(firstRow);
 
-    // Add favorite button for first select
-    const firstFavoriteContainer = this.createFavoriteButton(select, 'Primary Weapon');
-    firstStarCell.appendChild(firstFavoriteContainer);
-
-    // Create second select with its own row and favorite button
+    // Create second select with its own row
     const secondSelect = document.createElement('select');
     secondSelect.id = `${item._source?.key || item._id || Date.now()}-second`;
     secondSelect.setAttribute('data-item-name', 'Secondary Weapon/Shield');
@@ -301,20 +295,21 @@ export class OrItemRenderer extends BaseItemRenderer {
     secondRow.appendChild(secondStarCell);
     container.appendChild(secondRow);
 
-    // Add favorite button for second select
-    const secondFavoriteContainer = this.createFavoriteButton(secondSelect, 'Secondary Weapon/Shield');
-    secondStarCell.appendChild(secondFavoriteContainer);
-
     // Populate selects with options
     this.populateWeaponDropdown(select, weaponOptions);
     this.populateSecondDropdown(secondSelect, weaponOptions);
 
+    // Create favorite stars with proper data attributes
+    this.createDynamicFavoriteStar(firstStarCell, 'Primary Weapon', select);
+    this.createDynamicFavoriteStar(secondStarCell, 'Secondary Weapon/Shield', secondSelect);
+
     // Add change listener
-    select.addEventListener('change', () => this.populateSecondDropdown(secondSelect, weaponOptions));
+    select.addEventListener('change', () => {
+      this.populateSecondDropdown(secondSelect, weaponOptions);
+    });
   }
 
-  // Helper method to create a favorite button
-  createFavoriteButton(selectElement, displayName) {
+  createDynamicFavoriteStar(starCell, displayName, selectElement) {
     const favoriteContainer = document.createElement('div');
     favoriteContainer.classList.add('equipment-favorite-container');
 
@@ -326,19 +321,13 @@ export class OrItemRenderer extends BaseItemRenderer {
     favoriteCheckbox.type = 'checkbox';
     favoriteCheckbox.classList.add('equipment-favorite-checkbox');
     favoriteCheckbox.dataset.itemName = displayName;
-
-    // Use the select's value (UUID) for the favorite
-    favoriteCheckbox.dataset.itemUuid = selectElement.value;
+    favoriteCheckbox.dataset.itemUuids = selectElement.value; // Initial value
     favoriteCheckbox.id = `fav-${selectElement.id}`;
-
-    // Add change listener to update the UUID when select changes
-    selectElement.addEventListener('change', (event) => {
-      favoriteCheckbox.dataset.itemUuid = event.target.value;
-    });
 
     const starIcon = document.createElement('i');
     starIcon.classList.add('fa-bookmark', 'equipment-favorite-star', 'fa-thin');
 
+    // Add change handlers for checkbox
     favoriteCheckbox.addEventListener('change', function () {
       if (this.checked) {
         starIcon.classList.remove('fa-thin');
@@ -349,11 +338,17 @@ export class OrItemRenderer extends BaseItemRenderer {
       }
     });
 
+    // Add change handlers for select to update UUID
+    selectElement.addEventListener('change', function (event) {
+      favoriteCheckbox.dataset.itemUuids = event.target.value;
+    });
+
     favoriteLabel.appendChild(favoriteCheckbox);
     favoriteLabel.appendChild(starIcon);
     favoriteContainer.appendChild(favoriteLabel);
+    starCell.appendChild(favoriteContainer);
 
-    return favoriteContainer;
+    return favoriteCheckbox;
   }
 
   /**
