@@ -6,19 +6,19 @@
 .journal-container {
   padding: 0.25rem;
   border-radius: var(--border-radius-md);
+  overflow: auto hidden;
   color: #191813 !important;
   background-color: #f0f0e0 !important;
-  overflow: auto hidden;
 }
 
 .hm-app-tab-content .dnd5e2-journal .journal-container {
-  padding-left: 0.2rem !important;
-  padding-right: 0.2rem !important;
-  margin-left: 0.2rem !important;
-  margin-right: 0.2rem !important;
-  width: 100% !important;
-
   --scroll-margin: unset;
+
+  width: 100% !important;
+  margin-right: 0.2rem !important;
+  margin-left: 0.2rem !important;
+  padding-right: 0.2rem !important;
+  padding-left: 0.2rem !important;
 }
 
 .hm-app .hm-app-tab-content .dnd5e2-journal {
@@ -32,13 +32,13 @@
 
 /* Loading state */
 .journal-container .journal-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 1rem;
-  font-style: italic;
   color: var(--color-text-dark-secondary);
+  font-style: italic;
 }
 
 .journal-container .journal-loading i {

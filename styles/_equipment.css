@@ -169,14 +169,25 @@ table.wealth-option-container {
   border-radius: var(--border-radius-sm);
 }
 
+table.wealth-option-container tr:first-child td:first-child {
+  gap: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
 table.wealth-option-container td {
-  padding: unset;
+  padding: 0.5rem 0.625rem;
   vertical-align: middle;
 }
 
 table.wealth-option-container label {
-  margin-left: 0.5rem;
+  margin: 0;
+  padding-top: 0.0625rem;
   font-weight: 500;
+}
+
+table.wealth-option-container input[type='checkbox'] {
+  margin: 0;
 }
 
 tr.wealth-roll-container td {
