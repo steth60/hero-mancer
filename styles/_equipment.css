@@ -348,7 +348,56 @@ table.equipment-item td {
 /* Wealth option table */
 table.wealth-option-container {
   width: 100%;
-  margin-bottom: 1rem;
+  margin: 10px 0 1rem;
+  border-collapse: collapse;
+  border: 1px solid var(--color-border-light-tertiary);
+  border-radius: var(--border-radius-sm);
+}
+
+table.wealth-option-container td {
+  padding: 0.625rem;
+  vertical-align: middle;
+}
+
+table.wealth-option-container label {
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+/* Override any conflicting flex styles */
+tr.wealth-roll-container {
+  /* No display property here - let inline style control it */
+}
+
+/* Ensure the wealth row container is properly hidden initially */
+tr.wealth-roll-container[style*='display: none'] {
+  display: none !important;
+}
+
+/* Style for when it should be shown */
+tr.wealth-roll-container[style*='display: table-row'] {
+  display: table-row !important;
+}
+
+tr.wealth-roll-container td {
+  padding: 0.5rem 0.625rem;
+}
+
+.wealth-roll-container input[type='text'] {
+  margin-right: 0.5rem;
+  width: auto !important;
+}
+
+/* Explicitly hide wealth roll container initially */
+tr.wealth-roll-container[hidden],
+tr.wealth-roll-container[style*='display: none'] {
+  display: none !important;
+}
+
+/* Explicitly show wealth roll container when intended */
+tr.wealth-roll-container:not([hidden]),
+tr.wealth-roll-container[style*='display: table-row'] {
+  display: table-row !important;
 }
 
 /* Fix row spacing */
@@ -356,13 +405,6 @@ table.equipment-item tr + tr,
 table.wealth-option-container tr + tr {
   margin-top: 0 !important;
 }
-
-/* Fix for empty cells to maintain structure */
-
-/* table.equipment-item td:empty,
-table.wealth-option-container td:empty {
-  min-width: 25%;
-} */
 
 /* Temporary for debugging - remove after fixing */
 table.equipment-item {

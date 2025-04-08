@@ -234,14 +234,6 @@ export class EquipmentParser {
       const wealthTable = document.createElement('table');
       wealthTable.classList.add('wealth-option-container');
 
-      // Create header row
-      const headerRow = document.createElement('tr');
-      const headerCell = document.createElement('th');
-      headerCell.colSpan = 2;
-      headerCell.textContent = game.i18n.localize('hm.app.equipment.use-starting-wealth');
-      headerRow.appendChild(headerCell);
-      wealthTable.appendChild(headerRow);
-
       // Create checkbox row
       const checkboxRow = document.createElement('tr');
       const checkboxCell = document.createElement('td');
@@ -267,7 +259,9 @@ export class EquipmentParser {
       // Create wealth roll row (hidden initially)
       const rollRow = document.createElement('tr');
       rollRow.classList.add('wealth-roll-container');
+      // Force hiding using both style and attribute
       rollRow.style.display = 'none';
+      rollRow.setAttribute('hidden', 'true');
 
       const rollCell = document.createElement('td');
       rollCell.colSpan = 2;
@@ -330,6 +324,15 @@ export class EquipmentParser {
       });
 
       sectionContainer.appendChild(wealthTable);
+
+      // Force a redraw to ensure styles are applied
+      setTimeout(() => {
+        if (!wealthCheckbox.checked) {
+          rollRow.style.display = 'none';
+          rollRow.setAttribute('hidden', 'true');
+        }
+      }, 0);
+
       HM.log(3, `Rendered wealth option for ${type} with value ${wealthValue}`);
     } catch (error) {
       HM.log(1, `Error rendering wealth option: ${error.message}`);
@@ -362,7 +365,13 @@ export class EquipmentParser {
     });
 
     // Display/hide wealth roll container
-    wealthRollRow.style.display = isChecked ? 'table-row' : 'none';
+    if (isChecked) {
+      wealthRollRow.style.display = 'table-row';
+      wealthRollRow.removeAttribute('hidden');
+    } else {
+      wealthRollRow.style.display = 'none';
+      wealthRollRow.setAttribute('hidden', 'true');
+    }
 
     // Reset wealth input if unchecked
     if (!isChecked) {
