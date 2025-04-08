@@ -482,7 +482,7 @@ export class OrItemRenderer extends BaseItemRenderer {
     container.appendChild(secondRow);
 
     // Add favorite button for second select
-    const secondFavoriteContainer = this.createFavoriteButton(secondSelect, 'Secondary Weapon');
+    const secondFavoriteContainer = this.createDynamicFavoriteStar(secondStarCell, 'Secondary Weapon', secondSelect);
     secondStarCell.appendChild(secondFavoriteContainer);
 
     // Handle visibility of the second select
