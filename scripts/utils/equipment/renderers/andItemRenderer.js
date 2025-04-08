@@ -358,10 +358,41 @@ export class AndItemRenderer extends BaseItemRenderer {
     const { combinedLabel, combinedIds } = await this.createGroupLabelAndIds(group, processedIds);
 
     if (combinedLabel && group.length > 1) {
-      // Create UI for the grouped items
-      this.addGroupUI(itemContainer, combinedLabel, combinedIds);
+      // Create header row
+      const headerRow = document.createElement('tr');
+      const headerCell = document.createElement('th');
+      headerCell.colSpan = 2;
+
+      const h4 = document.createElement('h4');
+      h4.innerHTML = `${combinedLabel}`;
+      headerCell.appendChild(h4);
+      headerRow.appendChild(headerCell);
+      itemContainer.appendChild(headerRow);
+
+      // Create checkbox row
+      const checkboxRow = document.createElement('tr');
+      const checkboxCell = document.createElement('td');
+      const starCell = document.createElement('td');
+
+      // Create label and checkbox
+      const label = document.createElement('label');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = combinedIds.join(',');
+      checkbox.checked = true;
+
+      // Assemble label properly
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(` ${combinedLabel}`));
+
+      checkboxCell.appendChild(label);
+      checkboxRow.appendChild(checkboxCell);
+      checkboxRow.appendChild(starCell);
+      itemContainer.appendChild(checkboxRow);
+
+      HM.log(3, `Added heading and checkbox with ID ${checkbox.id}`);
     } else {
-      // If only one item or empty group, reset tracking
+      // Reset tracking for empty groups
       this.resetGroupTracking(group);
     }
   }

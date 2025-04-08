@@ -221,7 +221,7 @@ export class JournalPageEmbed {
       this.container.innerHTML = view;
     } else {
       HM.log(2, 'Unexpected return type from _renderInner:', typeof view);
-      this.container.innerHTML = '<div class="notification error">Error rendering content: Unexpected format</div>';
+      this.container.innerHTML = `<div class="notification error">${game.i18n.localize('hm.app.errors.unexpected-format')}</div>`;
     }
   }
 
@@ -242,9 +242,9 @@ export class JournalPageEmbed {
    */
   #renderFallbackContent(page) {
     this.container.innerHTML = `
-      <div class="notification warning">Simplified view of ${page.name}</div>
+      <div class="notification warning">${game.i18n.format('hm.warnings.simplified-journal', { page: page.name })}</div>
       <h2>${page.name}</h2>
-      <div class="journal-content">${page.text?.content || 'No content available'}</div>
+      <div class="journal-content">${page.text?.content || game.i18n.localize('hm.app.journal.no-content-found')}</div>
     `;
   }
 

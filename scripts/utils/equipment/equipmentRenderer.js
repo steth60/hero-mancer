@@ -327,8 +327,11 @@ export class EquipmentRenderer {
     // Get the localized placeholder text for the current type
     const placeholderText = game.i18n.localize(`hm.app.${type}.select-placeholder`);
     const dropdown = document.querySelector(`#${type}-dropdown`);
-    const dropdownText = dropdown?.selectedOptions?.[0]?.innerHTML || type;
+    let dropdownText = dropdown?.selectedOptions?.[0]?.innerHTML || type;
     const isPlaceholder = dropdown && dropdownText === placeholderText;
+
+    // Remove any text in parentheses and extra spaces
+    dropdownText = dropdownText.replace(/\s*\([^)]*\)\s*/g, ' ').trim();
 
     // Add a header for the section
     const header = document.createElement('h3');
@@ -559,8 +562,8 @@ export class EquipmentRenderer {
     }
 
     try {
-      // Create container
-      const itemContainer = document.createElement('div');
+      // Create table container (not div)
+      const itemContainer = document.createElement('table');
       itemContainer.classList.add('equipment-item');
 
       // Add label if appropriate

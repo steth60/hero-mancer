@@ -5,27 +5,25 @@ import { BaseItemRenderer, HM } from '../../index.js';
  */
 export class FocusItemRenderer extends BaseItemRenderer {
   /**
-   * Render a focus equipment item
+   * Render a focus equipment item as a table
    * @param {object} item - Focus item data
-   * @param {HTMLElement} itemContainer - Container element
+   * @param {HTMLElement} itemContainer - Table container
    * @returns {Promise<HTMLElement|null>} Rendered container or null
    */
   async render(item, itemContainer) {
     HM.log(3, `Processing focus item ${item?._id}`);
 
     try {
-      // Validate that we have required data
+      // Validation logic
       if (!this.validateFocusItem(item)) {
         return null;
       }
 
-      // Skip if this should be displayed as part of a dropdown
       if (this.renderer.shouldItemUseDropdownDisplay(item)) {
         HM.log(3, `Item ${item._id} should use dropdown display, skipping direct rendering`);
         return null;
       }
 
-      // Get focus configuration
       const focusType = item.key;
       const focusConfig = CONFIG.DND5E.focusTypes[focusType];
 
@@ -34,23 +32,38 @@ export class FocusItemRenderer extends BaseItemRenderer {
         return null;
       }
 
-      // Create select element with options
       try {
-        const select = await this.createFocusSelect(item, focusConfig);
+        // Create header row
+        const headerRow = document.createElement('tr');
+        const headerCell = document.createElement('th');
+        headerCell.colSpan = 2;
 
-        // Verify we have options
+        const label = document.createElement('h4');
+        label.innerHTML = `${focusConfig.label}`;
+        headerCell.appendChild(label);
+        headerRow.appendChild(headerCell);
+        itemContainer.appendChild(headerRow);
+
+        // Create select row
+        const select = await this.createFocusSelect(item, focusConfig);
         if (!select || select.options.length === 0) {
           HM.log(1, `No valid focus items found for type: ${focusType}`);
           return null;
         }
 
-        // Add label and select to container
-        this.assembleFocusUI(itemContainer, select, focusConfig);
+        const selectRow = document.createElement('tr');
+        const selectCell = document.createElement('td');
+        const starCell = document.createElement('td');
+
+        selectCell.appendChild(select);
+        selectRow.appendChild(selectCell);
+        selectRow.appendChild(starCell);
+        itemContainer.appendChild(selectRow);
 
         // Add favorite star
         this.addFavoriteStar(itemContainer, item);
 
-        HM.log(3, `Successfully rendered focus item ${item._id}`);
+        HM.log(3, `Successfully rendered focus item ${item._id} as table`);
         return itemContainer;
       } catch (selectError) {
         HM.log(1, `Error creating focus select: ${selectError.message}`);
@@ -199,7 +212,7 @@ export class FocusItemRenderer extends BaseItemRenderer {
         option.innerHTML = this.formatFocusName(focusName);
       } catch (formatError) {
         HM.log(2, `Error formatting focus name: ${formatError.message}`);
-        option.innerHTML = focusName || 'Unknown Focus';
+        option.innerHTML = focusName || game.i18n.localize('hm.app.equipment.unknown-focus');
       }
 
       // Select first option by default
@@ -221,7 +234,7 @@ export class FocusItemRenderer extends BaseItemRenderer {
    * @private
    */
   formatFocusName(focusName) {
-    if (!focusName) return 'Unknown Focus';
+    if (!focusName) return game.i18n.localize('hm.app.equipment.unknown-focus');
     return focusName.charAt(0).toUpperCase() + focusName.slice(1);
   }
 

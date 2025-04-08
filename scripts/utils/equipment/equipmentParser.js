@@ -230,127 +230,113 @@ export class EquipmentParser {
         return;
       }
 
-      // Create wealth option container
-      const wealthComponents = this.createWealthOptionComponents(type, isModernRules, wealthValue);
-      this.setupWealthOptionBehavior(wealthComponents, sectionContainer, isModernRules, wealthValue, type);
+      // Create wealth option container as a table
+      const wealthTable = document.createElement('table');
+      wealthTable.classList.add('wealth-option-container');
+
+      // Create checkbox row
+      const checkboxRow = document.createElement('tr');
+      const checkboxCell = document.createElement('td');
+      const emptyCell = document.createElement('td');
+
+      // Create checkbox and label
+      const wealthCheckbox = document.createElement('input');
+      wealthCheckbox.type = 'checkbox';
+      wealthCheckbox.id = `use-starting-wealth-${type}`;
+      wealthCheckbox.name = `use-starting-wealth-${type}`;
+
+      const wealthLabel = document.createElement('label');
+      wealthLabel.htmlFor = `use-starting-wealth-${type}`;
+      wealthLabel.innerHTML = game.i18n.localize('hm.app.equipment.use-starting-wealth');
+
+      checkboxCell.appendChild(wealthCheckbox);
+      checkboxCell.appendChild(document.createTextNode(' '));
+      checkboxCell.appendChild(wealthLabel);
+      checkboxRow.appendChild(checkboxCell);
+      checkboxRow.appendChild(emptyCell);
+      wealthTable.appendChild(checkboxRow);
+
+      // Create wealth roll row (hidden initially)
+      const rollRow = document.createElement('tr');
+      rollRow.classList.add('wealth-roll-container');
+      // Force hiding using both style and attribute
+      rollRow.style.display = 'none';
+      rollRow.setAttribute('hidden', 'true');
+
+      const rollCell = document.createElement('td');
+      rollCell.colSpan = 2;
+
+      const wealthInput = document.createElement('input');
+      wealthInput.type = 'text';
+      wealthInput.id = `starting-wealth-amount-${type}`;
+      wealthInput.name = `starting-wealth-amount-${type}`;
+      wealthInput.placeholder = game.i18n.localize('hm.app.equipment.wealth-placeholder');
+
+      rollCell.appendChild(wealthInput);
+
+      if (isModernRules) {
+        // For 2024 rules, show flat value without roll button
+        wealthInput.value = `${wealthValue} ${CONFIG.DND5E.currencies.gp.abbreviation}`;
+        wealthInput.readOnly = true;
+      } else {
+        // Legacy rules with dice roll
+        wealthInput.readOnly = true;
+
+        const rollButton = document.createElement('button');
+        rollButton.type = 'button';
+        rollButton.innerHTML = '<i class="fa-solid fa-dice"></i>';
+        rollButton.title = game.i18n.localize('hm.app.equipment.roll-wealth');
+        rollButton.classList.add('wealth-roll-button');
+        rollCell.appendChild(rollButton);
+
+        // Add roll button event listener (unchanged)
+        rollButton.addEventListener('click', async () => {
+          const formula = wealthValue;
+          const roll = new Roll(formula);
+          await roll.evaluate();
+          wealthInput.value = `${roll.total} ${CONFIG.DND5E.currencies.gp.abbreviation}`;
+          wealthInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+          // Chat message logic (unchanged)
+          if (game.settings.get(HM.ID, 'publishWealthRolls')) {
+            const characterNameInput = document.getElementById('character-name');
+            const characterName = characterNameInput?.value || game.user.name;
+            const typeLabel = game.i18n.localize(`TYPES.Item.${type}`);
+
+            await roll.toMessage({
+              flavor: game.i18n.format('hm.app.equipment.wealth-roll-message', {
+                name: characterName,
+                type: typeLabel,
+                result: roll.total
+              }),
+              speaker: ChatMessage.getSpeaker()
+            });
+          }
+        });
+      }
+
+      rollRow.appendChild(rollCell);
+      wealthTable.appendChild(rollRow);
+
+      // Update checkbox change handler
+      wealthCheckbox.addEventListener('change', (event) => {
+        this.handleWealthCheckboxChange(event, sectionContainer, rollRow, wealthInput, isModernRules, wealthValue);
+      });
+
+      sectionContainer.appendChild(wealthTable);
+
+      // Force a redraw to ensure styles are applied
+      setTimeout(() => {
+        if (!wealthCheckbox.checked) {
+          rollRow.style.display = 'none';
+          rollRow.setAttribute('hidden', 'true');
+        }
+      }, 0);
 
       HM.log(3, `Rendered wealth option for ${type} with value ${wealthValue}`);
     } catch (error) {
       HM.log(1, `Error rendering wealth option: ${error.message}`);
     }
-  }
-
-  /**
-   * Creates wealth option UI components
-   * @param {string} type - Equipment type
-   * @param {boolean} isModernRules - Whether using 2024 rules
-   * @param {string|number} wealthValue - Starting wealth value
-   * @returns {Object} Created UI components
-   * @private
-   */
-  createWealthOptionComponents(type, isModernRules, wealthValue) {
-    HM.log(3, `Creating wealth components for ${type}`);
-
-    const wealthContainer = document.createElement('div');
-    wealthContainer.classList.add('wealth-option-container');
-
-    const wealthCheckbox = document.createElement('input');
-    wealthCheckbox.type = 'checkbox';
-    wealthCheckbox.id = `use-starting-wealth-${type}`;
-    wealthCheckbox.name = `use-starting-wealth-${type}`;
-
-    const wealthLabel = document.createElement('label');
-    wealthLabel.htmlFor = `use-starting-wealth-${type}`;
-    wealthLabel.innerHTML = game.i18n.localize('hm.app.equipment.use-starting-wealth');
-
-    const wealthRollContainer = document.createElement('div');
-    wealthRollContainer.classList.add('wealth-roll-container');
-    wealthRollContainer.style.display = 'none';
-
-    const wealthInput = document.createElement('input');
-    wealthInput.type = 'text';
-    wealthInput.id = `starting-wealth-amount-${type}`;
-    wealthInput.name = `starting-wealth-amount-${type}`;
-    wealthInput.placeholder = game.i18n.localize('hm.app.equipment.wealth-placeholder');
-
-    if (isModernRules) {
-      // For 2024 rules, we show flat value without roll button
-      wealthInput.value = `${wealthValue} ${CONFIG.DND5E.currencies.gp.abbreviation}`;
-      wealthInput.readOnly = true;
-    } else {
-      // Legacy rules with dice roll
-      wealthInput.readOnly = true;
-
-      const rollButton = document.createElement('button');
-      rollButton.type = 'button';
-      rollButton.innerHTML = '<i class="fa-solid fa-dice"></i>';
-      rollButton.title = game.i18n.localize('hm.app.equipment.roll-wealth');
-      rollButton.classList.add('wealth-roll-button');
-      wealthRollContainer.appendChild(rollButton);
-    }
-
-    return {
-      wealthContainer,
-      wealthCheckbox,
-      wealthLabel,
-      wealthRollContainer,
-      wealthInput,
-      rollButton: !isModernRules ? wealthRollContainer.querySelector('.wealth-roll-button') : null
-    };
-  }
-
-  /**
-   * Set up event listeners and behavior for wealth option components
-   * @param {Object} components - Wealth UI components
-   * @param {HTMLElement} sectionContainer - Parent container
-   * @param {boolean} isModernRules - Whether using 2024 rules
-   * @param {string|number} wealthValue - Starting wealth value
-   * @param {string} type - Class or background type for wealth
-   * @private
-   */
-  setupWealthOptionBehavior(components, sectionContainer, isModernRules, wealthValue, type) {
-    HM.log(3, 'Setting up wealth behavior');
-
-    const { wealthContainer, wealthCheckbox, wealthLabel, wealthRollContainer, wealthInput, rollButton } = components;
-
-    // Add roll button event listener for legacy rules
-    if (rollButton) {
-      rollButton.addEventListener('click', async () => {
-        const formula = wealthValue;
-        const roll = new Roll(formula);
-        await roll.evaluate();
-        wealthInput.value = `${roll.total} ${CONFIG.DND5E.currencies.gp.abbreviation}`;
-        wealthInput.dispatchEvent(new Event('change', { bubbles: true }));
-        HM.log(3, `Rolled wealth ${formula} = ${roll.total}`);
-
-        // Publish to chat if setting is enabled
-        if (game.settings.get(HM.ID, 'publishWealthRolls')) {
-          const characterNameInput = document.getElementById('character-name');
-          const characterName = characterNameInput?.value || game.user.name;
-          const typeLabel = game.i18n.localize(`TYPES.Item.${type}`);
-
-          await roll.toMessage({
-            flavor: game.i18n.format('hm.app.equipment.wealth-roll-message', {
-              name: characterName,
-              type: typeLabel,
-              result: roll.total
-            }),
-            speaker: ChatMessage.getSpeaker()
-          });
-        }
-      });
-    }
-
-    // Add checkbox event listener
-    wealthCheckbox.addEventListener('change', (event) => {
-      this.handleWealthCheckboxChange(event, sectionContainer, wealthRollContainer, wealthInput, isModernRules, wealthValue);
-    });
-
-    wealthRollContainer.appendChild(wealthInput);
-    wealthContainer.appendChild(wealthCheckbox);
-    wealthContainer.appendChild(wealthLabel);
-    wealthContainer.appendChild(wealthRollContainer);
-    sectionContainer.appendChild(wealthContainer);
   }
 
   /**
@@ -363,16 +349,15 @@ export class EquipmentParser {
    * @param {string|number} wealthValue - Wealth value
    * @private
    */
-  handleWealthCheckboxChange(event, sectionContainer, wealthRollContainer, wealthInput, isModernRules, wealthValue) {
+  handleWealthCheckboxChange(event, sectionContainer, wealthRollRow, wealthInput, isModernRules, wealthValue) {
     HM.log(3, `Wealth checkbox changed to ${event.target.checked}`);
     const isChecked = event.target.checked;
 
-    // Cache selectors to reduce DOM operations
-    const equipmentElements = sectionContainer.querySelectorAll('.equipment-item');
+    // Update equipment tables in a single pass
+    const equipmentTables = sectionContainer.querySelectorAll('table.equipment-item');
     const selectors = 'select, input[type="checkbox"], label';
 
-    // Update equipment elements in a single pass
-    equipmentElements.forEach((el) => {
+    equipmentTables.forEach((el) => {
       el.classList.toggle('disabled', isChecked);
       el.querySelectorAll(selectors).forEach((input) => {
         input.disabled = isChecked;
@@ -380,7 +365,13 @@ export class EquipmentParser {
     });
 
     // Display/hide wealth roll container
-    wealthRollContainer.style.display = isChecked ? 'flex' : 'none';
+    if (isChecked) {
+      wealthRollRow.style.display = 'table-row';
+      wealthRollRow.removeAttribute('hidden');
+    } else {
+      wealthRollRow.style.display = 'none';
+      wealthRollRow.setAttribute('hidden', 'true');
+    }
 
     // Reset wealth input if unchecked
     if (!isChecked) {

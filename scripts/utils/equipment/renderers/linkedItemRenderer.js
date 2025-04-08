@@ -24,8 +24,33 @@ export class LinkedItemRenderer extends BaseItemRenderer {
         return null;
       }
 
+      // Create header row if needed
+      if (item.label) {
+        const headerRow = document.createElement('tr');
+        const headerCell = document.createElement('th');
+        headerCell.colSpan = 2;
+
+        const headerContent = document.createElement('h4');
+        headerContent.innerHTML = item.label;
+        headerCell.appendChild(headerContent);
+        headerRow.appendChild(headerCell);
+        itemContainer.appendChild(headerRow);
+      }
+
+      // Create components and assemble them
       const components = this.createLinkedItemComponents(item);
-      this.assembleLinkedItemUI(itemContainer, components, item);
+      // This is the line we need to add - assemble the components
+      this.assembleLinkedItemUI(components.labelElement, components.linkedCheckbox, this.formatDisplayLabel(item));
+
+      // Create checkbox row
+      const checkboxRow = document.createElement('tr');
+      const checkboxCell = document.createElement('td');
+      const starCell = document.createElement('td');
+
+      checkboxCell.appendChild(components.labelElement);
+      checkboxRow.appendChild(checkboxCell);
+      checkboxRow.appendChild(starCell);
+      itemContainer.appendChild(checkboxRow);
 
       HM.log(3, `Successfully rendered linked item ${item._id}`);
       this.parser.constructor.renderedItems.add(item._id);
@@ -69,17 +94,13 @@ export class LinkedItemRenderer extends BaseItemRenderer {
    * @param {Object} item - Linked item
    * @private
    */
-  assembleLinkedItemUI(itemContainer, components, item) {
-    const { labelElement, linkedCheckbox, displayLabel } = components;
-
+  assembleLinkedItemUI(labelElement, linkedCheckbox, displayLabel) {
     // Set the label content
     const finalLabel = displayLabel?.trim() || game.i18n.localize('hm.app.equipment.unknown-choice');
     labelElement.innerHTML = finalLabel;
     labelElement.prepend(linkedCheckbox);
 
-    // Add to container
-    itemContainer.appendChild(labelElement);
-    HM.log(3, `Added linked item UI for ${item._id}`);
+    HM.log(3, `Assembled linked item UI with label "${finalLabel}"`);
   }
 
   /**

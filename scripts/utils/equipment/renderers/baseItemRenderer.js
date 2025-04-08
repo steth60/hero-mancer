@@ -26,20 +26,20 @@ export class BaseItemRenderer {
   }
 
   /**
-   * Creates a basic container for an equipment item
+   * Creates a basic container for an equipment item as a table
    * @param {object} item - Equipment item
-   * @returns {HTMLElement} Container element
+   * @returns {HTMLElement} Table element
    */
   createItemContainer(item) {
-    const itemContainer = document.createElement('div');
+    const itemContainer = document.createElement('table');
     itemContainer.classList.add('equipment-item');
-    HM.log(3, `Created container for item ${item?._id || 'unknown'}`);
+    HM.log(3, `Created table container for item ${item?._id || 'unknown'}`);
     return itemContainer;
   }
 
   /**
-   * Adds a label to an equipment item container
-   * @param {HTMLElement} container - Container element
+   * Adds a label to equipment item as a table header row
+   * @param {HTMLElement} container - Table container
    * @param {Object} item - Equipment item
    * @returns {Promise<void>}
    */
@@ -56,30 +56,52 @@ export class BaseItemRenderer {
       return;
     }
 
-    const labelElement = document.createElement('h4');
-    labelElement.classList.add('parent-label');
-    let labelText = '';
-
     if (item.key) {
       try {
+        // Create table header row and cell
+        const headerRow = document.createElement('tr');
+        const headerCell = document.createElement('th');
+        headerCell.colSpan = 2; // Span both columns
+
+        // Create and populate the label element
+        const labelElement = document.createElement('h4');
+        labelElement.classList.add('parent-label');
+
+        // Get item document and extract label
         const itemDoc = await this.resolveItemDocument(item.key);
+        const labelText = itemDoc ? item.label || `${item.count || ''} ${itemDoc.name}` : item.label || game.i18n.localize('hm.app.equipment.choose-one');
 
-        if (itemDoc) {
-          labelText = item.label || `${item.count || ''} ${itemDoc.name}`;
-          HM.log(3, `Found item document "${itemDoc.name}" for item ${item._id}`);
-        } else {
-          HM.log(1, `No document found for item key: ${item.key}`);
-          labelText = item.label || game.i18n.localize('hm.app.equipment.choose-one');
-        }
+        labelElement.innerHTML = labelText;
+
+        // Assemble and append to container
+        headerCell.appendChild(labelElement);
+        headerRow.appendChild(headerCell);
+        container.appendChild(headerRow);
+
+        HM.log(3, `Added table header with label "${labelText}" for item ${item._id}`);
       } catch (error) {
-        HM.log(1, `Error getting label for item ${item._source?.key}: ${error.message}`);
-        labelText = item.label || game.i18n.localize('hm.app.equipment.choose-one');
+        HM.log(1, `Error adding label for item ${item._source?.key}: ${error.message}`);
       }
-
-      labelElement.innerHTML = labelText;
-      container.appendChild(labelElement);
-      HM.log(3, `Added label "${labelText}" for item ${item._id}`);
     }
+  }
+
+  /**
+   * Helper to add a row with an element and a star cell
+   * @param {HTMLElement} container - Table container
+   * @param {HTMLElement} element - Element to add
+   * @returns {Object} Created row elements
+   */
+  addElementRow(container, element) {
+    const row = document.createElement('tr');
+    const mainCell = document.createElement('td');
+    const starCell = document.createElement('td');
+
+    mainCell.appendChild(element);
+    row.appendChild(mainCell);
+    row.appendChild(starCell);
+    container.appendChild(row);
+
+    return { row, mainCell, starCell };
   }
 
   /**
@@ -113,8 +135,8 @@ export class BaseItemRenderer {
   }
 
   /**
-   * Adds a favorite star to an item container
-   * @param {HTMLElement} container - Container element
+   * Adds a favorite star to item in the appropriate table cell
+   * @param {HTMLElement} container - Table container
    * @param {Object} item - Equipment item
    * @returns {HTMLElement} Created favorite checkbox
    */
@@ -130,24 +152,21 @@ export class BaseItemRenderer {
 
     const favoriteLabel = document.createElement('label');
     favoriteLabel.classList.add('equipment-favorite-label');
-    favoriteLabel.title = 'Add to favorites';
+    favoriteLabel.title = game.i18n.localize('hm.app.equipment.add-favorites');
 
     const favoriteCheckbox = document.createElement('input');
     favoriteCheckbox.type = 'checkbox';
     favoriteCheckbox.classList.add('equipment-favorite-checkbox');
 
-    // Extract display name
+    // Extract display name and set identifiers
     let itemName = this.extractItemName(container, item);
     favoriteCheckbox.dataset.itemName = itemName;
-
-    // Set UUID or ID information
     this.setFavoriteIdentifiers(favoriteCheckbox, container, item);
 
-    // Create the star icon
+    // Create the star icon with event listener
     const starIcon = document.createElement('i');
     starIcon.classList.add('fa-bookmark', 'equipment-favorite-star', 'fa-thin');
 
-    // Add event listener for star toggle
     favoriteCheckbox.addEventListener('change', function () {
       if (this.checked) {
         starIcon.classList.remove('fa-thin');
@@ -158,15 +177,51 @@ export class BaseItemRenderer {
       }
     });
 
-    // Assemble the components
+    // Assemble components
     favoriteLabel.appendChild(favoriteCheckbox);
     favoriteLabel.appendChild(starIcon);
     favoriteContainer.appendChild(favoriteLabel);
 
-    this.appendFavoriteToContainer(container, favoriteContainer);
+    // Find an appropriate star cell to place the star
+    const starCell = this.findStarCell(container);
+    if (starCell) {
+      starCell.appendChild(favoriteContainer);
+    } else {
+      // Create a new row if necessary
+      const row = document.createElement('tr');
+      const emptyCell = document.createElement('td');
+      const newStarCell = document.createElement('td');
+      newStarCell.appendChild(favoriteContainer);
+      row.appendChild(emptyCell);
+      row.appendChild(newStarCell);
+      container.appendChild(row);
+    }
 
-    HM.log(3, `Added favorite star for "${itemName}" with ID ${favoriteCheckbox.id}`);
+    HM.log(3, `Added favorite star in table for "${itemName}" with ID ${favoriteCheckbox.id}`);
     return favoriteCheckbox;
+  }
+
+  /**
+   * Find an appropriate cell for the favorite star
+   * @param {HTMLElement} container - Table container
+   * @returns {HTMLElement|null} Star cell or null
+   */
+  findStarCell(container) {
+    // Look for the last row with an empty second cell
+    const rows = container.querySelectorAll('tr');
+    if (rows.length === 0) return null;
+
+    // Skip header row
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (row.cells.length > 1 && !row.cells[1].hasChildNodes()) {
+        return row.cells[1];
+      }
+    }
+
+    // If no empty cell found, use the last row's second cell
+    const lastRow = rows[rows.length - 1];
+    return lastRow.cells.length > 1 ? lastRow.cells[1] : null;
   }
 
   /**

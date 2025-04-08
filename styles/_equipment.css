@@ -1,5 +1,5 @@
 /* ==========================================================================
-  Equipment Section
+  Equipment Section - Layout
   ========================================================================== */
 
 .equipment-container {
@@ -26,6 +26,10 @@
   box-shadow: 0 2px 4px #0003;
 }
 
+/* ==========================================================================
+  Typography and Headings
+  ========================================================================== */
+
 .hm-app-tab-content .class-equipment-section h3,
 .hm-app-tab-content .background-equipment-section h3 {
   width: 100%;
@@ -37,25 +41,6 @@
 .hm-app-tab-content .background-equipment-section h4 {
   font-size: var(--font-size-15);
   font-family: signika, sans-serif;
-}
-
-.equipment-item {
-  display: flex;
-  flex-flow: row wrap;
-  align-items: baseline;
-  width: 100%;
-  max-width: 100%;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--color-border-dark-secondary);
-}
-
-.equipment-item label,
-.equipment-item input,
-.equipment-item select {
-  width: fit-content;
-  margin-top: 4px;
-  margin-right: auto;
-  vertical-align: middle;
 }
 
 .equipment-choices h3 {
@@ -70,10 +55,78 @@
 }
 
 .equipment-choices .parent-label {
-  width: fit-content;
-  min-width: 140px;
-  max-width: 265px;
+  width: 100%;
   margin: 0;
+}
+
+/* ==========================================================================
+  Table Structure
+  ========================================================================== */
+
+table.equipment-item,
+table.wealth-option-container {
+  display: table;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border-collapse: collapse;
+  background: transparent;
+}
+
+table.equipment-item {
+  border-bottom: 1px solid var(--color-border-dark-secondary);
+}
+
+table.equipment-item tr,
+table.wealth-option-container tr {
+  display: table-row;
+  background: transparent;
+}
+
+table.equipment-item th,
+table.equipment-item td,
+table.wealth-option-container th,
+table.wealth-option-container td {
+  display: table-cell;
+  border: none;
+  vertical-align: middle;
+  background: transparent;
+}
+
+table.equipment-item th {
+  padding: 0.25rem;
+  border-bottom: 1px solid #0000001a;
+  text-align: left;
+}
+
+table.equipment-item td {
+  padding: 0.25rem;
+}
+
+table.equipment-item td:first-child {
+  width: 75%;
+}
+
+table.equipment-item td:last-child {
+  width: 25%;
+  text-align: right;
+}
+
+table.equipment-item tr + tr,
+table.wealth-option-container tr + tr {
+  margin-top: 0;
+}
+
+/* ==========================================================================
+  Form Elements
+  ========================================================================== */
+
+.equipment-item label,
+.equipment-item input,
+.equipment-item select {
+  width: fit-content;
+  margin-top: 4px;
+  margin-right: auto;
+  vertical-align: middle;
 }
 
 .equipment-choices input[type='checkbox'] {
@@ -82,9 +135,10 @@
 }
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select {
-  width: fit-content;
+  display: block;
+  width: auto;
   min-width: 140px;
-  max-width: 240px;
+  max-width: 100%;
   margin: 0.25rem 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -105,58 +159,65 @@
   font-size: inherit;
 }
 
-/* Disabled equipment states */
-.equipment-choices select:disabled,
-.equipment-choices input:disabled,
-.equipment-choices label.disabled {
-  opacity: 0.5;
-  color: #878787;
-  cursor: not-allowed;
-}
+/* ==========================================================================
+  Wealth Options
+  ========================================================================== */
 
-.equipment-item.disabled select,
-.equipment-item.disabled input[type='checkbox'],
-.equipment-item.disabled label {
-  pointer-events: none;
-}
-
-/* Wealth option container */
-.wealth-option-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin: 10px 0 0;
-  padding: 0.625rem;
+table.wealth-option-container {
+  margin: 10px 0 1rem;
   border: 1px solid var(--color-border-light-tertiary);
   border-radius: var(--border-radius-sm);
 }
 
-.wealth-option-container label {
+table.wealth-option-container tr:first-child td:first-child {
+  gap: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+table.wealth-option-container td {
+  padding: 0.5rem 0.625rem;
+  vertical-align: middle;
+}
+
+table.wealth-option-container label {
+  margin: 0;
+  padding-top: 0.0625rem;
   font-weight: 500;
 }
 
-.wealth-roll-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: fit-content;
-  padding-left: 0.25rem;
-  border-radius: var(--border-radius-sm);
+table.wealth-option-container input[type='checkbox'] {
+  margin: 0;
 }
 
-.wealth-roll-container button,
-.character-name-row button {
-  aspect-ratio: 1/1;
+tr.wealth-roll-container td {
+  gap: 0.5rem;
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0.5rem 0.625rem;
+}
+
+.wealth-roll-container input[type='text'] {
+  flex: 1;
+  min-width: 80px;
+  max-width: 120px;
+  margin: 0;
+}
+
+.wealth-roll-button {
+  display: flex;
+  flex: 0 0 auto;
   justify-content: center;
   align-items: center;
   width: 32px;
   height: 32px;
+  margin: 0;
   padding: 0;
+  border-radius: var(--border-radius-sm);
 }
 
-.wealth-roll-container button i,
-.character-name-row button i {
+.wealth-roll-button i {
   margin: 0;
 }
 
@@ -168,12 +229,80 @@
   text-align: center;
 }
 
+/* ==========================================================================
+  Favorite Star
+  ========================================================================== */
+
+.equipment-favorite-container {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 1.2rem;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  text-align: right;
+}
+
+.equipment-favorite-label {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  float: right;
+  height: 100%;
+  cursor: pointer;
+}
+
+.equipment-favorite-checkbox {
+  opacity: 0;
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.equipment-choices .equipment-favorite-container .equipment-favorite-label .equipment-favorite-checkbox {
+  position: absolute;
+}
+
+.equipment-favorite-star {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 1rem;
+  height: 1rem;
+  color: #aaa;
+  font-size: 1.2rem;
+  transition: color 0.2s ease;
+}
+
+.equipment-favorite-checkbox:checked + .equipment-favorite-star {
+  color: #ffd700;
+}
+
+.equipment-favorite-checkbox:hover + .equipment-favorite-star {
+  color: #f0b400;
+}
+
+td .equipment-favorite-container {
+  display: block;
+  height: 100%;
+  text-align: right;
+}
+
+/* ==========================================================================
+  Second Weapon Options
+  ========================================================================== */
+
 .second-weapon-label {
   display: block;
   margin-bottom: 0.5rem;
   color: var(--color-text-dark-secondary);
   font-size: var(--font-size-14);
 }
+
+/* ==========================================================================
+  Empty Notices and Warnings
+  ========================================================================== */
 
 .equipment-empty-notice {
   box-sizing: border-box;
@@ -229,70 +358,34 @@
   font-size: 1rem;
 }
 
-/* Favorite star styling */
-.equipment-favorite-container {
-  display: inline-flex;
-  position: relative;
-  align-items: center;
-  width: 1.2rem;
-  height: 1.2rem;
-  margin-left: auto;
-  line-height: 1;
-  vertical-align: baseline;
+/* ==========================================================================
+  States and Visibility
+  ========================================================================== */
+
+.equipment-item.disabled select,
+.equipment-item.disabled input[type='checkbox'],
+.equipment-item.disabled label {
+  pointer-events: none;
 }
 
-.equipment-favorite-label {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  cursor: pointer;
-}
-
-.equipment-favorite-checkbox {
-  opacity: 0;
-  position: absolute;
-  width: 0;
-  height: 0;
+.equipment-choices select:disabled,
+.equipment-choices input:disabled,
+.equipment-choices label.disabled {
+  opacity: 0.5;
+  color: #878787;
+  cursor: not-allowed;
 }
 
 .equipment-item.disabled .equipment-favorite-container {
-  display: none !important;
+  display: none;
 }
 
-.equipment-choices .equipment-favorite-container .equipment-favorite-label .equipment-favorite-checkbox {
-  position: absolute;
+tr.wealth-roll-container[hidden],
+tr.wealth-roll-container[style*='display: none'] {
+  display: none;
 }
 
-.equipment-favorite-star {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 1rem;
-  height: 1rem;
-  color: #aaa;
-  font-size: 1.2rem;
-  transition: color 0.2s ease;
-}
-
-.equipment-favorite-checkbox:checked + .equipment-favorite-star {
-  color: #ffd700;
-}
-
-.equipment-favorite-checkbox:hover + .equipment-favorite-star {
-  color: #f0b400;
-}
-
-/* Special handling for checkbox labels */
-.equipment-item label .equipment-favorite-container {
-  position: absolute;
-  top: 50%;
-  right: -24px;
-  transform: translateY(-50%);
-}
-
-/* Special handling for select elements */
-.equipment-item select + .equipment-favorite-container {
-  display: inline-flex;
-  margin-left: 8px;
+tr.wealth-roll-container:not([hidden]),
+tr.wealth-roll-container[style*='display: table-row'] {
+  display: table-row;
 }
