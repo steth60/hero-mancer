@@ -80,9 +80,10 @@
 }
 
 .application.hm-app .hm-app-tab-content .equipment-container .equipment-choices select {
-  width: fit-content;
+  display: block;
+  width: auto !important;
   min-width: 140px;
-  max-width: 240px;
+  max-width: 100%;
   margin: 0.25rem 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -229,20 +230,23 @@
 
 /* Favorite star styling */
 .equipment-favorite-container {
-  display: inline-flex;
+  display: block !important;
   position: relative;
+  justify-content: flex-end;
   align-items: center;
-  width: 1.2rem;
+  width: 100% !important;
   height: 1.2rem;
-  margin-left: auto;
+  margin: 0 !important;
+  padding: 0 !important;
   line-height: 1;
-  vertical-align: baseline;
+  text-align: right !important;
 }
 
 .equipment-favorite-label {
-  display: flex;
+  display: inline-flex !important;
   justify-content: center;
   align-items: center;
+  float: right !important;
   height: 100%;
   cursor: pointer;
 }
@@ -300,8 +304,8 @@ table.equipment-item,
 table.wealth-option-container {
   display: table !important;
   width: 100%;
-  border-collapse: collapse;
   margin-bottom: 0.5rem;
+  border-collapse: collapse;
 }
 
 table.equipment-item tr,
@@ -317,9 +321,9 @@ table.wealth-option-container td {
 }
 
 table.equipment-item th {
-  text-align: left;
   padding: 0.25rem;
   border-bottom: 1px solid #0000001a;
+  text-align: left;
 }
 
 table.equipment-item td {
@@ -333,7 +337,7 @@ table.equipment-item td:first-child {
 
 table.equipment-item td:last-child {
   width: 25%;
-  text-align: center;
+  text-align: right !important;
 }
 
 /* Hide table borders in normal view */
@@ -347,9 +351,9 @@ table.equipment-item td {
 table.wealth-option-container {
   width: 100%;
   margin: 10px 0 1rem;
-  border-collapse: collapse;
   border: 1px solid var(--color-border-light-tertiary);
   border-radius: var(--border-radius-sm);
+  border-collapse: collapse;
 }
 
 table.wealth-option-container td {
@@ -358,8 +362,8 @@ table.wealth-option-container td {
 }
 
 table.wealth-option-container label {
-  font-weight: 500;
   margin-left: 0.5rem;
+  font-weight: 500;
 }
 
 /* Ensure the wealth row container is properly hidden initially */
@@ -373,11 +377,11 @@ tr.wealth-roll-container[style*='display: table-row'] {
 }
 
 tr.wealth-roll-container td {
-  padding: 0.5rem 0.625rem;
+  gap: 0.5rem;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
 }
 
 .wealth-roll-container input[type='text'] {
@@ -407,25 +411,59 @@ table.wealth-option-container tr + tr {
 
 /* Override specifically for wealth roll container cells */
 table.wealth-option-container tr.wealth-roll-container td {
+  gap: 0.5rem;
   display: flex !important;
   flex-direction: row;
   align-items: center;
-  gap: 0.5rem;
 }
 
 /* Style the button inside wealth roll container */
 .wealth-roll-button {
-  flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  margin: 0;
   display: flex;
+  flex: 0 0 auto;
   justify-content: center;
   align-items: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
   border-radius: var(--border-radius-sm);
 }
 
 .wealth-roll-button i {
   margin: 0;
+}
+
+table.equipment-item,
+table.equipment-item tr,
+table.equipment-item th,
+table.equipment-item td,
+table.wealth-option-container,
+table.wealth-option-container tr,
+table.wealth-option-container th,
+table.wealth-option-container td {
+  background: transparent !important; /* Override any Foundry styling */
+  background-color: transparent !important;
+}
+
+/* Add additional fixes for table structure */
+table.equipment-item {
+  margin-bottom: 0.5rem; /* Remove any debug borders */
+  border: none !important;
+  border-bottom: 1px solid var(--color-border-dark-secondary) !important;
+}
+
+table.equipment-item th,
+table.equipment-item td {
+  border: none !important; /* Remove any debug borders */
+  vertical-align: middle;
+}
+
+/* Ensure the favorite star is properly aligned */
+td .equipment-favorite-container {
+  display: block !important;
+  justify-content: flex-end;
+  align-items: center;
+  height: 100%;
+  text-align: right !important;
 }
