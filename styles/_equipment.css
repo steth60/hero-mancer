@@ -296,3 +296,87 @@
   display: inline-flex;
   margin-left: 8px;
 }
+
+/* Table structure */
+table.equipment-item,
+table.wealth-option-container {
+  display: table !important;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+
+table.equipment-item tr,
+table.wealth-option-container tr {
+  display: table-row !important;
+}
+
+table.equipment-item th,
+table.equipment-item td,
+table.wealth-option-container th,
+table.wealth-option-container td {
+  display: table-cell !important;
+}
+
+table.equipment-item th {
+  text-align: left;
+  padding: 0.25rem;
+  border-bottom: 1px solid #0000001a;
+}
+
+table.equipment-item td {
+  padding: 0.25rem;
+  vertical-align: middle;
+}
+
+table.equipment-item td:first-child {
+  width: 75%;
+}
+
+table.equipment-item td:last-child {
+  width: 25%;
+  text-align: center;
+}
+
+/* Hide table borders in normal view */
+table.equipment-item,
+table.equipment-item th,
+table.equipment-item td {
+  border: none;
+}
+
+/* Wealth option table */
+table.wealth-option-container {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+/* Fix row spacing */
+table.equipment-item tr + tr,
+table.wealth-option-container tr + tr {
+  margin-top: 0 !important;
+}
+
+/* Fix for empty cells to maintain structure */
+
+/* table.equipment-item td:empty,
+table.wealth-option-container td:empty {
+  min-width: 25%;
+} */
+
+/* Temporary for debugging - remove after fixing */
+table.equipment-item {
+  border: 1px solid rgb(255 0 0 / 50%);
+}
+
+table.equipment-item th {
+  border: 1px solid rgb(0 0 255 / 50%);
+}
+
+table.equipment-item td {
+  border: 1px solid rgb(0 255 0 / 50%);
+}
+
+table.wealth-option-container {
+  border: 1px solid rgb(255 165 0 / 50%);
+}

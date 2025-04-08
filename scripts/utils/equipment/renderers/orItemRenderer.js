@@ -17,13 +17,31 @@ export class OrItemRenderer extends BaseItemRenderer {
       return itemContainer;
     }
 
-    await this.addOrBlockHeader(item, itemContainer);
+    // Create header row for OR block
+    const headerRow = document.createElement('tr');
+    const headerCell = document.createElement('th');
+    headerCell.colSpan = 2;
+    headerRow.appendChild(headerCell);
+    itemContainer.appendChild(headerRow);
 
+    // Add OR block header label to header cell
+    await this.addOrBlockHeader(item, headerCell);
+
+    // Create select row
+    const selectRow = document.createElement('tr');
+    const selectCell = document.createElement('td');
+    const starCell = document.createElement('td');
+    selectRow.appendChild(selectCell);
+    selectRow.appendChild(starCell);
+    itemContainer.appendChild(selectRow);
+
+    // Create select element and add to select cell
     const select = this.createSelectElement(item);
-    itemContainer.appendChild(select);
+    selectCell.appendChild(select);
 
+    // Create hidden default selection field
     const defaultSelection = this.createDefaultSelectionField(select);
-    itemContainer.appendChild(defaultSelection);
+    selectCell.appendChild(defaultSelection);
 
     this.setupSelectChangeListener(select, defaultSelection);
     await this.setupSpecializedRendering(item, select, itemContainer);
@@ -84,7 +102,7 @@ export class OrItemRenderer extends BaseItemRenderer {
    * @param {Object} item - OR block item
    * @param {HTMLElement} container - Container element
    */
-  async addOrBlockHeader(item, container) {
+  async addOrBlockHeader(item, headerCell) {
     const labelElement = document.createElement('h4');
     labelElement.classList.add('parent-label');
 
@@ -116,7 +134,7 @@ export class OrItemRenderer extends BaseItemRenderer {
       labelElement.innerHTML = `${item.label || game.i18n.localize('hm.app.equipment.choose-one')}`;
     }
 
-    container.appendChild(labelElement);
+    headerCell.appendChild(labelElement);
   }
 
   /**
@@ -212,13 +230,36 @@ export class OrItemRenderer extends BaseItemRenderer {
   }
 
   /**
-   * Set up weapon-shield choice UI
+   * Set up weapon-shield choice UI using tables
    * @param {Object} item - OR block item
    * @param {HTMLSelectElement} select - Primary select element
-   * @param {HTMLElement} container - Container element
+   * @param {HTMLElement} container - Table container
    */
   async setupWeaponShieldChoice(item, select, container) {
-    const { dropdownContainer, secondSelect } = this.createSecondaryDropdown(item, container);
+    // Create first select row
+    const selectRow = document.createElement('tr');
+    const selectCell = document.createElement('td');
+    const starCell = document.createElement('td');
+
+    selectCell.appendChild(select);
+    selectRow.appendChild(selectCell);
+    selectRow.appendChild(starCell);
+    container.appendChild(selectRow);
+
+    // Create second select row
+    const secondSelect = document.createElement('select');
+    secondSelect.id = `${item._source?.key || item._id || Date.now()}-second`;
+
+    const secondRow = document.createElement('tr');
+    const secondCell = document.createElement('td');
+    const emptyCell = document.createElement('td');
+
+    secondCell.appendChild(secondSelect);
+    secondRow.appendChild(secondCell);
+    secondRow.appendChild(emptyCell);
+    container.appendChild(secondRow);
+
+    // Populate selects with options
     const weaponLookupKey = this.getWeaponLookupKey(item);
     const weaponOptions = this.getWeaponOptions(weaponLookupKey);
 

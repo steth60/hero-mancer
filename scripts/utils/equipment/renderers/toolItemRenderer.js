@@ -33,6 +33,17 @@ export class ToolItemRenderer extends BaseItemRenderer {
         return null;
       }
 
+      // Create header row with label
+      const headerRow = document.createElement('tr');
+      const headerCell = document.createElement('th');
+      headerCell.colSpan = 2;
+
+      const label = document.createElement('h4');
+      label.innerHTML = `${toolConfig}`;
+      headerCell.appendChild(label);
+      headerRow.appendChild(headerCell);
+      itemContainer.appendChild(headerRow);
+
       // Create select element with options
       const select = this.createToolSelect(item, toolType);
 
@@ -42,8 +53,15 @@ export class ToolItemRenderer extends BaseItemRenderer {
         return null;
       }
 
-      // Add label and select to container
-      this.assembleToolUI(itemContainer, select, toolConfig);
+      // Create select row
+      const selectRow = document.createElement('tr');
+      const selectCell = document.createElement('td');
+      const starCell = document.createElement('td');
+
+      selectCell.appendChild(select);
+      selectRow.appendChild(selectCell);
+      selectRow.appendChild(starCell);
+      itemContainer.appendChild(selectRow);
 
       // Add favorite star
       this.addFavoriteStar(itemContainer, item);

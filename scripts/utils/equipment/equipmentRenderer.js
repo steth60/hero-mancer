@@ -559,8 +559,8 @@ export class EquipmentRenderer {
     }
 
     try {
-      // Create container
-      const itemContainer = document.createElement('div');
+      // Create table container (not div)
+      const itemContainer = document.createElement('table');
       itemContainer.classList.add('equipment-item');
 
       // Add label if appropriate
