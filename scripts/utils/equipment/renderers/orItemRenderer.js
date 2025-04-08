@@ -47,10 +47,14 @@ export class OrItemRenderer extends BaseItemRenderer {
 
     // Handle specialized rendering
     const isWeaponShieldChoice = this.isWeaponShieldChoice(item);
+    const isMultiCountChoice = this.isMultiCountChoice(item);
     const isMultiQuantityChoice = this.isMultiQuantityChoice(item) && this.findWeaponTypeChild(item);
 
     if (isWeaponShieldChoice) {
       await this.setupWeaponShieldChoice(item, select, itemContainer);
+      return itemContainer;
+    } else if (isMultiCountChoice) {
+      await this.setupMultiCountChoice(item, select, itemContainer);
       return itemContainer;
     } else if (isMultiQuantityChoice) {
       await this.setupMultiQuantityChoice(item, select, itemContainer);
@@ -90,23 +94,6 @@ export class OrItemRenderer extends BaseItemRenderer {
     select.addEventListener('change', (event) => {
       defaultSelection.value = event.target.value;
     });
-  }
-
-  /**
-   * Set up specialized rendering based on item type
-   * @param {Object} item - OR block item
-   * @param {HTMLSelectElement} select - Primary select element
-   * @param {HTMLElement} itemContainer - Container element
-   * @returns {Promise<void>}
-   */
-  async setupSpecializedRendering(item, select, itemContainer) {
-    if (this.isWeaponShieldChoice(item)) {
-      await this.setupWeaponShieldChoice(item, select, itemContainer);
-    } else if (this.isMultiQuantityChoice(item) && this.findWeaponTypeChild(item)) {
-      await this.setupMultiQuantityChoice(item, select, itemContainer);
-    } else {
-      await this.renderStandardOrChoice(item, select);
-    }
   }
 
   /**
@@ -186,6 +173,27 @@ export class OrItemRenderer extends BaseItemRenderer {
     const hasShield = andGroup.children?.some((child) => child.type === 'armor' && child._source?.key?.includes('shield'));
 
     return hasWeapon && hasShield;
+  }
+
+  /**
+   * Check if this is a multi-count choice where both options have same count > 1
+   * @param {Object} item - OR block item
+   * @returns {boolean} True if multi-count choice
+   */
+  isMultiCountChoice(item) {
+    // Need at least 2 children to compare
+    if (!item?.children?.length || item.children.length < 2) return false;
+
+    // Check for linked item with count > 1
+    const linkedWithCount = item.children.find((child) => child.type === 'linked' && child.count && child.count > 1);
+
+    // Check for weapon type with count > 1
+    const weaponWithCount = item.children.find(
+      (child) => child.type === 'weapon' && ['simpleM', 'simpleR', 'martialM', 'martialR', 'sim', 'mar'].includes(child.key) && child.count && child.count > 1
+    );
+
+    // Both must exist and have the same count
+    return linkedWithCount && weaponWithCount && linkedWithCount.count === weaponWithCount.count;
   }
 
   /**
@@ -309,6 +317,107 @@ export class OrItemRenderer extends BaseItemRenderer {
     });
   }
 
+  /**
+   * Set up multi-count choice UI
+   * @param {Object} item - OR block item
+   * @param {HTMLSelectElement} select - Primary select element
+   * @param {HTMLElement} container - Table container
+   */
+  async setupMultiCountChoice(item, select, container) {
+    // Clear container
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
+
+    // Create header row
+    const headerRow = document.createElement('tr');
+    const headerCell = document.createElement('th');
+    headerCell.colSpan = 2;
+
+    const headerLabel = document.createElement('h4');
+    headerLabel.classList.add('parent-label');
+    headerLabel.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-multiple');
+
+    headerCell.appendChild(headerLabel);
+    headerRow.appendChild(headerCell);
+    container.appendChild(headerRow);
+
+    // Get count for items
+    const weaponChild = item.children.find((child) => child.type === 'weapon');
+    const linkedChild = item.children.find((child) => child.type === 'linked');
+    const count = weaponChild?.count || linkedChild?.count || 1;
+
+    // Get all available options
+    const options = [];
+
+    // Add linked item option
+    if (linkedChild) {
+      try {
+        const linkedDoc = await fromUuidSync(linkedChild._source?.key);
+        if (linkedDoc) {
+          options.push({
+            value: linkedChild._source.key,
+            text: linkedDoc.name
+          });
+        }
+      } catch (error) {
+        HM.log(1, `Error getting linked item: ${error.message}`);
+      }
+    }
+
+    // Add weapon type options
+    if (weaponChild) {
+      const weaponOptions = Array.from(this.parser.constructor.lookupItems[weaponChild.key]?.items || []);
+      weaponOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const weapon of weaponOptions) {
+        options.push({
+          value: weapon.uuid || weapon._id,
+          text: weapon.name
+        });
+      }
+    }
+
+    // Create a dropdown for each count
+    for (let i = 0; i < count; i++) {
+      const rowIndex = i + 1;
+      const selectRow = document.createElement('tr');
+      const selectCell = document.createElement('td');
+      const starCell = document.createElement('td');
+
+      // Create select element (reuse first one)
+      const itemSelect = i === 0 ? select : document.createElement('select');
+      itemSelect.id = i === 0 ? select.id : `${select.id}-item${i}`;
+      itemSelect.setAttribute('data-item-name', `Item ${rowIndex}`);
+
+      // Populate options
+      itemSelect.innerHTML = '';
+      options.forEach((option, index) => {
+        const optElement = document.createElement('option');
+        optElement.value = option.value;
+        optElement.innerHTML = option.text;
+        if (index === 0) optElement.selected = true;
+        itemSelect.appendChild(optElement);
+      });
+
+      // Add to DOM
+      selectCell.appendChild(itemSelect);
+      selectRow.appendChild(selectCell);
+      selectRow.appendChild(starCell);
+      container.appendChild(selectRow);
+
+      // Add favorite star
+      this.createDynamicFavoriteStar(starCell, `Item ${rowIndex}`, itemSelect);
+    }
+  }
+
+  /**
+   * Creates a dynamic favorite star UI element for equipment items
+   * @param {HTMLElement} starCell - The table cell where the favorite star will be placed
+   * @param {string} displayName - The display name to use for the item in favorites
+   * @param {HTMLSelectElement} selectElement - The select element containing equipment options
+   * @returns {HTMLInputElement} The checkbox element for the favorite star
+   */
   createDynamicFavoriteStar(starCell, displayName, selectElement) {
     const favoriteContainer = document.createElement('div');
     favoriteContainer.classList.add('equipment-favorite-container');
@@ -349,25 +458,6 @@ export class OrItemRenderer extends BaseItemRenderer {
     starCell.appendChild(favoriteContainer);
 
     return favoriteCheckbox;
-  }
-
-  /**
-   * Create secondary dropdown for weapon-shield choice
-   * @param {Object} item - OR block item
-   * @param {HTMLElement} container - Container element
-   * @returns {Object} Created dropdown elements
-   */
-  createSecondaryDropdown(item, container) {
-    const dropdownContainer = document.createElement('div');
-    dropdownContainer.classList.add('dual-weapon-selection');
-
-    const secondSelect = document.createElement('select');
-    secondSelect.id = `${item._source?.key || item._id || Date.now()}-second`;
-
-    dropdownContainer.appendChild(secondSelect);
-    container.appendChild(dropdownContainer);
-
-    return { dropdownContainer, secondSelect };
   }
 
   /**
@@ -499,52 +589,6 @@ export class OrItemRenderer extends BaseItemRenderer {
   }
 
   /**
-   * Create UI elements for multi-quantity choice
-   * @param {Object} item - OR block item
-   * @param {HTMLElement} container - Container element
-   * @returns {Object} Created UI elements
-   */
-  createMultiQuantityUI(item, container) {
-    const dropdownContainer = document.createElement('div');
-    dropdownContainer.classList.add('dual-weapon-selection');
-
-    const secondSelect = document.createElement('select');
-    secondSelect.id = `${item._source.key}-second`;
-    secondSelect.style.display = 'none';
-
-    const secondLabel = document.createElement('label');
-    secondLabel.htmlFor = secondSelect.id;
-    secondLabel.innerHTML = game.i18n.localize('hm.app.equipment.choose-second-weapon');
-    secondLabel.style.display = 'none';
-    secondLabel.classList.add('second-weapon-label');
-
-    dropdownContainer.appendChild(secondLabel);
-    dropdownContainer.appendChild(secondSelect);
-    container.appendChild(dropdownContainer);
-
-    return { dropdownContainer, secondSelect, secondLabel };
-  }
-
-  /**
-   * Handle change event for multi-quantity select
-   * @param {Event} event - Change event
-   * @param {HTMLLabelElement} secondLabel - Label for second select
-   * @param {HTMLSelectElement} secondSelect - Second select element
-   * @param {Object} weaponTypeChild - Weapon type child
-   * @param {Object} item - Parent OR item
-   * @returns {Promise<void>}
-   */
-  async handleMultiQuantityChange(event, secondLabel, secondSelect, weaponTypeChild, item) {
-    const isWeaponSelection = event.target.value !== this.extractLinkedItemId(item);
-    secondLabel.style.display = isWeaponSelection ? 'block' : 'none';
-    secondSelect.style.display = isWeaponSelection ? 'block' : 'none';
-
-    if (isWeaponSelection) {
-      this.populateWeaponTypeDropdown(secondSelect, weaponTypeChild);
-    }
-  }
-
-  /**
    * Populate dropdown with weapon options of specific type
    * @param {HTMLSelectElement} select - Select element
    * @param {Object} weaponTypeChild - Weapon type child
@@ -573,7 +617,7 @@ export class OrItemRenderer extends BaseItemRenderer {
     const focusItem = item.children.find((child) => child.type === 'focus');
 
     if (focusItem) {
-      await this.addFocusOptions(item, select, focusItem, nonFocusItems, renderedItemNames);
+      await this.addFocusOptions(select, focusItem, nonFocusItems, renderedItemNames);
     }
 
     for (const child of nonFocusItems) {
@@ -614,13 +658,12 @@ export class OrItemRenderer extends BaseItemRenderer {
 
   /**
    * Add focus options to select element
-   * @param {Object} item - OR block item
    * @param {HTMLSelectElement} select - Select element
    * @param {Object} focusItem - Focus item
    * @param {Array<Object>} nonFocusItems - Non-focus items
    * @param {Set<string>} renderedItemNames - Set of rendered item names
    */
-  async addFocusOptions(item, select, focusItem, nonFocusItems, renderedItemNames) {
+  async addFocusOptions(select, focusItem, nonFocusItems, renderedItemNames) {
     try {
       const focusType = focusItem.key;
       const focusConfig = CONFIG.DND5E.focusTypes[focusType];
