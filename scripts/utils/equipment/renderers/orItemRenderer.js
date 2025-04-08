@@ -44,9 +44,23 @@ export class OrItemRenderer extends BaseItemRenderer {
     selectCell.appendChild(defaultSelection);
 
     this.setupSelectChangeListener(select, defaultSelection);
-    await this.setupSpecializedRendering(item, select, itemContainer);
 
-    this.addFavoriteStar(itemContainer, item);
+    // Handle specialized rendering
+    const isWeaponShieldChoice = this.isWeaponShieldChoice(item);
+    const isMultiQuantityChoice = this.isMultiQuantityChoice(item) && this.findWeaponTypeChild(item);
+
+    if (isWeaponShieldChoice) {
+      await this.setupWeaponShieldChoice(item, select, itemContainer);
+      // Don't add the favorite button since setupWeaponShieldChoice adds its own
+      return itemContainer;
+    } else if (isMultiQuantityChoice) {
+      await this.setupMultiQuantityChoice(item, select, itemContainer);
+    } else {
+      await this.renderStandardOrChoice(item, select);
+      // Add favorite star for standard choices
+      this.addFavoriteStar(itemContainer, item);
+    }
+
     return itemContainer;
   }
 
@@ -236,37 +250,110 @@ export class OrItemRenderer extends BaseItemRenderer {
    * @param {HTMLElement} container - Table container
    */
   async setupWeaponShieldChoice(item, select, container) {
-    // Create first select row
-    const selectRow = document.createElement('tr');
-    const selectCell = document.createElement('td');
-    const starCell = document.createElement('td');
+    // Remove any existing content to start fresh
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
 
-    selectCell.appendChild(select);
-    selectRow.appendChild(selectCell);
-    selectRow.appendChild(starCell);
-    container.appendChild(selectRow);
+    // Keep the header row if it exists
+    const headerRow = document.createElement('tr');
+    const headerCell = document.createElement('th');
+    headerCell.colSpan = 2;
 
-    // Create second select row
-    const secondSelect = document.createElement('select');
-    secondSelect.id = `${item._source?.key || item._id || Date.now()}-second`;
+    const headerLabel = document.createElement('h4');
+    headerLabel.classList.add('parent-label');
+    headerLabel.innerHTML = item.label || game.i18n.localize('hm.app.equipment.choose-one');
 
-    const secondRow = document.createElement('tr');
-    const secondCell = document.createElement('td');
-    const emptyCell = document.createElement('td');
+    headerCell.appendChild(headerLabel);
+    headerRow.appendChild(headerCell);
+    container.appendChild(headerRow);
 
-    secondCell.appendChild(secondSelect);
-    secondRow.appendChild(secondCell);
-    secondRow.appendChild(emptyCell);
-    container.appendChild(secondRow);
-
-    // Populate selects with options
+    // Get weapon options for both selects
     const weaponLookupKey = this.getWeaponLookupKey(item);
     const weaponOptions = this.getWeaponOptions(weaponLookupKey);
 
+    // Create first select row with its own favorite button
+    const firstRow = document.createElement('tr');
+    const firstCell = document.createElement('td');
+    const firstStarCell = document.createElement('td');
+
+    select.setAttribute('data-item-name', 'Primary Weapon');
+    firstCell.appendChild(select);
+    firstRow.appendChild(firstCell);
+    firstRow.appendChild(firstStarCell);
+    container.appendChild(firstRow);
+
+    // Add favorite button for first select
+    const firstFavoriteContainer = this.createFavoriteButton(select, 'Primary Weapon');
+    firstStarCell.appendChild(firstFavoriteContainer);
+
+    // Create second select with its own row and favorite button
+    const secondSelect = document.createElement('select');
+    secondSelect.id = `${item._source?.key || item._id || Date.now()}-second`;
+    secondSelect.setAttribute('data-item-name', 'Secondary Weapon/Shield');
+
+    const secondRow = document.createElement('tr');
+    const secondCell = document.createElement('td');
+    const secondStarCell = document.createElement('td');
+
+    secondCell.appendChild(secondSelect);
+    secondRow.appendChild(secondCell);
+    secondRow.appendChild(secondStarCell);
+    container.appendChild(secondRow);
+
+    // Add favorite button for second select
+    const secondFavoriteContainer = this.createFavoriteButton(secondSelect, 'Secondary Weapon/Shield');
+    secondStarCell.appendChild(secondFavoriteContainer);
+
+    // Populate selects with options
     this.populateWeaponDropdown(select, weaponOptions);
     this.populateSecondDropdown(secondSelect, weaponOptions);
 
+    // Add change listener
     select.addEventListener('change', () => this.populateSecondDropdown(secondSelect, weaponOptions));
+  }
+
+  // Helper method to create a favorite button
+  createFavoriteButton(selectElement, displayName) {
+    const favoriteContainer = document.createElement('div');
+    favoriteContainer.classList.add('equipment-favorite-container');
+
+    const favoriteLabel = document.createElement('label');
+    favoriteLabel.classList.add('equipment-favorite-label');
+    favoriteLabel.title = 'Add to favorites';
+
+    const favoriteCheckbox = document.createElement('input');
+    favoriteCheckbox.type = 'checkbox';
+    favoriteCheckbox.classList.add('equipment-favorite-checkbox');
+    favoriteCheckbox.dataset.itemName = displayName;
+
+    // Use the select's value (UUID) for the favorite
+    favoriteCheckbox.dataset.itemUuid = selectElement.value;
+    favoriteCheckbox.id = `fav-${selectElement.id}`;
+
+    // Add change listener to update the UUID when select changes
+    selectElement.addEventListener('change', (event) => {
+      favoriteCheckbox.dataset.itemUuid = event.target.value;
+    });
+
+    const starIcon = document.createElement('i');
+    starIcon.classList.add('fa-bookmark', 'equipment-favorite-star', 'fa-thin');
+
+    favoriteCheckbox.addEventListener('change', function () {
+      if (this.checked) {
+        starIcon.classList.remove('fa-thin');
+        starIcon.classList.add('fa-solid');
+      } else {
+        starIcon.classList.remove('fa-solid');
+        starIcon.classList.add('fa-thin');
+      }
+    });
+
+    favoriteLabel.appendChild(favoriteCheckbox);
+    favoriteLabel.appendChild(starIcon);
+    favoriteContainer.appendChild(favoriteLabel);
+
+    return favoriteContainer;
   }
 
   /**
@@ -375,9 +462,45 @@ export class OrItemRenderer extends BaseItemRenderer {
    */
   async setupMultiQuantityChoice(item, select, container) {
     const weaponTypeChild = this.findWeaponTypeChild(item);
-    const { dropdownContainer, secondSelect, secondLabel } = this.createMultiQuantityUI(item, container);
 
-    select.addEventListener('change', (event) => this.handleMultiQuantityChange(event, secondLabel, secondSelect, weaponTypeChild, item));
+    // Create second select with its own row and star cell
+    const secondSelect = document.createElement('select');
+    secondSelect.id = `${item._source?.key || item._id || Date.now()}-second`;
+    secondSelect.style.display = 'none'; // Initially hidden
+    secondSelect.setAttribute('data-item-name', 'Secondary Weapon');
+
+    const secondRow = document.createElement('tr');
+    const secondCell = document.createElement('td');
+    const secondStarCell = document.createElement('td');
+
+    // Create and add the second label
+    const secondLabel = document.createElement('label');
+    secondLabel.htmlFor = secondSelect.id;
+    secondLabel.innerHTML = game.i18n.localize('hm.app.equipment.choose-second-weapon');
+    secondLabel.style.display = 'none'; // Initially hidden
+    secondLabel.classList.add('second-weapon-label');
+
+    secondCell.appendChild(secondLabel);
+    secondCell.appendChild(secondSelect);
+    secondRow.appendChild(secondCell);
+    secondRow.appendChild(secondStarCell);
+    container.appendChild(secondRow);
+
+    // Add favorite button for second select
+    const secondFavoriteContainer = this.createFavoriteButton(secondSelect, 'Secondary Weapon');
+    secondStarCell.appendChild(secondFavoriteContainer);
+
+    // Handle visibility of the second select
+    select.addEventListener('change', (event) => {
+      const isWeaponSelection = event.target.value !== this.extractLinkedItemId(item);
+      secondLabel.style.display = isWeaponSelection ? 'block' : 'none';
+      secondSelect.style.display = isWeaponSelection ? 'block' : 'none';
+      secondStarCell.style.display = isWeaponSelection ? 'table-cell' : 'none';
+
+      if (isWeaponSelection) {
+        this.populateWeaponTypeDropdown(secondSelect, weaponTypeChild);
+      }
+    });
   }
 
   /**

@@ -353,7 +353,7 @@ table.wealth-option-container {
 }
 
 table.wealth-option-container td {
-  padding: 0.625rem;
+  padding: unset;
   vertical-align: middle;
 }
 
