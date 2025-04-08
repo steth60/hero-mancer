@@ -396,7 +396,7 @@ export class CharacterRandomizer {
       this.#isRandomizing = true;
       this.#disableRandomizeButton(randomizeButton);
 
-      ui.notifications.info('hm.app.randomizing', { localize: true });
+      ui.notifications.info('hm.app.randomize.randomizing', { localize: true });
       HM.log(3, 'Randomizing character...');
 
       // Split randomization into stages
@@ -505,8 +505,7 @@ export class CharacterRandomizer {
       return this.generateNameFromPattern(pattern);
     } catch (error) {
       HM.log(1, 'Error generating name from pattern:', error);
-      // Fallback to a simple default name
-      return 'Adventurer';
+      return game.i18n.localize('hm.app.randomize.default-name');
     }
   }
 

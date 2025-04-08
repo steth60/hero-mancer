@@ -69,15 +69,19 @@
         "tooltip": "Select a class for your character"
       },
       "document-service": {
-        "dndbeyond-importer": "DDB",
-        "elkan5e": "Elkan",
-        "forge": "Forge",
-        "homebrew": "Homebrew",
-        "phb": "PHB",
-        "srd": "SRD"
+        "common-labels": {
+          "dndbeyond-importer": "DDB",
+          "elkan5e": "Elkan",
+          "forge": "Forge",
+          "homebrew": "Homebrew",
+          "phb": "PHB",
+          "srd": "SRD"
+        },
+        "other-itdentifier": "Other"
       },
       "done": "Done",
       "equipment": {
+        "add-favorites": "Add to favorites",
         "and": ", and ",
         "article": "a",
         "article-plural": "an",
@@ -99,10 +103,14 @@
         "tooltip": "Manage your character's equipment",
         "type-equipment": "{type} Equipment",
         "unknown-choice": "Unknown linked item.",
+        "unknown-focus": "Unknown Focus",
         "unnamed": "unnamed item",
         "use-starting-wealth": "Use starting wealth",
         "wealth-placeholder": "0 gp",
         "wealth-roll-message": "{name} rolled for {type} starting wealth & received: {result} gp."
+      },
+      "errors": {
+        "unexpected-format": "Error rendering content: Unexpected format"
       },
       "finalize": {
         "backstory": "Backstory",
@@ -136,6 +144,9 @@
         "traits-placeholder-alt": "Describe your character's personality. How do their abilities shape who they are? Are they wise and contemplative, or charismatic and outgoing?"
       },
       "header-title": "Hero Mancer Creation Wizard",
+      "journal": {
+        "no-content-found": "No content available."
+      },
       "journal-description-placeholder": "The Journal is loading. This is a placeholder.",
       "journal-loading": "Loading journal content...",
       "no-description": "Unable to load a valid description for this item.",
@@ -149,9 +160,12 @@
         "tooltip": "Select a race for your character"
       },
       "randomization-complete": "Character randomization complete!",
-      "randomize": "Randomize",
-      "randomize-character": "Randomize Character",
-      "randomizing": "Randomizing character...",
+      "randomize": {
+        "default-name": "Adventurer",
+        "randomize": "Randomize",
+        "randomize-character": "Randomize Character",
+        "randomizing": "Randomizing character..."
+      },
       "reset": "Reset",
       "reset-description": "Reset Hero Mancer",
       "save": "Save For Later",
@@ -504,6 +518,7 @@
       "no-packs-found": "No packs found for {type}",
       "partial-cleanup": "Some resources could not be properly cleaned up.",
       "select-background": "You must select a valid background first.",
+      "simplified-journal": "Simplified view of {page}.",
       "some-advancements-failed": "Some advancements failed: {failed}. Succeeded: {succeeded}."
     }
   }

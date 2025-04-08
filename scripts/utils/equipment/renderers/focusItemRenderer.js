@@ -212,7 +212,7 @@ export class FocusItemRenderer extends BaseItemRenderer {
         option.innerHTML = this.formatFocusName(focusName);
       } catch (formatError) {
         HM.log(2, `Error formatting focus name: ${formatError.message}`);
-        option.innerHTML = focusName || 'Unknown Focus';
+        option.innerHTML = focusName || game.i18n.localize('hm.app.equipment.unknown-focus');
       }
 
       // Select first option by default
@@ -234,7 +234,7 @@ export class FocusItemRenderer extends BaseItemRenderer {
    * @private
    */
   formatFocusName(focusName) {
-    if (!focusName) return 'Unknown Focus';
+    if (!focusName) return game.i18n.localize('hm.app.equipment.unknown-focus');
     return focusName.charAt(0).toUpperCase() + focusName.slice(1);
   }
 

@@ -127,7 +127,7 @@ export class DocumentService {
   static #formatRaceTypeIdentifier(identifier) {
     // Input validation
     if (!identifier || typeof identifier !== 'string') {
-      return 'Other';
+      return game.i18n.localize('hm.app.document-service.other-itdentifier');
     }
 
     try {
@@ -137,7 +137,7 @@ export class DocumentService {
         .join(' ');
     } catch (error) {
       HM.log(2, `Error formatting race type identifier "${identifier}":`, error);
-      return 'Other';
+      return game.i18n.localize('hm.app.document-service.other-itdentifier');
     }
   }
 
@@ -149,13 +149,13 @@ export class DocumentService {
    */
   static #extractRaceTypeIdentifier(doc) {
     if (!doc?.system) {
-      return 'other';
+      return game.i18n.localize('hm.app.document-service.other-itdentifier');
     }
 
     const possiblePaths = [doc.system?.type?.subtype, doc.system?.type?.value, doc.system?.traits?.type?.value, doc.system?.details?.race, doc.system?.details?.species];
 
     // Return the first non-empty value, or 'other' if none found
-    return possiblePaths.find((path) => path) || 'other';
+    return possiblePaths.find((path) => path) || game.i18n.localize('hm.app.document-service.other-itdentifier');
   }
 
   /**
@@ -357,11 +357,11 @@ export class DocumentService {
 
     // Use a mapping object for a more maintainable approach
     const packNameMap = {
-      PHB: 'hm.app.document-service.phb',
-      SRD: 'hm.app.document-service.srd',
-      Forge: 'hm.app.document-service.forge',
-      DDB: 'hm.app.document-service.dndbeyond-importer',
-      Elkan: 'hm.app.document-service.elkan5e'
+      PHB: 'hm.app.document-service.common-labels.phb',
+      SRD: 'hm.app.document-service.common-labels.srd',
+      Forge: 'hm.app.document-service.common-labels.forge',
+      DDB: 'hm.app.document-service.common-labels.dndbeyond-importer',
+      Elkan: 'hm.app.document-service.common-labels.elkan5e'
     };
 
     // Check for matches in the mapping object
@@ -378,7 +378,7 @@ export class DocumentService {
 
     // Special case for homebrew
     if (/[./_-]home[\s_-]?brew[./_-]/i.test(label)) {
-      return game.i18n.localize('hm.app.document-service.homebrew');
+      return game.i18n.localize('hm.app.document-service.common-labels.homebrew');
     }
 
     return label;

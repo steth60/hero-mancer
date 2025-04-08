@@ -152,7 +152,7 @@ export class BaseItemRenderer {
 
     const favoriteLabel = document.createElement('label');
     favoriteLabel.classList.add('equipment-favorite-label');
-    favoriteLabel.title = 'Add to favorites';
+    favoriteLabel.title = game.i18n.localize('hm.app.equipment.add-favorites');
 
     const favoriteCheckbox = document.createElement('input');
     favoriteCheckbox.type = 'checkbox';
