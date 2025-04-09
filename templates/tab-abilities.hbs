@@ -44,6 +44,7 @@
       {{!-- Point Buy Ability Adjusters --}}
       <div class="ability-container point-buy flex flex-wrap justify-between gap-md">
         {{#each abilities}}
+        {{log this}}
           <div id="ability-block-{{@index}}" class="ability-block point-buy flex flex-col items-center">
             <span class="ability-label font-bold"
               aria-label="{{localize 'hm.app.abilities.label'}}">{{this.fullKey}}</span>

@@ -346,7 +346,13 @@
         "save-error": "Unable to create done button, see console.",
         "saved": "{type} compendium settings have been saved.",
         "select-all": "Select All",
-        "title": "Select {type} compendiums!"
+        "title": "Select {type} Compendiums!",
+        "types": {
+          "background": "Background",
+          "class": "Class",
+          "race": "Race",
+          "species": "Species"
+        }
       },
       "custom-point-buy-total": {
         "hint": "Specify the point buy total if not using standard calculations.",

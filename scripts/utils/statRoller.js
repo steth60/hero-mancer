@@ -522,6 +522,7 @@ export class StatRoller {
       key,
       abbreviation: value.abbreviation.toUpperCase(),
       fullKey: value.fullKey.toUpperCase(),
+      label: value.label.toUpperCase(),
       currentScore: HM.ABILITY_SCORES.DEFAULT
     }));
   }

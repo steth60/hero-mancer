@@ -446,7 +446,9 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
   static #createCompendiumDialogConfig(type, contentHTML) {
     return {
       window: {
-        title: game.i18n.format('hm.settings.custom-compendiums.title', { type }),
+        title: game.i18n.format('hm.settings.custom-compendiums.title', {
+          type: this.#getLocalizedTypeName(type)
+        }),
         icon: this.#getCompendiumTypeIcon(type)
       },
       content: contentHTML,
@@ -617,6 +619,30 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
     const allChecked = Array.from(checkboxes).every((input) => input.checked);
 
     globalSelectAll.checked = allChecked;
+  }
+
+  /**
+   * Gets the localized name for a compendium type
+   * @param {string} type - The type of compendium ('class', 'race', 'background', 'item')
+   * @returns {string} The localized type name
+   * @private
+   */
+  static #getLocalizedTypeName(type) {
+    const localizationKey = `hm.settings.custom-compendiums.types.${type}`;
+
+    // Check if the localization key exists
+    if (game.i18n.has(localizationKey)) {
+      return game.i18n.localize(localizationKey);
+    }
+
+    // Fallback to direct localization from the existing keys
+    const directKey = `hm.settings.custom-compendiums.${type}`;
+    if (game.i18n.has(directKey)) {
+      return game.i18n.localize(directKey);
+    }
+
+    // Second fallback to capitalize the type
+    return type.charAt(0).toUpperCase() + type.slice(1);
   }
 
   /**
