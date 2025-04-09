@@ -1301,8 +1301,8 @@ export class DOMManager {
           const embed = new JournalPageEmbed(journalContainer);
           await embed.render(doc.journalPageId, itemName);
         } else {
-          // No journal, just show description
-          journalContainer.removeAttribute('data-journal-id');
+          // No journal, use fallback description but keep data attribute
+          journalContainer.dataset.journalId = `fallback-${doc.id || 'description'}`;
           journalContainer.innerHTML = doc.enrichedDescription || game.i18n.localize('hm.app.no-description');
         }
       } else {
@@ -2170,10 +2170,21 @@ export class DOMManager {
    * @static
    */
   static #renderStandardDescription(doc, descriptionEl) {
+    // Find the journal container - might be the description element itself or a child
+    let contentContainer = descriptionEl.classList.contains('journal-container') ? descriptionEl : descriptionEl.querySelector('.journal-container');
+
+    if (!contentContainer) {
+      // Create a content container if none exists
+      contentContainer = document.createElement('div');
+      contentContainer.classList.add('description-content');
+      descriptionEl.appendChild(contentContainer);
+    }
+
+    // Set the description content
     if (doc.enrichedDescription) {
-      descriptionEl.innerHTML = doc.enrichedDescription;
+      contentContainer.innerHTML = doc.enrichedDescription;
     } else {
-      descriptionEl.innerHTML = doc.description || game.i18n.localize('hm.app.no-description');
+      contentContainer.innerHTML = doc.description || game.i18n.localize('hm.app.no-description');
     }
   }
 }

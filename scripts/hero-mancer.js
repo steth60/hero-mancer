@@ -235,28 +235,6 @@ export class HM {
       // Store in HM.documents
       this.documents = { race: raceDocs, class: classDocs, background: backgroundDocs };
 
-      // Handle different structures for collection
-      const allDocs = [...(raceDocs?.flatMap((folder) => folder.docs) || []), ...(classDocs || []), ...(backgroundDocs || [])];
-
-      // Enrich descriptions
-      await Promise.all(
-        allDocs.map(async (doc) => {
-          if (doc?.description) {
-            try {
-              doc.enrichedDescription = await TextEditor.enrichHTML(doc.description);
-              doc.enrichedDescription = doc.enrichedDescription
-                .replace(/<h3/g, '<h2')
-                .replace(/<\/h3/g, '</h2')
-                .replace(/<\/ h3/g, '</ h2');
-            } catch (error) {
-              HM.log(1, `Failed to enrich description for '${doc.name}':`, error);
-              // Recovery: use plain description as fallback
-              doc.enrichedDescription = doc.description;
-            }
-          }
-        })
-      );
-
       if (!this.documents.race?.length) {
         HM.log(2, 'No race documents were loaded. Character creation may be limited.');
       }
@@ -267,7 +245,7 @@ export class HM {
         HM.log(2, 'No background documents were loaded. Character creation may be limited.');
       }
 
-      HM.log(3, 'Document preparation complete', { doc: this.documents, allDocs: allDocs });
+      HM.log(3, 'Document preparation complete', { doc: this.documents });
     } catch (error) {
       HM.log(1, 'Failed to prepare documents:', error.message);
       ui.notifications.error(`Hero Mancer: Failed to prepare documents: ${error.message}`);

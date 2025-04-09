@@ -101,7 +101,8 @@ export class DocumentService {
           packId: doc.packId,
           journalPageId: doc.journalPageId,
           uuid: doc.uuid,
-          description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description')
+          description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description'),
+          enrichedDescription: doc.enrichedDescription
         });
       }
 
@@ -175,6 +176,7 @@ export class DocumentService {
           id: doc.id,
           name: `${doc.name} (${doc.packName || 'Unknown'})`,
           description: doc.description,
+          enrichedDescription: doc.enrichedDescription,
           journalPageId: doc.journalPageId,
           packName: doc.packName,
           packId: doc.packId,
@@ -303,7 +305,7 @@ export class DocumentService {
         if (!doc) return null;
 
         const packName = this.#determinePackName(pack.metadata.label, pack.metadata.id);
-        const { description, journalPageId } = await this.#findDescription(doc);
+        const { description, enrichedDescription, journalPageId } = await this.#findDescription(doc);
 
         return {
           doc,
@@ -311,6 +313,7 @@ export class DocumentService {
           uuid: doc.uuid,
           packId: pack.metadata.id,
           description,
+          enrichedDescription,
           journalPageId,
           folderName: doc.folder?.name || null,
           system: doc.system
@@ -397,10 +400,11 @@ export class DocumentService {
 
     try {
       return documents
-        .map(({ doc, packName, packId, description, journalPageId, folderName, uuid, system }) => ({
+        .map(({ doc, packName, packId, description, enrichedDescription, journalPageId, folderName, uuid, system }) => ({
           id: doc.id,
           name: doc.name,
           description,
+          enrichedDescription,
           journalPageId,
           folderName,
           packName,
@@ -440,18 +444,30 @@ export class DocumentService {
         };
       }
 
-      // Fall back to the basic description from the document
+      // Get the raw description
+      const rawDescription = doc.system?.description?.value || game.i18n.localize('hm.app.no-description');
 
+      // Enrich the description HTML
+      let enrichedDescription = await TextEditor.enrichHTML(rawDescription, { async: true });
+
+      // Apply the h3->h2 transformations
+      enrichedDescription = enrichedDescription
+        .replace(/<h3/g, '<h2')
+        .replace(/<\/h3/g, '</h2')
+        .replace(/<\/ h3/g, '</ h2');
+
+      // Return both raw and enriched descriptions
       return {
-        description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description')
+        description: rawDescription,
+        enrichedDescription: enrichedDescription
       };
     } catch (error) {
       HM.log(1, `Error generating description for ${doc?.name}:`, error);
 
       // Return basic description even on error
-      HM.log(2, 'Return basic description even on error.');
+      const rawDescription = doc.system?.description?.value || game.i18n.localize('hm.app.no-description');
       return {
-        description: doc.system?.description?.value || game.i18n.localize('hm.app.no-description')
+        description: rawDescription
       };
     }
   }
