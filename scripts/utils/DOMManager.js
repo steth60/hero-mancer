@@ -1,4 +1,4 @@
-import { EquipmentParser, HeroMancer, HM, JournalPageEmbed, MandatoryFields, StatRoller, TableManager } from './index.js';
+import { EquipmentParser, HeroMancer, HM, JournalPageEmbed, MandatoryFields, SavedOptions, StatRoller, TableManager } from './index.js';
 
 /**
  * Centralized DOM event and observer management
@@ -789,6 +789,102 @@ export class DOMManager {
       // Return basic fallback message on error
       const fallbackName = document.querySelector('#character-name')?.value || game.user.name;
       return `<div class="character-summary"><h2>${fallbackName}</h2><p>${game.i18n.localize('hm.app.character-created')}</p></div>`;
+    }
+  }
+
+  /**
+   * Updates tab indicators based on mandatory field completion
+   * @param {HTMLElement} form - The form element
+   * @returns {void}
+   * @static
+   */
+  static updateTabIndicators(form) {
+    try {
+      if (!form) return;
+
+      // Skip if no mandatory fields configured
+      const mandatoryFields = game.settings.get(HM.ID, 'mandatoryFields') || [];
+      if (!mandatoryFields.length) return;
+
+      // Get all tab elements
+      const tabs = form.querySelectorAll('.hero-mancer-tabs a.item');
+      if (!tabs.length) return;
+
+      // Process operations in batches to reduce reflow
+      const operations = [];
+
+      // Check each tab
+      for (const tab of tabs) {
+        const tabId = tab.dataset.tab;
+        if (!tabId) continue;
+
+        // Check for incomplete mandatory fields
+        const hasIncompleteFields = MandatoryFields.hasIncompleteTabFields(tabId, form);
+
+        // Get or create indicator
+        let indicator = tab.querySelector('.tab-mandatory-indicator');
+
+        if (hasIncompleteFields) {
+          // Add indicator if needed
+          if (!indicator) {
+            operations.push(() => {
+              indicator = document.createElement('i');
+              indicator.className = 'fa-duotone fa-solid fa-diamond-exclamation tab-mandatory-indicator';
+
+              // Find the icon element to position relative to
+              const iconElement = tab.querySelector('i:not(.tab-mandatory-indicator)');
+              if (iconElement) {
+                // Check if icon already has an indicator before adding a new one
+                if (!iconElement.querySelector('.tab-mandatory-indicator')) {
+                  // Position relative to the icon
+                  iconElement.style.position = 'relative';
+                  iconElement.appendChild(indicator);
+                }
+              } else if (!tab.querySelector('.tab-mandatory-indicator')) {
+                tab.appendChild(indicator);
+              }
+            });
+          }
+        } else if (indicator) {
+          // Remove indicator
+          operations.push(() => indicator.remove());
+        }
+      }
+
+      // Execute all DOM operations at once
+      if (operations.length > 0) {
+        requestAnimationFrame(() => operations.forEach((op) => op()));
+      }
+    } catch (error) {
+      HM.log(1, `Error updating tab indicators: ${error.message}`);
+    }
+  }
+
+  /**
+   * Restores saved form options to DOM elements
+   * @param {HTMLElement} html - The form container element
+   */
+  static async restoreFormOptions(html) {
+    const savedOptions = await SavedOptions.loadOptions();
+
+    if (Object.keys(savedOptions).length === 0) return;
+
+    for (const [key, value] of Object.entries(savedOptions)) {
+      const selector = `[name="${key}"]`;
+
+      const elem = html.querySelector(selector);
+
+      if (!elem) continue;
+
+      if (elem.type === 'checkbox') {
+        elem.checked = value;
+      } else if (elem.tagName === 'SELECT') {
+        elem.value = value;
+        elem.dispatchEvent(new Event('change'));
+        this.updateClassRaceSummary();
+      } else {
+        elem.value = value;
+      }
     }
   }
 
