@@ -47,7 +47,7 @@
         {{log this}}
           <div id="ability-block-{{@index}}" class="ability-block point-buy flex flex-col items-center">
             <span class="ability-label font-bold"
-              aria-label="{{localize 'hm.app.abilities.label'}}">{{this.fullKey}}</span>
+              aria-label="{{localize 'hm.app.abilities.label'}}">{{this.label}}</span>
 
             <div class="control-row flex items-center gap-xs">
               <button type="button" class="adjust-button minus-button flex justify-center items-center"
@@ -119,7 +119,7 @@
               placeholder='{{localize "hm.app.abilities.score-placeholder"}}'
               aria-label='{{localize "hm.app.abilities.score-label"}} {{this.abbreviation}}' />
 
-            <i class='fa-duotone fa-solid fa-dice-d6 fa-2xl' style='cursor: pointer' data-action='rollStat'
+            <i class='fa-solid fa-dice-d6 fa-2xl' style='cursor: pointer' data-action='rollStat'
               data-index='{{@index}}' role='button'
               aria-label='{{localize "hm.app.abilities.roll-dice"}} {{this.abbreviation}}' tabindex='0'></i>
           </div>
