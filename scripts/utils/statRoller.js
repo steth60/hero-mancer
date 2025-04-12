@@ -55,7 +55,7 @@ export class StatRoller {
     }
 
     try {
-      const rollData = await this.#prepareRollData(form);
+      const rollData = this.#prepareRollData(form);
       if (!rollData) return;
 
       if (rollData.hasExistingValue) {
@@ -79,14 +79,14 @@ export class StatRoller {
    * @private
    * @static
    */
-  static async #prepareRollData(form) {
+  static #prepareRollData(form) {
     if (!form) {
       HM.log(2, 'Invalid form provided to rollAbilityScore');
       return null;
     }
 
-    const rollFormula = await this.getAbilityScoreRollFormula();
-    const chainedRolls = await game.settings.get(HM.ID, 'chainedRolls');
+    const rollFormula = this.getAbilityScoreRollFormula();
+    const chainedRolls = game.settings.get(HM.ID, 'chainedRolls');
     const index = form.getAttribute('data-index');
     const input = this.getAbilityInput(index);
     const hasExistingValue = !this.chainRollEnabled && input?.value?.trim() !== '';
@@ -110,11 +110,11 @@ export class StatRoller {
    * @returns {Promise<string>} The roll formula to use
    * @static
    */
-  static async getAbilityScoreRollFormula() {
+  static getAbilityScoreRollFormula() {
     let formula = game.settings.get(HM.ID, 'customRollFormula');
     if (!formula?.trim()) {
       formula = '4d6kh3';
-      await game.settings.set(HM.ID, 'customRollFormula', formula);
+      game.settings.set(HM.ID, 'customRollFormula', formula);
       HM.log(2, 'Roll formula was empty. Resetting to default:', formula);
     }
     return formula;

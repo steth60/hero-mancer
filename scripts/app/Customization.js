@@ -184,16 +184,16 @@ export class Customization extends HandlebarsApplicationMixin(ApplicationV2) {
    * @static
    * @private
    */
-  static async _applySavedSettings(formData, validation) {
+  static _applySavedSettings(formData, validation) {
     const { defaults, resetSettings, settings } = validation;
 
     // Apply settings (using defaults for resetSettings)
     for (const setting of settings) {
       try {
         if (resetSettings.includes(setting)) {
-          await game.settings.set(HM.ID, setting, defaults[setting]);
+          game.settings.set(HM.ID, setting, defaults[setting]);
         } else {
-          await game.settings.set(HM.ID, setting, formData.object[setting]);
+          game.settings.set(HM.ID, setting, formData.object[setting]);
         }
       } catch (error) {
         HM.log(1, `Error saving setting "${setting}": ${error.message}`);
@@ -226,13 +226,13 @@ export class Customization extends HandlebarsApplicationMixin(ApplicationV2) {
    * @returns {Promise<boolean|void>} Returns false if validation fails
    * @static
    */
-  static async formHandler(_event, _form, formData) {
+  static formHandler(_event, _form, formData) {
     try {
       // Validate form data
       const validation = Customization._validateFormData(formData);
 
       // Apply settings
-      await Customization._applySavedSettings(formData, validation);
+      Customization._applySavedSettings(formData, validation);
 
       // Notify user of success and prompt for reload
       HM.reloadConfirm({ world: true });

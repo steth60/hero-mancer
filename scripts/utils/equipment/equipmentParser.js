@@ -921,17 +921,16 @@ export class EquipmentParser {
   /**
    * Retrieves all selected compendium packs from settings.
    * Combines item packs, class packs, background packs, and race packs into a single array.
-   * @async
    * @returns {Promise<string[]>} Array of compendium pack IDs
    * @static
    */
-  static async getSelectedPacks() {
+  static getSelectedPacks() {
     HM.log(3, 'Retrieving selected packs');
 
-    const itemPacks = (await game.settings.get(HM.ID, 'itemPacks')) || [];
-    const classPacks = (await game.settings.get(HM.ID, 'classPacks')) || [];
-    const backgroundPacks = (await game.settings.get(HM.ID, 'backgroundPacks')) || [];
-    const racePacks = (await game.settings.get(HM.ID, 'racePacks')) || [];
+    const itemPacks = game.settings.get(HM.ID, 'itemPacks') || [];
+    const classPacks = game.settings.get(HM.ID, 'classPacks') || [];
+    const backgroundPacks = game.settings.get(HM.ID, 'backgroundPacks') || [];
+    const racePacks = game.settings.get(HM.ID, 'racePacks') || [];
 
     const result = [...itemPacks, ...classPacks, ...backgroundPacks, ...racePacks];
     HM.log(3, `Retrieved ${result.length} total packs`);
@@ -956,7 +955,7 @@ export class EquipmentParser {
     this.lookupItemsInitialized = true;
     this.itemUuidMap = new Map();
 
-    const selectedPacks = await this.getSelectedPacks();
+    const selectedPacks = this.getSelectedPacks();
 
     try {
       const allItems = await this.#collectAllItems(selectedPacks);

@@ -1,4 +1,4 @@
-import { HM } from './index.js';
+import { HM, JournalPageFinder } from './index.js';
 
 /**
  * Service for managing game document preparation and processing
@@ -8,6 +8,39 @@ export class DocumentService {
   /* -------------------------------------------- */
   /*  Static Public Methods                       */
   /* -------------------------------------------- */
+
+  /**
+   * Initialize document preparation and caching for races, classes, and backgrounds
+   * @static
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} If document preparation or enrichment fails
+   */
+  static async loadAndInitializeDocuments() {
+    HM.log(3, 'Preparing documents for Hero Mancer');
+
+    try {
+      // Define document types to prepare
+      const documentTypes = ['race', 'class', 'background'];
+
+      // Fetch all document types in parallel
+      const results = await Promise.all(documentTypes.map((type) => DocumentService.prepareDocumentsByType(type)));
+
+      // Create documents object with results
+      HM.documents = Object.fromEntries(documentTypes.map((type, index) => [type, results[index]]));
+
+      // Log warnings for any missing document types
+      documentTypes.forEach((type) => {
+        if (!HM.documents[type]?.length) {
+          HM.log(2, `No ${type} documents were loaded. Character creation may be limited.`);
+        }
+      });
+
+      HM.log(3, 'Document preparation complete');
+    } catch (error) {
+      HM.log(1, 'Failed to prepare documents:', error.message);
+    }
+  }
 
   /**
    * Fetches and prepares documents based on the specified type for dropdown use
@@ -228,12 +261,45 @@ export class DocumentService {
    */
   static #getValidPacks(selectedPacks, type) {
     try {
-      // If user selected specific packs, filter to those
+      // If user selected specific packs, validate and filter them
       if (selectedPacks.length > 0) {
-        return game.packs.filter((pack) => selectedPacks.includes(pack.metadata.id));
+        const validPacks = [];
+        const invalidPackIds = [];
+
+        // Check each selected pack to see if it exists and is available
+        for (const packId of selectedPacks) {
+          const pack = game.packs.get(packId);
+          if (pack && pack.metadata.type === 'Item') {
+            validPacks.push(pack);
+          } else {
+            invalidPackIds.push(packId);
+            HM.log(2, `Pack ${packId} is either missing or not an Item pack. It will be skipped.`);
+          }
+        }
+
+        // If we found invalid packs, update the settings to remove them
+        if (invalidPackIds.length > 0) {
+          const updatedPacks = selectedPacks.filter((id) => !invalidPackIds.includes(id));
+          HM.log(2, `Removing ${invalidPackIds.length} invalid packs from ${type}Packs setting.`);
+
+          // Update the setting (wrapped in try/catch as this might fail if user lacks permissions)
+          try {
+            game.settings.set(HM.ID, `${type}Packs`, updatedPacks);
+          } catch (e) {
+            HM.log(1, `Failed to update ${type}Packs setting: ${e.message}`);
+          }
+        }
+
+        // If we have valid packs, return them
+        if (validPacks.length > 0) {
+          return validPacks;
+        }
+
+        // Otherwise log a warning that we're using fallback
+        HM.log(2, `No valid packs found in ${type}Packs settings. Falling back to all available Item packs.`);
       }
 
-      // Otherwise, use all Item packs as fallback
+      // Fall back to all Item packs if no valid selected packs
       return game.packs.filter((pack) => pack.metadata.type === 'Item');
     } catch (error) {
       HM.log(1, `Error filtering packs for type ${type}:`, error);
@@ -433,8 +499,8 @@ export class DocumentService {
     if (!doc) return;
 
     try {
-      // First check if there's a journal page we can use
-      const journalPageId = await this.#findRelatedJournalPage(doc);
+      // Use JournalPageFinder from descriptionBuilder.js to find a journal page
+      const journalPageId = await JournalPageFinder.findRelatedJournalPage(doc);
 
       // If we found a journal page, return its ID
       if (journalPageId) {
@@ -470,269 +536,5 @@ export class DocumentService {
         description: rawDescription
       };
     }
-  }
-
-  /**
-   * Finds a journal page related to the document
-   * @param {Object} doc - The document to find a journal page for
-   * @returns {Promise<string|null>} Journal page ID or null if none found
-   * @private
-   */
-  static async #findRelatedJournalPage(doc) {
-    if (!doc) return null;
-
-    try {
-      // Extract essential document information
-      const docType = doc.type; // class, race, background
-      const docName = doc.name;
-      const docUuid = doc.uuid;
-
-      if (!docType || !docName) {
-        HM.log(2, 'Insufficient data to find journal page for document: missing type or name');
-        return null;
-      }
-
-      // Extract module ID from document pack or UUID
-      const moduleId = this.#extractModuleId(doc);
-
-      // Skip journal page search for SRD backgrounds and races - they don't have journal pages
-      if (moduleId === 'dnd5e' && ['background', 'race', 'species'].includes(docType)) {
-        return null;
-      }
-
-      // Search compendiums for matching journal pages
-      const journalPacks = game.packs.filter((p) => p.metadata.type === 'JournalEntry');
-      return await this.#searchCompendiumsForPage(journalPacks, docName, docType, docUuid);
-    } catch (error) {
-      HM.log(2, `Error finding journal page for ${doc?.name}:`, error);
-      return null;
-    }
-  }
-
-  /**
-   * Extracts the module ID from a document
-   * @param {Object} doc - The document to extract module ID from
-   * @returns {string|null} Module ID or null if can't be determined
-   * @private
-   */
-  static #extractModuleId(doc) {
-    let moduleId = null;
-
-    if (doc.pack) {
-      const packMatch = doc.pack.match(/^([^.]+)\./);
-      if (packMatch) moduleId = packMatch[1];
-    } else if (doc.uuid) {
-      const uuidMatch = doc.uuid.match(/^Compendium\.([^.]+)\./);
-      if (uuidMatch) moduleId = uuidMatch[1];
-    }
-
-    return moduleId;
-  }
-
-  /**
-   * Search compendiums for matching journal page
-   * @param {CompendiumCollection[]} packs - Journal packs to search through
-   * @param {string} itemName - Item name to find
-   * @param {string} itemType - Item type (race, class, background)
-   * @param {string} [itemUuid] - Optional UUID of the original item for module matching
-   * @returns {Promise<string|null>} - Journal page UUID or null
-   * @private
-   */
-  static async #searchCompendiumsForPage(packs, itemName, itemType, itemUuid) {
-    if (!packs?.length || !itemName) {
-      HM.log(3, 'Invalid search parameters for journal page');
-      return null;
-    }
-
-    const normalizedItemName = itemName.toLowerCase();
-    const baseRaceName = this.#getBaseRaceName(itemName);
-    const modulePrefix = this.#extractModulePrefixFromUuid(itemUuid);
-
-    // Prioritize and filter packs for more efficient searching
-    const prioritizedPacks = this.#prioritizeJournalPacks(packs, modulePrefix);
-
-    // Track performance for heavy operations
-    const startTime = performance.now();
-
-    try {
-      // If we have a module prefix, only search packs from that module
-      const packsToSearch = modulePrefix ? prioritizedPacks.filter((pack) => pack.collection.startsWith(modulePrefix)) : prioritizedPacks;
-
-      // If we filtered out all packs but still have a modulePrefix, log it
-      if (modulePrefix && packsToSearch.length === 0) {
-        HM.log(3, `No matching journal packs found for module prefix: ${modulePrefix}`);
-        return null;
-      }
-
-      // Search through each pack until a match is found
-      for (const pack of packsToSearch) {
-        const result = await this.#searchSingleCompendium(pack, normalizedItemName, baseRaceName);
-        if (result) {
-          const searchTime = Math.round(performance.now() - startTime);
-          if (searchTime > 3500) {
-            HM.log(2, `Journal search for "${itemName}" took ${searchTime}ms`);
-          }
-
-          // Verify module match
-          if (modulePrefix) {
-            const resultModulePrefix = this.#extractModulePrefixFromUuid(result);
-            if (resultModulePrefix !== modulePrefix) {
-              HM.log(3, `Found journal page in wrong module: ${resultModulePrefix} vs expected ${modulePrefix}`);
-              continue; // Skip this result and keep searching
-            }
-          }
-
-          return result;
-        }
-      }
-
-      HM.log(3, `No matching journal page found for ${itemType} "${itemName}" after searching ${packsToSearch.length} packs`);
-      return null;
-    } catch (error) {
-      HM.log(2, `Error during journal page search for ${itemName}:`, error);
-      return null;
-    }
-  }
-
-  /**
-   * Extract module prefix from item UUID
-   * @param {string} itemUuid - Item UUID
-   * @returns {string|null} - Module prefix or null
-   * @private
-   */
-  static #extractModulePrefixFromUuid(itemUuid) {
-    if (!itemUuid) return null;
-
-    // Handle standard Compendium UUID format
-    const compendiumMatch = itemUuid.match(/^Compendium\.([^.]+)\./);
-    if (compendiumMatch && compendiumMatch[1]) {
-      return compendiumMatch[1];
-    }
-
-    // Handle direct collection format (pack.collection.documentId)
-    const collectionMatch = itemUuid.match(/^([^.]+)\./);
-    if (collectionMatch && collectionMatch[1]) {
-      return collectionMatch[1];
-    }
-
-    return null;
-  }
-
-  /**
-   * Prioritize journal packs for more efficient searching
-   * @param {CompendiumCollection[]} packs - All available packs
-   * @param {string|null} modulePrefix - Module prefix for prioritization
-   * @returns {CompendiumCollection[]} - Prioritized array of packs
-   * @private
-   */
-  static #prioritizeJournalPacks(packs, modulePrefix) {
-    if (!modulePrefix) return [...packs];
-
-    // First prioritize exact module matches
-    const exactMatches = packs.filter((p) => p.collection.startsWith(modulePrefix));
-
-    // If we have exact matches, only use those
-    if (exactMatches.length > 0) {
-      return exactMatches;
-    }
-
-    // Otherwise, sort with preference to PHB packs which are likely to have content
-    return [...packs].sort((a, b) => {
-      const aIsPHB = a.collection.includes('dnd-players-handbook');
-      const bIsPHB = b.collection.includes('dnd-players-handbook');
-      if (aIsPHB && !bIsPHB) return -1;
-      if (!aIsPHB && bIsPHB) return 1;
-      return 0;
-    });
-  }
-
-  /**
-   * Search a single compendium for matching journal pages
-   * @param {CompendiumCollection} pack - The pack to search
-   * @param {string} normalizedItemName - Normalized item name
-   * @param {string|null} baseRaceName - Base race name for special cases
-   * @returns {Promise<string|null>} - Journal page UUID or null
-   * @private
-   */
-  static async #searchSingleCompendium(pack, normalizedItemName, baseRaceName) {
-    try {
-      // Get the index which now includes pages data
-      const index = await pack.getIndex();
-
-      for (const entry of index) {
-        // Skip art handouts
-        if (this.#isArtHandout(entry.name)) continue;
-
-        // If the index doesn't have pages data or it's empty, skip
-        if (!entry.pages?.length) continue;
-
-        // Check for exact name match in the journal pages from the index
-        const exactMatch = entry.pages.find((p) => p.name.toLowerCase() === normalizedItemName);
-        if (exactMatch) {
-          HM.log(3, `Found exact match page "${exactMatch.name}" in journal "${entry.name}"`);
-          return `Compendium.${pack.collection}.${entry._id}.JournalEntryPage.${exactMatch._id}`;
-        }
-
-        // If this is a special race, try matching the base race name
-        if (baseRaceName) {
-          const baseMatch = entry.pages.find((p) => p.name.toLowerCase() === baseRaceName.toLowerCase());
-          if (baseMatch) {
-            HM.log(3, `Found base race match page "${baseMatch.name}" in journal "${entry.name}"`);
-            return `Compendium.${pack.collection}.${entry._id}.JournalEntryPage.${baseMatch._id}`;
-          }
-        }
-      }
-
-      return null;
-    } catch (error) {
-      HM.log(2, `Error searching journal pack ${pack.metadata.label}:`, error);
-      return null;
-    }
-  }
-
-  /**
-   * Check if entry appears to be an art handout
-   * @param {string} name - Entry name
-   * @returns {boolean} - True if appears to be an art handout
-   * @private
-   */
-  static #isArtHandout(name) {
-    if (!name) return false;
-    const lowerName = name.toLowerCase();
-    return lowerName.includes('art') || lowerName.includes('handout');
-  }
-
-  /**
-   * Get the base race name for special races
-   * @param {string} raceName - Full race name
-   * @returns {string|null} - Base race name or null
-   * @private
-   */
-  static #getBaseRaceName(raceName) {
-    if (!raceName) return null;
-
-    // List of special races that need special handling
-    const specialRaces = ['elf', 'gnome', 'tiefling', 'dwarf', 'halfling'];
-    const lowerName = raceName.toLowerCase();
-
-    // Only proceed for special races
-    if (!specialRaces.some((race) => lowerName.includes(race))) {
-      return null;
-    }
-
-    // Handle comma format: "Elf, High" -> "Elf"
-    if (raceName.includes(',')) {
-      return raceName.split(',')[0].trim();
-    }
-
-    // Handle space format by extracting the first word for known races
-    for (const race of specialRaces) {
-      if (lowerName.includes(race) && raceName.includes(' ')) {
-        // Capitalize the first letter of the race
-        return race.charAt(0).toUpperCase() + race.slice(1);
-      }
-    }
-
-    return null;
   }
 }

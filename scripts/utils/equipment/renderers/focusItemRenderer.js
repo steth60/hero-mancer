@@ -105,7 +105,7 @@ export class FocusItemRenderer extends BaseItemRenderer {
       select.id = `${item.key}-focus`;
 
       // Get item packs
-      const itemPacks = await this.getItemPacks();
+      const itemPacks = this.getItemPacks();
 
       // Get and add options
       await this.addFocusOptionsToSelect(select, focusConfig, itemPacks);
@@ -123,9 +123,9 @@ export class FocusItemRenderer extends BaseItemRenderer {
    * @returns {Promise<string[]>} Array of item pack IDs
    * @private
    */
-  async getItemPacks() {
+  getItemPacks() {
     try {
-      const itemPacks = (await game.settings.get(HM.ID, 'itemPacks')) || [];
+      const itemPacks = game.settings.get(HM.ID, 'itemPacks') || [];
       HM.log(3, `Found ${itemPacks.length} item packs`);
       return itemPacks;
     } catch (error) {

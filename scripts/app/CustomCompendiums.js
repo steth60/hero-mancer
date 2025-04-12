@@ -77,7 +77,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
         return false;
       }
 
-      const selectedPacks = (await game.settings.get(HM.ID, `${type}Packs`)) || [];
+      const selectedPacks = game.settings.get(HM.ID, `${type}Packs`) || [];
       const result = await this.#renderCompendiumDialog(type, validPacks, selectedPacks);
       return !!result;
     } catch (error) {
@@ -107,7 +107,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       for (const type of types) {
         try {
           const validPacks = await CustomCompendiums.#collectValidPacks(type, false);
-          const selectedPacks = (await game.settings.get(HM.ID, `${type}Packs`)) || [];
+          const selectedPacks = game.settings.get(HM.ID, `${type}Packs`) || [];
 
           // Filter selected packs to ensure they're valid
           const validSelectedPacks = selectedPacks.filter((packId) => Array.from(validPacks).some((pack) => pack.packId === packId));
@@ -126,7 +126,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
       let successCount = 0;
       for (const update of settingsUpdates) {
         try {
-          await game.settings.set(HM.ID, `${update.type}Packs`, update.packs);
+          game.settings.set(HM.ID, `${update.type}Packs`, update.packs);
           successCount++;
         } catch (error) {
           HM.log(1, `Failed to update ${update.type} pack settings:`, error);
@@ -475,7 +475,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
           // If nothing is selected, select all packs
           if (selectedValues.length === 0) {
             const allPackIds = Array.from(this.#validPacksCache.get(type)).map((pack) => pack.packId);
-            await game.settings.set(HM.ID, `${type}Packs`, allPackIds);
+            game.settings.set(HM.ID, `${type}Packs`, allPackIds);
 
             ui.notifications.info(
               game.i18n.format('hm.settings.custom-compendiums.all-selected', {
@@ -483,7 +483,7 @@ export class CustomCompendiums extends HandlebarsApplicationMixin(ApplicationV2)
               })
             );
           } else {
-            await game.settings.set(HM.ID, `${type}Packs`, selectedValues);
+            game.settings.set(HM.ID, `${type}Packs`, selectedValues);
 
             ui.notifications.info(
               game.i18n.format('hm.settings.custom-compendiums.saved', {

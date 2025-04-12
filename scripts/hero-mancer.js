@@ -190,43 +190,6 @@ export class HM {
   }
 
   /**
-   * Prepares and caches game documents for races, classes, and backgrounds
-   * @static
-   * @async
-   * @returns {Promise<void>}
-   * @throws {Error} If document preparation or enrichment fails
-   */
-  static async loadAndEnrichDocuments() {
-    HM.log(3, 'Preparing documents for Hero Mancer');
-
-    try {
-      const [raceDocs, classDocs, backgroundDocs] = await Promise.all([
-        DocumentService.prepareDocumentsByType('race'),
-        DocumentService.prepareDocumentsByType('class'),
-        DocumentService.prepareDocumentsByType('background')
-      ]);
-
-      // Store in HM.documents
-      this.documents = { race: raceDocs, class: classDocs, background: backgroundDocs };
-
-      if (!this.documents.race?.length) {
-        HM.log(2, 'No race documents were loaded. Character creation may be limited.');
-      }
-      if (!this.documents.class?.length) {
-        HM.log(2, 'No class documents were loaded. Character creation may be limited.');
-      }
-      if (!this.documents.background?.length) {
-        HM.log(2, 'No background documents were loaded. Character creation may be limited.');
-      }
-
-      HM.log(3, 'Document preparation complete', { doc: this.documents });
-    } catch (error) {
-      HM.log(1, 'Failed to prepare documents:', error.message);
-      ui.notifications.error(`Hero Mancer: Failed to prepare documents: ${error.message}`);
-    }
-  }
-
-  /**
    * Check and set compatibility flags for other modules
    * @static
    * @returns {void}
@@ -277,20 +240,19 @@ Hooks.on('init', () => {
     'uuid'
   ];
   CONFIG.JournalEntry.compendiumIndexFields = ['_id', 'name', 'pages', 'type', 'uuid'];
-  CONFIG.JournalEntryPage.compendiumIndexFields = ['_id', 'name', 'type', 'uuid'];
 });
 
 Hooks.once('ready', async () => {
   if (!game.settings.get(HM.ID, 'enable')) return;
 
   HM.checkModuleCompatibility();
-  await HM.loadAndEnrichDocuments();
+  await DocumentService.loadAndInitializeDocuments();
 
   if (!HM.COMPAT.ELKAN) await EquipmentParser.initializeLookupItems(); // Completely disable EquipmentParser if Elkan is enabled.
 
   const customArraySetting = game.settings.get(HM.ID, 'customStandardArray') || StatRoller.getStandardArrayDefault();
   if (!customArraySetting || customArraySetting.trim() === '') {
-    await game.settings.set(HM.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
+    game.settings.set(HM.ID, 'customStandardArray', StatRoller.getStandardArrayDefault());
     HM.log(3, 'Custom Standard Array was reset to default values due to invalid length.');
   }
 

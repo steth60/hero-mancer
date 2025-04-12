@@ -1160,7 +1160,7 @@ export class CharacterRandomizer {
       // Get the original configuration
       originalDiceConfiguration = game.settings.get('core', 'diceConfiguration');
 
-      await this.#setupTemporaryDiceConfiguration();
+      this.#setupTemporaryDiceConfiguration();
       await this.#performManualFormulaRandomization(form);
 
       HM.log(3, 'Manual formula randomization complete');
@@ -1172,7 +1172,7 @@ export class CharacterRandomizer {
       // Restore original dice configuration if we saved it
       if (originalDiceConfiguration) {
         try {
-          await game.settings.set('core', 'diceConfiguration', originalDiceConfiguration);
+          game.settings.set('core', 'diceConfiguration', originalDiceConfiguration);
           HM.log(3, 'Restored original dice configuration');
         } catch (restoreError) {
           HM.log(1, 'Failed to restore original dice configuration:', restoreError);
@@ -1186,7 +1186,7 @@ export class CharacterRandomizer {
    * @returns {Promise<void>}
    * @private
    */
-  static async #setupTemporaryDiceConfiguration() {
+  static #setupTemporaryDiceConfiguration() {
     // Create temporary configuration with automatic dice
     const tempDiceConfiguration = {
       d4: '',
@@ -1199,7 +1199,7 @@ export class CharacterRandomizer {
     };
 
     // Apply temporary configuration
-    await game.settings.set('core', 'diceConfiguration', tempDiceConfiguration);
+    game.settings.set('core', 'diceConfiguration', tempDiceConfiguration);
     HM.log(3, 'Applied temporary dice configuration');
   }
 
