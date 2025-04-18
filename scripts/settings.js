@@ -41,7 +41,7 @@ function registerCoreSettings() {
 
   game.settings.register(HM.ID, 'enableNavigationButtons', {
     name: 'hm.settings.nav-buttons.name',
-    hint: 'hm.settings.nav-buttons.name',
+    hint: 'hm.settings.nav-buttons.hint',
     scope: 'world',
     config: true,
     type: Boolean,
@@ -381,9 +381,9 @@ function registerDiceRollingSettings() {
     }
   });
 
-  game.settings.register(HM.ID, 'standardArraySwapMode', {
-    name: 'hm.settings.standard-array-swap-mode.name',
-    hint: 'hm.settings.standard-array-swap-mode.hint',
+  game.settings.register(HM.ID, 'statGenerationSwapMode', {
+    name: 'hm.settings.stat-generation-swap-mode.name',
+    hint: 'hm.settings.stat-generation-swap-mode.hint',
     scope: 'world',
     config: false,
     type: Boolean,
@@ -467,4 +467,60 @@ function registerCompatibilitySettings() {
   }
 
   HM.log(3, 'Compatibility settings registered.');
+}
+
+export const RELOAD = new Set(['enable', 'classPacks', 'racePacks', 'backgroundPacks', 'itemPacks', 'elkanCompatibility', 'tokenizerCompatibility']);
+
+export const RERENDER = new Set([
+  'enableRandomize',
+  'alignments',
+  'deities',
+  'eye-colors',
+  'hair-colors',
+  'skin-tones',
+  'genders',
+  'customStandardArray',
+  'chainedRolls',
+  'rollDelay',
+  'customPointBuyTotal',
+  'abilityScoreDefault',
+  'abilityScoreMin',
+  'abilityScoreMax',
+  'statGenerationSwapMode',
+  'mandatoryFields',
+  'enableTokenCustomization',
+  'enableNavigationButtons',
+  'enablePlayerCustomization'
+]);
+
+/**
+ * Checks if any modified settings require a reload
+ * @param {Object} changedSettings - Object with setting keys that were changed
+ * @returns {boolean} True if any changed setting requires a reload
+ */
+export function needsReload(changedSettings) {
+  if (!changedSettings || typeof changedSettings !== 'object') return false;
+
+  return Object.keys(changedSettings).some((key) => RELOAD.has(key));
+}
+
+/**
+ * Checks if any modified settings require a re-render
+ * @param {Object} changedSettings - Object with setting keys that were changed
+ * @returns {boolean} True if any changed setting requires a re-render
+ */
+export function needsRerender(changedSettings) {
+  if (!changedSettings || typeof changedSettings !== 'object') return false;
+
+  return Object.keys(changedSettings).some((key) => RERENDER.has(key));
+}
+
+/**
+ * Re-renders the Hero Mancer application if it exists and updates UI components
+ * @returns {Promise<void>}
+ */
+export async function rerenderHM() {
+  if (!HM.heroMancer) return;
+  const app = HM.heroMancer;
+  await app.close();
 }

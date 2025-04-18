@@ -1,4 +1,4 @@
-import { EquipmentParser, HeroMancer, HM, JournalPageEmbed, MandatoryFields, SavedOptions, StatRoller, TableManager } from './index.js';
+import { EquipmentParser, FormValidation, HeroMancer, HM, JournalPageEmbed, SavedOptions, StatRoller, TableManager } from './index.js';
 
 /**
  * Centralized DOM event and observer management
@@ -137,6 +137,14 @@ export class DOMManager {
    */
   static cleanup() {
     let cleanupSuccess = true;
+
+    // Reset state variables
+    this._isUpdatingEquipment = false;
+    this._abilityUpdatePromise = null;
+    this._pendingAbilityUpdate = false;
+    this._updatingAbilities = false;
+    this.#equipmentUpdateInProgress = false;
+    this.#pendingEquipmentUpdate = null;
 
     // Clean up event listeners
     try {
@@ -384,13 +392,13 @@ export class DOMManager {
     formElements.forEach((formElement) => {
       // Change event
       this.on(formElement, 'change', async () => {
-        MandatoryFields.checkMandatoryFields(element);
+        FormValidation.checkMandatoryFields(element);
       });
 
       // Input event for text inputs
       if (formElement.tagName.toLowerCase() === 'input' || formElement.tagName.toLowerCase() === 'textarea') {
         this.on(formElement, 'input', async () => {
-          MandatoryFields.checkMandatoryFields(element);
+          FormValidation.checkMandatoryFields(element);
         });
       }
     });
@@ -401,7 +409,7 @@ export class DOMManager {
       const editorContent = editor.querySelector('.editor-content.ProseMirror');
       if (editorContent) {
         this.observe(`prose-mirror-${index}`, editorContent, { childList: true, characterData: true, subtree: true }, async () => {
-          MandatoryFields.checkMandatoryFields(element);
+          FormValidation.checkMandatoryFields(element);
         });
       }
     });
@@ -733,6 +741,106 @@ export class DOMManager {
   }
 
   /**
+   * Updates the character size field based on race advancements
+   * @param {string} raceUuid - UUID of the selected race
+   * @static
+   */
+  static async updateRaceSize(raceUuid) {
+    try {
+      if (!raceUuid) {
+        HM.log(3, 'No race UUID provided for size update');
+        return;
+      }
+
+      // Find size input
+      const sizeInput = document.getElementById('size');
+      if (!sizeInput) {
+        HM.log(2, 'Could not find size input element');
+        return;
+      }
+
+      // Get race document
+      const race = await fromUuidSync(raceUuid);
+      if (!race) {
+        HM.log(2, `Could not find race with UUID: ${raceUuid}`);
+        sizeInput.value = '';
+        sizeInput.placeholder = game.i18n.localize('hm.app.biography.size-placeholder');
+        return;
+      }
+
+      // Log the race and its advancement structure for debugging
+      HM.log(3, `Processing race: ${race.name}`, race);
+
+      // Look for size advancement - handle different data structures
+      let sizesArray = [];
+      let hint = '';
+
+      // Check for size advancement using more detailed property access
+      if (race.advancement?.byType?.Size?.length) {
+        const sizeAdvancement = race.advancement.byType.Size[0];
+        HM.log(3, 'Found Size advancement:', sizeAdvancement);
+
+        // Handle Set vs Array - check if sizes exists and convert if needed
+        if (sizeAdvancement.configuration?.sizes) {
+          // If it's a Set, convert to array
+          if (sizeAdvancement.configuration.sizes instanceof Set) {
+            sizesArray = Array.from(sizeAdvancement.configuration.sizes);
+            HM.log(3, `Converted sizes Set to Array: ${sizesArray.join(', ')}`);
+          }
+          // If it's already an array
+          else if (Array.isArray(sizeAdvancement.configuration.sizes)) {
+            sizesArray = sizeAdvancement.configuration.sizes;
+          }
+
+          hint = sizeAdvancement.hint || '';
+        }
+      }
+
+      // If no size found, clear the field
+      if (!sizesArray.length) {
+        HM.log(2, `No size advancement found for race: ${race.name}`, { advancement: race.advancement });
+        sizeInput.value = '';
+        sizeInput.placeholder = game.i18n.localize('hm.app.biography.size-placeholder');
+        return;
+      }
+
+      // Format size names
+      const sizeLabels = sizesArray.map((size) => {
+        return CONFIG.DND5E.actorSizes[size]?.label || size;
+      });
+      HM.log(3, `Size labels for ${race.name}: ${sizeLabels.join(', ')}`);
+
+      // Format based on number of sizes
+      let sizeText = '';
+      if (sizeLabels.length === 1) {
+        sizeText = sizeLabels[0];
+      } else if (sizeLabels.length === 2) {
+        sizeText = `${sizeLabels[0]} or ${sizeLabels[1]}`;
+      } else if (sizeLabels.length > 2) {
+        const lastLabel = sizeLabels.pop();
+        sizeText = `${sizeLabels.join(', ')}, or ${lastLabel}`;
+      }
+
+      // Update input field
+      sizeInput.value = sizeText;
+      HM.log(3, `Updated size input with value: "${sizeText}"`);
+
+      // Add hint as title if available
+      if (hint) {
+        sizeInput.title = hint;
+        HM.log(3, `Added size hint from race: "${hint}"`);
+      }
+    } catch (error) {
+      HM.log(1, `Error updating race size: ${error.message}`, error);
+      const sizeInput = document.getElementById('size');
+      if (sizeInput) {
+        sizeInput.value = '';
+        sizeInput.placeholder = game.i18n.localize('hm.app.biography.size-placeholder');
+      }
+    }
+  }
+
+  /**
    * Process background selection changes to load relevant tables
    * @param {object} selectedBackground - Selected background data
    * @static
@@ -807,7 +915,7 @@ export class DOMManager {
         if (!tabId) continue;
 
         // Check for incomplete mandatory fields
-        const hasIncompleteFields = MandatoryFields.hasIncompleteTabFields(tabId, form);
+        const hasIncompleteFields = FormValidation.hasIncompleteTabFields(tabId, form);
 
         // Get or create indicator
         let indicator = tab.querySelector('.tab-mandatory-indicator');
@@ -1039,22 +1147,6 @@ export class DOMManager {
   }
 
   /**
-   * Create a debounced update function
-   * @param {Function} updateFn - Function to debounce
-   * @param {number} delay - Delay in ms
-   * @returns {Function} Debounced function
-   */
-  static debounce(updateFn, delay = 50) {
-    let timeout = null;
-    return function (...args) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        updateFn.apply(this, args);
-      }, delay);
-    };
-  }
-
-  /**
    * Updates the display of remaining points in the abilities tab
    * @param {number} remainingPoints - The number of points remaining to spend
    * @static
@@ -1173,12 +1265,12 @@ export class DOMManager {
   }
 
   /**
-   * Handles standard array mode dropdown updates
+   * Updates the visual state of ability dropdowns based on selected values
    * @param {NodeList} abilityDropdowns - Ability dropdown elements
    * @param {string[]} selectedValues - Currently selected values
    * @static
    */
-  static handleStandardArrayMode(abilityDropdowns, selectedValues) {
+  static updateAbilityDropdownsVisualState(abilityDropdowns, selectedValues) {
     // Count value occurrences in the standard array
     const valueOccurrences = {};
     if (abilityDropdowns.length > 0) {
@@ -1224,6 +1316,49 @@ export class DOMManager {
         }
       });
     });
+  }
+
+  /**
+   * Updates the character review tab with data from all previous tabs
+   * @returns {Promise<void>}
+   * @static
+   */
+  static async updateReviewTab() {
+    try {
+      // Get the finalize tab
+      const finalizeTab = document.querySelector('.tab[data-tab="finalize"]');
+      if (!finalizeTab) {
+        HM.log(2, 'Finalize tab not found');
+        return;
+      }
+
+      // Get the review sections using the correct selectors
+      const basicInfoSection = finalizeTab.querySelector('.review-section[aria-labelledby="basic-info-heading"] .review-content');
+      const abilitiesSection = finalizeTab.querySelector('.review-section[aria-labelledby="abilities-heading"] .abilities-grid');
+      const equipmentSection = finalizeTab.querySelector('.review-section[aria-labelledby="equipment-heading"] .equipment-list');
+      const bioSection = finalizeTab.querySelector('.review-section[aria-labelledby="biography-heading"] .bio-preview');
+
+      if (!basicInfoSection || !abilitiesSection || !equipmentSection || !bioSection) {
+        HM.log(2, 'Could not find all required review sections');
+        HM.log(
+          3,
+          `Sections found:
+        Basic Info: ${basicInfoSection ? 'Yes' : 'No'}
+        Abilities: ${abilitiesSection ? 'Yes' : 'No'}
+        Equipment: ${equipmentSection ? 'Yes' : 'No'}
+        Bio: ${bioSection ? 'Yes' : 'No'}`
+        );
+        return;
+      }
+
+      // Update each section
+      await this.#updateBasicInfoReview(basicInfoSection);
+      await this.#updateAbilitiesReview(abilitiesSection);
+      await this.#updateEquipmentReview(equipmentSection);
+      await this.#updateBiographyReview(bioSection);
+    } catch (error) {
+      HM.log(1, 'Error updating review tab:', error);
+    }
   }
 
   /* -------------------------------------------- */
@@ -1363,6 +1498,10 @@ export class DOMManager {
 
     // Update UI based on dropdown type
     await this.#updateUIForDropdownType(element, type);
+
+    if (type === 'race' && uuid) {
+      await this.updateRaceSize(uuid);
+    }
   }
 
   /**
@@ -1473,10 +1612,9 @@ export class DOMManager {
     const abilityScores = element.querySelectorAll('.ability-score');
 
     abilityScores.forEach((input) => {
-      // Use a single debounced handler for both input and change events
-      const debouncedUpdate = this.debounce(() => this.updateAbilitiesSummary(), 100);
-      this.on(input, 'change', debouncedUpdate);
-      this.on(input, 'input', debouncedUpdate);
+      const update = foundry.utils.debounce(() => this.updateAbilitiesSummary(), 100);
+      this.on(input, 'change', update);
+      this.on(input, 'input', update);
     });
   }
 
@@ -1770,20 +1908,20 @@ export class DOMManager {
         }
       }
       score = parseInt(block.querySelector('.current-score')?.innerHTML) || 0;
-    } else if (rollMethod === 'standardArray') {
+    } else if (rollMethod === 'standardArray' || rollMethod === 'manualFormula') {
       const dropdown = block.querySelector('.ability-dropdown');
       if (dropdown) {
-        const nameMatch = dropdown.name.match(/abilities\[(\w+)]/);
-        if (nameMatch && nameMatch[1]) {
-          abilityKey = nameMatch[1].toLowerCase();
+        if (rollMethod === 'standardArray') {
+          const nameMatch = dropdown.name.match(/abilities\[(\w+)]/);
+          if (nameMatch && nameMatch[1]) {
+            abilityKey = nameMatch[1].toLowerCase();
+          }
+          score = parseInt(dropdown.value) || 0;
+        } else {
+          // manualFormula
+          abilityKey = dropdown.value?.toLowerCase() || '';
+          score = parseInt(block.querySelector('.ability-score')?.value) || 0;
         }
-        score = parseInt(dropdown.value) || 0;
-      }
-    } else if (rollMethod === 'manualFormula') {
-      const dropdown = block.querySelector('.ability-dropdown');
-      if (dropdown) {
-        abilityKey = dropdown.value?.toLowerCase() || '';
-        score = parseInt(block.querySelector('.ability-score')?.value) || 0;
       }
     }
 
@@ -1795,7 +1933,7 @@ export class DOMManager {
     const classItem = classUUID ? fromUuidSync(classUUID) : null;
     const className = classItem?.name || game.i18n.localize('hm.app.abilities.your-class');
 
-    // Apply highlighting based on roll method
+    // Apply highlighting
     this.#applyAbilityHighlight(block, abilityKey, className, rollMethod);
   }
 
@@ -1814,27 +1952,28 @@ export class DOMManager {
       class: className
     });
 
-    // For all methods, highlight the label
+    // For all methods, highlight the label and add tooltip
     const label = block.querySelector('.ability-label');
     if (label) {
       label.classList.add('primary-ability');
       label.setAttribute('data-tooltip', tooltipText);
     }
 
-    // For standardArray, also highlight the dropdown
-    if (rollMethod === 'standardArray') {
-      const dropdown = block.querySelector('.ability-dropdown');
-      if (dropdown) {
-        dropdown.classList.add('primary-ability');
-      }
-    }
-
-    // For manualFormula, always highlight the dropdown
-    if (rollMethod === 'manualFormula') {
+    // For standardArray and manualFormula, also highlight the dropdown
+    if (rollMethod === 'standardArray' || rollMethod === 'manualFormula') {
       const dropdown = block.querySelector('.ability-dropdown');
       if (dropdown) {
         dropdown.classList.add('primary-ability');
         dropdown.setAttribute('data-tooltip', tooltipText);
+      }
+    }
+
+    // For pointBuy, highlight score display
+    if (rollMethod === 'pointBuy') {
+      const scoreElement = block.querySelector('.current-score');
+      if (scoreElement) {
+        scoreElement.classList.add('primary-ability');
+        scoreElement.setAttribute('data-tooltip', tooltipText);
       }
     }
   }
@@ -2234,5 +2373,465 @@ export class DOMManager {
     } else {
       contentContainer.innerHTML = doc.description || game.i18n.localize('hm.app.no-description');
     }
+  }
+
+  /**
+   * Updates the basic info section of the review tab
+   * @param {HTMLElement} container - The container element
+   * @returns {Promise<void>}
+   * @private
+   * @static
+   */
+  static async #updateBasicInfoReview(container) {
+    // Get character name
+    const characterName = document.querySelector('#character-name')?.value || game.user.name;
+
+    // Update the character name in the heading
+    const nameDisplay = document.querySelector('.character-name-display');
+    if (nameDisplay) {
+      nameDisplay.textContent = characterName;
+    }
+
+    // Update race, class, and background with links
+    await this.#updateReviewValueWithLink(container, '.race-value', HM.SELECTED.race?.uuid);
+    await this.#updateReviewValueWithLink(container, '.class-value', HM.SELECTED.class?.uuid);
+    await this.#updateReviewValueWithLink(container, '.background-value', HM.SELECTED.background?.uuid);
+  }
+
+  /**
+   * Updates a review value with a document link if available
+   * @param {HTMLElement} container - The container element
+   * @param {string} selector - Selector for the value element
+   * @param {string} uuid - Document UUID
+   * @returns {Promise<void>}
+   * @private
+   * @static
+   */
+  static async #updateReviewValueWithLink(container, selector, uuid) {
+    const element = container.querySelector(selector);
+    if (!element) return;
+
+    if (!uuid) {
+      element.textContent = game.i18n.localize('hm.unknown');
+      return;
+    }
+
+    try {
+      const doc = await fromUuidSync(uuid);
+      if (doc) {
+        const linkHtml = `@UUID[${uuid}]{${doc.name}}`;
+        element.innerHTML = await TextEditor.enrichHTML(linkHtml);
+      } else {
+        element.textContent = game.i18n.localize('hm.unknown');
+      }
+    } catch (error) {
+      HM.log(2, `Error fetching document ${uuid}:`, error);
+      element.textContent = game.i18n.localize('hm.unknown');
+    }
+  }
+
+  /**
+   * Updates the abilities section of the review tab
+   * @param {HTMLElement} container - The container element
+   * @returns {void}
+   * @private
+   * @static
+   */
+  static #updateAbilitiesReview(container) {
+    container.innerHTML = ''; // Clear existing content
+
+    // Get the current ability scores
+    const abilityScores = this.#collectAbilityScores();
+
+    // Create ability items
+    for (const [key, ability] of Object.entries(CONFIG.DND5E.abilities)) {
+      const score = abilityScores[key] || 10;
+      const mod = Math.floor((score - 10) / 2);
+      const modSign = mod >= 0 ? '+' : '';
+
+      const abilityItem = document.createElement('div');
+      abilityItem.className = 'ability-item';
+      abilityItem.innerHTML = `
+      <span class="ability-label">${ability.abbreviation.toUpperCase()}</span>
+      <span class="ability-score">${score} (${modSign}${mod})</span>
+    `;
+
+      container.appendChild(abilityItem);
+    }
+  }
+
+  /**
+   * Updates the biography section of the review tab
+   * @param {HTMLElement} container - The container element
+   * @returns {Promise<void>}
+   * @private
+   * @static
+   */
+  static async #updateBiographyReview(container) {
+    container.innerHTML = ''; // Clear existing content
+
+    // Collect biography data
+    const bioData = this.#collectBiographyData();
+
+    // Create main bio section
+    const bioMainText = await this.#formatMainBiographyText(bioData);
+    const bioMain = document.createElement('div');
+    bioMain.className = 'bio-main';
+    bioMain.innerHTML = bioMainText;
+    container.appendChild(bioMain);
+
+    // Create personality sections
+    const traits = [
+      { key: 'personalityTraits', label: 'DND5E.PersonalityTraits' },
+      { key: 'ideals', label: 'DND5E.Ideals' },
+      { key: 'bonds', label: 'DND5E.Bonds' },
+      { key: 'flaws', label: 'DND5E.Flaws' }
+    ];
+
+    // Add each trait section if it has content
+    traits.forEach((trait) => {
+      if (bioData[trait.key]) {
+        const traitSection = document.createElement('div');
+        traitSection.className = `bio-detail ${trait.key}`;
+        traitSection.innerHTML = `
+        <h4>${game.i18n.localize(trait.label)}</h4>
+        <p>${bioData[trait.key]}</p>
+      `;
+        container.appendChild(traitSection);
+      }
+    });
+
+    // Add physical description if available
+    if (bioData.physicalDescription) {
+      const physDesc = document.createElement('div');
+      physDesc.className = 'bio-detail physical-description';
+      physDesc.innerHTML = `
+      <h4>${game.i18n.localize('hm.app.finalize.review.physical-description')}</h4>
+      <p>${bioData.physicalDescription}</p>
+    `;
+      container.appendChild(physDesc);
+    }
+
+    // Add backstory if available
+    if (bioData.backstory) {
+      const backstory = document.createElement('div');
+      backstory.className = 'bio-detail backstory';
+      backstory.innerHTML = `
+      <h4>${game.i18n.localize('hm.app.finalize.review.backstory')}</h4>
+      <div class="backstory-text">${await TextEditor.enrichHTML(bioData.backstory)}</div>
+    `;
+      container.appendChild(backstory);
+    }
+  }
+
+  /**
+   * Gets equipment items from background
+   * @returns {Array<Object>} Array of background equipment items
+   * @private
+   * @static
+   */
+  static #getBackgroundEquipment() {
+    // Check if using starting wealth for background
+    const useStartingWealth = document.querySelector('#use-starting-wealth-background')?.checked || false;
+
+    if (useStartingWealth) {
+      // If using starting wealth, return special indicator
+      const wealthAmount = document.querySelector('#starting-wealth-amount-background')?.value || '0 gp';
+      return [
+        {
+          uuid: 'special-starting-wealth',
+          name: game.i18n.format('hm.app.finalize.review.starting-wealth', { amount: wealthAmount }),
+          isStartingWealth: true
+        }
+      ];
+    }
+
+    // Otherwise collect selected equipment
+    const backgroundSection = document.querySelector('.background-equipment-section');
+    if (!backgroundSection) return [];
+
+    const items = [];
+
+    // Process select elements (dropdowns)
+    const selects = backgroundSection.querySelectorAll('select:not([disabled])');
+    for (const select of selects) {
+      if (!select.value) continue;
+
+      // Get item details
+      const itemName = select.options[select.selectedIndex]?.textContent || select.closest('table')?.querySelector('h4')?.textContent || 'Unknown Item';
+      items.push({
+        uuid: select.value,
+        name: itemName,
+        source: 'background'
+      });
+    }
+
+    // Process checkboxes
+    const checkboxes = backgroundSection.querySelectorAll('input[type="checkbox"]:not(.equipment-favorite-checkbox):not([disabled]):checked');
+    for (const checkbox of checkboxes) {
+      if (!checkbox.value || !checkbox.value.includes('Compendium')) continue;
+
+      // Get item details
+      const itemLink = checkbox.closest('label')?.querySelector('.content-link');
+      const itemName = itemLink?.textContent || checkbox.closest('table')?.querySelector('h4')?.textContent || 'Unknown Item';
+      items.push({
+        uuid: checkbox.value,
+        name: itemName,
+        source: 'background'
+      });
+    }
+
+    return items;
+  }
+
+  /**
+   * Gets equipment items from class
+   * @returns {Array<Object>} Array of class equipment items
+   * @private
+   * @static
+   */
+  static #getClassEquipment() {
+    // Check if using starting wealth for class
+    const useStartingWealth = document.querySelector('#use-starting-wealth-class')?.checked || false;
+
+    if (useStartingWealth) {
+      // If using starting wealth, return special indicator
+      const wealthAmount = document.querySelector('#starting-wealth-amount-class')?.value || '0 gp';
+      return [
+        {
+          uuid: 'special-starting-wealth',
+          name: game.i18n.format('hm.app.finalize.review.starting-wealth', { amount: wealthAmount }),
+          isStartingWealth: true
+        }
+      ];
+    }
+
+    // Otherwise collect selected equipment
+    const classSection = document.querySelector('.class-equipment-section');
+    if (!classSection) return [];
+
+    const items = [];
+
+    // Process select elements (dropdowns)
+    const selects = classSection.querySelectorAll('select:not([disabled])');
+    for (const select of selects) {
+      if (!select.value) continue;
+
+      // Get item details
+      const itemName = select.options[select.selectedIndex]?.textContent || select.closest('table')?.querySelector('h4')?.textContent || 'Unknown Item';
+      items.push({
+        uuid: select.value,
+        name: itemName,
+        source: 'class'
+      });
+    }
+
+    // Process checkboxes
+    const checkboxes = classSection.querySelectorAll('input[type="checkbox"]:not(.equipment-favorite-checkbox):not([disabled]):checked');
+    for (const checkbox of checkboxes) {
+      if (!checkbox.value || !checkbox.value.includes('Compendium')) continue;
+
+      // Get item details
+      const itemLink = checkbox.closest('label')?.querySelector('.content-link');
+      const itemName = itemLink?.textContent || checkbox.closest('table')?.querySelector('h4')?.textContent || 'Unknown Item';
+      items.push({
+        uuid: checkbox.value,
+        name: itemName,
+        source: 'class'
+      });
+    }
+
+    return items;
+  }
+
+  /**
+   * Updates the equipment section of the review tab
+   * @param {HTMLElement} container - The container element
+   * @returns {Promise<void>}
+   * @private
+   * @static
+   */
+  static async #updateEquipmentReview(container) {
+    // Clear current content
+    container.innerHTML = '';
+
+    // Check if ELKAN compatibility mode is active
+    if (HM.COMPAT.ELKAN) {
+      container.innerHTML = `<p>${game.i18n.localize('hm.app.finalize.summary.equipmentDefault')}</p>`;
+      return;
+    }
+
+    // Get background and class equipment
+    const backgroundItems = this.#getBackgroundEquipment();
+    const classItems = this.#getClassEquipment();
+
+    // Get background and class names
+    const backgroundName = (await this.#getBackgroundName()) || game.i18n.localize('DND5E.Background');
+    const className = (await this.#getClassName()) || game.i18n.localize('TYPES.Item.class');
+
+    // Create equipment layout
+    container.innerHTML = `
+    <div class="equipment-layout">
+      <div class="background-equipment">
+        <h4>${game.i18n.format('hm.app.equipment.type-equipment', { type: backgroundName })}</h4>
+        <div class="background-items"></div>
+      </div>
+      <div class="class-equipment">
+        <h4>${game.i18n.format('hm.app.equipment.type-equipment', { type: className })}</h4>
+        <div class="class-items"></div>
+      </div>
+    </div>
+  `;
+
+    // Update background equipment section
+    const backgroundItemsEl = container.querySelector('.background-items');
+    if (backgroundItemsEl) {
+      if (backgroundItems.length > 0) {
+        // Check if using starting wealth
+        if (backgroundItems[0].isStartingWealth) {
+          backgroundItemsEl.innerHTML = `<div class="equipment-wealth">${backgroundItems[0].name}</div>`;
+        } else {
+          // Regular equipment items
+          const itemsHtml = await Promise.all(
+            backgroundItems.map(async (item) => {
+              return `<div class="equipment-item">${await TextEditor.enrichHTML(`@UUID[${item.uuid}]{${item.name}}`)}</div>`;
+            })
+          );
+          backgroundItemsEl.innerHTML = itemsHtml.join('');
+        }
+      } else {
+        backgroundItemsEl.innerHTML = `<em>${game.i18n.localize('hm.app.finalize.review.no-equipment')}</em>`;
+      }
+    }
+
+    // Update class equipment section
+    const classItemsEl = container.querySelector('.class-items');
+    if (classItemsEl) {
+      if (classItems.length > 0) {
+        // Check if using starting wealth
+        if (classItems[0].isStartingWealth) {
+          classItemsEl.innerHTML = `<div class="equipment-wealth">${classItems[0].name}</div>`;
+        } else {
+          // Regular equipment items
+          const itemsHtml = await Promise.all(
+            classItems.map(async (item) => {
+              return `<div class="equipment-item">${await TextEditor.enrichHTML(`@UUID[${item.uuid}]{${item.name}}`)}</div>`;
+            })
+          );
+          classItemsEl.innerHTML = itemsHtml.join('');
+        }
+      } else {
+        classItemsEl.innerHTML = `<em>${game.i18n.localize('hm.app.finalize.review.no-equipment')}</em>`;
+      }
+    }
+  }
+
+  /**
+   * Gets the name of the selected background
+   * @returns {Promise<string>} The background name
+   * @private
+   * @static
+   */
+  static async #getBackgroundName() {
+    if (!HM.SELECTED.background?.uuid) return '';
+
+    try {
+      const background = await fromUuidSync(HM.SELECTED.background.uuid);
+      return background?.name || '';
+    } catch (error) {
+      HM.log(2, `Error getting background name: ${error.message}`);
+      return '';
+    }
+  }
+
+  /**
+   * Gets the name of the selected class
+   * @returns {Promise<string>} The class name
+   * @private
+   * @static
+   */
+  static async #getClassName() {
+    if (!HM.SELECTED.class?.uuid) return '';
+
+    try {
+      const classItem = await fromUuidSync(HM.SELECTED.class.uuid);
+      return classItem?.name || '';
+    } catch (error) {
+      HM.log(2, `Error getting class name: ${error.message}`);
+      return '';
+    }
+  }
+
+  /**
+   * Collects biography data from form inputs
+   * @returns {Object} Biography data
+   * @private
+   * @static
+   */
+  static #collectBiographyData() {
+    return {
+      alignment: document.querySelector('#alignment')?.value || '',
+      size: document.querySelector('#size')?.value || '',
+      gender: document.querySelector('#gender')?.value || '',
+      age: document.querySelector('#age')?.value || '',
+      weight: document.querySelector('#weight')?.value || '',
+      height: document.querySelector('#height')?.value || '',
+      eyes: document.querySelector('#eyes')?.value || '',
+      hair: document.querySelector('#hair')?.value || '',
+      skin: document.querySelector('#skin')?.value || '',
+      faith: document.querySelector('#faith')?.value || '',
+      personalityTraits: document.querySelector('#personality')?.value || '',
+      ideals: document.querySelector('#ideals')?.value || '',
+      bonds: document.querySelector('#bonds')?.value || '',
+      flaws: document.querySelector('#flaws')?.value || '',
+      physicalDescription: document.querySelector('#description')?.value || '',
+      backstory: document.querySelector('#backstory')?.value || ''
+    };
+  }
+
+  /**
+   * Formats the main biography text with localization
+   * @param {Object} bioData - Biography data
+   * @returns {string} Formatted text
+   * @private
+   * @static
+   */
+  static async #formatMainBiographyText(bioData) {
+    // Get random adjectives for eyes and skin
+    const adjectives = game.i18n.localize('hm.app.finalize.review.appearance-adjectives').split(',');
+    const eyesAdjective = adjectives[Math.floor(Math.random() * adjectives.length)].trim();
+    const skinAdjective = adjectives[Math.floor(Math.random() * adjectives.length)].trim();
+
+    // Base format string
+    let formatString = 'hm.app.finalize.review.biography-format';
+
+    // Data for localization
+    const formatData = {
+      alignment: bioData.alignment || game.i18n.localize('hm.unknown'),
+      size: bioData.size || game.i18n.localize('hm.unknown'),
+      gender: bioData.gender || game.i18n.localize('hm.unknown'),
+      age: bioData.age || game.i18n.localize('hm.unknown'),
+      weight: bioData.weight || game.i18n.localize('hm.unknown'),
+      height: bioData.height || game.i18n.localize('hm.unknown'),
+      eyesAdjective: eyesAdjective,
+      eyes: bioData.eyes || game.i18n.localize('hm.unknown'),
+      hair: bioData.hair || game.i18n.localize('hm.unknown'),
+      skinAdjective: skinAdjective,
+      skin: bioData.skin || game.i18n.localize('hm.unknown')
+    };
+
+    // Check if faith should be included
+    const includeFaith = bioData.faith && bioData.faith !== game.i18n.localize('None');
+
+    // Use format string with or without faith
+    formatString = includeFaith ? 'hm.app.finalize.review.biography-format-with-faith' : formatString;
+
+    // Add faith data if needed
+    if (includeFaith) {
+      formatData.faith = bioData.faith;
+    }
+
+    // Format the text
+    return game.i18n.format(formatString, formatData);
   }
 }
