@@ -549,7 +549,8 @@ button {
   text-shadow: 0 0 0.2rem var(--color-error-shadow);
 }
 
-:is(
+.application.hm-app
+  :is(
     .form-row > label,
     .art-selection-row > label,
     .customization-row > label,

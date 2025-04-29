@@ -65,7 +65,7 @@ export class DocumentService {
       }
 
       // Process the documents based on type
-      const result = type === 'race' || type === 'species' ? this.#organizeRacesByTypeIdentifier(data.documents) : this.#getFlatDocuments(data.documents);
+      const result = type === 'race' || type === 'species' ? this.#organizeRacesByFolderName(data.documents) : this.#getFlatDocuments(data.documents);
 
       /**
        * A hook event that fires after documents have been fetched and organized.
@@ -98,12 +98,12 @@ export class DocumentService {
   /* -------------------------------------------- */
 
   /**
-   * Organizes races into groups based on their type identifier
+   * Organizes races into groups based on their folder name
    * @param {Array} documents - Race documents to organize
    * @returns {Array} Grouped race documents
    * @private
    */
-  static #organizeRacesByTypeIdentifier(documents) {
+  static #organizeRacesByFolderName(documents) {
     if (!documents?.length) {
       HM.log(2, 'Invalid or empty documents array for race organization');
       return [];
@@ -115,19 +115,19 @@ export class DocumentService {
 
       // First pass: create groups and assign documents
       for (const doc of documents) {
-        const typeId = this.#extractRaceTypeIdentifier(doc);
-        const typeName = this.#formatRaceTypeIdentifier(typeId);
+        // Extract base race name (everything before the first comma)
+        const baseName = doc.name.split(',')[0].trim();
 
         // Create group if it doesn't exist yet
-        if (!typeGroups.has(typeName)) {
-          typeGroups.set(typeName, {
-            folderName: typeName,
+        if (!typeGroups.has(baseName)) {
+          typeGroups.set(baseName, {
+            folderName: baseName,
             docs: []
           });
         }
 
         // Add document to its group
-        typeGroups.get(typeName).docs.push({
+        typeGroups.get(baseName).docs.push({
           id: doc.id,
           name: doc.name,
           packName: doc.packName,
@@ -150,46 +150,6 @@ export class DocumentService {
       HM.log(1, 'Error organizing races by type:', error);
       return [];
     }
-  }
-
-  /**
-   * Formats race type identifier into proper display name
-   * @param {string} identifier - Race type identifier
-   * @returns {string} Formatted display name
-   * @private
-   */
-  static #formatRaceTypeIdentifier(identifier) {
-    // Input validation
-    if (!identifier || typeof identifier !== 'string') {
-      return game.i18n.localize('hm.app.document-service.other-itdentifier');
-    }
-
-    try {
-      return identifier
-        .split('-')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-    } catch (error) {
-      HM.log(2, `Error formatting race type identifier "${identifier}":`, error);
-      return game.i18n.localize('hm.app.document-service.other-itdentifier');
-    }
-  }
-
-  /**
-   * Extracts race type identifier from document
-   * @param {Object} doc - Document to extract type from
-   * @returns {string} Type identifier
-   * @private
-   */
-  static #extractRaceTypeIdentifier(doc) {
-    if (!doc?.system) {
-      return game.i18n.localize('hm.app.document-service.other-itdentifier');
-    }
-
-    const possiblePaths = [doc.system?.type?.subtype, doc.system?.type?.value, doc.system?.traits?.type?.value, doc.system?.details?.race, doc.system?.details?.species];
-
-    // Return the first non-empty value, or 'other' if none found
-    return possiblePaths.find((path) => path) || game.i18n.localize('hm.app.document-service.other-itdentifier');
   }
 
   /**
