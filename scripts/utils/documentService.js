@@ -116,7 +116,14 @@ export class DocumentService {
       // First pass: create groups and assign documents
       for (const doc of documents) {
         // Extract base race name (everything before the first comma)
-        const baseName = doc.name.split(',')[0].trim();
+        let baseName;
+        if (doc.name.includes(',')) {
+          baseName = doc.name.split(',')[0].trim();
+        } else if (doc.name.includes(' ')) {
+          baseName = doc.name.split(' ')[0].trim();
+        } else {
+          baseName = doc.name;
+        }
 
         // Create group if it doesn't exist yet
         if (!typeGroups.has(baseName)) {
